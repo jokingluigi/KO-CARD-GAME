@@ -264,7 +264,7 @@ for (const mode of ["success", "quest-failure", "start-failure"]) {
     await page.getByRole("button", { name: "항복", exact: true }).click();
     await page.getByRole("button", { name: "항복하기", exact: true }).click();
     await page.getByTestId("match-result-overlay").waitFor();
-    await page.getByText("+200 크레딧 지급").waitFor();
+    await page.getByTestId("match-reward").filter({hasText:"+200"}).waitFor();
     assert.ok(submitted.actions.some((a) => a.type === "SURRENDER"));
     assert.equal(submitted.outcome, "LOSS");
     if (mode === "quest-failure") {

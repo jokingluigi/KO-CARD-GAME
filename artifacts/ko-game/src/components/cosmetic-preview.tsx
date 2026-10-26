@@ -4,7 +4,7 @@ import type {
 } from "@/lib/cosmetics-client";
 import { CardRenderer } from "./card-renderer";
 import { CardArtwork } from "./card-artwork";
-import type { CosmeticItem } from "@workspace/cosmetics";
+import { cosmeticAssetDisplay, type CosmeticItem } from "@workspace/cosmetics";
 export function CosmeticPreview({
   item,
   cards = [],
@@ -33,6 +33,7 @@ export function CosmeticPreview({
       <CardRenderer
         name={card.name}
         cardType={card.cardType ?? "WRESTLER"}
+        artworkDisplayOverride={cosmeticAssetDisplay(item.imageAssets,"art")}
         cost={card.cost}
         attack={card.attack}
         health={card.health}
@@ -65,6 +66,7 @@ export function CosmeticPreview({
           fallbackSrc={target?.imageUrl}
           alt={item.name}
           className="h-full w-full"
+          displayOverride={cosmeticAssetDisplay(item.imageAssets,item.imageAssets.art ? "art" : item.imageAssets.portrait ? "portrait" : item.imageAssets.intro ? "intro" : "awakened")}
           imageDisplayMode="CONTAIN"
         />
       </div>
@@ -72,6 +74,7 @@ export function CosmeticPreview({
         <div key={key} className={paired ? "text-center" : "mt-2 text-center"}>
           <CardArtwork
             src={url}
+            displayOverride={cosmeticAssetDisplay(item.imageAssets,key)}
             alt="세트 포함 토큰 스킨"
             className={paired ? "mx-auto h-32 w-full" : "mx-auto h-40 w-28"}
             imageDisplayMode="CONTAIN"

@@ -23,7 +23,19 @@ export function legacySkinItem(s: typeof skins.$inferSelect): CosmeticItem {
     name: s.name,
     description: s.description,
     targetId: s.cardDefinitionId,
-    imageAssets: s.imageUrl ? { art: s.imageUrl } : {},
+    imageAssets: s.imageUrl
+      ? {
+          art: s.imageUrl,
+          __display: JSON.stringify({
+            art: {
+              imageDisplayMode: s.imageDisplayMode,
+              imageScale: s.imageScale,
+              imagePositionX: s.imagePositionX,
+              imagePositionY: s.imagePositionY,
+            },
+          }),
+        }
+      : {},
     isActive: s.status === "PUBLISHED",
     sortOrder: 0,
     legacySkinId: s.id,
@@ -46,7 +58,11 @@ export async function syncLegacySkin(id: string, tx: Tx) {
   const row: typeof items.$inferInsert = {
     ...base,
     sortOrder: previous?.sortOrder ?? 0,
-    imageAssets: s.imageUrl ? { art: s.imageUrl } : {},
+    imageAssets: Object.fromEntries(
+      Object.entries(item.imageAssets).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
   };
   await tx
     .insert(items)

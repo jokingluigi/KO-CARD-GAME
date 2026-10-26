@@ -1,6 +1,6 @@
 import { prepareIntroPortraits } from '@/game/match-assets';
 import { questMusic as selectQuestMusic } from '@/components/quest-media';
-import {cosmeticImage,type MatchCosmetics,type ImageEmoteEvent} from '@workspace/cosmetics';
+import {cosmeticImage,cosmeticImageSettings,type MatchCosmetics,type ImageEmoteEvent} from '@workspace/cosmetics';
 import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { advanceOnlineEventSequence } from '@/lib/online-event-sequence';
 import { mergeOnlineCardCatalog, type MatchCardCatalog } from "@/lib/online-card-catalog";
@@ -900,11 +900,12 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
             displayName: selfPublicPlayer?.displayName ?? "Player",
             championName: selfPublicPlayer?.championName ?? me.champion?.name ?? "Champion",
             portraitUrl: cosmeticImage(cosmetics[me.id],"CHAMPION_SKIN",me.champion?.id??"","intro",selfPublicPlayer?.portraitUrl ?? me.champion?.imageUrl)??null,
+            portraitSettings:cosmeticImageSettings(cosmetics[me.id],"CHAMPION_SKIN",me.champion?.id??"","intro"),
             originalPortraitUrl:selfPublicPlayer?.portraitUrl??me.champion?.imageUrl,
             dialogueLine: selfPublicPlayer?.dialogueLine ?? null,
           }}
           opponent={(() => {
-            return { displayName: opponentPublicPlayer?.displayName ?? "Opponent", championName: opponentPublicPlayer?.championName ?? opponent.champion?.name ?? "Champion", portraitUrl:cosmeticImage(cosmetics[opponent.id],"CHAMPION_SKIN",opponent.champion?.id??"","intro",opponentPublicPlayer?.portraitUrl??opponent.champion?.imageUrl)??null,originalPortraitUrl:opponentPublicPlayer?.portraitUrl??opponent.champion?.imageUrl, dialogueLine: opponentPublicPlayer?.dialogueLine ?? null };
+            return { portraitSettings:cosmeticImageSettings(cosmetics[opponent.id],"CHAMPION_SKIN",opponent.champion?.id??"","intro"),displayName: opponentPublicPlayer?.displayName ?? "Opponent", championName: opponentPublicPlayer?.championName ?? opponent.champion?.name ?? "Champion", portraitUrl:cosmeticImage(cosmetics[opponent.id],"CHAMPION_SKIN",opponent.champion?.id??"","intro",opponentPublicPlayer?.portraitUrl??opponent.champion?.imageUrl)??null,originalPortraitUrl:opponentPublicPlayer?.portraitUrl??opponent.champion?.imageUrl, dialogueLine: opponentPublicPlayer?.dialogueLine ?? null };
           })()}
           firstSpeaker={introFirstSpeaker === viewerSeat ? "self" : introFirstSpeaker ? "opponent" : null}
           startedAt={gameplayStartsAt - 4500}
@@ -1064,7 +1065,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         onReturnToMainMenu={() => navigate(returnRoute)}
       />
       {matchResultVisible && (
-        <MatchResultOverlay state={state} mediaCatalog={mediaCatalog} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
+        <MatchResultOverlay cosmetics={cosmetics} opponentNickname={opponentPublicPlayer?.displayName} state={state} mediaCatalog={mediaCatalog} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
           onRetryReward={() => setRewardRetry((count) => count + 1)} onReturnToMainMenu={() => navigate(returnRoute)} />
       )}
     </>

@@ -164,6 +164,10 @@ export type PackReward = {
   champion?: CollectionChampion;
   skinDefinitionId?: string;
   skin?: {
+    imageDisplayMode?: "CONTAIN" | "COVER" | "CUSTOM";
+    imageScale?: number;
+    imagePositionX?: number;
+    imagePositionY?: number;
     id: string;
     cardDefinitionId: string;
     name: string;

@@ -19,6 +19,13 @@ export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefOb
   const fragments=Array.from(container.querySelectorAll<HTMLElement>('.ko-hud-shard'));
   for(const fragment of fragments) {
    if(src)fragment.style.backgroundImage=`url(${JSON.stringify(src)})`;
+   if(image?.naturalWidth && image.naturalHeight){
+    const style=getComputedStyle(image),factor=style.objectFit==='contain'?Math.min(rect.width/image.naturalWidth,rect.height/image.naturalHeight):Math.max(rect.width/image.naturalWidth,rect.height/image.naturalHeight);
+    const scale=style.transform==='none'?1:new DOMMatrix(style.transform).a;
+    fragment.style.backgroundSize=`${image.naturalWidth*factor*scale}px ${image.naturalHeight*factor*scale}px`;
+    fragment.style.backgroundPosition=style.objectPosition;
+    fragment.style.backgroundRepeat='no-repeat';
+   }
   }
   container.dataset.phase='crack';
   const motions:Animation[]=[];

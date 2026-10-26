@@ -1,3 +1,4 @@
+import type {CosmeticDisplaySettings} from "@workspace/cosmetics";
 import { cachedPortrait, loadPortrait } from '../game/portrait-loading';
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
@@ -7,6 +8,7 @@ export interface MatchIntroPlayer {
   displayName: string;
   championName: string;
   portraitUrl: string | null;
+  portraitSettings?:CosmeticDisplaySettings;
   originalPortraitUrl?:string|null;
   dialogueLine: string | null;
 }
@@ -58,6 +60,11 @@ function Portrait({ player, side }: PortraitProps) {
             className={styles.portraitImage}
             key={portraitUrl}
             src={portraitUrl}
+            style={portraitUrl===player.portraitUrl && player.portraitSettings ? {
+              objectFit:player.portraitSettings.imageDisplayMode==='CONTAIN'?'contain':'cover',
+              objectPosition:`${player.portraitSettings.imagePositionX}% ${player.portraitSettings.imagePositionY}%`,
+              transform:`scale(${player.portraitSettings.imageScale})`,transformOrigin:`${player.portraitSettings.imagePositionX}% ${player.portraitSettings.imagePositionY}%`,
+            }:undefined}
             alt={`${player.championName} portrait`}
             data-testid={`img-champion-portrait-${side}`}
             decoding="async"

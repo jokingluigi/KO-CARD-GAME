@@ -156,6 +156,7 @@ export function CardRenderer({
   rarity,
   frameOverride,
   imageDisplaySettings,
+  artworkDisplayOverride,
   size,
   className = "",
   showName = true,
@@ -197,6 +198,7 @@ export function CardRenderer({
   rarity?: CardRarity | null;
   frameOverride?: Partial<CardFrameDefinition>;
   imageDisplaySettings?: Partial<ImageDisplaySettings>;
+  artworkDisplayOverride?: Partial<ImageDisplaySettings>;
   size: CardRendererSize;
   className?: string;
   showName?: boolean;
@@ -353,6 +355,7 @@ export function CardRenderer({
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
           src={cosmetic.src} fallbackSrc={fallbackImageUrl ?? imageUrl}
+          displayOverride={cosmetic.display ?? artworkDisplayOverride}
           loading={artworkLoading}
           alt={name || "카드 이미지"}
           className="absolute inset-0 h-full w-full"

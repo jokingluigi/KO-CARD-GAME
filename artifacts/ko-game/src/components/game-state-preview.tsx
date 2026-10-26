@@ -4,7 +4,7 @@ import { ChampionDefeatBurst } from './champion-defeat-burst';
 import { questPortrait } from './quest-media';
 import "./battle-board.css";
 import {optionalCosmetics} from '@/lib/cosmetics-client';
-import {cosmeticImage} from '@workspace/cosmetics';
+import {cosmeticImage,cosmeticImageSettings} from '@workspace/cosmetics';
 import {BattleCosmeticsContext,CosmeticBack,CosmeticEmoteTools,CosmeticEmoteOverlay,useHideCosmeticEmotes} from './cosmetic-battle';
 import type {MatchCosmetics,ImageEmoteEvent} from '@workspace/cosmetics';
 import { BattleAttackDrag } from './battle-attack-drag';
@@ -1075,6 +1075,7 @@ export function GameStatePreview({
                    <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/>{opponentChampionPortrait && (
                      <CardArtwork
                        src={opponentChampionPortrait} fallbackSrc={originalOpponentPortrait}
+                       displayOverride={cosmeticImageSettings(cosmetics[opp.id],"CHAMPION_SKIN",opp.champion?.id??"",opp.champion?.questCompleted?"awakened":"portrait")}
                        alt=""
                        className="ko-champion-portrait-art absolute inset-0 h-full w-full"
                        imageDisplayMode="CONTAIN"
@@ -1574,6 +1575,7 @@ export function GameStatePreview({
                     <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/>{playerChampionPortrait && (
                       <CardArtwork
                         src={playerChampionPortrait} fallbackSrc={originalPlayerPortrait}
+                        displayOverride={cosmeticImageSettings(cosmetics[me.id],"CHAMPION_SKIN",me.champion?.id??"",me.champion?.questCompleted?"awakened":"portrait")}
                         alt=""
                         className="ko-champion-portrait-art absolute inset-0 h-full w-full"
                         imageDisplayMode="CONTAIN"

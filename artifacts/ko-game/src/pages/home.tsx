@@ -2,7 +2,7 @@ import { questMusic } from '@/components/quest-media';
 import {prepareIntroPortraits} from '@/game/match-assets';
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
-import {cosmeticImage,type MatchCosmetics} from '@workspace/cosmetics';
+import {cosmeticImage,cosmeticImageSettings,type MatchCosmetics} from '@workspace/cosmetics';
 import { completeMinionACatalog } from '../game/champions/minion-a';
 import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
@@ -1567,7 +1567,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         ) : (
           <MatchIntroOverlay
             key={`intro:${aiOpening.gameId}`}
-            self={aiOpening.self}
+            self={{...aiOpening.self,portraitSettings:cosmeticImageSettings(aiCosmetics?.[gameState.players[0].id],"CHAMPION_SKIN",gameState.players[0].champion?.id??"","intro")}}
             opponent={aiOpening.opponent}
             firstSpeaker={aiOpening.firstSpeaker}
             startedAt={aiOpening.startedAt}
@@ -1651,7 +1651,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       } : undefined}
     />
      {matchResultVisible && (
-       <MatchResultOverlay
+       <MatchResultOverlay cosmetics={isAiMatch ? aiCosmetics : undefined}
          opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
          state={gameState}
          mediaCatalog={mediaCatalog}

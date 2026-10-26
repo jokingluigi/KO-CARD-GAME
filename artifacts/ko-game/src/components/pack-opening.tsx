@@ -213,6 +213,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                       health={card.health}
                       rulesText={card.text}
                       imageUrl={isSkin ? (skin?.imageUrl ?? card.imageUrl) : card.imageUrl}
+                      artworkDisplayOverride={isSkin ? skin : undefined}
                       rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY"}
                       size="detail"
                       className="h-full w-full"

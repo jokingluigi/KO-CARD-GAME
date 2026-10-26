@@ -1,3 +1,4 @@
+import { parseCosmeticDisplay } from "@workspace/cosmetics";
 import {
   legacySkinItem,
   legacySkinId,
@@ -160,6 +161,16 @@ function parseItem(body: unknown, legacy = false) {
     throw new CosmeticError(400, "이미지를 등록해 주세요.");
   const imageAssets: Record<string, string> = {};
   for (const [key, url] of Object.entries(assets)) {
+    if (key === "__display") {
+      const display = parseCosmeticDisplay(url);
+      if (!display)
+        throw new CosmeticError(
+          400,
+          "이미지 위치·배율 설정이 올바르지 않습니다.",
+        );
+      imageAssets[key] = JSON.stringify(display);
+      continue;
+    }
     if (
       (!["art", "portrait", "intro", "awakened"].includes(key) &&
         !/^token:[a-zA-Z0-9_-]{1,256}$/.test(key)) ||
@@ -169,13 +180,14 @@ function parseItem(body: unknown, legacy = false) {
     imageAssets[key] = url;
   }
   if (
-    (!Object.keys(imageAssets).length && !legacy) ||
+    (!Object.keys(imageAssets).filter((key) => key !== "__display").length &&
+      !legacy) ||
     (b.type !== "CHAMPION_SKIN" && !imageAssets.art && !legacy)
   )
     throw new CosmeticError(400, "기본 이미지를 등록해 주세요.");
   if (
     b.type !== "CHAMPION_SKIN" &&
-    Object.keys(imageAssets).some((k) => k !== "art")
+    Object.keys(imageAssets).some((k) => k !== "art" && k !== "__display")
   )
     throw new CosmeticError(400, "챔피언 전용 이미지 슬롯입니다.");
   return {
@@ -226,7 +238,11 @@ async function verifyCatalogAssets(
   assets: Record<string, string>,
   known = new Set<string>(),
 ) {
-  for (const url of new Set(Object.values(assets))) {
+  for (const url of new Set(
+    Object.entries(assets)
+      .filter(([key]) => key !== "__display")
+      .map(([, url]) => url),
+  )) {
     if (known.has(url)) continue;
     if (!url.startsWith("/api/storage/objects/uploads/cosmetics/"))
       throw new CosmeticError(
@@ -270,6 +286,7 @@ router.post("/admin/cosmetics/items", async (req, res) => {
         name: input.name,
         description: input.description,
         imageUrl: input.imageAssets.art!,
+        ...(parseCosmeticDisplay(input.imageAssets.__display)?.art ?? {}),
         status: input.isActive ? "PUBLISHED" : "DRAFT",
         version: 1,
       });
@@ -331,6 +348,7 @@ router.patch("/admin/cosmetics/items/:id", async (req, res) => {
           description: input.description,
           cardDefinitionId: input.targetId!,
           imageUrl: input.imageAssets.art ?? null,
+          ...(parseCosmeticDisplay(input.imageAssets.__display)?.art ?? {}),
           status,
           version: sql`${cardSkinDefinitionsTable.version}+1`,
           updatedAt: new Date(),
