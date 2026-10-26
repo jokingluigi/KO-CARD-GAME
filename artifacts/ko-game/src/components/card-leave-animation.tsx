@@ -87,7 +87,7 @@ export function CardLeaveAnimation({
         onCompleteRef.current();
       }}
     >
-      <CardRenderer cardId={animation.card.definitionId} cosmeticOwnerId={!animation.card.isToken&&!animation.card.isChampionToken?animation.cosmeticOwnerId:undefined}
+      <CardRenderer cardId={animation.card.definitionId} cosmeticOwnerId={(!animation.card.isToken||animation.card.isChampionToken)?animation.cosmeticOwnerId:undefined}
         name={definition?.name ?? "카드"}
         cardType={animation.card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER"}
         cost={animation.card.currentCost}

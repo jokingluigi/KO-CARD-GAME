@@ -1800,7 +1800,7 @@ function HandCard({
   return (
     <Inspectable content={<CardInspectContent cosmeticOwnerId={cosmeticOwnerId} card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
     <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
-      <CardRenderer cardId={card.definitionId} cosmeticOwnerId={!card.isToken&&!card.isChampionToken?cosmeticOwnerId:undefined}
+      <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
       name={def?.name ?? '알 수 없는 카드'}
       cardType={card.cardType}
       cost={card.currentCost}
@@ -1973,7 +1973,7 @@ function BoardSlot({
           액티브
         </button>
       )}
-       <CardRenderer cardId={card.definitionId} cosmeticOwnerId={!card.isToken&&!card.isChampionToken?cosmeticOwnerId:undefined}
+       <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
          name={def?.name ?? '알 수 없는 카드'}
          cardType={card.cardType}
          cost={card.currentCost}
@@ -2119,7 +2119,7 @@ function GraveyardModal({
                   <Inspectable key={card.instanceId} touchInspectTriggerOnly={Boolean(onSelect)} className="relative min-w-0" content={<CardInspectContent cosmeticOwnerId={player.id} card={card} definition={definition} />}>
                     <CardRenderer
                       cardId={card.definitionId}
-                      cosmeticOwnerId={!card.isToken && !card.isChampionToken ? player.id : undefined}
+                      cosmeticOwnerId={(!card.isToken || card.isChampionToken) ? player.id : undefined}
                       name={definition?.name ?? '알 수 없는 카드'}
                       cardType={card.cardType}
                       cost={card.currentCost}

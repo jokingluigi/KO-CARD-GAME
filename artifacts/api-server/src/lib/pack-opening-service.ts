@@ -4,7 +4,7 @@ export type PackOpenMode = "single" | "bulk";
 export type PackOpenings = Array<{ rewards: Array<Record<string, unknown>> }>;
 
 const BULK_CLAIM_MARKER = "__packBulkOpening";
-const VALID_REWARD_TYPES = new Set(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN"]);
+const VALID_REWARD_TYPES = new Set(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN", "CHAMPION_SKIN"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -19,6 +19,7 @@ function isValidStoredReward(value: unknown): value is Record<string, unknown> {
     return false;
   }
 
+  if (value.originalGranted !== undefined && typeof value.originalGranted !== "boolean") return false;
   if (value.rewardType === "NORMAL_CARD" || value.rewardType === "EPIC_CARD" || value.rewardType === "LEGENDARY_CARD") {
     return isNonEmptyString(value.cardDefinitionId) && isRecord(value.card);
   }
@@ -29,6 +30,7 @@ function isValidStoredReward(value: unknown): value is Record<string, unknown> {
       && (value.championPrismReward === undefined
         || (Number.isInteger(value.championPrismReward) && (value.championPrismReward as number) >= 0));
   }
+  if (value.rewardType === "CHAMPION_SKIN") return isNonEmptyString(value.cosmeticId) && isRecord(value.cosmetic) && isRecord(value.champion) && typeof value.alreadyOwned === "boolean";
   return isNonEmptyString(value.skinDefinitionId)
     && isRecord(value.skin)
     && isRecord(value.card)

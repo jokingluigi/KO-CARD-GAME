@@ -134,7 +134,7 @@ function parseItem(body: unknown) {
   const imageAssets: Record<string, string> = {};
   for (const [key, url] of Object.entries(assets)) {
     if (
-      !["art", "portrait", "intro", "awakened"].includes(key) ||
+      (!["art", "portrait", "intro", "awakened"].includes(key) && !/^token:[a-zA-Z0-9_-]{1,256}$/.test(key)) ||
       !validImageUrl(url)
     )
       throw new CosmeticError(400, "이미지 주소가 올바르지 않습니다.");
@@ -159,6 +159,16 @@ function parseItem(body: unknown) {
     isActive: b.isActive,
     sortOrder: Number(b.sortOrder),
   };
+}
+async function validateTokenAssets(input: ReturnType<typeof parseItem>) {
+  const tokenKeys = Object.keys(input.imageAssets).filter(key => key.startsWith("token:"));
+  if (!tokenKeys.length) return;
+  if (input.type !== "CHAMPION_SKIN") throw new CosmeticError(422, "챔피언 스킨에만 토큰 외형을 연결할 수 있습니다.");
+  const [row] = await db.select({ tokenId: championsTable.championTokenDefinitionId })
+    .from(championsTable).innerJoin(cardsTable, eq(cardsTable.id, championsTable.championTokenDefinitionId))
+    .where(and(eq(championsTable.id, input.targetId ?? ""), eq(cardsTable.isChampionToken, true))).limit(1);
+  if (!row?.tokenId || tokenKeys.length !== 1 || tokenKeys[0] !== `token:${row.tokenId}`)
+    throw new CosmeticError(422, "선택한 챔피언에 연결된 챔피언 토큰만 등록할 수 있습니다.");
 }
 async function verifyCatalogAssets(
   assets: Record<string, string>,
@@ -193,6 +203,7 @@ async function verifyCatalogAssets(
 }
 router.post("/admin/cosmetics/items", async (req, res) => {
   const input = parseItem(req.body);
+  await validateTokenAssets(input);
   await validateCosmeticTarget(input.type, input.targetId);
   await verifyCatalogAssets(input.imageAssets);
   const [item] = await db
@@ -203,6 +214,7 @@ router.post("/admin/cosmetics/items", async (req, res) => {
 });
 router.patch("/admin/cosmetics/items/:id", async (req, res) => {
   const input = parseItem(req.body);
+  await validateTokenAssets(input);
   const [previous] = await db
     .select()
     .from(items)

@@ -28,7 +28,11 @@ export class CosmeticError extends Error {
 export const cosmeticsWriteLock = sql`SELECT pg_advisory_xact_lock(hashtext('ko-cosmetics-write-v1'))`;
 export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
   const rows = await db
-    .select({ slot: equips.slot, item: items })
+    .select({
+      slot: equips.slot,
+      item: items,
+      tokenId: cardsTable.id,
+    })
     .from(equips)
     .innerJoin(
       owned,
@@ -38,10 +42,24 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
       ),
     )
     .innerJoin(items, eq(items.id, equips.cosmeticId))
+    .leftJoin(
+      championsTable,
+      and(
+        eq(items.type, "CHAMPION_SKIN"),
+        eq(championsTable.id, items.targetId),
+      ),
+    )
+    .leftJoin(
+      cardsTable,
+      and(
+        eq(cardsTable.id, championsTable.championTokenDefinitionId),
+        eq(cardsTable.isChampionToken, true),
+      ),
+    )
     .where(and(eq(equips.userId, userId), eq(items.isActive, true)));
   const result = emptyCosmetics();
   // Do not infer any deck or private card information from the equipped inventory.
-  for (const { slot, item: raw } of rows) {
+  for (const { slot, item: raw, tokenId } of rows) {
     const item = raw as CosmeticItem;
     if (
       !item.imageAssets ||
@@ -52,7 +70,10 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
     const imageAssets = Object.fromEntries(
       Object.entries(item.imageAssets).filter(
         ([key, url]) =>
-          ["art", "portrait", "intro", "awakened"].includes(key) &&
+          (["art", "portrait", "intro", "awakened"].includes(key) ||
+            (item.type === "CHAMPION_SKIN" &&
+              tokenId &&
+              key === `token:${tokenId}`)) &&
           validImageUrl(url),
       ),
     );

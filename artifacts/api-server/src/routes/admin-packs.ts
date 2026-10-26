@@ -1,3 +1,4 @@
+import { championSkinPool } from "../lib/champion-skin-pool";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -125,11 +126,12 @@ async function validationErrors(pack: PackInput | typeof packDefinitionsTable.$i
       eq(cardsTable.isToken, false),
       eq(cardsTable.isChampionToken, false),
     )) : [];
+  const championSkins = await championSkinPool(pack.skinPool);
   if (pack.normalRate > 0 && normal.length === 0) errors.push("NORMAL 확률이 0보다 크면 공개된 NORMAL Pool이 필요합니다.");
   if (pack.epicRate > 0 && epic.length === 0) errors.push("EPIC 확률이 0보다 크면 공개된 EPIC Pool이 필요합니다.");
   if (pack.legendaryRate > 0 && legendary.length === 0) errors.push("LEGENDARY 확률이 0보다 크면 공개된 LEGENDARY Pool이 필요합니다.");
   if (pack.championRate > 0 && champions.length === 0) errors.push("CHAMPION 확률이 0보다 크면 공개된 Champion Pool이 필요합니다.");
-  if (pack.skinChance > 0 && skins.length === 0) errors.push("Skin Chance가 0보다 크면 공개된 Skin Pool이 필요합니다.");
+  if (pack.skinChance > 0 && skins.length + championSkins.length === 0) errors.push("Skin Chance가 0보다 크면 공개된 Skin Pool이 필요합니다.");
   return errors;
 }
 
@@ -169,7 +171,8 @@ router.get("/options", async (request, response): Promise<void> => {
     nickname: usersTable.nickname,
     role: usersTable.role,
   }).from(usersTable).orderBy(asc(usersTable.nickname));
-  response.json({ cards, champions, skins, users });
+  const championSkins = await championSkinPool();
+  response.json({ cards, champions, skins: [...skins, ...championSkins.map(({cosmetic, champion}) => ({ id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, cardDefinitionId: champion.id, cardName: champion.name, imageUrl: cosmetic.imageAssets.portrait ?? cosmetic.imageAssets.art ?? null }))], users });
 });
 
 router.post("/:id/grant", async (request, response): Promise<void> => {
@@ -260,11 +263,7 @@ router.post("/:id/preview", async (request, response): Promise<void> => {
   if (!pack) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
   const errors = await validationErrors(pack);
   if (errors.length) { response.status(422).json({ message: errors.join(" "), errors }); return; }
-  response.json({ rewards: (await rollPack(pack)).map((reward) => reward.rewardType === "CHAMPION_UNLOCK"
-    ? { rewardType: reward.rewardType, championDefinitionId: reward.championDefinitionId, champion: reward.champion }
-    : reward.rewardType === "SKIN"
-      ? { rewardType: reward.rewardType, skinDefinitionId: reward.skinDefinitionId, skin: reward.skin, card: reward.card }
-      : { rewardType: reward.rewardType, cardDefinitionId: reward.cardDefinitionId, card: reward.card }) });
+  response.json({ rewards: await rollPack(pack) });
 });
 
 router.post("/:id/preview/forced", async (request, response): Promise<void> => {
@@ -297,6 +296,8 @@ router.post("/:id/preview/forced", async (request, response): Promise<void> => {
       if (!champion) { response.status(422).json({ message: "강제 지정 Champion이 현재 팩 Pool에 없습니다." }); return; }
       rewards.push({ rewardType: type, championDefinitionId: champion.id, champion });
     } else if (type === "SKIN") {
+      const [championSkin] = await championSkinPool(pack.skinPool.filter(candidate => candidate === id));
+      if (championSkin) { rewards.push({ rewardType: "CHAMPION_SKIN", cosmeticId: championSkin.cosmetic.id, ...championSkin }); continue; }
       const [skin] = await db.select({ skin: cardSkinDefinitionsTable, card: cardsTable })
         .from(cardSkinDefinitionsTable).innerJoin(cardsTable, eq(cardsTable.id, cardSkinDefinitionsTable.cardDefinitionId))
         .where(and(

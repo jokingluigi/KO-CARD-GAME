@@ -1,3 +1,4 @@
+import { grantSkinOriginal } from "../lib/skin-original-grant";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -9,6 +10,7 @@ import {
   userCardCollectionsTable,
   userChampionCollectionsTable,
   userCardSkinCollectionsTable,
+  userCosmeticsTable,
   userPackInventoryTable,
   usersTable,
 } from "@workspace/db";
@@ -153,7 +155,7 @@ export async function openPackRequest(
 
       const openings = await rollPackOpenings(quantity, () => rollPack(pack, tx));
       const rolledCardIds = [...new Set(openings.flatMap(({ rewards }) => rewards.flatMap((reward) =>
-        reward.rewardType === 'NORMAL_CARD' || reward.rewardType === 'EPIC_CARD' || reward.rewardType === 'LEGENDARY_CARD' ? [reward.card.id] : [])))];
+        reward.rewardType === 'NORMAL_CARD' || reward.rewardType === 'EPIC_CARD' || reward.rewardType === 'LEGENDARY_CARD' || reward.rewardType === 'SKIN' ? [reward.card.id] : [])))];
       const ownedCards = rolledCardIds.length ? await tx.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
         .from(userCardCollectionsTable)
         .where(and(eq(userCardCollectionsTable.userId, request.authUser!.id), inArray(userCardCollectionsTable.cardDefinitionId, rolledCardIds))) : [];
@@ -224,6 +226,11 @@ export async function openPackRequest(
               });
               reward.championPrismReward = setting.duplicateReward;
             }
+          } else if (reward.rewardType === "CHAMPION_SKIN") {
+            const inserted = await tx.insert(userCosmeticsTable).values({ userId: request.authUser!.id, cosmeticId: reward.cosmeticId, acquisitionSource: "PACK" })
+              .onConflictDoNothing().returning({ id: userCosmeticsTable.cosmeticId });
+            reward.alreadyOwned = inserted.length === 0;
+            reward.originalGranted = await grantSkinOriginal(tx, request.authUser!.id, "CHAMPION", reward.champion.id);
           } else {
             const [existingSkin] = await tx.select({ id: userCardSkinCollectionsTable.skinDefinitionId })
               .from(userCardSkinCollectionsTable)
@@ -232,6 +239,8 @@ export async function openPackRequest(
                 eq(userCardSkinCollectionsTable.skinDefinitionId, reward.skinDefinitionId),
               )).limit(1);
             reward.alreadyOwned = Boolean(existingSkin);
+            reward.originalGranted = await grantSkinOriginal(tx, request.authUser!.id, "CARD", reward.card.id);
+            if (reward.originalGranted) ownedCardQuantities.set(reward.card.id, 1);
             await tx.insert(userCardSkinCollectionsTable).values({
               userId: request.authUser!.id,
               skinDefinitionId: reward.skinDefinitionId,

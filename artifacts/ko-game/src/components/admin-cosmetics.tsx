@@ -11,7 +11,7 @@ import {
   type CosmeticCardPreview,
   type CosmeticChampionPreview,
 } from "@/lib/cosmetics-client";
-import {useAdminMutableDraft} from './admin-editor-sections';
+import { useAdminMutableDraft } from "./admin-editor-sections";
 import { CosmeticPreview } from "./cosmetic-preview";
 import "./cosmetics.css";
 const labels: Record<CosmeticType, string> = {
@@ -46,7 +46,7 @@ export function AdminCosmetics() {
     [users, setUsers] = useState<Array<{ id: string; nickname: string }>>([]),
     [user, setUser] = useState<{ id: string; nickname: string } | null>(null),
     [inventory, setInventory] = useState<CosmeticInventory | null>(null);
-  const draft=useAdminMutableDraft(form,form.id);
+  const draft = useAdminMutableDraft(form, form.id);
   const base = "/admin/cosmetics";
   async function load() {
     setData(await cosmeticsRequest<Catalog>(base));
@@ -148,6 +148,11 @@ export function AdminCosmetics() {
       );
     });
   }
+  const tokenId =
+    form.type === "CHAMPION_SKIN"
+      ? data?.champions.find((c) => c.id === form.targetId)
+          ?.championTokenDefinitionId
+      : null;
   const targets =
     form.type === "CHAMPION_SKIN"
       ? data?.champions
@@ -170,7 +175,15 @@ export function AdminCosmetics() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button disabled={busy} onClick={() => {if(draft.confirm()){setForm(blank());draft.markSaved();}}}>
+          <button
+            disabled={busy}
+            onClick={() => {
+              if (draft.confirm()) {
+                setForm(blank());
+                draft.markSaved();
+              }
+            }}
+          >
             새 아이템
           </button>
           <div className="grid gap-2 mt-3">
@@ -181,7 +194,9 @@ export function AdminCosmetics() {
                   key={i.id}
                   aria-pressed={i.id === form.id}
                   disabled={busy}
-                  onClick={() => {if(draft.confirm())setForm(i);}}
+                  onClick={() => {
+                    if (draft.confirm()) setForm(i);
+                  }}
                 >
                   {i.name} · {labels[i.type]}
                   {i.isActive ? "" : " · 비활성"}
@@ -234,7 +249,15 @@ export function AdminCosmetics() {
                   aria-label="적용 대상"
                   value={form.targetId ?? ""}
                   onChange={(e) =>
-                    setForm({ ...form, targetId: e.target.value || null })
+                    setForm({
+                      ...form,
+                      targetId: e.target.value || null,
+                      imageAssets: Object.fromEntries(
+                        Object.entries(form.imageAssets).filter(
+                          ([key]) => !key.startsWith("token:"),
+                        ),
+                      ),
+                    })
                   }
                 >
                   <option value="">대상 선택</option>
@@ -282,22 +305,35 @@ export function AdminCosmetics() {
             />
             활성화
           </label>
+          {form.type === "CHAMPION_SKIN" && (
+            <p className="text-sm text-amber-200">
+              챔피언 스킨을 장착하면 세트의 토큰 외형도 자동 적용돼.{" "}
+              {tokenId
+                ? "아래에 토큰 일러스트를 등록해 줘."
+                : "토큰 외형을 등록하려면 챔피언 관리에서 챔피언 토큰을 먼저 연결해 줘."}
+            </p>
+          )}
           <div className="cosmetics-assets">
             {(form.type === "CHAMPION_SKIN"
-              ? ["art", "portrait", "intro", "awakened"]
+              ? [
+                  "art",
+                  "portrait",
+                  "intro",
+                  "awakened",
+                  ...(tokenId ? [`token:${tokenId}`] : []),
+                ]
               : ["art"]
             ).map((raw) => {
               const key = raw as keyof CosmeticAssets;
               return (
                 <label key={key}>
-                  {
-                    {
-                      art: "기본 일러스트",
-                      portrait: "전투 초상화",
-                      intro: "VS 인트로",
-                      awakened: "각성 초상화",
-                    }[key]
-                  }
+                  {{
+                    art: "기본 일러스트",
+                    portrait: "전투 초상화",
+                    intro: "VS 인트로",
+                    awakened: "각성 초상화",
+                  }[key as "art" | "portrait" | "intro" | "awakened"] ??
+                    "세트 포함 챔피언 토큰 일러스트"}
                   {form.type === "CHAMPION_SKIN" ? " (선택)" : ""}
                   <input
                     type="file"

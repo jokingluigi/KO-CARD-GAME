@@ -1,3 +1,4 @@
+import type { CosmeticItem } from "@workspace/cosmetics";
 export type CollectionCard = {
   keywords?: import('../game/effects/types').CardKeyword[];
   effectConfig?: Record<string, unknown> | null;
@@ -85,6 +86,7 @@ export type PackDetailChampion = Pick<CollectionChampion, "id" | "name" | "descr
   individualProbability: number;
 };
 export type PackDetailSkin = {
+  cosmetic?: CosmeticItem;
   id: string;
   name: string;
   description: string;
@@ -152,7 +154,10 @@ export const disenchantCard = (cardDefinitionId: string, quantity = 1, keepPlaya
 });
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {
-  rewardType: "NORMAL_CARD" | "EPIC_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN";
+  rewardType: "NORMAL_CARD" | "EPIC_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN" | "CHAMPION_SKIN";
+  originalGranted?: boolean;
+  cosmeticId?: string;
+  cosmetic?: CosmeticItem;
   cardDefinitionId?: string;
   championDefinitionId?: string;
   card?: CollectionCard;
@@ -253,7 +258,7 @@ export function getBulkOpenIntention(
 export function aggregatePackRewards(rewards: PackReward[]): AggregatedPackReward[] {
   const aggregated = new Map<string, AggregatedPackReward>();
   for (const [index, reward] of rewards.entries()) {
-    const definitionId = reward.rewardType === "SKIN"
+    const definitionId = reward.rewardType === "CHAMPION_SKIN" ? reward.cosmeticId ?? `${reward.rewardType}-${index}` : reward.rewardType === "SKIN"
       ? reward.skinDefinitionId ?? reward.skin?.id ?? `${reward.rewardType}-${index}`
       : reward.rewardType === "CHAMPION_UNLOCK"
         ? reward.championDefinitionId ?? reward.champion?.id ?? `${reward.rewardType}-${index}`

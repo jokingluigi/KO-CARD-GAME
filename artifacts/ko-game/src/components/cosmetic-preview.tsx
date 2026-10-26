@@ -9,11 +9,20 @@ export function CosmeticPreview({
   item,
   cards = [],
   champions = [],
+  compact = false,
 }: {
   item: CosmeticItem;
   cards?: CosmeticCardPreview[];
   champions?: CosmeticChampionPreview[];
+  compact?: boolean;
 }) {
+  const tokenAssets =
+    item.type === "CHAMPION_SKIN"
+      ? Object.entries(item.imageAssets).filter(([key]) =>
+          key.startsWith("token:"),
+        )
+      : [];
+  const paired = compact && tokenAssets.length > 0;
   const card = cards.find((c) => c.id === item.targetId);
   const target =
     item.type === "CARD_SKIN"
@@ -36,25 +45,44 @@ export function CosmeticPreview({
       />
     );
   return (
-    <div
-      className={
-        item.type === "CARD_BACK"
-          ? "mx-auto aspect-[5/7] w-32 border border-amber-700"
-          : "relative h-52 w-full"
-      }
-    >
-      <CardArtwork
-        src={
-          item.imageAssets.art ??
-          item.imageAssets.portrait ??
-          item.imageAssets.intro ??
-          item.imageAssets.awakened
+    <div className={paired ? "grid grid-cols-2 items-start gap-2" : undefined}>
+      <div
+        className={
+          item.type === "CARD_BACK"
+            ? "mx-auto aspect-[5/7] w-32 border border-amber-700"
+            : paired
+              ? "relative h-32 w-full"
+              : "relative h-52 w-full"
         }
-        fallbackSrc={target?.imageUrl}
-        alt={item.name}
-        className="h-full w-full"
-        imageDisplayMode="CONTAIN"
-      />
+      >
+        <CardArtwork
+          src={
+            item.imageAssets.art ??
+            item.imageAssets.portrait ??
+            item.imageAssets.intro ??
+            item.imageAssets.awakened
+          }
+          fallbackSrc={target?.imageUrl}
+          alt={item.name}
+          className="h-full w-full"
+          imageDisplayMode="CONTAIN"
+        />
+      </div>
+      {tokenAssets.map(([key, url]) => (
+        <div key={key} className={paired ? "text-center" : "mt-2 text-center"}>
+          <CardArtwork
+            src={url}
+            alt="세트 포함 토큰 스킨"
+            className={paired ? "mx-auto h-32 w-full" : "mx-auto h-40 w-28"}
+            imageDisplayMode="CONTAIN"
+          />
+          <p className="mt-1 text-xs text-amber-200">
+            {paired
+              ? "토큰 스킨 포함"
+              : "챔피언 토큰 스킨 포함 · 장착 시 자동 적용"}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

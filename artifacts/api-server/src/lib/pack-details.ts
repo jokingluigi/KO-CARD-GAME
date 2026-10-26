@@ -1,3 +1,4 @@
+import { championSkinPool } from "./champion-skin-pool";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   cardsTable,
@@ -31,7 +32,7 @@ export async function getPackDetails(
   pack: PackDefinitionRecord,
   executor: PackDetailExecutor = db,
 ) {
-  const [normalCards, epicCards, legendaryCards, champions, skins] = await Promise.all([
+  const [normalCards, epicCards, legendaryCards, champions, skins, championSkins] = await Promise.all([
     pack.normalCardPool.length
       ? executor.select().from(cardsTable).where(and(
         inArray(cardsTable.id, pack.normalCardPool),
@@ -79,14 +80,16 @@ export async function getPackDetails(
           eq(cardsTable.isChampionToken, false),
         ))
       : [],
+    championSkinPool(pack.skinPool, executor),
   ]);
 
+  const skinCount = skins.length + championSkins.length;
   const invalidReasons = [
     pack.normalRate > 0 && normalCards.length === 0 ? "일반 카드 풀이 비어 있습니다." : null,
     pack.epicRate > 0 && epicCards.length === 0 ? "에픽 카드 풀이 비어 있습니다." : null,
     pack.legendaryRate > 0 && legendaryCards.length === 0 ? "레전더리 카드 풀이 비어 있습니다." : null,
     pack.championRate > 0 && champions.length === 0 ? "Champion 풀이 비어 있습니다." : null,
-    pack.skinChance > 0 && skins.length === 0 ? "스킨 풀이 비어 있습니다." : null,
+    pack.skinChance > 0 && skinCount === 0 ? "스킨 풀이 비어 있습니다." : null,
   ].filter((reason): reason is string => Boolean(reason));
 
   return {
@@ -118,7 +121,7 @@ export async function getPackDetails(
       abilityText: champion.abilityText,
       individualProbability: champions.length ? pack.championRate / champions.length : 0,
     })),
-    skins: skins.map(({ skin, card }) => ({
+    skins: [...skins.map(({ skin, card }) => ({
       id: skin.id,
       name: skin.name,
       description: skin.description,
@@ -128,7 +131,13 @@ export async function getPackDetails(
       imagePositionX: skin.imagePositionX,
       imagePositionY: skin.imagePositionY,
       card: cardView(card),
-      individualProbability: skins.length ? pack.skinChance / skins.length : 0,
-    })),
+      individualProbability: skinCount ? pack.skinChance / skinCount : 0,
+    })), ...championSkins.map(({ cosmetic, champion }) => ({
+      id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, description: cosmetic.description,
+      imageUrl: cosmetic.imageAssets.portrait ?? cosmetic.imageAssets.art ?? cosmetic.imageAssets.intro ?? cosmetic.imageAssets.awakened ?? null,
+      imageDisplayMode: "CONTAIN", imageScale: 1, imagePositionX: 50, imagePositionY: 50,
+      card: { id: champion.id, name: champion.name, cardType: "CHAMPION", cost: 0, attack: 0, health: champion.maxHealth, text: champion.abilityText, rarity: "CHAMPION", imageUrl: champion.imageUrl, imageDisplayMode: "CONTAIN", imageScale: 1, imagePositionX: 50, imagePositionY: 50 },
+      individualProbability: skinCount ? pack.skinChance / skinCount : 0, cosmetic,
+    }))],
   };
 }
