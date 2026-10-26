@@ -1181,6 +1181,35 @@ test("unified catalog preserves pack IDs/owners and supports legacy edit, grant,
   assert.ok(!(await api("/cosmetics","player-b")).body.owned.some((o:any)=>o.item.id===cosmeticId));
 });
 
+test("skin display settings round-trip through modern/legacy catalog and owned loadouts, with strict bounds",async()=>{
+ const {cosmeticAssetDisplay,cosmeticImageSettings}=await import("../../cosmetics/src/index");
+ const display={imageDisplayMode:"CONTAIN",imageScale:1.35,imagePositionX:24,imagePositionY:72};
+ const legacy=registered.CARD_SKIN;
+ let patched=await api(prefix+"/items/"+legacy.id,"admin","PATCH",{...legacy,imageAssets:{...legacy.imageAssets,__display:JSON.stringify({art:display})}});
+ assert.equal(patched.status,200,JSON.stringify(patched.body));
+ registered.CARD_SKIN=patched.body.item;
+ const [raw]=await database.select().from(schema.cardSkinDefinitionsTable).where(eq(schema.cardSkinDefinitionsTable.id,legacy.legacySkinId));
+ assert.equal(raw!.imageScale,1.35);assert.equal(raw!.imagePositionX,24);assert.equal(raw!.imagePositionY,72);
+ await equipCosmetic("player-a","card:"+cards[0]!.id,legacy.id);
+ assert.deepEqual(cosmeticImageSettings(await loadCosmetics("player-a"),"CARD_SKIN",cards[0]!.id,"art"),display);
+ const champ=registered.CHAMPION_SKIN;
+ const assets={...champ.imageAssets,__display:JSON.stringify({art:display,awakened:{...display,imageScale:1.1},"token:set-token":{...display,imageScale:.8}})};
+ patched=await api(prefix+"/items/"+champ.id,"admin","PATCH",{...champ,imageAssets:assets});
+ assert.equal(patched.status,200,JSON.stringify(patched.body));registered.CHAMPION_SKIN=patched.body.item;
+ await api(prefix+"/users/player-a/grants","admin","POST",{cosmeticId:champ.id,action:"GRANT"});
+ await equipCosmetic("player-a","champion:cosmetic-hero",champ.id);
+ const loadout=await loadCosmetics("player-a");
+ assert.deepEqual(cosmeticImageSettings(loadout,"CHAMPION_SKIN","cosmetic-hero","intro"),display);
+ assert.equal(cosmeticImageSettings(loadout,"CHAMPION_SKIN","cosmetic-hero","awakened")!.imageScale,1.1);
+ assert.equal(cosmeticImageSettings(loadout,"CARD_SKIN","set-token","art")!.imageScale,.8);
+ assert.equal(cosmeticAssetDisplay((await api(prefix)).body.items.find((i:any)=>i.id===champ.id).imageAssets,"art")!.imagePositionY,72);
+ for(const value of ['not-json',JSON.stringify({art:{...display,imageScale:9}}),JSON.stringify({art:{...display,imagePositionX:-1}}),JSON.stringify({art:{...display,imageDisplayMode:"INVALID"}})]) {
+   assert.equal((await api(prefix+"/items/"+champ.id,"admin","PATCH",{...champ,imageAssets:{...champ.imageAssets,__display:value}})).status,400);
+ }
+ const owned=(await api("/cosmetics","player-a")).body.owned.find((o:any)=>o.item.id===champ.id);
+ assert.deepEqual(cosmeticAssetDisplay(owned.item.imageAssets,"art"),display);
+});
+
 test("image emote throttling has no per-turn quota and replaces the previous image per player",async()=>{
  const {CosmeticEmoteChannel}=await import('../../../artifacts/api-server/src/lib/cosmetic-emotes');
  const channel=new CosmeticEmoteChannel(),loadout=await loadCosmetics('player-a');

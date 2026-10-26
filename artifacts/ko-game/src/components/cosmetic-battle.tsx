@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   cosmeticImage,
+  cosmeticImageSettings,
   type MatchCosmetics,
   type CosmeticLoadout,
   type CosmeticAssets,
@@ -26,6 +27,7 @@ export function useCosmeticImage(
 ) {
   const loadouts = useContext(BattleCosmeticsContext);
   return {
+    display: id && ownerId ? cosmeticImageSettings(loadouts[ownerId],type,id,context) : undefined,
     src:
       id && ownerId
         ? cosmeticImage(loadouts[ownerId], type, id, context, original)

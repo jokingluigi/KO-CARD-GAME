@@ -7,7 +7,10 @@ export const COSMETIC_TYPES = [
 ] as const;
 export type CosmeticType = (typeof COSMETIC_TYPES)[number];
 export type CosmeticAssets = Partial<
-  Record<"art" | "portrait" | "intro" | "awakened" | `token:${string}`, string>
+  Record<
+    "art" | "portrait" | "intro" | "awakened" | "__display" | `token:${string}`,
+    string
+  >
 >;
 export type CosmeticItem = {
   id: string;
@@ -97,4 +100,96 @@ export function validImageUrl(value: unknown): value is string {
   } catch {
     return false;
   }
+}
+
+/** Stored inside the existing JSON asset map; URLs remain unchanged and cacheable. */
+export type CosmeticDisplaySettings = {
+  imageDisplayMode: "CONTAIN" | "COVER" | "CUSTOM";
+  imageScale: number;
+  imagePositionX: number;
+  imagePositionY: number;
+};
+export function parseCosmeticDisplay(
+  value: unknown,
+): Record<string, CosmeticDisplaySettings> | null {
+  if (value === undefined) return {};
+  if (typeof value !== "string" || value.length > 8192) return null;
+  try {
+    const data: unknown = JSON.parse(value);
+    if (
+      !data ||
+      typeof data !== "object" ||
+      Array.isArray(data) ||
+      Object.keys(data).length > 8
+    )
+      return null;
+    const result: Record<string, CosmeticDisplaySettings> = {};
+    for (const [slot, raw] of Object.entries(data)) {
+      if (
+        !["art", "portrait", "intro", "awakened"].includes(slot) &&
+        !/^token:[a-zA-Z0-9_-]{1,256}$/.test(slot)
+      )
+        return null;
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+      const s = raw as CosmeticDisplaySettings;
+      if (
+        !["CONTAIN", "COVER", "CUSTOM"].includes(s.imageDisplayMode) ||
+        !Number.isFinite(s.imageScale) ||
+        s.imageScale < 0.5 ||
+        s.imageScale > 2 ||
+        !Number.isFinite(s.imagePositionX) ||
+        s.imagePositionX < 0 ||
+        s.imagePositionX > 100 ||
+        !Number.isFinite(s.imagePositionY) ||
+        s.imagePositionY < 0 ||
+        s.imagePositionY > 100
+      )
+        return null;
+      result[slot] = {
+        imageDisplayMode: s.imageDisplayMode,
+        imageScale: s.imageScale,
+        imagePositionX: s.imagePositionX,
+        imagePositionY: s.imagePositionY,
+      };
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}
+export function cosmeticAssetDisplay(
+  assets: CosmeticAssets | undefined,
+  context: string,
+) {
+  return parseCosmeticDisplay(assets?.__display)?.[context];
+}
+export function cosmeticImageSettings(
+  loadout: CosmeticLoadout | undefined,
+  type: "CHAMPION_SKIN" | "CARD_SKIN",
+  id: string,
+  context: keyof CosmeticAssets,
+) {
+  if (type === "CARD_SKIN" && context === "art") {
+    for (const [slot, skin] of Object.entries(loadout?.skins ?? {}))
+      if (
+        skin.type === "CHAMPION_SKIN" &&
+        skin.targetId &&
+        slot === skinKey("CHAMPION_SKIN", skin.targetId) &&
+        validImageUrl(skin.imageAssets[`token:${id}`])
+      )
+        return cosmeticAssetDisplay(skin.imageAssets, `token:${id}`);
+  }
+  const item = loadout?.skins?.[skinKey(type, id)];
+  if (item?.type !== type || item.targetId !== id) return undefined;
+  const slot =
+    type === "CHAMPION_SKIN" && ["art", "portrait", "intro"].includes(context)
+      ? item.imageAssets.art
+        ? "art"
+        : item.imageAssets.portrait
+          ? "portrait"
+          : "intro"
+      : context;
+  return item.imageAssets[slot]
+    ? cosmeticAssetDisplay(item.imageAssets, slot)
+    : undefined;
 }

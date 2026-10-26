@@ -1,7 +1,12 @@
+import { CardArtwork } from "./card-artwork";
+import { ImageDisplaySlider } from "./image-display-slider";
 import { useEffect, useState } from "react";
 import {
   COSMETIC_TYPES,
   championSkinArtwork,
+  cosmeticAssetDisplay,
+  parseCosmeticDisplay,
+  type CosmeticDisplaySettings,
   type CosmeticItem,
   type CosmeticAssets,
   type CosmeticType,
@@ -400,7 +405,7 @@ export function AdminCosmetics() {
                   ? championSkinArtwork(form.imageAssets)
                   : form.imageAssets[key];
               return (
-                <label key={key}>
+                <div key={key} className="space-y-3">
                   {{
                     art:
                       form.type === "CHAMPION_SKIN"
@@ -425,11 +430,40 @@ export function AdminCosmetics() {
                   />
                   {imageUrl && (
                     <>
-                      <img
-                        src={imageUrl}
-                        alt={`${key} 미리보기`}
-                        className="h-36 w-full object-contain"
-                      />
+                      {form.type === "CARD_SKIN" ||
+                      form.type === "CHAMPION_SKIN" ? (
+                        <SkinImageEditor
+                          slot={key}
+                          src={imageUrl}
+                          assets={form.imageAssets}
+                          champion={
+                            form.type === "CHAMPION_SKIN" &&
+                            !key.startsWith("token:")
+                          }
+                          disabled={busy}
+                          onChange={(display) =>
+                            setForm((old) => ({
+                              ...old,
+                              imageAssets: {
+                                ...old.imageAssets,
+                                [key]: imageUrl,
+                                __display: JSON.stringify({
+                                  ...parseCosmeticDisplay(
+                                    old.imageAssets.__display,
+                                  ),
+                                  [key]: display,
+                                }),
+                              },
+                            }))
+                          }
+                        />
+                      ) : (
+                        <img
+                          src={imageUrl}
+                          alt={`${key} 미리보기`}
+                          className="h-36 w-full object-contain"
+                        />
+                      )}
                       <button
                         disabled={busy}
                         onClick={() => {
@@ -446,7 +480,7 @@ export function AdminCosmetics() {
                       </button>
                     </>
                   )}
-                </label>
+                </div>
               );
             })}
           </div>
@@ -540,5 +574,109 @@ export function AdminCosmetics() {
         </section>
       )}
     </section>
+  );
+}
+
+function SkinImageEditor({
+  slot,
+  src,
+  assets,
+  champion,
+  disabled,
+  onChange,
+}: {
+  slot: string;
+  src: string;
+  assets: CosmeticAssets;
+  champion: boolean;
+  disabled: boolean;
+  onChange: (settings: CosmeticDisplaySettings) => void;
+}) {
+  const settings = cosmeticAssetDisplay(assets, slot) ?? {
+    imageDisplayMode: champion ? "CONTAIN" : "COVER",
+    imageScale: 1,
+    imagePositionX: 50,
+    imagePositionY: 50,
+  };
+  const update = (patch: Partial<CosmeticDisplaySettings>) =>
+    onChange({ ...settings, ...patch });
+  return (
+    <fieldset
+      disabled={disabled}
+      className="space-y-3 border border-neutral-800 p-3"
+      aria-label={`${slot} 이미지 조정`}
+    >
+      <legend className="text-xs text-amber-200">이미지 위치 · 크기</legend>
+      <CardArtwork
+        src={src}
+        alt={`${slot} 미리보기`}
+        className="h-52 w-full"
+        {...settings}
+        interactive={!disabled}
+        showHint
+        onPositionChange={(position) => update(position)}
+      />
+      <div className="flex flex-wrap gap-2">
+        {(["CONTAIN", "COVER", "CUSTOM"] as const).map((mode) => (
+          <button
+            type="button"
+            key={mode}
+            aria-pressed={settings.imageDisplayMode === mode}
+            onClick={() => update({ imageDisplayMode: mode })}
+          >
+            {
+              {
+                CONTAIN: "전체 보기",
+                COVER: "영역 채우기",
+                CUSTOM: "직접 조정",
+              }[mode]
+            }
+          </button>
+        ))}
+      </div>
+      <ImageDisplaySlider
+        label="확대/축소"
+        value={settings.imageScale}
+        min={0.5}
+        max={2}
+        step={0.01}
+        displayValue={`${Math.round(settings.imageScale * 100)}%`}
+        onChange={(imageScale) => update({ imageScale })}
+        testId={`${slot}-skin-scale`}
+      />
+      <ImageDisplaySlider
+        label="좌우 위치"
+        value={settings.imagePositionX}
+        min={0}
+        max={100}
+        step={1}
+        displayValue={`${Math.round(settings.imagePositionX)}%`}
+        onChange={(imagePositionX) => update({ imagePositionX })}
+        testId={`${slot}-skin-x`}
+      />
+      <ImageDisplaySlider
+        label="상하 위치"
+        value={settings.imagePositionY}
+        min={0}
+        max={100}
+        step={1}
+        displayValue={`${Math.round(settings.imagePositionY)}%`}
+        onChange={(imagePositionY) => update({ imagePositionY })}
+        testId={`${slot}-skin-y`}
+      />
+      <button
+        type="button"
+        onClick={() =>
+          onChange({
+            imageDisplayMode: champion ? "CONTAIN" : "COVER",
+            imageScale: 1,
+            imagePositionX: 50,
+            imagePositionY: 50,
+          })
+        }
+      >
+        위치·크기 초기화
+      </button>
+    </fieldset>
   );
 }

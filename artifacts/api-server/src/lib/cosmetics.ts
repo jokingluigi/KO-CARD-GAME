@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import {
   emptyCosmetics,
+  parseCosmeticDisplay,
   skinKey,
   validImageUrl,
   type CosmeticItem,
@@ -70,13 +71,14 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
     )
       continue;
     const imageAssets = Object.fromEntries(
-      Object.entries(item.imageAssets).filter(
-        ([key, url]) =>
-          (["art", "portrait", "intro", "awakened"].includes(key) ||
-            (item.type === "CHAMPION_SKIN" &&
-              tokenId &&
-              key === `token:${tokenId}`)) &&
-          validImageUrl(url),
+      Object.entries(item.imageAssets).filter(([key, url]) =>
+        key === "__display"
+          ? !!parseCosmeticDisplay(url)
+          : (["art", "portrait", "intro", "awakened"].includes(key) ||
+              (item.type === "CHAMPION_SKIN" &&
+                tokenId &&
+                key === `token:${tokenId}`)) &&
+            validImageUrl(url),
       ),
     );
     item.imageAssets = imageAssets;

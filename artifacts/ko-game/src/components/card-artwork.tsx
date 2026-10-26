@@ -6,6 +6,7 @@ import {
 
 export function CardArtwork({
   src,
+  displayOverride,
   fallbackSrc,
   alt,
   className = "",
@@ -19,6 +20,7 @@ export function CardArtwork({
   loading = "eager",
 }: {
   src?: string | null;
+  displayOverride?: Partial<ImageDisplaySettings>;
   fallbackSrc?: string | null;
   alt: string;
   className?: string;
@@ -46,6 +48,7 @@ export function CardArtwork({
     imageScale,
     imagePositionX,
     imagePositionY,
+    ...(!failed ? displayOverride : {}),
   });
 
   useEffect(() => {setFailed(false);setFallbackFailed(false);}, [src,fallbackSrc]);

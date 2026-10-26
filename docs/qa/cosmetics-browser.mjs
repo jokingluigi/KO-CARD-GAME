@@ -409,6 +409,8 @@ try {
           img.src.includes("original.png")
         );
       });
+      assert.equal(await a.page.locator(".ko-player-champion img").evaluate(e=>e.style.transform),"scale(1)");
+      assert.equal(await a.page.locator(".ko-player-champion img").evaluate(e=>e.style.objectPosition),"50% 50%");
       assert.equal(await a.page.locator(".cosmetic-card-back").count(), 0);
       assert.ok(
         (await a.page

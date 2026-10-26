@@ -120,7 +120,7 @@ for (const [name, width, height, reduced] of [
   const pulse=await page.evaluate(()=>{const el=document.createElement('div');el.className='presentation-card-pulse';document.body.append(el);const name=getComputedStyle(el).animationName;el.remove();return name;});
   if(pulse!=='none') failures.push(`${name}:card still flashes ${pulse}`);
   await page.getByTestId('reward').click();
-  await page.getByText('+200 크레딧 지급',{exact:true}).waitFor();
+  await page.getByTestId('match-reward').filter({hasText:'+200'}).waitFor();
   if(await page.getByRole('alert').count()) failures.push(`${name}:paid credits incorrectly shown as reward failure`);
   await page.getByTestId('button-return-to-main-menu').click();
   await page.getByTestId('reward-error').click();

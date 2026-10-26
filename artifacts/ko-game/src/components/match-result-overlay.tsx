@@ -1,15 +1,28 @@
-import { buildMatchRecap, type MatchRecap } from '../../../../lib/game-engine/src/match-recap';
-import { MatchRecapPanel } from './match-recap-panel';
-import { useEffect } from 'react';
+import {
+  buildMatchRecap,
+  type MatchRecap,
+} from "../../../../lib/game-engine/src/match-recap";
+import { MatchRecapPanel } from "./match-recap-panel";
+import { useEffect, useRef, useState } from "react";
+import { CardArtwork } from "./card-artwork";
+import { questPortrait } from "./quest-media";
+import {
+  cosmeticImage,
+  cosmeticImageSettings,
+  type MatchCosmetics,
+} from "@workspace/cosmetics";
+import { optionalCosmetics } from "@/lib/cosmetics-client";
+import { matchTurnNumber } from "../../../../lib/game-engine/src/rules";
+import "./match-result.css";
 import { getCardDefinition, type GameState } from "@/game";
-import { matchEndReason, matchSummary } from '@/lib/match-summary';
-import { audioManager } from '@/audio/audio-manager';
-import type { GameMediaCatalog } from '@/game/media';
-import './cinematic-presentation.css';
-import { prefersReducedMotion } from './presentation-config';
+import { matchEndReason, matchSummary } from "@/lib/match-summary";
+import { audioManager } from "@/audio/audio-manager";
+import type { GameMediaCatalog } from "@/game/media";
+import "./cinematic-presentation.css";
 
 export function MatchResultOverlay({
   state,
+  cosmetics: providedCosmetics,
   onReturnToMainMenu,
   reward,
   rewardStatus,
@@ -27,9 +40,10 @@ export function MatchResultOverlay({
   mediaCatalog?: GameMediaCatalog;
   opponentNickname?: string;
   state: GameState;
+  cosmetics?: MatchCosmetics;
   onReturnToMainMenu: () => void;
   reward?: { amount: number; sourceType: string } | null;
-  rewardStatus?: 'pending' | 'success' | 'error';
+  rewardStatus?: "pending" | "success" | "error";
   rewardError?: string | null;
   onRetryReward?: () => void;
   questError?: string | null;
@@ -38,93 +52,303 @@ export function MatchResultOverlay({
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
   const isDefeat = state.loserId === player?.id;
-  const resultMusic = mediaCatalog?.resultMusic?.[isVictory ? 'VICTORY_BGM' : 'DEFEAT_BGM'];
+  const resultMusic =
+    mediaCatalog?.resultMusic?.[isVictory ? "VICTORY_BGM" : "DEFEAT_BGM"];
   useEffect(() => {
-    if (state.status !== 'FINISHED' || (!isVictory && !isDefeat) || !resultMusic) return;
+    if (
+      state.status !== "FINISHED" ||
+      (!isVictory && !isDefeat) ||
+      !resultMusic
+    )
+      return;
     // Run after the parents' normal battle-audio shutdown effects.
-    const timer = window.setTimeout(() => audioManager.playResultMusic(resultMusic.assetUrl, resultMusic.volume), 0);
-    return () => { window.clearTimeout(timer); audioManager.stopResultMusic(); };
-  }, [state.gameId, state.status, isVictory, isDefeat, resultMusic?.id, resultMusic?.assetUrl, resultMusic?.volume]);
+    const timer = window.setTimeout(
+      () =>
+        audioManager.playResultMusic(resultMusic.assetUrl, resultMusic.volume),
+      0,
+    );
+    return () => {
+      window.clearTimeout(timer);
+      audioManager.stopResultMusic();
+    };
+  }, [
+    state.gameId,
+    state.status,
+    isVictory,
+    isDefeat,
+    resultMusic?.id,
+    resultMusic?.assetUrl,
+    resultMusic?.volume,
+  ]);
   const title = isVictory ? "승리" : isDefeat ? "패배" : "매치 종료";
-  const subtitle = isVictory ? "VICTORY" : isDefeat ? "DEFEAT" : "MATCH COMPLETE";
+  const subtitle = isVictory
+    ? "VICTORY"
+    : isDefeat
+      ? "DEFEAT"
+      : "MATCH COMPLETE";
   const reason = matchEndReason(state, player?.id ?? "");
   const [ownSummary, opponentSummary] = matchSummary(state);
-  const winner = state.players.find((candidate) => candidate.id === state.winnerId);
+  const winner = state.players.find(
+    (candidate) => candidate.id === state.winnerId,
+  );
   const resolvedRecap = recap ?? buildMatchRecap(state);
-  const finisher = resolvedRecap.highlights.find(h => h.kind === 'FINISHER');
-  const finishingHit = finisher ? state.events[finisher.eventIndex] : [...state.events].reverse().find(event => event.type === "DAMAGE_DEALT" && event.target?.type === "PLAYER" && event.target.playerId === state.loserId && event.reason !== "FATIGUE");
-  const finishingSourceId = finishingHit?.source?.type === 'CARD' ? finishingHit.source.cardInstanceId : null;
+  const finisher = resolvedRecap.highlights.find((h) => h.kind === "FINISHER");
+  const finishingHit = finisher
+    ? state.events[finisher.eventIndex]
+    : [...state.events]
+        .reverse()
+        .find(
+          (event) =>
+            event.type === "DAMAGE_DEALT" &&
+            event.target?.type === "PLAYER" &&
+            event.target.playerId === state.loserId &&
+            event.reason !== "FATIGUE",
+        );
+  const finishingSourceId =
+    finishingHit?.source?.type === "CARD"
+      ? finishingHit.source.cardInstanceId
+      : null;
   const finishingCard = finishingSourceId
-    ? state.players.flatMap((participant) => [...participant.board, ...participant.graveyard, ...participant.removedFromGame, ...participant.hand])
-      .find((card) => card?.instanceId === finishingSourceId)
+    ? state.players
+        .flatMap((participant) => [
+          ...participant.board,
+          ...participant.graveyard,
+          ...participant.removedFromGame,
+          ...participant.hand,
+        ])
+        .find((card) => card?.instanceId === finishingSourceId)
     : null;
-  const finishingName = finishingCard &&
-    (state.cardPool?.find((card) => card.id === finishingCard.definitionId) ?? getCardDefinition(finishingCard.definitionId))?.name;
-  const accentClass = isVictory
-    ? "border-amber-300/70 bg-amber-950/80 text-amber-100 shadow-[0_0_70px_rgba(234,179,8,0.28)]"
-    : isDefeat
-      ? "border-red-400/70 bg-red-950/80 text-red-100 shadow-[0_0_70px_rgba(239,68,68,0.24)]"
-      : "border-neutral-500/70 bg-neutral-950/90 text-neutral-100";
+  const finishingName =
+    finishingCard &&
+    (
+      state.cardPool?.find((card) => card.id === finishingCard.definitionId) ??
+      getCardDefinition(finishingCard.definitionId)
+    )?.name;
+  const [localCosmetics, setLocalCosmetics] = useState<MatchCosmetics>({});
+  useEffect(() => {
+    if (providedCosmetics !== undefined || !player) return;
+    let cancelled = false;
+    void optionalCosmetics().then((loadout) => {
+      if (!cancelled) setLocalCosmetics({ [player.id]: loadout });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.gameId, providedCosmetics === undefined, player?.id]);
+  const cosmetics = providedCosmetics ?? localCosmetics;
+  const champion = player?.champion;
+  const originalPortrait = questPortrait(champion);
+  const portrait = cosmeticImage(
+    cosmetics[player?.id ?? ""],
+    "CHAMPION_SKIN",
+    champion?.id ?? "",
+    champion?.questCompleted ? "awakened" : "portrait",
+    originalPortrait,
+  );
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    root.current?.focus({ preventScroll: true });
+    return () => {
+      if (previous instanceof HTMLElement && previous.isConnected)
+        previous.focus({ preventScroll: true });
+    };
+  }, [state.gameId]);
 
   return (
     <div
+      ref={root}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="매치 결과"
       data-testid="match-result-overlay"
-      className="match-result-enter fixed inset-0 z-[300] flex min-h-screen items-center justify-center bg-black/90 px-4 py-5 backdrop-blur-sm"
+      className="ko-result-overlay"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const nodes = Array.from(
+          root.current?.querySelectorAll<HTMLElement>(
+            'button:not(:disabled), summary, [tabindex="0"]',
+          ) ?? [],
+        ).filter((node) => node.getClientRects().length > 0);
+        const first = nodes[0],
+          last = nodes[nodes.length - 1];
+        if (!first) return;
+        if (
+          event.shiftKey &&
+          (document.activeElement === first ||
+            document.activeElement === root.current)
+        ) {
+          event.preventDefault();
+          last?.focus();
+        } else if (
+          !event.shiftKey &&
+          (document.activeElement === last ||
+            document.activeElement === root.current)
+        ) {
+          event.preventDefault();
+          first.focus();
+        }
+      }}
     >
-      <section data-result={isVictory ? "victory" : isDefeat ? "defeat" : "complete"} className={`ko-result-sheet max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 text-center md:p-10 ${accentClass}`}>
-        <p className="font-display text-[10px] font-bold tracking-[0.5em] text-primary md:text-xs">KO MATCH RESULT</p>
-        <h1 className="mt-6 text-5xl font-black tracking-tight md:text-7xl">{title}</h1>
-        <p className="mt-3 font-display text-xl font-black tracking-[0.35em] md:text-2xl">{subtitle}</p>
-        <p className="mt-6 text-sm leading-6 text-neutral-300">
-          {reason}
-        </p>
-        {finishingHit && <p className="mt-3 text-sm font-black text-amber-200">
-          마지막 일격 · {finisher?.sourceName ?? finishingName ?? winner?.champion?.name ?? '효과'} · {finishingHit.amount ?? 0} 피해
-        </p>}
-        {ownSummary && opponentSummary && (
-          <section className="mt-6 rounded-xl border border-white/15 bg-black/35 p-4 text-left" aria-label="경기 기록">
-            <h2 className="text-xs font-black tracking-widest text-amber-200">이번 경기 기록</h2>
-            <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2 text-xs sm:text-sm">
-              <span className="text-neutral-400">기록</span>
-              <span className="text-center font-bold text-blue-200">나</span>
-              <span className="break-words text-center font-bold text-red-200">{opponentNickname || '상대'}</span>
-              <span className="border-t border-white/10 pt-2">사용한 카드</span>
-              <span className="border-t border-white/10 pt-2 text-center font-bold">{ownSummary.cardsPlayed}</span>
-              <span className="border-t border-white/10 pt-2 text-center font-bold">{opponentSummary.cardsPlayed}</span>
-              <span>준 피해</span>
-              <span className="text-center font-bold">{ownSummary.damageDealt}</span>
-              <span className="text-center font-bold">{opponentSummary.damageDealt}</span>
-              <span>챔피언 퀘스트</span>
-              {[ownSummary, opponentSummary].map((summary) => <span key={summary.playerId} className="text-center text-[11px] font-bold sm:text-xs">
-                {summary.questRequired === null ? '없음' : summary.questCompleted ? '완료' : `${summary.questProgress}/${summary.questRequired}`}
-              </span>)}
+      <article
+        data-result={isVictory ? "victory" : isDefeat ? "defeat" : "complete"}
+        className="ko-result-poster"
+      >
+        <div className="ko-result-scroll">
+          <header className="ko-result-hero">
+            <div className="ko-result-verdict">
+              <p className="ko-result-eyebrow">
+                <span>KO / FINAL BELL</span>
+                <span>{matchTurnNumber(state.turn)}턴 종료</span>
+              </p>
+              <h1>
+                <span className="ko-result-english">{subtitle}</span>
+                <span className="ko-result-korean">{title}</span>
+              </h1>
+              <p className="ko-result-reason">{reason}</p>
+              {champion && (
+                <p className="ko-result-champion-name">
+                  {champion.name}
+                  <span>
+                    {champion.questCompleted ? "각성" : "MY CHAMPION"}
+                  </span>
+                </p>
+              )}
             </div>
-          </section>
-        )}
-        <MatchRecapPanel recap={resolvedRecap} viewerId={player?.id ?? ""} />
-        {reward && (
-          <p className="mt-5 rounded border border-amber-300/30 bg-black/30 px-4 py-3 text-sm font-black text-amber-200">
-            +{reward.amount.toLocaleString()} 크레딧 지급
-          </p>
-        )}
-        {questError && <div role="alert" data-testid="quest-progress-error" className="mt-5 border border-amber-800 p-3 text-sm text-amber-200"><p>일반 퀘스트 진행도를 저장하지 못했습니다. {questError}</p>{onRetryQuest && <button type="button" onClick={onRetryQuest} className="mt-2 min-h-10 border border-amber-700 px-3 font-bold">퀘스트 다시 저장</button>}</div>}
-        {rewardStatus === 'pending' && <p role="status" className="mt-5 text-sm text-amber-200">경기 결과와 크레딧 지급을 확인하는 중입니다…</p>}
-        {rewardStatus === 'error' && !reward && <div role="alert" className="mt-5 rounded border border-red-400/40 p-3 text-sm text-red-200">
-          <p>경기 보상 지급에 실패했습니다. {rewardError}</p>
-          {onRetryReward && <button type="button" onClick={onRetryReward} className="mt-2 rounded border border-red-300 px-3 py-1 font-bold">다시 시도</button>}
-        </div>}
-        <button
-          type="button"
-          onClick={onReturnToMainMenu}
-          data-testid="button-return-to-main-menu"
-          className="mt-8 w-full rounded-lg bg-primary px-5 py-3.5 text-sm font-black text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black md:w-auto md:min-w-52"
-        >
-          {continueLabel}
-        </button>
-      </section>
+            {portrait && (
+              <div className="ko-result-portrait">
+                <CardArtwork
+                  src={portrait}
+                  fallbackSrc={originalPortrait}
+                  displayOverride={cosmeticImageSettings(
+                    cosmetics[player?.id ?? ""],
+                    "CHAMPION_SKIN",
+                    champion?.id ?? "",
+                    champion?.questCompleted ? "awakened" : "portrait",
+                  )}
+                  alt={champion?.name ?? "내 챔피언"}
+                  imageDisplayMode="CONTAIN"
+                  className="h-full w-full"
+                />
+              </div>
+            )}
+            <span className="ko-result-corner" aria-hidden="true">
+              KO
+            </span>
+          </header>
+          <div className="ko-result-content">
+            <div className="ko-result-analysis">
+              {finishingHit && (
+                <div className="ko-result-finisher">
+                  <span>LAST HIT / 마지막 일격</span>
+                  <strong>
+                    {finisher?.sourceName ??
+                      finishingName ??
+                      winner?.champion?.name ??
+                      "효과"}
+                  </strong>
+                  <b>
+                    {finishingHit.amount ?? 0}
+                    <small>피해</small>
+                  </b>
+                </div>
+              )}
+              {ownSummary && opponentSummary && (
+                <section
+                  className="ko-result-scoreboard"
+                  aria-label="경기 기록"
+                >
+                  <h2>
+                    매치 리포트 <span>MATCH REPORT</span>
+                  </h2>
+                  <div className="ko-result-score-row ko-result-score-heading">
+                    <span>기록</span>
+                    <span>나</span>
+                    <span>{opponentNickname || "상대"}</span>
+                  </div>
+                  <div className="ko-result-score-row">
+                    <span>준 피해</span>
+                    <strong>{ownSummary.damageDealt}</strong>
+                    <strong>{opponentSummary.damageDealt}</strong>
+                  </div>
+                  <div className="ko-result-score-row">
+                    <span>사용한 카드</span>
+                    <b>{ownSummary.cardsPlayed}</b>
+                    <b>{opponentSummary.cardsPlayed}</b>
+                  </div>
+                  <div className="ko-result-score-row">
+                    <span>챔피언 퀘스트</span>
+                    {[ownSummary, opponentSummary].map((summary) => (
+                      <b key={summary.playerId} className="ko-result-quest">
+                        {summary.questRequired === null
+                          ? "없음"
+                          : summary.questCompleted
+                            ? "완료"
+                            : `${summary.questProgress}/${summary.questRequired}`}
+                      </b>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+            <MatchRecapPanel
+              recap={resolvedRecap}
+              viewerId={player?.id ?? ""}
+              variant="result"
+              cosmetics={cosmetics}
+            />
+          </div>
+          <div className="ko-result-notices">
+            {questError && (
+              <div role="alert" data-testid="quest-progress-error">
+                <p>일반 퀘스트 진행도를 저장하지 못했습니다. {questError}</p>
+                {onRetryQuest && (
+                  <button type="button" onClick={onRetryQuest}>
+                    퀘스트 다시 저장
+                  </button>
+                )}
+              </div>
+            )}
+            {rewardStatus === "error" && !reward && (
+              <div role="alert">
+                <p>경기 보상 지급에 실패했습니다. {rewardError}</p>
+                {onRetryReward && (
+                  <button type="button" onClick={onRetryReward}>
+                    다시 시도
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <footer className="ko-result-footer">
+          <div className="ko-result-reward" data-testid="match-reward" aria-live="polite">
+            {reward ? (
+              <>
+                <span>경기 보상 · 지급 완료</span>
+                <strong>
+                  +{reward.amount.toLocaleString()}
+                  <small>크레딧</small>
+                </strong>
+              </>
+            ) : rewardStatus === "pending" ? (
+              <p role="status">경기 결과와 크레딧 지급을 확인하는 중입니다…</p>
+            ) : (
+              <span>경기 종료 · GG</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onReturnToMainMenu}
+            data-testid="button-return-to-main-menu"
+            className="ko-result-continue"
+          >
+            {continueLabel}
+            <span aria-hidden="true">↗</span>
+          </button>
+        </footer>
+      </article>
     </div>
   );
 }
