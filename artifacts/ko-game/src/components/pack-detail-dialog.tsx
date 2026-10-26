@@ -1,3 +1,4 @@
+import { CosmeticPreview } from "./cosmetic-preview";
 import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { CardArtwork } from "@/components/card-artwork";
@@ -152,14 +153,15 @@ export function PackDetailDialog({
                   ) : <p className="text-sm text-neutral-500">챔피언이 없습니다.</p>}
                 </Section>
                 <Section title="팩 전용 스킨" probability={pack.skinChance}>
+                  <p className="mb-3 text-xs text-neutral-400">스킨 당첨 시 미보유 원본 카드 또는 챔피언도 함께 획득합니다.</p>
                   {details.skins.length ? (
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {details.skins.map((skin) => (
                         <div key={skin.id} className="w-36 shrink-0">
-                          <CardArtwork src={skin.imageUrl} alt={skin.name} className="h-40 w-36 rounded-lg border border-violet-800/60" imageDisplayMode={skin.imageDisplayMode} imageScale={skin.imageScale} imagePositionX={skin.imagePositionX} imagePositionY={skin.imagePositionY} />
+                          {skin.cosmetic ? <CosmeticPreview item={skin.cosmetic} champions={[skin.card]} compact /> : <CardArtwork src={skin.imageUrl} alt={skin.name} className="h-40 w-36 rounded-lg border border-violet-800/60" imageDisplayMode={skin.imageDisplayMode} imageScale={skin.imageScale} imagePositionX={skin.imagePositionX} imagePositionY={skin.imagePositionY} />}
                           <p className="mt-2 truncate text-center text-xs font-bold">{skin.name}</p>
                           <p className="text-center text-[11px] font-black text-violet-300">{percent(skin.individualProbability)}</p>
-                          <p className="mt-1 truncate text-center text-[10px] text-neutral-500">적용 카드: {skin.card.name}</p>
+                          <p className="mt-1 truncate text-center text-[10px] text-neutral-500">적용 대상: {skin.card.name}</p>
                         </div>
                       ))}
                     </div>

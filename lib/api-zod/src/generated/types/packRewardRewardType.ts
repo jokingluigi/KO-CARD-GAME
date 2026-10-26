@@ -15,4 +15,5 @@ export const PackRewardRewardType = {
   LEGENDARY_CARD: 'LEGENDARY_CARD',
   CHAMPION_UNLOCK: 'CHAMPION_UNLOCK',
   SKIN: 'SKIN',
+  CHAMPION_SKIN: 'CHAMPION_SKIN',
 } as const;

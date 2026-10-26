@@ -105,7 +105,7 @@ try {
       resolve(
         draft
           ? "docs/qa/cosmetics-draft-browser.mjs"
-          : "docs/qa/cosmetics-browser.mjs",
+          : (process.env.KO_COSMETICS_BROWSER_SCRIPT ?? "docs/qa/cosmetics-browser.mjs"),
       ),
     ],
     { KO_COSMETICS_FRONTEND: `http://127.0.0.1:${frontendPort}` },

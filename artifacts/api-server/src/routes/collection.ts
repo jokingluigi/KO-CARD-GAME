@@ -1,3 +1,4 @@
+import { championSkinPool } from "../lib/champion-skin-pool";
 import { randomInt } from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -133,12 +134,13 @@ type Reward =
   | { rewardType: "EPIC_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean; championPrismReward?: number }
-  | { rewardType: "SKIN"; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
+  | { rewardType: "CHAMPION_SKIN"; originalGranted?: boolean; cosmeticId: string; cosmetic: typeof import("@workspace/db").cosmeticItemsTable.$inferSelect; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean }
+  | { rewardType: "SKIN"; originalGranted?: boolean; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
 
 type QueryExecutor = { select: typeof db.select };
 
 async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor: QueryExecutor = db): Promise<Reward[]> {
-  const [normalCards, epicCards, legendaryCards, champions, skins] = await Promise.all([
+  const [normalCards, epicCards, legendaryCards, champions, skins, championSkins] = await Promise.all([
     pack.normalCardPool.length ? executor.select().from(cardsTable).where(and(
       inArray(cardsTable.id, pack.normalCardPool),
       eq(cardsTable.status, "PUBLISHED"),
@@ -176,18 +178,25 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
         eq(cardsTable.isToken, false),
         eq(cardsTable.isChampionToken, false),
       )) : [],
+    championSkinPool(pack.skinPool, executor),
   ]);
   if (pack.normalRate > 0 && normalCards.length === 0) throw new Error("NORMAL 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.epicRate > 0 && epicCards.length === 0) throw new Error("EPIC 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.legendaryRate > 0 && legendaryCards.length === 0) throw new Error("LEGENDARY 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.championRate > 0 && champions.length === 0) throw new Error("Champion 풀이 비어 있어 팩을 열 수 없습니다.");
-  if (pack.skinChance > 0 && skins.length === 0) throw new Error("Skin 풀이 비어 있어 팩을 열 수 없습니다.");
+  if (pack.skinChance > 0 && skins.length + championSkins.length === 0) throw new Error("Skin 풀이 비어 있어 팩을 열 수 없습니다.");
 
   const rewards: Reward[] = [];
   for (let slot = 0; slot < pack.cardsPerPack; slot += 1) {
     const roll = randomInt(0, 100);
     if (pack.skinChance > 0 && randomInt(0, 100) < pack.skinChance) {
-      const skin = skins[randomInt(0, skins.length)];
+      const pick = randomInt(0, skins.length + championSkins.length);
+      if (pick >= skins.length) {
+        const item = championSkins[pick - skins.length]!;
+        rewards.push({ rewardType: "CHAMPION_SKIN", cosmeticId: item.cosmetic.id, ...item });
+        continue;
+      }
+      const skin = skins[pick];
       if (skin) rewards.push({ rewardType: "SKIN", skinDefinitionId: skin.skin.id, skin: skin.skin, card: skin.card });
       continue;
     }

@@ -14,6 +14,7 @@ export type CosmeticCardPreview = {
   rarity: "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION" | "TOKEN";
 };
 export type CosmeticChampionPreview = {
+  championTokenDefinitionId?: string | null;
   id: string;
   name: string;
   imageUrl: string | null;

@@ -8,7 +8,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import * as schema from "../src/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 process.env.DATABASE_URL = "postgresql://unused:unused@127.0.0.1:1/unused";
 process.env.NODE_ENV = "development";
 const pg = new PGlite(),
@@ -807,8 +807,85 @@ test("RLS denies direct untrusted SQL clients; schema change is idempotent and o
     (await database.select().from(schema.cosmeticItemsTable)).length >= 4,
   );
 });
+test("champion skin token set: validated linkage, existing owner, actual single/bulk pack claims, equip/fallback/revoke", async () => {
+  await database.insert(schema.cardsTable).values({ id: "set-token", name: "세트 챔피언 토큰", cardType: "WRESTLER", rarity: "CHAMPION", cost: 0, attack: 5, health: 6, text: "", imageUrl: origin + "/api/qa-cosmetics/original.png", status: "PUBLISHED", isToken: true, isChampionToken: true });
+  await database.update(schema.championsTable).set({ championTokenDefinitionId: "set-token" }).where(eq(schema.championsTable.id, "cosmetic-hero"));
+  const item = registered.CHAMPION_SKIN;
+  // Existing owner does not need another grant when token art is attached later.
+  const patched = await api(prefix + "/items/" + item.id, "admin", "PATCH", { ...item, imageAssets: { ...item.imageAssets, "token:set-token": uploaded } });
+  assert.equal(patched.status, 200, JSON.stringify(patched.body));
+  const set = patched.body.item;
+  registered.CHAMPION_SKIN = set;
+  assert.equal(cosmeticImage(await loadCosmetics("player-a"), "CARD_SKIN", "set-token", "art", "base"), uploaded);
+  assert.equal(cosmeticImage(await loadCosmetics("player-b"), "CARD_SKIN", "set-token", "art", "base"), "base");
+  assert.equal((await api(prefix + "/items/" + item.id, "admin", "PATCH", { ...set, imageAssets: { ...item.imageAssets, "token:wrong": uploaded } })).status, 422);
+  await database.update(schema.championsTable).set({ championTokenDefinitionId: null }).where(eq(schema.championsTable.id, "cosmetic-hero"));
+  assert.equal(cosmeticImage(await loadCosmetics("player-a"), "CARD_SKIN", "set-token", "art", "base"), "base");
+  await database.update(schema.championsTable).set({ championTokenDefinitionId: "set-token" }).where(eq(schema.championsTable.id, "cosmetic-hero"));
+  const packId = "set-pack";
+  await database.insert(schema.packDefinitionsTable).values({ id: packId, name: "세트 팩", status: "PUBLISHED", cardsPerPack: 1, normalRate: 0, legendaryRate: 0, championRate: 100, championPool: ["cosmetic-hero"], skinChance: 100, skinPool: [item.id] });
+  await database.insert(schema.userPackInventoryTable).values({ userId: "player-b", packDefinitionId: packId, quantity: 3 });
+  const details = await api("/packs/" + packId + "/details", "player-b");
+  assert.equal(details.status, 200, JSON.stringify(details.body));
+  assert.equal(details.body.details.skins[0].individualProbability, 100);
+  const open = async (bulk: boolean, key: string) => {
+    const response = await fetch(origin + "/api/packs/" + packId + (bulk ? "/open-bulk" : "/open"), { method: "POST", headers: { cookie: cookies["player-b"]!, "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(bulk ? { quantity: 2 } : {}) });
+    return { status: response.status, body: await response.json() };
+  };
+  await database.update(schema.userChampionCollectionsTable).set({ owned: false }).where(eq(schema.userChampionCollectionsTable.userId, "player-b"));
+  const first = await open(false, "set-first");
+  assert.equal(first.status, 200, JSON.stringify(first.body));
+  assert.equal(first.body.rewards[0].rewardType, "CHAMPION_SKIN");
+  assert.equal(first.body.rewards[0].alreadyOwned, false);
+  assert.equal(first.body.rewards[0].originalGranted, true);
+  assert.deepEqual((await open(false, "set-first")).body, first.body);
+  const bulk = await open(true, "set-bulk");
+  assert.equal(bulk.status, 200, JSON.stringify(bulk.body));
+  assert.equal(bulk.body.openings.length, 2);
+  assert.ok(bulk.body.openings.every((o: any) => o.rewards[0].alreadyOwned === true && o.rewards[0].originalGranted === false));
+  assert.deepEqual((await open(true, "set-bulk")).body, bulk.body);
+  const inventory = await api("/cosmetics", "player-b");
+  assert.equal(inventory.body.owned.filter((o: any) => o.item.id === item.id).length, 1);
+  await equipCosmetic("player-b", "champion:cosmetic-hero", item.id);
+  assert.equal(cosmeticImage(await loadCosmetics("player-b"), "CARD_SKIN", "set-token", "art", "base"), uploaded);
+  await equipCosmetic("player-b", "champion:cosmetic-hero", null);
+  assert.equal(cosmeticImage(await loadCosmetics("player-b"), "CARD_SKIN", "set-token", "art", "base"), "base");
+  await equipCosmetic("player-b", "champion:cosmetic-hero", item.id);
+  await api(prefix + "/users/player-b/grants", "admin", "POST", { cosmeticId: item.id, action: "REVOKE" });
+  assert.equal(cosmeticImage(await loadCosmetics("player-b"), "CARD_SKIN", "set-token", "art", "base"), "base");
+  const options = await api("/admin/packs/options");
+  assert.ok(options.body.skins.some((skin: any) => skin.id === item.id));
+  const forced = await api("/admin/packs/" + packId + "/preview/forced", "admin", "POST", { slots: [{ type: "SKIN", id: item.id }] });
+  assert.equal(forced.status, 200, JSON.stringify(forced.body));
+  assert.equal(forced.body.rewards[0].rewardType, "CHAMPION_SKIN");
+  assert.equal(forced.body.rewards[0].cosmetic.imageAssets["token:set-token"], uploaded);
+  const [token] = await database.select().from(schema.cardsTable).where(eq(schema.cardsTable.id, "set-token"));
+  assert.equal(token!.attack, 5); assert.equal(token!.health, 6);
+  // Ordinary card skins also include exactly one missing original, including a zero-quantity row.
+  await database.insert(schema.cardSkinDefinitionsTable).values({ id: "pack-card-skin", cardDefinitionId: cards[0]!.id, name: "팩 카드 스킨", status: "PUBLISHED", imageUrl: uploaded });
+  await database.update(schema.packDefinitionsTable).set({ skinPool: ["pack-card-skin"] }).where(eq(schema.packDefinitionsTable.id, packId));
+  await database.update(schema.userPackInventoryTable).set({ quantity: 3 }).where(eq(schema.userPackInventoryTable.packDefinitionId, packId));
+  await database.update(schema.userCardCollectionsTable).set({ quantity: 0 }).where(and(eq(schema.userCardCollectionsTable.userId, "player-b"), eq(schema.userCardCollectionsTable.cardDefinitionId, cards[0]!.id)));
+  const cardFirst = await open(false, "card-set-first");
+  assert.equal(cardFirst.status, 200, JSON.stringify(cardFirst.body));
+  assert.equal(cardFirst.body.rewards[0].originalGranted, true);
+  const cardBulk = await open(true, "card-set-bulk");
+  assert.equal(cardBulk.status, 200, JSON.stringify(cardBulk.body));
+  assert.ok(cardBulk.body.openings.every((o: any) => o.rewards[0].originalGranted === false));
+  assert.deepEqual((await open(true, "card-set-bulk")).body, cardBulk.body);
+  const [base] = await database.select().from(schema.userCardCollectionsTable).where(and(eq(schema.userCardCollectionsTable.userId, "player-b"), eq(schema.userCardCollectionsTable.cardDefinitionId, cards[0]!.id)));
+  assert.equal(base!.quantity, 1);
+  const { grantSkinOriginal } = await import("../../../artifacts/api-server/src/lib/skin-original-grant");
+  await database.delete(schema.userCardCollectionsTable).where(and(eq(schema.userCardCollectionsTable.userId, "player-b"), eq(schema.userCardCollectionsTable.cardDefinitionId, cards[0]!.id)));
+  await assert.rejects(() => database.transaction(async tx => { assert.equal(await grantSkinOriginal(tx, "player-b", "CARD", cards[0]!.id), true); throw new Error("claim failure"); }));
+  assert.equal((await database.select().from(schema.userCardCollectionsTable).where(and(eq(schema.userCardCollectionsTable.userId, "player-b"), eq(schema.userCardCollectionsTable.cardDefinitionId, cards[0]!.id)))).length, 0);
+  await database.transaction(async tx => { assert.equal(await grantSkinOriginal(tx, "player-b", "CARD", cards[0]!.id), true); assert.equal(await grantSkinOriginal(tx, "player-b", "CARD", cards[0]!.id), false); });
+});
+
 after(async () => {
   if (process.env.KO_COSMETICS_BROWSER_MODE === "1") {
+    // Restore deck quantities after the missing-original acquisition tests.
+    await database.update(schema.userCardCollectionsTable).set({ quantity: 3 }).where(eq(schema.userCardCollectionsTable.userId, "player-b"));
     // Start a fresh match, then use real accepted card actions to populate each board.
     if (runtime) {
       runtime.state.status = "FINISHED";
@@ -873,6 +950,17 @@ after(async () => {
       );
       assert.equal(ended.ok, true);
     }
+    // Populate presentation fixture through the same direct-deployment engine helper.
+    const { directDeployChampionToken } = await import("../../../artifacts/ko-game/src/game/engine/champion-token");
+    const { cardRecordToDefinition } = await import("../../game-engine/src/index");
+    if (!runtime.state.cardPool?.some((c: any) => c.id === "set-token")) {
+      const [token] = await database.select().from(schema.cardsTable).where(eq(schema.cardsTable.id, "set-token"));
+      runtime.state.cardPool = [...(runtime.state.cardPool ?? []), cardRecordToDefinition(token as any)];
+    }
+    for (const player of runtime.state.players) runtime.state = directDeployChampionToken(runtime.state, player.id, "cosmetic-hero", "set-token");
+    await database.update(schema.packDefinitionsTable).set({ skinPool: [registered.CHAMPION_SKIN.id] }).where(eq(schema.packDefinitionsTable.id, "set-pack"));
+    await database.update(schema.userPackInventoryTable).set({ quantity: 6 }).where(eq(schema.userPackInventoryTable.packDefinitionId, "set-pack"));
+    await database.update(schema.userChampionCollectionsTable).set({ owned: false }).where(eq(schema.userChampionCollectionsTable.userId, "player-b"));
     await mkdir("qa-results/cosmetics", { recursive: true });
     await writeFile("qa-results/cosmetics/upload-fixture.png", png);
     await writeFile(
@@ -910,3 +998,6 @@ test("image emote throttling has no per-turn quota and replaces the previous ima
  assert.equal(channel.latest(16000).length,1);assert.equal(channel.latest(18001).length,0);
  assert.equal(channel.send({...input,requestId:'same-turn-20'},20000),null);
 });
+
+// Reuse the isolated database for the existing pack transaction regression.
+await import("../../../artifacts/api-server/src/routes/packs.test");

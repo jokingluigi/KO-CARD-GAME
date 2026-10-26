@@ -344,7 +344,7 @@ export function Inspectable({
 export function CardInspectContent({ card, definition:override,cosmeticOwnerId }: { card: CardInstance;cosmeticOwnerId?:string; definition?:ReturnType<typeof getCardDefinition> }) {
   const altInspectContext = useContext(AltInspectContext);
   const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card,override);
-  const cosmetic=useCosmeticImage(!card.isToken&&!card.isChampionToken?cosmeticOwnerId:undefined,card.definitionId,'CARD_SKIN',definition?.imageUrl);
+  const cosmetic=useCosmeticImage((!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined,card.definitionId,'CARD_SKIN',definition?.imageUrl);
   const numericChanges = getNumericChanges(card);
   return (
     <div className="ko-inspector-content space-y-4">
@@ -358,7 +358,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
       </div>
       <FullCardArtwork name={definition?.name ?? '카드'} imageUrl={cosmetic.src} fallbackImageUrl={definition?.imageUrl}>
       <CardRenderer
-        cardId={card.definitionId} cosmeticOwnerId={!card.isToken&&!card.isChampionToken?cosmeticOwnerId:undefined}
+        cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
         name={definition?.name ?? '알 수 없는 카드'}
         cardType={card.cardType}
         cost={card.currentCost}

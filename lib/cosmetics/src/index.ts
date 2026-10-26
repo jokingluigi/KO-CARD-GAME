@@ -7,7 +7,7 @@ export const COSMETIC_TYPES = [
 ] as const;
 export type CosmeticType = (typeof COSMETIC_TYPES)[number];
 export type CosmeticAssets = Partial<
-  Record<"art" | "portrait" | "intro" | "awakened", string>
+  Record<"art" | "portrait" | "intro" | "awakened" | `token:${string}`, string>
 >;
 export type CosmeticItem = {
   id: string;
@@ -55,6 +55,19 @@ export function cosmeticImage(
   original: string | null | undefined,
 ) {
   const item = loadout?.skins?.[skinKey(type, id)];
+  // Token artwork is included in the equipped champion skin entitlement. Never changes card data.
+  if (type === "CARD_SKIN" && context === "art") {
+    for (const [slot, skin] of Object.entries(loadout?.skins ?? {})) {
+      if (
+        skin?.type === "CHAMPION_SKIN" &&
+        skin.targetId &&
+        slot === skinKey("CHAMPION_SKIN", skin.targetId)
+      ) {
+        const token = skin.imageAssets?.[`token:${id}`];
+        if (token && validImageUrl(token)) return token;
+      }
+    }
+  }
   // Each optional champion display slot falls back independently, never to an unrelated slot.
   return item?.type === type && item.targetId === id
     ? item.imageAssets?.[context] || original

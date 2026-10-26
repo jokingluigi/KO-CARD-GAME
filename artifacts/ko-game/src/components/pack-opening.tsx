@@ -1,3 +1,4 @@
+import { CosmeticPreview } from "./cosmetic-preview";
 import { useEffect, useRef, useState } from "react";
 import { Check, Gift, RotateCcw, Sparkles } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
@@ -18,6 +19,7 @@ type PackOpeningProps = {
 };
 
 function rewardTitle(reward: PackReward): string {
+  if (reward.rewardType === "CHAMPION_SKIN") return `${reward.cosmetic?.name ?? "챔피언 스킨"} · 세트`;
   if (reward.rewardType === "CHAMPION_UNLOCK") return reward.champion?.name ?? "챔피언";
   if (reward.rewardType === "SKIN") return `${reward.card?.name ?? "카드"} · ${reward.skin?.name ?? "스킨"}`;
   return reward.card?.name ?? "카드";
@@ -121,10 +123,11 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
           <section className="mt-7 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4 sm:p-6" aria-label="개봉 보상 요약">
             {notice && <p data-testid="status-pack-opening-notice" role="status" className="mb-4 rounded border border-amber-700/60 bg-amber-950/50 px-3 py-2 text-sm text-amber-200">{notice}</p>}
             <h3 className="text-lg font-black text-amber-200">획득 보상</h3>
+            {rewards.some(reward => reward.originalGranted) && <p className="mt-2 text-sm text-emerald-300">미보유 원본 카드 {rewards.filter(reward => reward.rewardType === "SKIN" && reward.originalGranted).length}장 지급 · 챔피언 {rewards.filter(reward => reward.rewardType === "CHAMPION_SKIN" && reward.originalGranted).length}명 해금</p>}
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-              {(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN"] as const).map((type) => {
+              {(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN", "CHAMPION_SKIN"] as const).map((type) => {
                 const count = rewards.filter((reward) => reward.rewardType === type).length;
-                const label = type === "NORMAL_CARD" ? "일반 카드" : type === "EPIC_CARD" ? "에픽" : type === "LEGENDARY_CARD" ? "레전더리" : type === "CHAMPION_UNLOCK" ? "챔피언" : "스킨";
+                const label = type === "NORMAL_CARD" ? "일반 카드" : type === "EPIC_CARD" ? "에픽" : type === "LEGENDARY_CARD" ? "레전더리" : type === "CHAMPION_UNLOCK" ? "챔피언" : type === "CHAMPION_SKIN" ? "챔피언 스킨 세트" : "스킨";
                 return <span key={type} className="rounded bg-neutral-900 px-3 py-2 text-neutral-200">{label} {count}</span>;
               })}
             </div>
@@ -159,11 +162,11 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
             const card = reward.card;
             const champion = reward.champion;
             const skin = reward.skin;
-            const isSkin = reward.rewardType === "SKIN";
+            const isSkin = reward.rewardType === "SKIN" || reward.rewardType === "CHAMPION_SKIN";
             return (
               <button
                 type="button"
-                key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? index}-${index}`}
+                key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? reward.cosmeticId ?? index}-${index}`}
                 onClick={() => setRevealed(current => current.includes(index) ? current : [...current, index])}
                 data-testid={`button-reveal-reward-${index}`}
                 className={`min-w-0 text-left transition-transform ${!isRevealed ? "hover:-translate-y-1" : ""}`}
@@ -180,6 +183,8 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                 } bg-neutral-900 ${isRevealed ? "animate-[card-flip_350ms_ease-out]" : ""}`}>
                   {!isRevealed ? (
                     <div className="text-center"><Sparkles className="mx-auto h-8 w-8 text-amber-400" /><p className="mt-3 text-xs font-black text-neutral-400">REVEAL</p></div>
+                  ) : reward.rewardType === "CHAMPION_SKIN" && reward.cosmetic ? (
+                    <div className="h-full w-full overflow-y-auto p-2"><CosmeticPreview item={reward.cosmetic} champions={champion ? [champion] : []} compact /><p className="text-center text-xs text-amber-200">챔피언 스킨 세트 획득</p></div>
                   ) : reward.rewardType === "CHAMPION_UNLOCK" ? (
                     <div className="p-3 text-center">
                       {champion?.imageUrl ? (
@@ -217,6 +222,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                 {isRevealed && <p className="mt-2 text-center text-xs font-bold text-neutral-300">
                   {reward.alreadyOwned === true ? <span className="mr-1 text-amber-300">중복 ·</span> : reward.alreadyOwned === false ? <span className="mr-1 text-emerald-300">신규 ·</span> : null}
                   {rewardTitle(reward)}
+                  {reward.originalGranted && <span className="block mt-1 text-emerald-300">원본 {reward.rewardType === "CHAMPION_SKIN" ? "챔피언 해금" : "카드 1장 지급"}</span>}
                 </p>}
               </button>
             );
