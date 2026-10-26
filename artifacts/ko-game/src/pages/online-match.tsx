@@ -1,3 +1,4 @@
+import { prepareIntroPortraits } from '@/game/match-assets';
 import { questMusic as selectQuestMusic } from '@/components/quest-media';
 import {cosmeticImage,type MatchCosmetics,type ImageEmoteEvent} from '@workspace/cosmetics';
 import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
@@ -26,7 +27,6 @@ import {
   fetchPublishedCardDefinitions,
   fetchPublishedChampions,
   getCardDefinition,
-  preloadMatchAssets,
   setRuntimeCardDefinitions,
   type BoardSlot,
   type CardInstance,
@@ -182,7 +182,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       if (cancelled) return;
       accountCardsRef.current = definitions;
       setRuntimeCardDefinitions(mergeOnlineCardCatalog(definitions, matchCardsRef.current));
-      preloadMatchAssets(definitions, champions);
       setMediaCatalog(media);
       setResourcesReady(true);
     }).catch((reason) => {
@@ -260,6 +259,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         setTurnDeadlineAt(message.turnDeadlineAt);
         setGameplayStartsAt(message.gameplayStartsAt);
         setPublicPlayers(message.publicPlayers);
+        // Warm only the two participants, not the entire multi-megabyte champion roster.
+        void prepareIntroPortraits(message.publicPlayers.map(player => player.portraitUrl));
         if(message.cosmetics)setCosmetics(message.cosmetics);
         setIntroFirstSpeaker(message.introFirstSpeaker);
         setServerOffset(message.serverTime - Date.now());

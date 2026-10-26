@@ -58,7 +58,8 @@ try {
     fullPage: true,
   });
   await page.locator(".ko-opponent-champion").click();
-  await page.locator(".champion-defeat-cinematic").waitFor();
+  await page.getByTestId("champion-hud-shatter").waitFor();
+  if (await page.locator('.champion-defeat-cinematic').count()) throw new Error('Detached champion scene returned');
   if (await page.getByRole("heading", { name: "승리 · 카드 1장 선택" }).count()) throw new Error("Reward opened before KO finished");
   await page.getByRole("button", { name: "타워 보상으로", exact: true }).waitFor();
   await page.screenshot({path:"qa-results/tower-v2/mobile-ko-result.png"});

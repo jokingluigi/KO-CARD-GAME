@@ -374,7 +374,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         state = exchanged.state;
         setRuntimeCardDefinitions(definitions);
         setMediaCatalog(media);
-        preloadMatchAssets(definitions, champions);
+        preloadMatchAssets(definitions, state.players.flatMap(p=>p.champion?[p.champion]:[]));
         setGameState(state);
         setIsAdminTestMatch(true);
         setAiMatchStarted(true);
@@ -582,7 +582,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         setMediaCatalog(media);
         const runtimeDefinitions = publishedDefinitions;
         setRuntimeCardDefinitions([...minionACardPool, ...runtimeDefinitions]);
-        preloadMatchAssets(runtimeDefinitions, champions);
+        preloadMatchAssets(runtimeDefinitions, champions.slice(0,2));
         const selected = champions.length >= 2
           ? [champions[0]!.id, champions[1]!.id] as [string, string]
           : undefined;

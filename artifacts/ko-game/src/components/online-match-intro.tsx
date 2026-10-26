@@ -1,3 +1,4 @@
+import { cachedPortrait, loadPortrait } from '../game/portrait-loading';
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import styles from "./online-match-intro.module.css";
@@ -33,27 +34,24 @@ interface PortraitProps {
   side: Speaker;
 }
 
-function getInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase();
-  return `${words[0]![0]}${words.at(-1)![0]}`.toUpperCase();
-}
-
 function Portrait({ player, side }: PortraitProps) {
-  const [failedUrls, setFailedUrls] = useState<string[]>([]);
-  const portraitUrl = [player.portraitUrl, player.originalPortraitUrl]
-    .find((url): url is string => Boolean(url) && !failedUrls.includes(url!));
-
+  const [ready, setReady] = useState<Record<string,string>>({});
   useEffect(() => {
-    setFailedUrls([]);
+    let active = true;
+    // Load independently: an unavailable skin must never hold the original hostage.
+    for (const url of new Set([player.portraitUrl, player.originalPortraitUrl].filter((v):v is string=>Boolean(v)))) {
+      void loadPortrait(url).then(src => { if(active && src) setReady(current=>({...current,[url]:src})); });
+    }
+    return () => { active = false; };
   }, [player.portraitUrl, player.originalPortraitUrl]);
+  const portraitUrl = [player.portraitUrl, player.originalPortraitUrl]
+    .filter((url):url is string=>Boolean(url)).map(url=>ready[url]??cachedPortrait(url)).find(Boolean);
 
   return (
     <div className={styles.portraitWrap} data-testid={`portrait-${side}`}>
       <div className={styles.portraitFrame}>
         <span className={styles.portraitFallback} aria-hidden="true">
-          {getInitials(player.championName)}
+          {portraitUrl ? '' : <small role="status">초상화 불러오는 중…</small>}
         </span>
         {portraitUrl ? (
           <img
@@ -62,7 +60,8 @@ function Portrait({ player, side }: PortraitProps) {
             src={portraitUrl}
             alt={`${player.championName} portrait`}
             data-testid={`img-champion-portrait-${side}`}
-            onError={() => setFailedUrls((urls) => urls.includes(portraitUrl) ? urls : [...urls, portraitUrl])}
+            decoding="async"
+            fetchPriority="high"
           />
         ) : null}
       </div>
