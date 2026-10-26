@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   COSMETIC_TYPES,
+  championSkinArtwork,
   type CosmeticItem,
   type CosmeticAssets,
   type CosmeticType,
@@ -77,6 +78,27 @@ export function AdminCosmetics() {
       setMessage(
         "저장했어. 대상·유형을 변경하면 해당 아이템의 기존 장착은 해제돼.",
       );
+    });
+  }
+  async function removeItem() {
+    const id = form.id;
+    const name = data?.items.find((item) => item.id === id)?.name ?? form.name;
+    if (
+      !id ||
+      !window.confirm(
+        `“${name}” 아이템을 삭제할까요?\n모든 유저의 보유·장착에서 제거되며 되돌릴 수 없습니다. 진행 중인 경기와 획득 기록의 이미지 파일은 유지됩니다.`,
+      )
+    )
+      return;
+    await run(async () => {
+      await cosmeticsRequest(`${base}/items/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      setForm(blank());
+      draft.markSaved();
+      await load();
+      if (user) await selectUser(user);
+      setMessage("아이템을 삭제했습니다.");
     });
   }
   async function upload(file: File, key: keyof CosmeticAssets) {
@@ -165,7 +187,7 @@ export function AdminCosmetics() {
         원본 카드·챔피언과 기존 팩용 스킨은 변경하지 않아. 비활성 아이템은 새
         장착·지급에서 제외되고 소유 기록은 유지돼.
       </p>
-      {message && <p role="status">{message}</p>}
+      {message && <p role="status" className="break-words">{message}</p>}
       {!data && !message && <p role="status">불러오는 중…</p>}
       <div className="cosmetics-editor">
         <aside>
@@ -307,7 +329,8 @@ export function AdminCosmetics() {
           </label>
           {form.type === "CHAMPION_SKIN" && (
             <p className="text-sm text-amber-200">
-              챔피언 스킨을 장착하면 세트의 토큰 외형도 자동 적용돼.{" "}
+              챔피언 일러스트 한 장을 등록하면 기본 표시·전투 초상화·VS 인트로에
+              함께 적용돼. 각성과 토큰 외형만 별도로 등록해 줘.{" "}
               {tokenId
                 ? "아래에 토큰 일러스트를 등록해 줘."
                 : "토큰 외형을 등록하려면 챔피언 관리에서 챔피언 토큰을 먼저 연결해 줘."}
@@ -315,20 +338,21 @@ export function AdminCosmetics() {
           )}
           <div className="cosmetics-assets">
             {(form.type === "CHAMPION_SKIN"
-              ? [
-                  "art",
-                  "portrait",
-                  "intro",
-                  "awakened",
-                  ...(tokenId ? [`token:${tokenId}`] : []),
-                ]
+              ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])]
               : ["art"]
             ).map((raw) => {
               const key = raw as keyof CosmeticAssets;
+              const imageUrl =
+                key === "art" && form.type === "CHAMPION_SKIN"
+                  ? championSkinArtwork(form.imageAssets)
+                  : form.imageAssets[key];
               return (
                 <label key={key}>
                   {{
-                    art: "기본 일러스트",
+                    art:
+                      form.type === "CHAMPION_SKIN"
+                        ? "챔피언 일러스트 · 전투·VS 공용"
+                        : "기본 일러스트",
                     portrait: "전투 초상화",
                     intro: "VS 인트로",
                     awakened: "각성 초상화",
@@ -346,10 +370,10 @@ export function AdminCosmetics() {
                       e.currentTarget.value = "";
                     }}
                   />
-                  {form.imageAssets[key] && (
+                  {imageUrl && (
                     <>
                       <img
-                        src={form.imageAssets[key]}
+                        src={imageUrl}
                         alt={`${key} 미리보기`}
                         className="h-36 w-full object-contain"
                       />
@@ -358,6 +382,10 @@ export function AdminCosmetics() {
                         onClick={() => {
                           const assets = { ...form.imageAssets };
                           delete assets[key];
+                          if (key === "art" && form.type === "CHAMPION_SKIN") {
+                            delete assets.portrait;
+                            delete assets.intro;
+                          }
                           setForm({ ...form, imageAssets: assets });
                         }}
                       >
@@ -376,6 +404,16 @@ export function AdminCosmetics() {
               champions={data?.champions}
             />
           </div>
+          {form.id && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void removeItem()}
+              className="border border-red-800 text-red-300"
+            >
+              아이템 삭제
+            </button>
+          )}
           <button disabled={busy} onClick={() => void save()}>
             {busy ? "처리 중…" : "아이템 저장"}
           </button>

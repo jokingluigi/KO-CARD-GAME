@@ -136,4 +136,11 @@ adminRouter.patch("/:id", async (request, response): Promise<void> => {
   response.json({ notice });
 });
 
+adminRouter.delete("/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const [deleted] = await db.delete(noticesTable).where(eq(noticesTable.id, String(request.params.id))).returning({ id: noticesTable.id });
+  if (!deleted) { response.status(404).json({ message: "공지를 찾을 수 없습니다." }); return; }
+  response.json({ deleted: true, id: deleted.id });
+});
+
 export { adminRouter as adminNoticesRouter, publicRouter as mainContentRouter };

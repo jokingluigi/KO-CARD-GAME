@@ -1,3 +1,4 @@
+import { AdminDeletionError, deleteQuestSeason, questCatalogWriteLock } from "../lib/admin-content-deletion";
 import {dailyCompletionReward,validateDailyCompletionReward,DAILY_COMPLETION_BONUS_KEY} from "../lib/daily-completion-bonus";
 
 import { Router } from "express";
@@ -51,9 +52,14 @@ router.post("/seasons",async (req,res) => {
  if (typeof name !== "string" || !name.trim() || name.length > 120 || !Number.isFinite(+start) || !Number.isFinite(+end) || start >= end || !["ACTIVE","DISABLED","ARCHIVED"].includes(status)) {res.status(400).json({message:"시즌 이름·기간·상태를 확인해 주세요."});return;}
  const id = typeof req.body.id === "string" ? req.body.id : randomUUID();
  const season = await db.transaction(async tx=>{
+ await tx.execute(questCatalogWriteLock);
  const [row] = await tx.insert(questSeasonsTable).values({id,name:name.trim(),startsAt:start,endsAt:end,status}).onConflictDoUpdate({target:questSeasonsTable.id,set:{name:name.trim(),startsAt:start,endsAt:end,status,updatedAt:new Date()}}).returning();
  await audit(tx,req.authUser!.id,"SEASON_SAVED",id,row);return row;
  });res.json({season});
+});
+router.delete("/seasons/:id", async (req, res, next) => {
+ try { await deleteQuestSeason(String(req.params.id), req.authUser!.id); res.json({ deleted: true, id: req.params.id }); }
+ catch (error) { if (error instanceof AdminDeletionError) { res.status(error.status).json({ message: error.message }); return; } next(error); }
 });
 router.post("/definitions", async (req,res) => {
  const input = validateDailyQuestInput(req.body);
@@ -66,6 +72,7 @@ router.post("/definitions", async (req,res) => {
  const requestedId = typeof req.body.id === "string" ? req.body.id : null;
  const id = requestedId ?? randomUUID();
  const definition = await db.transaction(async tx=>{
+ await tx.execute(questCatalogWriteLock);
  const [previous] = requestedId ? await tx.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,id)).for("update") : [];
  if (requestedId && !previous) return null;
  if (previous && readPlatform(previous).deletedAt) return null;
@@ -80,6 +87,7 @@ router.post("/definitions", async (req,res) => {
 router.delete("/definitions/:id", async (req,res) => {
  const id=String(req.params.id);
  const deleted=await db.transaction(async tx=>{
+  await tx.execute(questCatalogWriteLock);
   const [previous]=await tx.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,id)).for("update");
   if(!previous)return null;
   const platform=readPlatform(previous);

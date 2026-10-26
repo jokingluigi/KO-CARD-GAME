@@ -69,7 +69,7 @@ export function AdminTowerManager({ onUnauthorized }: { onUnauthorized: () => vo
   const [runs, setRuns] = useState<Array<{ id: string; userId: string; state: Draft }>>([]);
   const base = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin`;
   async function request(path: string, body?: unknown, method = 'POST') {
-    const response = await fetch(`${base}${path}`, { credentials: 'include', cache: 'no-store', ...(body === undefined ? {} : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
+    const response = await fetch(`${base}${path}`, { credentials: 'include', cache: 'no-store', method: body === undefined && method === 'POST' ? 'GET' : method, ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
     const result = await response.json();
     if (response.status === 401 || response.status === 403) onUnauthorized();
     if (!response.ok) throw new Error(result.message ?? '타워 설정을 처리하지 못했습니다.');
@@ -79,7 +79,16 @@ export function AdminTowerManager({ onUnauthorized }: { onUnauthorized: () => vo
   useEffect(() => { void Promise.all([request('/tower/'), request('/cards'), request('/champions'), request('/packs'), fetch(`${base.replace(/\/admin$/, '')}/ai-decks`, { credentials: 'include', cache: 'no-store' }).then(async response => { if (!response.ok) throw new Error('AI 덱 목록을 불러오지 못했습니다.'); return response.json(); })]).then(([config, cardData, championData, packData, aiData]) => {
     setAiDecks(aiData.decks ?? []); setData(config); setCards(cardData.cards.map(cardRecordToDefinition)); setChampions(championData.champions.map(championRecordToDefinition)); setPacks(packData.packs ?? []);
   }).catch(e => setError(e.message)); }, []);
-  async function operate(work: () => Promise<unknown>) { if (busy || musicUploading) return; setBusy(true); setError(''); setMessage(''); try { await work(); await refresh(); setMessage('저장했습니다. 진행 중 도전은 시작 당시 설정을 유지하고 새 도전에 적용됩니다.'); } catch (e) { setError(e instanceof Error ? e.message : '저장 실패'); } finally { setBusy(false); } }
+  async function operate(work: () => Promise<unknown>, success = '저장했습니다. 진행 중 도전은 시작 당시 설정을 유지하고 새 도전에 적용됩니다.') { if (busy || musicUploading) return; setBusy(true); setError(''); setMessage(''); try { await work(); await refresh(); setMessage(success); } catch (e) { setError(e instanceof Error ? e.message : '저장 실패'); } finally { setBusy(false); } }
+  async function removeDraft() {
+    if (!draft || kind === "runs" || !data?.[kind].some(row => row.id === draft.id)) return;
+    const id = draft.id;
+    if (!window.confirm(`“${draft.name ?? draft.displayName ?? id}” 항목을 삭제할까요?\n연결된 설정·공개 버전·도전 기록이 있으면 삭제가 차단됩니다. 원본 카드와 유저 기록은 유지됩니다.`)) return;
+    await operate(async () => {
+      await request(kind === "metadata" ? `/tower/metadata/${draft.kind}/${encodeURIComponent(id)}` : `/tower/${kind}/${encodeURIComponent(id)}`, undefined, "DELETE");
+      setDraft(null);
+    }, "항목을 삭제했습니다.");
+  }
   const update = (key: string, value: unknown, expectedId?: string) => setDraft(previous => { if(expectedId && previous?.id!==expectedId)return previous; const next = { ...previous }; if (value === undefined) delete next[key]; else next[key] = value; return next; });
   const options = { cards, champions, relics: data?.relics ?? [], starters: data?.starters ?? [] };
   const field = (key: string, label: string, type = 'text') => <label className="block" key={key}>{label}<input className={control} type={type} value={draft?.[key] ?? ''} onChange={e => update(key, type === 'number' ? Number(e.target.value) : e.target.value)} /></label>;
@@ -161,6 +170,7 @@ export function AdminTowerManager({ onUnauthorized }: { onUnauthorized: () => vo
           <button className={button} disabled={draft.lines.length >= 200} onClick={() => { update('lines', [...draft.lines, { speakerId: '', expression: 'NEUTRAL', side: 'LEFT', text: '', order: draft.lines.length }]); setScenePreviewIndex(draft.lines.length); }}>대사 추가</button>
         </>}
         {kind === 'metadata' && <><select className={control} aria-label="메타데이터 종류" value={draft.kind} onChange={e => update('kind', e.target.value)}><option value="CARD">카드</option><option value="CHAMPION">챔피언</option><option value="CHAMPION">챔피언</option></select>{select('id', '대상', draft.kind === 'CARD' ? cards : champions)}{(draft.kind === 'CARD' ? ['synergyTags', 'supportsTags'] : ['preferredSynergyTags']).map(key => <label className="block" key={key}>{key} · 쉼표 구분<input className={control} value={draft[key].join(', ')} onChange={e => update(key, e.target.value.split(',').map(tag => tag.trim()).filter(Boolean))} /></label>)}{draft.kind === 'CARD' && toggle('excluded', '타워 보상에서 제외')}</>}
+        {data?.[kind].some(row => row.id === draft.id) && <button className={button+" border-red-800 text-red-300"} disabled={busy || musicUploading} onClick={() => void removeDraft()}>선택 항목 삭제</button>}
         <button className={`${button} sticky bottom-3 w-full border-primary bg-neutral-950`} disabled={busy || !draft.id || ((kind === 'presets' || kind === 'starters') && draft.cardIds.length !== 25)} onClick={() => void operate(() => request(kind === 'metadata' ? `/tower/metadata/${draft.kind}/${draft.id}` : `/tower/${kind}/${draft.id}`, { data: draft, ...(kind === 'seasons' ? { active } : {}) }, 'PUT'))}>{busy ? '저장 중…' : '설정 저장'}</button>
       </div>}
     </>}

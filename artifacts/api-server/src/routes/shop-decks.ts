@@ -99,6 +99,17 @@ router.patch("/admin/shop-decks/:id", async (req, res) => {
     .returning();
   res.json({ item });
 });
+router.delete("/admin/shop-decks/:id", async (req, res) => {
+  const id = String(req.params.id);
+  await db.transaction(async tx => {
+    const [item] = await tx.select().from(products).where(eq(products.id, id)).for("update");
+    if (!item) throw new ShopDeckError(404, "덱 상품을 찾을 수 없습니다.");
+    const [receipt] = await tx.select({ id: purchases.id }).from(purchases).where(eq(purchases.productId, id)).limit(1);
+    if (receipt) throw new ShopDeckError(409, "구매 기록이 있는 덱 상품은 삭제할 수 없습니다. 판매 중지를 사용해 주세요.");
+    await tx.delete(products).where(eq(products.id, id));
+  });
+  res.json({ deleted: true, id });
+});
 // Deactivation must remain possible after a source card was deleted or unpublished.
 router.post("/admin/shop-decks/:id/disable", async (req, res) => {
   const [item] = await db

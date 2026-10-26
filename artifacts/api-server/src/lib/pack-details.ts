@@ -1,3 +1,4 @@
+import { championSkinArtwork } from "@workspace/cosmetics";
 import { championSkinPool } from "./champion-skin-pool";
 import { and, eq, inArray } from "drizzle-orm";
 import {
@@ -134,7 +135,7 @@ export async function getPackDetails(
       individualProbability: skinCount ? pack.skinChance / skinCount : 0,
     })), ...championSkins.map(({ cosmetic, champion }) => ({
       id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, description: cosmetic.description,
-      imageUrl: cosmetic.imageAssets.portrait ?? cosmetic.imageAssets.art ?? cosmetic.imageAssets.intro ?? cosmetic.imageAssets.awakened ?? null,
+      imageUrl: championSkinArtwork(cosmetic.imageAssets) ?? cosmetic.imageAssets.awakened ?? null,
       imageDisplayMode: "CONTAIN", imageScale: 1, imagePositionX: 50, imagePositionY: 50,
       card: { id: champion.id, name: champion.name, cardType: "CHAMPION", cost: 0, attack: 0, health: champion.maxHealth, text: champion.abilityText, rarity: "CHAMPION", imageUrl: champion.imageUrl, imageDisplayMode: "CONTAIN", imageScale: 1, imagePositionX: 50, imagePositionY: 50 },
       individualProbability: skinCount ? pack.skinChance / skinCount : 0, cosmetic,

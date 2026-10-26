@@ -124,7 +124,7 @@ export function AdminCardSkinManager({ onUnauthorized }: { onUnauthorized: () =>
   }
 
   async function action(path: string, init?: RequestInit) {
-    if(init?.method==="DELETE"&&!window.confirm("선택한 항목을 삭제할까요? 삭제 후에는 되돌릴 수 없습니다."))return;
+    if(init?.method==="DELETE"&&!window.confirm(`“${selected?.name ?? "선택한 스킨"}” 스킨을 삭제할까요? 모든 유저의 보유에서 제거됩니다. 연결된 팩이 있으면 먼저 제거해야 합니다.`))return;
     try {
       await api(path, init);
       setMessage("처리했습니다.");

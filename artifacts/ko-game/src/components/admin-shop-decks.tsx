@@ -108,6 +108,14 @@ export function AdminShopDecks() {
       setMessage("판매용 덱을 저장했습니다.");
     });
   }
+  async function removeProduct() {
+    const item = data?.items.find(item => item.id === form.id);
+    if (!item || !window.confirm(`“${item.name}” 덱 상품을 삭제할까요?\n구매 기록이 있는 상품은 삭제가 차단됩니다. 기존 구매 내역과 유저 덱은 유지됩니다.`)) return;
+    await run(async () => {
+      await shopDeckRequest(`/admin/shop-decks/${encodeURIComponent(item.id)}`, { method: "DELETE" });
+      setForm(blank()); await load(); setMessage("덱 상품을 삭제했습니다.");
+    });
+  }
   async function upload(file: File) {
     await run(async () => {
       const r = await shopDeckRequest<{
@@ -462,6 +470,7 @@ export function AdminShopDecks() {
               >
                 판매 덱 저장
               </button>
+              {form.id && <button type="button" disabled={busy} className={button+" border-red-800 text-red-300"} onClick={() => void removeProduct()}>덱 상품 삭제</button>}
               {form.id && (
                 <button
                   type="button"

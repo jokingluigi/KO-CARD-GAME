@@ -1,3 +1,6 @@
+import { cosmeticsWriteLock } from "../lib/cosmetics";
+import { AdminDeletionError } from "../lib/admin-content-deletion";
+import { championSkinArtwork } from "@workspace/cosmetics";
 import { championSkinPool } from "../lib/champion-skin-pool";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -5,6 +8,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
   cardSkinDefinitionsTable,
+  cosmeticItemsTable,
   championsTable,
   db,
   packDefinitionsTable,
@@ -94,6 +98,21 @@ function parseInput(value: unknown): PackInput | null {
   return inputData;
 }
 
+type CatalogTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+async function withSkinPool<T>(ids: string[], write: (tx: CatalogTransaction) => Promise<T>): Promise<T> {
+  return db.transaction(async tx => {
+    await tx.execute(cosmeticsWriteLock);
+    if (ids.length) {
+      const [cards, cosmetics] = await Promise.all([
+        tx.select({ id: cardSkinDefinitionsTable.id }).from(cardSkinDefinitionsTable).where(inArray(cardSkinDefinitionsTable.id, ids)),
+        tx.select({ id: cosmeticItemsTable.id }).from(cosmeticItemsTable).where(and(inArray(cosmeticItemsTable.id, ids), eq(cosmeticItemsTable.type, "CHAMPION_SKIN"))),
+      ]);
+      const existing = new Set([...cards, ...cosmetics].map(row => row.id));
+      if (ids.some(id => !existing.has(id))) throw new AdminDeletionError(422, "삭제되었거나 존재하지 않는 스킨이 포함되어 있습니다. 스킨 풀을 다시 선택해 주세요.");
+    }
+    return write(tx);
+  });
+}
 async function validationErrors(pack: PackInput | typeof packDefinitionsTable.$inferSelect): Promise<string[]> {
   const errors: string[] = [];
   if (!pack.name.trim()) errors.push("팩 이름을 입력해 주세요.");
@@ -172,7 +191,7 @@ router.get("/options", async (request, response): Promise<void> => {
     role: usersTable.role,
   }).from(usersTable).orderBy(asc(usersTable.nickname));
   const championSkins = await championSkinPool();
-  response.json({ cards, champions, skins: [...skins, ...championSkins.map(({cosmetic, champion}) => ({ id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, cardDefinitionId: champion.id, cardName: champion.name, imageUrl: cosmetic.imageAssets.portrait ?? cosmetic.imageAssets.art ?? null }))], users });
+  response.json({ cards, champions, skins: [...skins, ...championSkins.map(({cosmetic, champion}) => ({ id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, cardDefinitionId: champion.id, cardName: champion.name, imageUrl: championSkinArtwork(cosmetic.imageAssets) ?? null }))], users });
 });
 
 router.post("/:id/grant", async (request, response): Promise<void> => {
@@ -211,7 +230,7 @@ router.post("/", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseInput(request.body);
   if (!input) { response.status(400).json({ message: "팩 입력값을 확인해 주세요." }); return; }
-  const [pack] = await db.insert(packDefinitionsTable).values({ id: randomUUID(), ...input, status: "DRAFT", version: 1 }).returning();
+  const [pack] = await withSkinPool(input.skinPool, tx => tx.insert(packDefinitionsTable).values({ id: randomUUID(), ...input, status: "DRAFT", version: 1 }).returning());
   response.status(201).json({ pack, validationErrors: await validationErrors(pack!) });
 });
 
@@ -219,9 +238,9 @@ router.patch("/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseInput(request.body);
   if (!input) { response.status(400).json({ message: "팩 입력값을 확인해 주세요." }); return; }
-  const [pack] = await db.update(packDefinitionsTable).set({
+  const [pack] = await withSkinPool(input.skinPool, tx => tx.update(packDefinitionsTable).set({
     ...input, version: sql`${packDefinitionsTable.version} + 1`, updatedAt: new Date(),
-  }).where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`)).returning();
+  }).where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`)).returning());
   if (!pack) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
   response.json({ pack, validationErrors: await validationErrors(pack) });
 });
@@ -231,14 +250,14 @@ router.post("/:id/duplicate", async (request, response): Promise<void> => {
   const [source] = await db.select().from(packDefinitionsTable).where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`)).limit(1);
   if (!source) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
   const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, deletedAt: _deletedAt, ...copy } = source;
-  const [pack] = await db.insert(packDefinitionsTable).values({
+  const [pack] = await withSkinPool(source.skinPool, tx => tx.insert(packDefinitionsTable).values({
     ...copy,
     id: randomUUID(),
     name: `${source.name} Copy`,
     starterRewardQuantity: 0,
     status: "DRAFT",
     version: 1,
-  }).returning();
+  }).returning());
   response.status(201).json({ pack });
 });
 
@@ -252,8 +271,8 @@ router.post("/:id/status", async (request, response): Promise<void> => {
     const errors = await validationErrors(existing);
     if (errors.length) { response.status(422).json({ message: errors.join(" "), errors }); return; }
   }
-  const [pack] = await db.update(packDefinitionsTable).set({ status: status as string, version: sql`${packDefinitionsTable.version} + 1`, updatedAt: new Date() })
-    .where(eq(packDefinitionsTable.id, request.params.id)).returning();
+  const [pack] = await withSkinPool(existing.skinPool, tx => tx.update(packDefinitionsTable).set({ status: status as string, version: sql`${packDefinitionsTable.version} + 1`, updatedAt: new Date() })
+    .where(eq(packDefinitionsTable.id, request.params.id)).returning());
   response.json({ pack });
 });
 
@@ -323,4 +342,8 @@ router.delete("/:id", async (request, response): Promise<void> => {
   response.status(204).end();
 });
 
+router.use((error: unknown, _req: Request, res: Response, next: import("express").NextFunction) => {
+  if (error instanceof AdminDeletionError) { res.status(error.status).json({ message: error.message }); return; }
+  next(error);
+});
 export default router;
