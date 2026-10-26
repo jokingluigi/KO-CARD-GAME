@@ -275,7 +275,7 @@ router.post("/admin/cosmetics/users/:id/grants", async (req, res) => {
   await db.transaction(async (tx) => {
     await tx.execute(cosmeticsWriteLock);
     const [user] = await tx
-      .select({ id: usersTable.id })
+      .select({ id: usersTable.id, role: usersTable.role })
       .from(usersTable)
       .where(eq(usersTable.id, req.params.id));
     const [item] = await tx
@@ -284,6 +284,8 @@ router.post("/admin/cosmetics/users/:id/grants", async (req, res) => {
       .where(eq(items.id, cosmeticId));
     if (!user || !item)
       throw new CosmeticError(404, "계정 또는 아이템을 찾을 수 없습니다.");
+    if (action === "REVOKE" && user.role === "ADMIN" && item.isActive && ["CHAMPION_SKIN", "CARD_SKIN"].includes(item.type))
+      throw new CosmeticError(422, "관리자 계정은 모든 활성 스킨이 자동 해금되어 개별 회수할 수 없습니다.");
     if (action === "GRANT") {
       if (!item.isActive)
         throw new CosmeticError(422, "비활성 아이템은 지급할 수 없습니다.");

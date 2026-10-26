@@ -1,3 +1,4 @@
+import { ensureAdminSkins } from "./admin-skin-access";
 import { logger } from "./logger";
 import { and, eq, asc, sql } from "drizzle-orm";
 import {
@@ -89,6 +90,7 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
   return result;
 }
 export async function listOwnedCosmetics(userId: string) {
+  await ensureAdminSkins(userId);
   return db
     .select({ item: items, acquiredAt: owned.acquiredAt })
     .from(owned)
@@ -103,6 +105,7 @@ export async function equipCosmetic(
 ) {
   if (!/^(back|emote:[1-4]|(?:card|champion):.{1,256})$/.test(slot))
     throw new CosmeticError(400, "장착 슬롯이 올바르지 않습니다.");
+  await ensureAdminSkins(userId);
   await db.transaction(async (tx) => {
     await tx.execute(cosmeticsWriteLock);
     if (cosmeticId) {
