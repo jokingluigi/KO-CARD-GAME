@@ -33,6 +33,27 @@ export function ChampionSpeechBubble({
         outline = frame.current;
       if (!node || !outline || !portrait) return;
       const rect = portrait.getBoundingClientRect();
+      const offscreen =
+        rect.width < 8 ||
+        rect.height < 8 ||
+        rect.bottom <= 0 ||
+        rect.top >= innerHeight;
+      if (offscreen && ko) {
+        // A finished mobile match can show only one HUD at a time. Keep both
+        // final lines readable without moving or resurrecting the shattered HUD.
+        signature = "";
+        const width = Math.min(290, innerWidth - 16);
+        node.style.width = width + "px";
+        node.style.maxHeight = Math.min(160, (innerHeight - 32) / 2) + "px";
+        node.style.left = Math.max(8, innerWidth - width - 8) + "px";
+        node.style.visibility = "visible";
+        node.style.top =
+          (portrait.classList.contains("ko-player-champion")
+            ? Math.max(8, innerHeight - node.offsetHeight - 8)
+            : 8) + "px";
+        outline.style.visibility = "hidden";
+        return;
+      }
       if (
         rect.width < 8 ||
         rect.height < 8 ||
@@ -121,7 +142,7 @@ export function ChampionSpeechBubble({
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [anchor, text]);
+  }, [anchor, text, ko]);
   const content = (
     <>
       <div

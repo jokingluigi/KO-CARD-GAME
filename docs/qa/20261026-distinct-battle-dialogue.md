@@ -4,7 +4,7 @@ Base `ec1801d` (PR #95), branch `feat/distinct-battle-dialogue`.
 
 ## Result
 
-Champion emotes/start abilities/quest completion now use a named speech bubble tethered to the actual champion HUD, with a short border emphasis. KO victory/defeat uses the same vocabulary for both actors at the existing portrait-burst callback. No dialogue text, card/champion data, combat rules, audio assets or KO reading duration was changed.
+Champion emotes/start abilities/quest completion now use a named speech bubble tethered to the actual champion HUD, with a short border emphasis. KO victory/defeat uses the same vocabulary for both actors at the existing portrait-burst callback. No dialogue text, card/champion data, combat rules, audio assets or KO reading duration was changed. A final KO line remains visible at the viewport edge if its actual HUD is outside the scrolled viewport.
 
 Wrestler dialogue is a separate illustrated ribbon: actual card/skin art, card name, owner side and enter/retire/destroy label. Legendary entrances receive the stronger matte-gold accent. Other existing wrestler/token lines retain their actual identity and wording rather than impersonating a champion.
 
@@ -43,7 +43,7 @@ Component paths above are under `artifacts/ko-game/src/components/`.
 - Card selection/cancel takes priority over the ribbon; the authoritative game-state snapshot remains identical through the UI-only selection/cancel flow, PASS.
 - Existing quest-completion browser at 360/390/1440 and motion/reduced-motion: PASS, including opponent completion, empty optional lines, same-action/later defeat suppression and reconnect deduplication.
 - Existing champion-features browser at desktop/mobile/small: PASS, including retirement/destruction lines and existing administrative configuration flows.
-- Existing KO/intro browser at 390/360: PASS, including own defeat, both lines at the actual HUD burst, viewport bounds, no duplicate result quotes, busy release and finished reconnect without replay.
+- Existing KO/intro browser at 390/360 and short 390×420: PASS, including own defeat, both lines at the actual HUD burst, viewport bounds, no duplicate result quotes, busy release and finished reconnect without replay.
 - Existing isolated cosmetics browser: all **8 groups PASS**, including two authenticated PvP clients, reload, image emotes, original-art fallback and real AI setup/start.
 
 Reproduction uses the existing dev server on port 5186 and local fixture tools:
