@@ -32,11 +32,13 @@ function animationDuration(animation: CardPlayAnimationState) {
 export function CardPlayAnimation({
   animation,
   onComplete,
+  onLand,
   viewerPlayerId,
   hapticsEnabled=true,
 }: {
   animation: CardPlayAnimationState;
   onComplete: () => void;
+  onLand?: (instanceId:string) => void;
   viewerPlayerId?: string;
   hapticsEnabled?: boolean;
 }) {
@@ -54,6 +56,7 @@ export function CardPlayAnimation({
   },[]);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const onLandRef=useRef(onLand);onLandRef.current=onLand;
   const definition = getCardDefinition(animation.card.definitionId);
   const cosmeticArtwork=useCosmeticImage((!animation.card.isToken||animation.card.isChampionToken)?animation.playerId:undefined,animation.card.definitionId,'CARD_SKIN',definition?.imageUrl).src;
 
@@ -109,7 +112,7 @@ export function CardPlayAnimation({
     };
     const land=()=>{
       if(landedRef.current||document.hidden)return;
-      landedRef.current=true;setLanded(true);
+      landedRef.current=true;setLanded(true);onLandRef.current?.(animation.card.instanceId);
       const x=targetLeft+source.width*targetScale/2,y=targetTop+source.height*targetScale/2;
       const accepted=screenRef.current.request({id:'landing:'+occurrenceId+':'+animation.card.instanceId,profile,x,y,direction:{x:0,y:1},nearby:impactRank(profile)>=3});
       if(!accepted&&screenRef.current.isActive())return;
@@ -154,6 +157,7 @@ export function CardPlayAnimation({
 
   return (
     <div
+      data-play-landed={landed ? "true" : "false"}
       aria-hidden={animation.kind === "WRESTLER"}
       className={`card-play-animation ${animation.kind==='WRESTLER'?'ko-summon-motion':''} ${animation.kind==='WRESTLER'&&(animation.card.currentCost>=6||definition?.rarity==='CHAMPION'||definition?.rarity==='LEGENDARY')?'ko-summon-heavy':''} ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}
       style={style}

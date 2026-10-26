@@ -2576,10 +2576,6 @@
 }
 
 /* Match voices and cinematic beats share the board's visual language. */
-.champion-spoken-line { position: fixed; z-index: 225; bottom: 24%; max-width: min(72vw, 340px); padding: 12px 18px; border: 1px solid #e9b956; border-radius: 16px; background: #130f0bf0; color: white; font-weight: 800; box-shadow: 0 12px 35px #000b, 0 0 20px #e9b95644; animation: ko-spoken-in 2.6s ease both; pointer-events: none; }
-.champion-spoken-line--mine { left: 12%; }
-.champion-spoken-line--theirs { right: 12%; bottom: 63%; }
-@keyframes ko-spoken-in { 0% { opacity: 0; transform: translateY(18px) scale(.92); } 12%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
 /* A legendary enters through the same hand-to-slot motion as every card. */
 .card-play-animation--wrestler.card-play-animation--rarity-legendary .card-play-animation__card { animation-duration: 940ms; animation-timing-function: cubic-bezier(.18,.7,.22,1); z-index: 2; }
 .card-landing-shake--legendary { animation: ko-attack-screen-shake-heavy 215ms ease-out 700ms backwards; }
@@ -2600,11 +2596,10 @@
 .champion-defeat-cinematic__victory { color: #fde68a; margin-top: 8px; }
 @keyframes ko-portrait-shatter { 0% { transform: scale(1.1); filter: brightness(1); } 38% { transform: scale(1.2); filter: brightness(2); } 55% { transform: scale(1.3) rotate(-3deg); filter: brightness(2.5); } 100% { transform: scale(1.9) rotate(8deg); filter: brightness(.15); opacity: 0; clip-path: polygon(0 0, 42% 0, 30% 37%, 0 58%, 0 100%, 52% 100%, 71% 56%, 100% 64%, 100% 0); } }
 @keyframes ko-cracks { 0%, 30% { opacity: 0; } 45%, 75% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .champion-spoken-line, .legendary-entrance__focus, .legendary-entrance__ring, .legendary-entrance__title, .champion-defeat-cinematic__portrait, .champion-defeat-cinematic__fracture, .champion-defeat-cinematic__ko { animation-duration: .01ms; } }
+@media (prefers-reduced-motion: reduce) { .legendary-entrance__focus, .legendary-entrance__ring, .legendary-entrance__title, .champion-defeat-cinematic__portrait, .champion-defeat-cinematic__fracture, .champion-defeat-cinematic__ko { animation-duration: .01ms; } }
 
 /* Reduced motion must keep spoken text visible until its normal dismiss timer. */
 @media (prefers-reduced-motion: reduce) {
-  .champion-spoken-line { animation: none; }
 }
 
 /* Card information is reachable by a small corner button on pointer and touch screens. */
