@@ -12,7 +12,7 @@ The summon ribbon starts from the existing `CardPlayAnimation` landing callback,
 
 The narrow-screen ribbon fits in the existing central instruction row; no new board rows, card scaling or hand repositioning. Errors, targeting/cancel instructions, selected cards/attackers, turn confirmation and intro take priority. Champion bubbles keep health/gold, field/hand cards, ability and image-emote buttons clear, and hide during targeting or open menus. They temporarily use the portrait/name/quest-information side of the HUD; no quest state or controls are removed. Longer custom text can scroll inside the bounded bubble. The current longer lines use compact text when needed.
 
-Bubbles follow camera/scroll movement via a short-lived animation-frame follower, skip unchanged geometry, and release observers/listeners/frames on unmount. Reduced motion disables the slide and portrait emphasis. Text appears as a complete sentence, without a typewriter delay. Game-ID changes, event-log reset, reconnect history and terminal state clear/suppress stale speech.
+Bubbles follow camera/scroll movement via a short-lived animation-frame follower, skip unchanged geometry, and release observers/listeners/frames on unmount. Reduced motion disables the slide and portrait emphasis. Text appears as a complete sentence, without a typewriter delay. Normal speech stays on battle layer 225, below card-artwork modals; KO speech remains inside its separate layer-276 wrapper. Game-ID changes, event-log reset, reconnect history and terminal state clear/suppress stale speech.
 
 ## Mobile previews
 
@@ -42,6 +42,7 @@ Component paths above are under `artifacts/ko-game/src/components/`.
 - Two actual opponent plays combined into one state update: both named speakers appear in order, PASS.
 - Card selection/cancel takes priority over the ribbon; the authoritative game-state snapshot remains identical through the UI-only selection/cancel flow, PASS.
 - Existing quest-completion browser at 360/390/1440 and motion/reduced-motion: PASS, including opponent completion, empty optional lines, same-action/later defeat suppression and reconnect deduplication.
+- Actual card-artwork modal while champion speech is active: modal remains visible and receives hit-testing above the speech, PASS.
 - Existing champion-features browser at desktop/mobile/small: PASS, including retirement/destruction lines and existing administrative configuration flows.
 - Existing KO/intro browser at 390/360 and short 390×420: PASS, including own defeat, both lines at the actual HUD burst, viewport bounds, no duplicate result quotes, busy release and finished reconnect without replay.
 - Existing isolated cosmetics browser: all **8 groups PASS**, including two authenticated PvP clients, reload, image emotes, original-art fallback and real AI setup/start.

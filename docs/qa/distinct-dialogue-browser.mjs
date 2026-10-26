@@ -18,12 +18,21 @@ for(const [width,height,reduced] of JSON.parse(process.env.KO_DIALOGUE_SIZES??'[
  const bubble=page.getByRole('status',{name:'챔피언 대사',exact:true});await bubble.getByText('내 챔피언이 말한다.',{exact:true}).waitFor();await page.waitForTimeout(200);
  const overlaps=await bubble.evaluate(node=>{const a=node.getBoundingClientRect();return [...document.querySelectorAll('.ko-turn-end,.ko-champion-ability,.cosmetic-emote-tools >button,.ko-player-stats,.ko-opponent-stats,.ko-board-cards,.ko-player-hand')].filter(n=>{const b=n.getBoundingClientRect();return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;}).map(n=>n.className);});assert.deepEqual(overlaps,[],'champion speech must not cover health, cards or controls');
  await page.screenshot({path:`${out}/champion-${width}-${reduced}.png`});
+ if(width===390&&!reduced){
+  await page.locator('.ko-player-hand [data-touch-inspect-trigger]').first().dispatchEvent('click');
+  const info=page.getByRole('complementary',{name:'상세정보',exact:true});await info.waitFor();
+  await info.getByRole('button',{name:/풀 일러스트 보기/}).click();
+  const modal=page.getByRole('dialog');await modal.waitFor();
+  const stacking=await page.locator(".ko-champion-speech").evaluate(node=>{const r=node.getBoundingClientRect();const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {speechOnTop:!!hit?.closest('.ko-champion-speech'),speechZ:Number(getComputedStyle(node).zIndex),modalZ:Number(getComputedStyle(document.querySelector('[role=dialog]')).zIndex)};});
+  assert.equal(stacking.speechOnTop,false,JSON.stringify(stacking));assert.ok(stacking.modalZ>stacking.speechZ,JSON.stringify(stacking));results.push({actualArtworkModalAboveSpeech:true});
+  await page.keyboard.press('Escape');const closeInfo=info.getByRole('button',{name:'상세정보 닫기',exact:true});if(await closeInfo.isVisible())await closeInfo.click();
+ }
  // Observe the actual landing commit and cut-in appearance, rather than sleeping to a guessed time.
  await page.evaluate(()=>{window.__speechTimes={};new MutationObserver(()=>{const a=document.querySelector('.card-play-animation[data-play-landed=true]');if(a&&!window.__speechTimes.landed)window.__speechTimes.landed=performance.now();if(document.querySelector('.ko-wrestler-cutin')&&!window.__speechTimes.cutin)window.__speechTimes.cutin=performance.now();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-play-landed']});});
  await page.locator('.ko-player-hand .ko-hand-card').first().click();await page.locator('.ko-player-board-row .ko-board-slot').first().click();
  const cutin=page.getByRole('status',{name:'선수 대사',exact:true});await cutin.getByText('넌 지금 자연을 적으로 돌렸다!',{exact:true}).waitFor();
  assert.equal(await cutin.locator('strong').textContent(),'RM우디르');assert.ok((await cutin.textContent()).includes('LEGENDARY'));
- assert.ok(!(await bubble.textContent()).includes('넌 지금 자연을 적으로 돌렸다!'));
+ if(await bubble.count())assert.ok(!(await bubble.textContent()).includes('넌 지금 자연을 적으로 돌렸다!'));
  const times=await page.evaluate(()=>window.__speechTimes);assert.ok(times.landed&&times.cutin&&times.cutin>=times.landed-20,JSON.stringify(times));
  await page.waitForFunction(()=>document.querySelector(".ko-wrestler-cutin")?.getAnimations().every(animation=>animation.playState==="finished"));
  const {rect,rail}=await page.evaluate(()=>{const box=n=>{const r=n.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}};return{rect:box(document.querySelector('.ko-wrestler-cutin')),rail:box(document.querySelector('[data-testid=battle-command-strip]'))}});assert.ok(rect.x>=rail.x-2&&rect.y>=rail.y-2&&rect.x+rect.width<=rail.x+rail.width+2&&rect.y+rect.height<=rail.y+rail.height+2,JSON.stringify({rect,rail}));
