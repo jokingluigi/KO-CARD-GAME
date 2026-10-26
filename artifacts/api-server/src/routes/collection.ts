@@ -1,3 +1,4 @@
+import { ensureAdminSkins } from "../lib/admin-skin-access";
 import { championSkinPool } from "../lib/champion-skin-pool";
 import { randomInt } from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
@@ -51,6 +52,7 @@ router.get("/", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
   const admin = user.role === "ADMIN";
+  if (admin) await ensureAdminSkins(user.id);
   const [cardRows, championOwnershipRows, craftableCards, prismSettings, publishedTestCards, publishedChampions, championPrismSetting] = await Promise.all([
     db.select({
       quantity: userCardCollectionsTable.quantity,

@@ -882,6 +882,45 @@ test("champion skin token set: validated linkage, existing owner, actual single/
   await database.transaction(async tx => { assert.equal(await grantSkinOriginal(tx, "player-b", "CARD", cards[0]!.id), true); assert.equal(await grantSkinOriginal(tx, "player-b", "CARD", cards[0]!.id), false); });
 });
 
+test("all administrator accounts unlock current/new skins; users and non-skin items stay isolated", async () => {
+  const { ensureAdminSkins } = await import("../../../artifacts/api-server/src/lib/admin-skin-access");
+  for (const id of ["admin", "second-admin"]) {
+    if (id !== "admin") await database.insert(schema.usersTable).values({ id, email: id + "@cosmetics.invalid", nickname: id, passwordHash: hash, role: "ADMIN" });
+    await ensureAdminSkins(id);
+    const owned = await database.select().from(schema.userCosmeticsTable).where(eq(schema.userCosmeticsTable.userId, id));
+    for (const type of ["CHAMPION_SKIN", "CARD_SKIN"]) assert.ok(owned.some(row => row.cosmeticId === registered[type].id));
+    assert.ok(!owned.some(row => row.cosmeticId === registered.CARD_BACK.id || row.cosmeticId === registered.IMAGE_EMOTE.id));
+    const legacy = await database.select().from(schema.userCardSkinCollectionsTable).where(eq(schema.userCardSkinCollectionsTable.userId, id));
+    assert.ok(legacy.some(row => row.skinDefinitionId === "pack-card-skin"));
+    await ensureAdminSkins(id);
+    assert.equal((await database.select().from(schema.userCosmeticsTable).where(eq(schema.userCosmeticsTable.userId, id))).length, owned.length);
+  }
+  const created = await api(prefix + "/items", "admin", "POST", { ...registered.CHAMPION_SKIN, name: "새 관리자 자동 해금 스킨" });
+  assert.equal(created.status, 201);
+  const skin = created.body.item;
+  const inventory = await api("/cosmetics", "admin");
+  assert.ok(inventory.body.owned.some((o: any) => o.item.id === skin.id));
+  const equipped = await api("/cosmetics/equipment", "admin", "PUT", { slot: "champion:cosmetic-hero", cosmeticId: skin.id });
+  assert.equal(equipped.status, 200, JSON.stringify(equipped.body));
+  assert.equal(equipped.body.loadout.skins["champion:cosmetic-hero"].id, skin.id);
+  assert.equal((await api(prefix + "/users/admin/grants", "admin", "POST", { cosmeticId: skin.id, action: "REVOKE" })).status, 422);
+  assert.equal(cosmeticImage(equipped.body.loadout, "CARD_SKIN", "set-token", "art", "base"), uploaded);
+  // No inventory lookup is required before equipping a newly registered administrator skin.
+  const direct = await api(prefix + "/items", "admin", "POST", { ...skin, name: "직접 관리자 장착 스킨" });
+  assert.equal((await api("/cosmetics/equipment", "admin", "PUT", { slot: "champion:cosmetic-hero", cosmeticId: direct.body.item.id })).status, 200);
+  const ordinaryBefore = (await api("/cosmetics", "player-b")).body.owned.length;
+  await ensureAdminSkins("player-b");
+  assert.equal((await api("/cosmetics", "player-b")).body.owned.length, ordinaryBefore);
+  assert.equal((await api("/cosmetics/equipment", "player-b", "PUT", { slot: "champion:cosmetic-hero", cosmeticId: skin.id, role: "ADMIN" })).status, 403);
+  const disabled = await api(prefix + "/items", "admin", "POST", { ...skin, name: "비활성 스킨", isActive: false });
+  await ensureAdminSkins("admin");
+  assert.ok(!(await api("/cosmetics", "admin")).body.owned.some((o: any) => o.item.id === disabled.body.item.id));
+  assert.equal((await api("/cosmetics/equipment", "admin", "PUT", { slot: "champion:cosmetic-hero", cosmeticId: disabled.body.item.id })).status, 403);
+  await database.update(schema.usersTable).set({ role: "USER" }).where(eq(schema.usersTable.id, "second-admin"));
+  await ensureAdminSkins("second-admin");
+  assert.ok(!(await database.select().from(schema.userCosmeticsTable).where(eq(schema.userCosmeticsTable.userId, "second-admin"))).some(row => row.cosmeticId === skin.id));
+});
+
 after(async () => {
   if (process.env.KO_COSMETICS_BROWSER_MODE === "1") {
     // Restore deck quantities after the missing-original acquisition tests.
