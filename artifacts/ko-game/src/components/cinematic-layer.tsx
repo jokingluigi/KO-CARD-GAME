@@ -1,3 +1,6 @@
+import {useCosmeticImage} from "./cosmetic-battle";
+import {CardArtwork} from "./card-artwork";
+import {questPortrait} from "./quest-media";
 import {BattleVfxDirector} from './battle-vfx';
 import {getCardDefinition,type GameState} from '@/game';
 import type {PresentationCue} from './presentation-feedback';
@@ -73,7 +76,7 @@ export function CinematicScene({event}:{event:CinematicEvent}){
  <div className="ko-cinematic__environment"/><div className="ko-cinematic__ink"/>
  {level>=2&&<div className="ko-cinematic__speed"/>}
  {major&&<div className="ko-cinematic__panel"><div className="ko-cinematic__emblem">KO</div>
- {event.art&&<img src={event.art} alt="" className="ko-cinematic__art" onError={e=>{e.currentTarget.style.visibility='hidden';}}/>}
+ {event.art&&<CardArtwork src={event.art} fallbackSrc={event.artFallback} displayOverride={event.artDisplay} imagePositionY={100} alt="" className="ko-cinematic__art"/>}
  <div className="ko-cinematic__copy"><span>{event.subtitle??event.kind.replaceAll('_',' ')}</span><strong>{event.title}</strong></div></div>}
  {event.kind==='BIG_SPELL'&&<div className="ko-cinematic__spell-seal"/>}
  {event.kind==='HIDDEN_BOSS'&&<div className="ko-cinematic__interference"/>}
@@ -82,12 +85,15 @@ export function CinematicScene({event}:{event:CinematicEvent}){
 
 export function CinematicIntro({event}:{event:CinematicRequest}){useCinematicEvent(event);return null;}
 export function CinematicCue({cue,state}:{cue:PresentationCue;state:GameState}){
- const owner=state.players.find(p=>p.id===cue.playerId||p.champion?.id===cue.championId);
+ const owner=cue.playerId ? state.players.find(p=>p.id===cue.playerId) : state.players.find(p=>p.champion?.id===cue.championId);
  const champion=owner?.champion;
  const source=state.players.flatMap(p=>[...p.board,...p.hand,...p.graveyard,...p.removedFromGame]).find(c=>c?.instanceId===cue.sourceCardInstanceId);
  const definition=source&&(state.cardPool?.find(d=>d.id===source.definitionId)??getCardDefinition(source.definitionId));
+ const sourceOwner=source?state.players.find(p=>[...p.board,...p.hand,...p.graveyard,...p.removedFromGame].some(c=>c?.instanceId===source.instanceId)):undefined;
+ const championArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),champion?.questCompleted?'awakened':'portrait');
+ const cardArt=useCosmeticImage(sourceOwner?.id,definition?.id,'CARD_SKIN',definition?.imageUrl);
  const kind=cue.kind==='EFFECT'&&cue.championId?'ABILITY':cue.kind==='DAMAGE'&&!cue.combat&&(cue.value??0)>=10?'FINISHER':null;
- useCinematicEvent(kind?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:champion?.questCompleted?champion.upgradedAbility?.name??champion.ability.name:champion?.ability.name??'CHAMPION ABILITY',art:kind==='FINISHER'?definition?.imageUrl:champion?.questCompleted&&champion.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,focus:{x:cue.left,y:cue.top}}:null);
+ useCinematicEvent(kind?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:champion?.questCompleted?champion.upgradedAbility?.name??champion.ability.name:champion?.ability.name??'CHAMPION ABILITY',art:kind==='FINISHER'?cardArt.src:championArt.src,artFallback:kind==='FINISHER'?definition?.imageUrl:questPortrait(champion),artDisplay:kind==='FINISHER'?cardArt.display:championArt.display,focus:{x:cue.left,y:cue.top}}:null);
  return null;
 }
 

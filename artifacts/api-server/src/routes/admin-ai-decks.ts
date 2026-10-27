@@ -1,7 +1,13 @@
+import {
+  aiCosmeticsAvailable,
+  aiSkinCatalog,
+  aiSkinSelectionError,
+} from "../lib/ai-deck-cosmetics";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   aiDecksTable,
+  aiDeckCosmeticsTable,
   cardsTable,
   championsTable,
   db,
@@ -44,7 +50,11 @@ function readBoolean(value: unknown, fallback: boolean): boolean {
 }
 
 function readCardIds(value: unknown): string[] | null {
-  if (!Array.isArray(value) || value.some((id) => typeof id !== "string" || !id.trim())) return null;
+  if (
+    !Array.isArray(value) ||
+    value.some((id) => typeof id !== "string" || !id.trim())
+  )
+    return null;
   return value.map((id) => id.trim());
 }
 
@@ -61,16 +71,24 @@ function readPayload(value: unknown): {
   const body = value as Record<string, unknown>;
   const cardDefinitionIds = readCardIds(body.cardDefinitionIds);
   if (!cardDefinitionIds) return null;
-  if (body.difficulty !== undefined && (typeof body.difficulty !== "string" || !["NORMAL", "HARD", "BOSS"].includes(body.difficulty))) return null;
-  const displayOrder = typeof body.displayOrder === "number" && Number.isFinite(body.displayOrder)
-    ? Math.trunc(body.displayOrder)
-    : 0;
+  if (
+    body.difficulty !== undefined &&
+    (typeof body.difficulty !== "string" ||
+      !["NORMAL", "HARD", "BOSS"].includes(body.difficulty))
+  )
+    return null;
+  const displayOrder =
+    typeof body.displayOrder === "number" && Number.isFinite(body.displayOrder)
+      ? Math.trunc(body.displayOrder)
+      : 0;
   return {
     name: readString(body.name),
     description: readString(body.description),
-    championDefinitionId: typeof body.championDefinitionId === "string" && body.championDefinitionId.trim()
-      ? body.championDefinitionId.trim()
-      : null,
+    championDefinitionId:
+      typeof body.championDefinitionId === "string" &&
+      body.championDefinitionId.trim()
+        ? body.championDefinitionId.trim()
+        : null,
     cardDefinitionIds,
     difficulty: (body.difficulty ?? "NORMAL") as "NORMAL" | "HARD" | "BOSS",
     enabled: readBoolean(body.enabled, false),
@@ -78,13 +96,22 @@ function readPayload(value: unknown): {
   };
 }
 
-async function validateForSave(payload: ReturnType<typeof readPayload>): Promise<string | null> {
+async function validateForSave(
+  payload: ReturnType<typeof readPayload>,
+): Promise<string | null> {
   if (!payload) return "AI 덱 정보를 확인해 주세요.";
-  if (!payload.name || Array.from(payload.name).length > 50) return "AI 덱 이름은 1~50자로 입력해 주세요.";
-  if (payload.cardDefinitionIds.length < AI_DECK_MIN_SIZE || payload.cardDefinitionIds.length > AI_DECK_MAX_SIZE) {
+  if (!payload.name || Array.from(payload.name).length > 50)
+    return "AI 덱 이름은 1~50자로 입력해 주세요.";
+  if (
+    payload.cardDefinitionIds.length < AI_DECK_MIN_SIZE ||
+    payload.cardDefinitionIds.length > AI_DECK_MAX_SIZE
+  ) {
     return `AI 덱 카드는 ${AI_DECK_MIN_SIZE}~${AI_DECK_MAX_SIZE}장이어야 합니다.`;
   }
-  const validation = await validateAIDeckReferences(payload.championDefinitionId, payload.cardDefinitionIds);
+  const validation = await validateAIDeckReferences(
+    payload.championDefinitionId,
+    payload.cardDefinitionIds,
+  );
   if (!validation.isValid) return validation.invalidReasons.join(" ");
   return null;
 }
@@ -95,17 +122,66 @@ router.get("/", async (_request, response): Promise<void> => {
 
 router.get("/options", async (_request, response): Promise<void> => {
   const [cards, champions] = await Promise.all([
-    db.select().from(cardsTable).orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
+    db
+      .select()
+      .from(cardsTable)
+      .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
     db.select().from(championsTable).orderBy(asc(championsTable.name)),
   ]);
   response.json({
     cards: cards.filter((card) => card.status !== "DISABLED"),
     champions: champions.filter((champion) => champion.status !== "DISABLED"),
+    cosmetics: await aiSkinCatalog(),
+    aiCosmeticsAvailable: await aiCosmeticsAvailable(),
     minCardCount: AI_DECK_MIN_SIZE,
     maxCardCount: AI_DECK_MAX_SIZE,
   });
 });
 
+async function skinInput(
+  body: Record<string, unknown>,
+  existingId?: string,
+  championId?: string | null,
+  cardIds: string[] = [],
+) {
+  if (body.cosmeticIds === undefined) return undefined;
+  if (
+    !Array.isArray(body.cosmeticIds) ||
+    body.cosmeticIds.some((id) => typeof id !== "string")
+  )
+    throw Object.assign(new Error("AI 스킨 선택을 확인해 주세요."), {
+      status: 422,
+    });
+  if (!(await aiCosmeticsAvailable())) {
+    if (body.cosmeticIds.length === 0) return undefined;
+    throw Object.assign(
+      new Error("AI 스킨 저장 준비가 필요합니다. 관리자에게 문의해 주세요."),
+      { status: 503 },
+    );
+  }
+  const error = aiSkinSelectionError(
+    body.cosmeticIds,
+    await aiSkinCatalog(),
+    championId ?? null,
+    cardIds,
+  );
+  if (error) throw Object.assign(new Error(error), { status: 422 });
+  return body.cosmeticIds as string[];
+}
+async function saveSkins(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  deckId: string,
+  ids: string[] | undefined,
+) {
+  if (ids === undefined) return;
+  await tx
+    .delete(aiDeckCosmeticsTable)
+    .where(eq(aiDeckCosmeticsTable.deckId, deckId));
+  if (ids.length)
+    await tx
+      .insert(aiDeckCosmeticsTable)
+      .values(ids.map((cosmeticId) => ({ deckId, cosmeticId })));
+}
 router.post("/", async (request, response): Promise<void> => {
   const payload = readPayload(request.body);
   const error = await validateForSave(payload);
@@ -113,16 +189,30 @@ router.post("/", async (request, response): Promise<void> => {
     response.status(422).json({ message: error });
     return;
   }
-  const [deck] = await db.insert(aiDecksTable).values({
-    id: crypto.randomUUID(),
-    ...payload!,
-  }).returning();
+  const ids = await skinInput(
+    request.body,
+    undefined,
+    payload!.championDefinitionId,
+    payload!.cardDefinitionIds,
+  );
+  const deck = await db.transaction(async (tx) => {
+    const [deck] = await tx
+      .insert(aiDecksTable)
+      .values({ id: crypto.randomUUID(), ...payload! })
+      .returning();
+    await saveSkins(tx, deck!.id, ids);
+    return deck;
+  });
   response.status(201).json({ deck: deck ? await resolveAIDeck(deck) : null });
 });
 
 router.patch("/:id", async (request, response): Promise<void> => {
   const id = request.params.id;
-  const [existing] = await db.select().from(aiDecksTable).where(eq(aiDecksTable.id, id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(aiDecksTable)
+    .where(eq(aiDecksTable.id, id))
+    .limit(1);
   if (!existing) {
     response.status(404).json({ message: "AI 덱을 찾을 수 없습니다." });
     return;
@@ -133,52 +223,102 @@ router.patch("/:id", async (request, response): Promise<void> => {
     response.status(422).json({ message: error });
     return;
   }
-  const [deck] = await db.update(aiDecksTable).set({
-    ...payload!,
-    difficulty: request.body.difficulty === undefined ? existing.difficulty : payload!.difficulty,
-    updatedAt: new Date(),
-  }).where(eq(aiDecksTable.id, id)).returning();
+  const existingSelection = (await resolveAIDeck(existing)).cosmeticIds ?? [];
+  const ids = await skinInput(
+    {
+      ...request.body,
+      cosmeticIds: request.body.cosmeticIds ?? existingSelection,
+    },
+    existing.id,
+    payload!.championDefinitionId,
+    payload!.cardDefinitionIds,
+  );
+  const deck = await db.transaction(async (tx) => {
+    const [deck] = await tx
+      .update(aiDecksTable)
+      .set({
+        ...payload!,
+        difficulty:
+          request.body.difficulty === undefined
+            ? existing.difficulty
+            : payload!.difficulty,
+        updatedAt: new Date(),
+      })
+      .where(eq(aiDecksTable.id, id))
+      .returning();
+    await saveSkins(tx, id, ids);
+    return deck;
+  });
   response.json({ deck: deck ? await resolveAIDeck(deck) : null });
 });
 
 router.post("/:id/duplicate", async (request, response): Promise<void> => {
-  const [source] = await db.select().from(aiDecksTable).where(eq(aiDecksTable.id, request.params.id)).limit(1);
+  const [source] = await db
+    .select()
+    .from(aiDecksTable)
+    .where(eq(aiDecksTable.id, request.params.id))
+    .limit(1);
   if (!source) {
     response.status(404).json({ message: "AI 덱을 찾을 수 없습니다." });
     return;
   }
-  const [deck] = await db.insert(aiDecksTable).values({
-    id: crypto.randomUUID(),
-    name: `${source.name} Copy`,
-    description: source.description,
-    championDefinitionId: source.championDefinitionId,
-    cardDefinitionIds: source.cardDefinitionIds,
-    difficulty: source.difficulty,
-    enabled: false,
-    displayOrder: source.displayOrder,
-  }).returning();
+  const selected = (await aiCosmeticsAvailable())
+    ? (await resolveAIDeck(source)).cosmeticIds
+    : undefined;
+  const deck = await db.transaction(async (tx) => {
+    const [deck] = await tx
+      .insert(aiDecksTable)
+      .values({
+        id: crypto.randomUUID(),
+        name: `${source.name} Copy`,
+        description: source.description,
+        championDefinitionId: source.championDefinitionId,
+        cardDefinitionIds: source.cardDefinitionIds,
+        difficulty: source.difficulty,
+        enabled: false,
+        displayOrder: source.displayOrder,
+      })
+      .returning();
+    await saveSkins(tx, deck!.id, selected);
+    return deck;
+  });
   response.status(201).json({ deck: deck ? await resolveAIDeck(deck) : null });
 });
 
 router.post("/:id/status", async (request, response): Promise<void> => {
-  const enabled = request.body && typeof request.body === "object" && typeof request.body.enabled === "boolean"
-    ? request.body.enabled
-    : null;
+  const enabled =
+    request.body &&
+    typeof request.body === "object" &&
+    typeof request.body.enabled === "boolean"
+      ? request.body.enabled
+      : null;
   if (enabled === null) {
-    response.status(400).json({ message: "AI 덱 활성화 상태가 올바르지 않습니다." });
+    response
+      .status(400)
+      .json({ message: "AI 덱 활성화 상태가 올바르지 않습니다." });
     return;
   }
-  const [existing] = await db.select().from(aiDecksTable).where(eq(aiDecksTable.id, request.params.id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(aiDecksTable)
+    .where(eq(aiDecksTable.id, request.params.id))
+    .limit(1);
   if (!existing) {
     response.status(404).json({ message: "AI 덱을 찾을 수 없습니다." });
     return;
   }
   const resolved = await resolveAIDeck(existing);
   if (enabled && !resolved.isValid) {
-    response.status(422).json({ message: "유효하지 않은 AI 덱은 활성화할 수 없습니다.", invalidReasons: resolved.invalidReasons });
+    response
+      .status(422)
+      .json({
+        message: "유효하지 않은 AI 덱은 활성화할 수 없습니다.",
+        invalidReasons: resolved.invalidReasons,
+      });
     return;
   }
-  const [deck] = await db.update(aiDecksTable)
+  const [deck] = await db
+    .update(aiDecksTable)
     .set({ enabled, updatedAt: new Date() })
     .where(eq(aiDecksTable.id, existing.id))
     .returning();
@@ -186,7 +326,10 @@ router.post("/:id/status", async (request, response): Promise<void> => {
 });
 
 router.delete("/:id", async (request, response): Promise<void> => {
-  const [deleted] = await db.delete(aiDecksTable).where(eq(aiDecksTable.id, request.params.id)).returning({ id: aiDecksTable.id });
+  const [deleted] = await db
+    .delete(aiDecksTable)
+    .where(eq(aiDecksTable.id, request.params.id))
+    .returning({ id: aiDecksTable.id });
   if (!deleted) {
     response.status(404).json({ message: "AI 덱을 찾을 수 없습니다." });
     return;
@@ -195,17 +338,40 @@ router.delete("/:id", async (request, response): Promise<void> => {
 });
 
 router.post("/:id/test", async (request, response): Promise<void> => {
-  const [deck] = await db.select().from(aiDecksTable).where(eq(aiDecksTable.id, request.params.id)).limit(1);
+  const [deck] = await db
+    .select()
+    .from(aiDecksTable)
+    .where(eq(aiDecksTable.id, request.params.id))
+    .limit(1);
   if (!deck) {
     response.status(404).json({ message: "AI 덱을 찾을 수 없습니다." });
     return;
   }
   const resolved = await resolveAIDeck(deck);
   if (!resolved.isValid) {
-    response.status(422).json({ message: "유효하지 않은 AI 덱은 테스트할 수 없습니다.", invalidReasons: resolved.invalidReasons });
+    response
+      .status(422)
+      .json({
+        message: "유효하지 않은 AI 덱은 테스트할 수 없습니다.",
+        invalidReasons: resolved.invalidReasons,
+      });
     return;
   }
   response.json({ deck: resolved });
 });
 
+router.use(
+  (
+    error: Error & { status?: number },
+    _request: import("express").Request,
+    response: import("express").Response,
+    next: import("express").NextFunction,
+  ) => {
+    if (error.status) {
+      response.status(error.status).json({ message: error.message });
+      return;
+    }
+    next(error);
+  },
+);
 export default router;

@@ -43,3 +43,4 @@ export * from "./usage-statistics";
 export * from './cosmetics';
 
 export * from "./shop-decks";
+export * from './ai-deck-cosmetics';

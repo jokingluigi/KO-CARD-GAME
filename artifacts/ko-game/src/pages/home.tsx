@@ -616,11 +616,11 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       aiMatchQuestContextRef.current={deckId:handoff.deckId,aiDeckId:handoff.aiDeckId,difficulty:handoff.difficulty,matchId:handoff.matchId};
       aiMatchActionsRef.current=[];submittedAIMatchRef.current=null;
       setAiRewardStatus('pending');setAiRewardError(null);setAiQuestError(null);
-      setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout});
-      await prepareIntroPortraits([cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl),handoff.opponentChampion.imageUrl]);
+      setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout,...(handoff.opponentCosmetics?{[next.players[1].id]:handoff.opponentCosmetics}:{})});
+      await prepareIntroPortraits([cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl),cosmeticImage(handoff.opponentCosmetics,'CHAMPION_SKIN',next.players[1].champion!.id,'intro',handoff.opponentChampion.imageUrl)]);
       if(controller.signal.aborted)return;
       const startedAt=Date.now();
-      setAiOpening(createAiMatchOpening(next.gameId,authUser.nickname,handoff.opponentName,{...handoff.selfChampion,originalPortraitUrl:handoff.selfChampion.imageUrl,imageUrl:cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl)},handoff.opponentChampion,startedAt,handoff.intro));
+      setAiOpening(createAiMatchOpening(next.gameId,authUser.nickname,handoff.opponentName,{...handoff.selfChampion,originalPortraitUrl:handoff.selfChampion.imageUrl,imageUrl:cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl)},{...handoff.opponentChampion,originalPortraitUrl:handoff.opponentChampion.imageUrl,imageUrl:cosmeticImage(handoff.opponentCosmetics,'CHAMPION_SKIN',next.players[1].champion!.id,'intro',handoff.opponentChampion.imageUrl)},startedAt,handoff.intro));
       setAiOpeningNow(startedAt);setAiOpeningSkipped(false);
       latestGameStateRef.current=next;setGameState(next);setMediaCatalog(media);
       setSelectedCardId(null);setSelectedAttackerId(null);setAiMatchStarted(true);setMatchReady(true);loaded=true;
@@ -695,7 +695,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     let resolvedOpeningDialogue: import("@/lib/ai-match-opening").MatchIntroDialogue | undefined;
     try {
       const prepared=await prepareAIMatchQuest({deckId:deck.id,aiDeckId:aiDeck.id,matchId});
-      await prepareIntroPortraits([userChampion.imageUrl,aiChampion.imageUrl]);
+      await prepareIntroPortraits([userChampion.imageUrl,cosmeticImage(aiDeck.cosmetics,'CHAMPION_SKIN',aiChampion.id,'intro',aiChampion.imageUrl)]);
       resolvedOpeningDialogue=prepared.intro;
       nextState={...prepared.state,backgroundId:nextState.backgroundId,bgmId:nextState.bgmId};
       setRuntimeCardDefinitions(nextState.cardPool??matchDefinitions);
@@ -714,15 +714,15 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     setAiRewardError(null);
     setAiQuestError(null);
     const frozenLoadout=await optionalCosmetics();
-    setAiCosmetics({[nextState.players[0].id]:frozenLoadout});
-    await prepareIntroPortraits([cosmeticImage(frozenLoadout,"CHAMPION_SKIN",userChampion.id,"intro",userChampion.imageUrl),aiChampion.imageUrl]);
+    setAiCosmetics({[nextState.players[0].id]:frozenLoadout,...(aiDeck.cosmetics?{[nextState.players[1].id]:aiDeck.cosmetics}:{})});
+    await prepareIntroPortraits([cosmeticImage(frozenLoadout,"CHAMPION_SKIN",userChampion.id,"intro",userChampion.imageUrl),cosmeticImage(aiDeck.cosmetics,'CHAMPION_SKIN',aiChampion.id,'intro',aiChampion.imageUrl)]);
     const openingStartedAt = Date.now();
     setAiOpening(createAiMatchOpening(
       nextState.gameId,
       authUser.nickname,
       aiDeck.name,
       {...userChampion,originalPortraitUrl:userChampion.imageUrl,imageUrl:cosmeticImage(frozenLoadout,"CHAMPION_SKIN",userChampion.id,"intro",userChampion.imageUrl)},
-      aiChampion,
+      {...aiChampion,originalPortraitUrl:aiChampion.imageUrl,imageUrl:cosmeticImage(aiDeck.cosmetics,'CHAMPION_SKIN',aiChampion.id,'intro',aiChampion.imageUrl)},
       openingStartedAt,
       resolvedOpeningDialogue,
     ));
@@ -1568,7 +1568,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
           <MatchIntroOverlay
             key={`intro:${aiOpening.gameId}`}
             self={{...aiOpening.self,portraitSettings:cosmeticImageSettings(aiCosmetics?.[gameState.players[0].id],"CHAMPION_SKIN",gameState.players[0].champion?.id??"","intro")}}
-            opponent={aiOpening.opponent}
+            opponent={{...aiOpening.opponent,portraitSettings:cosmeticImageSettings(aiCosmetics?.[gameState.players[1].id],"CHAMPION_SKIN",gameState.players[1].champion?.id??"","intro")}}
             firstSpeaker={aiOpening.firstSpeaker}
             startedAt={aiOpening.startedAt}
             gameplayStartsAt={aiOpening.gameplayStartsAt}

@@ -86,39 +86,28 @@ export function ChampionSpeechBubble({
         emote?.left,
         innerWidth,
         innerHeight,
+        node.offsetHeight,
       ].join(":");
       if (signature === nextSignature) return;
       signature = nextSignature;
-      const right = Math.max(
-        88,
-        Math.min(
-          innerWidth - 8,
-          emote ? emote.left - 5 : (hud?.right ?? innerWidth - 8),
-        ),
-      );
-      const left = Math.max(
-        8,
-        Math.min(rect.left + 6, right - 80, innerWidth - 88),
-      );
-      const top = Math.max(8, Math.min(rect.top + 4, innerHeight - 56)),
-        bottom = Math.min(
-          innerHeight - 8,
-          ability ? ability.top - 5 : rect.bottom - 4,
-        );
-      if (bottom - top < 44) {
+      const width = Math.min(560, innerWidth - 24);
+      node.style.width = width + "px";
+      node.style.maxHeight = "144px";
+      node.dataset.compact = "false";
+      const height = Math.min(144, node.offsetHeight);
+      const above = rect.top - height - 10;
+      const below = rect.bottom + 10;
+      const top =
+        above >= 8 ? above : below + height <= innerHeight - 8 ? below : null;
+      // Never cover the portrait, even when the HUD is partially offscreen.
+      if (top === null) {
         node.style.visibility = "hidden";
         outline.style.visibility = "hidden";
         return;
       }
-      node.style.left = left + "px";
+      node.style.left = (innerWidth - width) / 2 + "px";
       node.style.top = top + "px";
-      node.style.width = Math.max(80, Math.min(290, right - left)) + "px";
-      node.style.maxHeight = Math.max(48, bottom - top) + "px";
       node.style.visibility = "visible";
-      node.dataset.compact = "false";
-      const text = node.querySelector<HTMLElement>(".ko-champion-speech__text");
-      if (text && text.scrollHeight > text.clientHeight + 1)
-        node.dataset.compact = "true";
       outline.style.left = rect.left + "px";
       outline.style.top = rect.top + "px";
       outline.style.width = rect.width + "px";
@@ -136,6 +125,7 @@ export function ChampionSpeechBubble({
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
     if (anchor.current) observer?.observe(anchor.current);
+    if (bubble.current) observer?.observe(bubble.current);
     return () => {
       cancelAnimationFrame(animationFrame);
       observer?.disconnect();

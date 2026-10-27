@@ -22,6 +22,7 @@ type Props = { onUnauthorized: () => void };
 type FilterType = "ALL" | "WRESTLER" | "TECHNIQUE";
 type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT";
 type Draft = {
+  cosmeticIds:string[];
   id?: string;
   name: string;
   description: string;
@@ -33,6 +34,7 @@ type Draft = {
 };
 
 const emptyDraft: Draft = {
+  cosmeticIds:[],
   name: "",
   description: "",
   championDefinitionId: null,
@@ -45,6 +47,7 @@ const emptyDraft: Draft = {
 function draftFromDeck(deck: AIDeck): Draft {
   return {
     id: deck.id,
+    cosmeticIds:deck.cosmeticIds??[],
     name: deck.name,
     description: deck.description,
     championDefinitionId: deck.championDefinitionId,
@@ -244,6 +247,23 @@ return (
               <select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{filteredChampions.map((champion) => <option key={champion.id} value={champion.id}>{champion.name}{champion.status === "DRAFT" ? " [DRAFT]" : ""}</option>)}</select>
             </label>
           </div>
+<fieldset className="space-y-3 rounded border border-neutral-700 p-3" disabled={busy||options?.aiCosmeticsAvailable!==true}>
+  <legend className="px-2 text-sm font-black text-amber-200">AI 스킨</legend>
+  {options?.aiCosmeticsAvailable!==true&&<p className="text-xs text-amber-200">스킨 저장 준비가 필요합니다. 기존 AI 덱은 그대로 사용할 수 있습니다.</p>}
+  {[...(draft.championDefinitionId?[{id:draft.championDefinitionId,name:options?.champions.find(c=>c.id===draft.championDefinitionId)?.name??'챔피언',type:'CHAMPION_SKIN'}]:[]),...Array.from(new Set(draft.cardDefinitionIds)).map(id=>({id,name:options?.cards.find(c=>c.id===id)?.name??id,type:'CARD_SKIN'}))].map(target=>{
+    const items=(options?.cosmetics??[]).filter(item=>item.type===target.type&&item.targetId===target.id);
+    const selected=items.find(item=>draft.cosmeticIds.includes(item.id));
+    if(!items.length)return null;
+    return <label key={target.type+target.id} className="block text-sm">{target.name}
+      <select aria-label={target.name+' 스킨'} className="mt-1 min-h-11 w-full border border-neutral-700 bg-neutral-950 p-2" value={selected?.id??''} onChange={event=>setDraft({...draft,cosmeticIds:[...draft.cosmeticIds.filter(id=>!items.some(item=>item.id===id)),...(event.target.value?[event.target.value]:[])]})}>
+        <option value="">기본 일러스트</option>{items.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+      </select>
+      {selected&&<img className="mt-2 h-24 w-20 object-contain" src={selected.imageAssets.art??selected.imageAssets.portrait??selected.imageAssets.intro} alt={selected.name}/>}
+    </label>;
+  })}
+  {draft.cosmeticIds.filter(id=>!(options?.cosmetics??[]).some(item=>item.id===id&&(item.type==='CHAMPION_SKIN'?item.targetId===draft.championDefinitionId:draft.cardDefinitionIds.includes(item.targetId??'')))).map(id=><button type="button" key={id} className="min-h-11 border border-red-800 p-2 text-xs text-red-200" onClick={()=>setDraft({...draft,cosmeticIds:draft.cosmeticIds.filter(value=>value!==id)})}>덱과 맞지 않거나 삭제된 스킨 제거</button>)}
+  <p className="text-xs leading-5 text-neutral-400">장착한 스킨은 AI의 인트로·전투·대사에 적용됩니다. 플레이어에게 스킨이 지급되지는 않습니다.</p>
+</fieldset>
 <label className="block text-sm font-bold">AI 난이도<select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value as AIDeck["difficulty"] })} className="mt-1 min-h-11 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="NORMAL">일반</option><option value="HARD">어려움</option><option value="BOSS">보스</option></select></label>
 <div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <label className="text-sm font-bold">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>

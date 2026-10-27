@@ -58,7 +58,7 @@ export function CardPlayAnimation({
   onCompleteRef.current = onComplete;
   const onLandRef=useRef(onLand);onLandRef.current=onLand;
   const definition = getCardDefinition(animation.card.definitionId);
-  const cosmeticArtwork=useCosmeticImage((!animation.card.isToken||animation.card.isChampionToken)?animation.playerId:undefined,animation.card.definitionId,'CARD_SKIN',definition?.imageUrl).src;
+  const cosmeticArtwork=useCosmeticImage((!animation.card.isToken||animation.card.isChampionToken)?animation.playerId:undefined,animation.card.definitionId,'CARD_SKIN',definition?.imageUrl);
 
   // Capture viewport geometry once per play; camera recoil must not restart the flight.
   const geometryRef=useRef({id:animation.card.instanceId,kind:animation.kind,value:animation.geometry});
@@ -74,7 +74,7 @@ export function CardPlayAnimation({
   const profile=summonImpact(impactCost,animation.card.isChampionToken?'CHAMPION':definition?.rarity);
   const timing=summonTimeline(impactCost,profile.rarity,reduced);
   const duration=animation.kind==='WRESTLER'?timing.duration:animationDuration(animation);
-  useCinematicEvent(animation.kind==='TECHNIQUE'&&animation.card.currentCost<4?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:animation.kind==='TECHNIQUE'?'BIG_SPELL':profile.rarity==='CHAMPION'?'CHAMPION':profile.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name??'KO',art:cosmeticArtwork,strength:impactCost,duration:profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'?Math.max(200,timing.landing-50):undefined});
+  useCinematicEvent(animation.kind==='TECHNIQUE'&&animation.card.currentCost<4?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:animation.kind==='TECHNIQUE'?'BIG_SPELL':profile.rarity==='CHAMPION'?'CHAMPION':profile.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name??'KO',art:cosmeticArtwork.src,artFallback:definition?.imageUrl,artDisplay:cosmeticArtwork.display,strength:impactCost,duration:profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'?Math.max(200,timing.landing-50):undefined});
 
   const targetScale = animation.kind === "TECHNIQUE"
     ? reveal.scale

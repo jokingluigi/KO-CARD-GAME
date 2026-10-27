@@ -1,3 +1,4 @@
+import type {MatchCosmetics} from "@workspace/cosmetics";
 import {audioManager} from '../src/audio/audio-manager';
 import {combatHitSound} from '../src/audio/combat-hit-sound';
 import React, { useState, useEffect, useRef } from "react";
@@ -23,6 +24,7 @@ if (!import.meta.env.DEV) throw Error("Development preview only");
 setRuntimeCardDefinitions(definitions);
 const noop = () => {};
 function Scene() {
+  const [cosmetics,setCosmetics]=useState<MatchCosmetics>({});
   const [state, setState] = useState(boardFixture),
     [selected, setSelected] = useState<string | null>(null),
     [attacker, setAttacker] = useState<string | null>(null),
@@ -49,6 +51,7 @@ function Scene() {
   useEffect(() => {
     const load = (e: Event) => {
       const next = (e as CustomEvent).detail;
+      setCosmetics(next.cosmetics ?? {});
       setRuntimeCardDefinitions(next.definitions ?? definitions);
       setPlay(null);
       setAttacks([]);
@@ -163,7 +166,7 @@ function Scene() {
         boardTheme={theme ? "BLACK_GOLD" : "CLASSIC"}
         state={state}
         mediaCatalog={emptyGameMediaCatalog}
-        cosmetics={{}}
+        cosmetics={cosmetics}
         localImageEmotes
         selectedCardId={selected}
         selectedAttackerId={attacker}

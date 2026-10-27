@@ -1,3 +1,4 @@
+import type {CosmeticItem,CosmeticLoadout} from "@workspace/cosmetics";
 export type AIDeckCard = {
   id: string;
   name: string;
@@ -24,6 +25,8 @@ export type AIDeckChampion = {
 };
 
 export type AIDeck = {
+  cosmeticIds?:string[];
+  cosmetics?:CosmeticLoadout;
   id: string;
   name: string;
   description: string;
@@ -43,6 +46,8 @@ export type AIDeck = {
 };
 
 export type AIDeckOptions = {
+  cosmetics?:CosmeticItem[];
+  aiCosmeticsAvailable?:boolean;
   cards: AIDeckCard[];
   champions: AIDeckChampion[];
   minCardCount: number;
@@ -92,6 +97,7 @@ export function fetchAdminAIDeckOptions(): Promise<AIDeckOptions> {
 }
 
 export function saveAdminAIDeck(payload: {
+  cosmeticIds?:string[];
   id?: string;
   name: string;
   description: string;

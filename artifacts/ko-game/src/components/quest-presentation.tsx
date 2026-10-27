@@ -1,3 +1,4 @@
+import {useCosmeticImage} from "./cosmetic-battle";
 import { questOwner, questPortrait } from './quest-media';
 import { useEffect, useRef, useState } from "react";
 import { useCinematicAvailable, useCinematicEvent } from './cinematic-layer';
@@ -39,6 +40,8 @@ function ActiveQuestPresentation({
   const rewardDuration=reduced?900:QUEST_REWARD_DURATION_MS;
   const owner = questOwner(state, cue.playerId, cue.championId);
   const champion = owner?.champion;
+  const normalArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',champion?.imageUrl,'portrait');
+  const awakenedArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),'awakened');
   const reward = champion?.quest?.reward;
   const tokenId = reward?.type === "DIRECT_DEPLOY_CHAMPION_TOKEN"
     ? reward.cardDefinitionId
@@ -58,7 +61,7 @@ function ActiveQuestPresentation({
   }, [cue.id,bannerDuration,rewardDuration]);
 
   const managed=useCinematicAvailable();
-  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:questPortrait(champion),duration:bannerDuration});
+  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:awakenedArt.src,artFallback:questPortrait(champion),artDisplay:awakenedArt.display,duration:bannerDuration});
   if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
@@ -66,10 +69,10 @@ function ActiveQuestPresentation({
       {phase === "BANNER" ? (
         <div className="ko-quest-chapter text-center" style={{ animation: `ko-quest-banner ${bannerDuration}ms ease both` }}>
           <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "퀘스트 성공!" : "상대의 퀘스트 성공!"}</p>
-          {champion?.imageUrl && <div className="ko-quest-chapter__portrait">
-            <CardArtwork src={champion.imageUrl} alt="" className="absolute inset-0 h-full w-full" />
-            {champion.questCompletedPortraitEnabled && champion.questCompletedPortraitUrl &&
-              <CardArtwork src={champion.questCompletedPortraitUrl} alt="" className="ko-quest-chapter__after absolute inset-0 h-full w-full" />}
+          {normalArt.src && <div className="ko-quest-chapter__portrait">
+            <CardArtwork src={normalArt.src} fallbackSrc={champion?.imageUrl} displayOverride={normalArt.display} alt="" className="absolute inset-0 h-full w-full" />
+            {awakenedArt.src && awakenedArt.src!==normalArt.src &&
+              <CardArtwork src={awakenedArt.src} fallbackSrc={questPortrait(champion)} displayOverride={awakenedArt.display} alt="" className="ko-quest-chapter__after absolute inset-0 h-full w-full" />}
           </div>}
           <h2 className="mt-4 text-4xl font-black text-white drop-shadow-[0_3px_10px_rgba(0,0,0,.95)] sm:text-6xl">{champion?.name ?? "Champion"}</h2>
           <p className="mt-2 text-[10px] font-black tracking-[.35em] text-amber-300">새로운 국면</p>
@@ -89,6 +92,7 @@ function ActiveQuestPresentation({
           ) : reward?.type === "DIRECT_DEPLOY_CHAMPION_TOKEN" && token ? (
             <div className="mx-auto mt-5 w-40">
               <CardRenderer
+                cardId={token.id} cosmeticOwnerId={owner?.id}
                 name={token.name}
                 cardType={token.cardType ?? "WRESTLER"}
                 cost={token.cost}
