@@ -50,9 +50,9 @@
 /* The actor is part of the battlefield, rather than a portrait card.
    Its existing parent remains the real attack/ability target and VFX anchor. */
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
-  --actor-width: clamp(136px, 38vw, 176px);
-  --actor-height: 138px;
-  --actor-hud-height: 185px;
+  --actor-width: clamp(164px, 46vw, 220px);
+  --actor-height: 200px;
+  --actor-hud-height: 247px;
   --board-hud-h: var(--actor-hud-height);
   grid-template-rows: 24px var(--actor-hud-height) auto 100px auto var(
       --actor-hud-height
@@ -64,7 +64,7 @@
   width: 100%;
   max-width: none;
   height: var(--actor-hud-height);
-  grid-template-rows: 40px 48px 44px 44px;
+  grid-template-rows: 40px 48px minmax(44px, 1fr) 44px;
   gap: 3px 8px;
   align-items: stretch;
 }
@@ -163,7 +163,7 @@
   .ko-game-stage.ko-champion-arena
   :is(.ko-player-quest, .ko-opponent-quest) {
   grid-row: 3;
-  align-self: stretch;
+  align-self: start;
 }
 .ko-game-shell.ko-board-preview
   .ko-game-stage.ko-champion-arena
@@ -235,11 +235,12 @@
 @media (min-width: 1000px), (min-width: 740px) and (orientation: landscape) {
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
     --actor-width: 100%;
-    --actor-height: 300px;
-    grid-template-columns: 210px minmax(0, 1fr) 210px;
+    --actor-height: 400px;
+    --actor-wing: clamp(210px, 20vw, 320px);
+    grid-template-columns: var(--actor-wing) minmax(0, 1fr) var(--actor-wing);
     grid-template-rows: 64px auto 100px auto minmax(260px, max-content);
     column-gap: 20px;
-    max-width: 1540px;
+    max-width: 1740px;
     padding: 16px;
     align-content: center;
   }
@@ -275,7 +276,7 @@
     .ko-game-stage.ko-champion-arena
     :is(.ko-opponent-hud, .ko-player-info) {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 300px 44px 48px 44px 44px 32px;
+    grid-template-rows: var(--actor-height) 44px 48px 44px 44px 32px;
     height: auto;
     gap: 6px;
   }
@@ -360,7 +361,7 @@
 
 @media (min-width: 740px) and (max-width: 999px) and (orientation: landscape) {
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
-    --actor-height: 200px;
+    --actor-height: 280px;
     grid-template-columns: 148px minmax(0, 1fr) 148px;
     grid-template-rows: 40px auto 100px auto minmax(260px, max-content);
     column-gap: 12px;
@@ -369,6 +370,6 @@
   .ko-game-shell.ko-board-preview
     .ko-game-stage.ko-champion-arena
     :is(.ko-opponent-hud, .ko-player-info) {
-    grid-template-rows: 200px 44px 48px 44px 44px 32px;
+    grid-template-rows: var(--actor-height) 44px 48px 44px 44px 32px;
   }
 }
