@@ -31,3 +31,9 @@ The purple rectangle is an explicitly temporary image-validation fixture, not a 
 ## Changed source
 
 `admin-battle-sprites.ts` (API route), API route index, `admin-battle-sprites.tsx`/`.css`, `battle-sprite-editor.tsx`, the champion/cosmetic editor links, administrator page/navigation, and the relevant navigation/API/browser tests. No card/champion rule, combat engine, reward, ownership or database schema changes.
+
+## Production release verification
+
+Released `b89d3a1d4f6a19e714a12ca7dc112f3524ef8e2f` by explicit manual commit deployment, without a main merge. Frontend `dep-dbgd1j8m7kps73c32dk0` and API `dep-dbgd1jbl550s738jrqf0` both reached live. Existing maintenance and paused automatic-deployment settings were retained.
+
+Authenticated production Chromium opened the separate studio and its real administrator-only catalog endpoint (12 targets), verified the file input, full-screen enter/exit, and preview sizes: desktop **608.7×650px**, mobile **332×548.6px**, with no horizontal overflow or page errors. No champion/skin sprite data or image uploads were changed during this production check; normal login/logout created and cleared only the verification session.
