@@ -282,6 +282,7 @@ export function GameStatePreview({
   const playerHandRef = React.useRef<HTMLDivElement | null>(null);
   const playerDeckRef = React.useRef<HTMLDivElement | null>(null);
   const opponentDeckRef = React.useRef<HTMLDivElement | null>(null);
+  const playerFieldRef=React.useRef<HTMLDivElement|null>(null),opponentFieldRef=React.useRef<HTMLDivElement|null>(null);
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
@@ -290,6 +291,11 @@ export function GameStatePreview({
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const spellDropTargetRef=React.useRef<{cardId:string;targetId:string;gameId:string;turn:number;createdAt:number}|null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
+  React.useEffect(()=>{
+    const head=wrestlerSpeech[0];
+    const combatAction=attackAnimation || playAnimation?.kind==='TECHNIQUE' || generatedPlayAnimations[0]?.kind==='TECHNIQUE';
+    if(combatAction && head?.ready && head.phase==='ENTER_FIELD' && getCardDefinition(head.definitionId)?.rarity==='LEGENDARY')setWrestlerSpeech(lines=>lines.filter(line=>line.id!==head.id));
+  },[attackAnimation,playAnimation?.kind,generatedPlayAnimations[0]?.kind,wrestlerSpeech[0]?.id,wrestlerSpeech[0]?.ready,getCardDefinition]);
   const [cardLeaveAnimations, setCardLeaveAnimations] = React.useState<CardLeaveAnimationState[]>([]);
   const [destroyBursts, setDestroyBursts] = React.useState<Array<{ id: string; left: number; top: number; width: number; height: number }>>([]);
   React.useEffect(() => {
@@ -843,8 +849,9 @@ export function GameStatePreview({
   const opponentChampionPortrait=cosmeticImage(cosmetics[opp.id],'CHAMPION_SKIN',opp.champion?.id??'',opp.champion?.questCompleted?'awakened':'portrait',originalOpponentPortrait);
   const playerChampionPortrait=cosmeticImage(cosmetics[me.id],'CHAMPION_SKIN',me.champion?.id??'',me.champion?.questCompleted?'awakened':'portrait',originalPlayerPortrait);
 
-  const visibleWrestlerSpeech=wrestlerSpeech[0]?.ready && !koSpeechActive && state.status!=='FINISHED' && !playError && !attackHint && !effectTargeting && !selectedCardId && !selectedAttackerId && !confirmEndTurn && !introActive ? wrestlerSpeech[0] : null;
-  const wrestlerDialogue=visibleWrestlerSpeech ? <WrestlerDialogue key={visibleWrestlerSpeech.id} speech={visibleWrestlerSpeech} definition={getCardDefinition(visibleWrestlerSpeech.definitionId)} cosmetics={cosmetics} selfId={me.id} onComplete={()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==visibleWrestlerSpeech.id))} /> : null;
+  const visibleWrestlerSpeech=wrestlerSpeech[0]?.ready && !koSpeechActive && state.status!=='FINISHED' && !playError && !attackHint && !effectTargeting && !selectedCardId && !selectedAttackerId && !confirmEndTurn && !introActive && !settingsOpen && !historyOpen && !emoteOpen && !openGraveyardPlayerId ? wrestlerSpeech[0] : null;
+  const legendarySpotlight=visibleWrestlerSpeech?.phase==="ENTER_FIELD" && getCardDefinition(visibleWrestlerSpeech.definitionId)?.rarity==="LEGENDARY";
+  const wrestlerDialogue=visibleWrestlerSpeech ? <WrestlerDialogue key={visibleWrestlerSpeech.id} speech={visibleWrestlerSpeech} definition={getCardDefinition(visibleWrestlerSpeech.definitionId)} cosmetics={cosmetics} selfId={me.id} stage={visibleWrestlerSpeech.playerId===me.id?opponentFieldRef:playerFieldRef} alternateStage={visibleWrestlerSpeech.playerId===me.id?playerFieldRef:opponentFieldRef} onComplete={()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==visibleWrestlerSpeech.id))} /> : null;
   // Warm only the two equipped awakening images; do not fetch the full catalog.
   React.useEffect(() => {
     for (const url of [me.champion?.questCompletedPortraitEnabled ? me.champion.questCompletedPortraitUrl : null,
@@ -1159,7 +1166,7 @@ export function GameStatePreview({
             </div>}
 
              {/* Opponent Board + Zones */}
-              <div className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+              <div ref={opponentFieldRef} className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
                  <div className="ko-board-cards flex gap-2 md:gap-4">
                {opp.board.map((card, i) => (
                  <BoardSlot
@@ -1287,7 +1294,7 @@ export function GameStatePreview({
                 </div>
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
-              {wrestlerDialogue || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
+              {(!legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
                 {playError || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
@@ -1304,7 +1311,7 @@ export function GameStatePreview({
             </div>}
           </aside>
              {/* My Board + Zones */}
-              <div className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+              <div ref={playerFieldRef} className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
                  <div className="ko-board-cards flex gap-2 md:gap-4">
                {me.board.map((card, i) => (
                  <BoardSlot
@@ -1768,7 +1775,8 @@ export function GameStatePreview({
       {effectFinisher && !attackAnimation && (
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
-      {!blackGold && wrestlerDialogue && <div className="ko-wrestler-dialogue-classic">{wrestlerDialogue}</div>}
+      {legendarySpotlight && wrestlerDialogue}
+      {!blackGold && !legendarySpotlight && wrestlerDialogue && <div className="ko-wrestler-dialogue-classic">{wrestlerDialogue}</div>}
       {spokenLine && state.status!=="FINISHED" && !koSpeechActive && !introActive && !effectTargeting && !selectedCardId && !selectedAttackerId && !settingsOpen && !historyOpen && !emoteOpen && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <React.Fragment>
         <ChampionSpeechBubble key={spokenLine.id} anchor={spokenLine.playerId===me.id?playerChampionRef:championRef} playerId={spokenLine.playerId} speaker={spokenLine.speaker} text={spokenLine.text} quest={spokenLine.questCompletion} label={spokenLine.questCompletion?'퀘스트 완료 / 챔피언':'챔피언'} />
       </React.Fragment>}
