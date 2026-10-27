@@ -1,0 +1,179 @@
+.ko-sprite-workspace {
+  max-width: 1600px;
+  margin: auto;
+}
+.ko-sprite-workspace header p {
+  color: #aaa;
+  line-height: 1.6;
+}
+.ko-sprite-workspace-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #36373b;
+}
+.ko-sprite-workspace-toolbar label {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+.ko-sprite-workspace :is(select, button, input[type="file"]) {
+  min-height: 44px;
+  max-width: 100%;
+}
+.ko-sprite-workspace select {
+  background: #17181b;
+  border: 1px solid #444;
+  padding: 8px;
+  width: 100%;
+}
+.ko-sprite-workspace button {
+  padding: 8px 12px;
+  border: 1px solid #555;
+  background: #161719;
+}
+.ko-sprite-workspace button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ko-sprite-workspace button[aria-pressed="true"] {
+  border-color: #d7b766;
+  color: #e7c87a;
+}
+.ko-sprite-workspace .ko-sprite-save {
+  background: #cfb46b;
+  color: #080808;
+  border-color: #cfb46b;
+  font-weight: 700;
+}
+.ko-sprite-workspace-context {
+  padding: 14px 0;
+}
+.ko-sprite-workspace-context span {
+  display: block;
+  font-size: 12px;
+  color: #aaa;
+}
+.ko-sprite-editor--workspace {
+  border: 0;
+  padding: 0;
+}
+.ko-sprite-editor--workspace .ko-sprite-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.ko-sprite-editor--workspace .ko-sprite-editor-controls {
+  padding: 16px;
+  border: 1px solid #36373b;
+}
+.ko-sprite-editor--workspace .ko-sprite-editor-controls > label {
+  display: block;
+}
+.ko-sprite-editor--workspace .ko-sprite-reaction-preview {
+  position: sticky;
+  top: 80px;
+  background: #101113;
+  border-color: #45464a;
+}
+.ko-sprite-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ko-sprite-preview-figure {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.ko-sprite-editor--workspace .ko-sprite-preview-canvas {
+  position: relative;
+  height: clamp(420px, 65vh, 720px);
+  border: 1px solid #444;
+  background-color: #191a1e;
+  background-image:
+    linear-gradient(45deg, #25262a 25%, transparent 25%),
+    linear-gradient(-45deg, #25262a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #25262a 75%),
+    linear-gradient(-45deg, transparent 75%, #25262a 75%);
+  background-size: 24px 24px;
+  background-position:
+    0 0,
+    0 12px,
+    12px -12px,
+    -12px 0;
+}
+.ko-sprite-editor--workspace .ko-sprite-preview-figure {
+  position: absolute;
+  aspect-ratio: 0.72;
+  height: 94%;
+  width: auto;
+  max-width: 100%;
+}
+.ko-sprite-editor--workspace
+  .ko-sprite-preview-canvas[data-side="self"]
+  .ko-sprite-preview-figure {
+  left: 0;
+  bottom: 0;
+}
+.ko-sprite-editor--workspace
+  .ko-sprite-preview-canvas[data-side="opponent"]
+  .ko-sprite-preview-figure {
+  right: 0;
+  top: 0;
+}
+.ko-sprite-reaction-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block: 12px;
+}
+.ko-sprite-reaction-preview:fullscreen {
+  padding: 20px;
+  overflow-y: auto;
+  background: #101113;
+}
+.ko-sprite-reaction-preview:fullscreen .ko-sprite-preview-canvas {
+  height: 72vh;
+}
+@media (max-width: 1100px) {
+  .ko-sprite-editor--workspace .ko-sprite-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ko-sprite-editor--workspace .ko-sprite-reaction-preview {
+    position: relative;
+    top: auto;
+  }
+  .ko-sprite-workspace-toolbar label {
+    min-width: 130px;
+  }
+  .ko-sprite-workspace-toolbar > button {
+    flex: 1;
+  }
+}
+.ko-sprite-advanced {
+  border-top: 1px solid #444;
+  margin-top: 20px;
+  padding-top: 12px;
+}
+.ko-sprite-advanced summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #d5bb79;
+}
+.ko-sprite-advanced[open] > label {
+  display: block;
+  margin-block: 12px;
+}
+.ko-sprite-editor-controls input[type="range"] {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+}

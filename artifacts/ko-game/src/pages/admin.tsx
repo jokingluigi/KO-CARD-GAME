@@ -16,6 +16,7 @@ import { AuthRecovery } from "@/components/auth-page";
 import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/components/admin-layout";
 import "@/styles/admin-console.css";
+const AdminBattleSprites = lazy(() => import("@/components/admin-battle-sprites").then(m=>({default:m.AdminBattleSprites})));
 const AdminDashboard = lazy(() =>
   import("@/components/admin-dashboard").then((m) => ({
     default: m.AdminDashboard,
@@ -223,7 +224,7 @@ export default function Admin() {
             </div>
           }
         >
-          {page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmeticsHub onNavigate={goPath} legacy={displayPath.replace(/\/$/,'')==='/admin/skins'} onUnauthorized={onUnauthorized}/> : page?.id === "dashboard" ? (
+          {page?.id === "battle-sprites" ? <AdminBattleSprites/> : page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmeticsHub onNavigate={goPath} legacy={displayPath.replace(/\/$/,'')==='/admin/skins'} onUnauthorized={onUnauthorized}/> : page?.id === "dashboard" ? (
             <AdminDashboard go={go} />
           ) : page?.id === "users" ? (
             <AdminUserDirectory go={go} />

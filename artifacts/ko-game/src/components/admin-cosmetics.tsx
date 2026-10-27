@@ -1,5 +1,3 @@
-import {BattleSpriteEditor} from "./battle-sprite-editor";
-import {parseBattleSprite} from "@workspace/cosmetics";
 import { CardArtwork } from "./card-artwork";
 import { ImageDisplaySlider } from "./image-display-slider";
 import { useEffect, useState } from "react";
@@ -397,7 +395,7 @@ export function AdminCosmetics() {
             </p>
           )}
           <div className="cosmetics-assets">
-            {form.type==='CHAMPION_SKIN'&&<BattleSpriteEditor value={parseBattleSprite(form.imageAssets.__battle)} onChange={sprite=>setForm({...form,imageAssets:{...form.imageAssets,__battle:JSON.stringify(sprite)}})}/>}
+            {form.type==='CHAMPION_SKIN'&&<div className="border border-neutral-700 p-4"><strong>대전 스프라이트</strong><p className="my-2 text-sm text-neutral-400">이 스킨의 스프라이트는 큰 전용 작업 화면에서 관리합니다.</p>{form.id?<a className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200" href={`/admin/battle-sprites?target=${encodeURIComponent('skin:'+form.id)}`}>스프라이트 전용 관리 열기</a>:<p>스킨을 먼저 저장해 주세요.</p>}</div>}
             {(form.type === "CHAMPION_SKIN"
               ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])]
               : ["art"]

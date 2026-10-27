@@ -44,5 +44,10 @@ test('one cosmetic menu retains legacy skin URLs and saved navigation',()=>{
  assert.equal(adminPageForPath('/admin/skins')?.id,'cosmetics');
  assert.equal(adminPageForPath('/admin/skins/?q=old')?.id,'cosmetics');
  assert.deepEqual(validAdminPageIds(['skins','cosmetics','cards']),['cosmetics','cards']);
- assert.deepEqual(searchAdminPages('스킨').map(p=>p.id),['cosmetics']);
+ assert.deepEqual(new Set(searchAdminPages('스킨').map(p=>p.id)),new Set(['cosmetics','battle-sprites']));
+});
+
+test('sprite studio has a distinct searchable route and keeps target queries',()=>{
+ assert.equal(adminPageForPath('/admin/battle-sprites?target=skin%3Aexample')?.id,'battle-sprites');
+ assert(searchAdminPages('스프라이트 미리보기').some(p=>p.id==='battle-sprites'));
 });

@@ -1,3 +1,4 @@
+import adminBattleSpritesRouter from "./admin-battle-sprites";
 import shopDecksRouter from "./shop-decks";
 import cosmeticsRouter from './cosmetics';
 import adminUsageStatisticsRouter from './admin-usage-statistics';
@@ -47,6 +48,7 @@ router.use(cardsRouter);
 router.use(gameMediaRouter);
 router.use(mainContentRouter);
 router.use(shopDecksRouter);
+router.use("/admin/battle-sprites", adminBattleSpritesRouter);
 router.use(cosmeticsRouter);
 router.use("/admin/usage-statistics", adminUsageStatisticsRouter);
 router.use("/admin/tags", adminTagsRouter);
