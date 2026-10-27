@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { CardArtwork } from "./card-artwork";
 import {
@@ -9,32 +9,27 @@ import {
 import type { CardDefinition } from "../game/cards/types";
 import type { WrestlerSpeech } from "./wrestler-dialogue";
 import "./legendary-dialogue-spotlight.css";
-export const LEGENDARY_DIALOGUE_MS = 2200;
+import { legendaryDialogueDuration } from "./wrestler-dialogue-timing";
 /** An entrance beat, not an instruction toast or a new input/presentation lock. */
 export function LegendaryDialogueSpotlight({
   speech,
   definition,
   cosmetics,
   selfId,
-  stage,
-  alternateStage,
   onComplete,
 }: {
   speech: WrestlerSpeech;
   definition: CardDefinition;
   cosmetics: MatchCosmetics;
   selfId: string;
-  stage: RefObject<HTMLDivElement | null>;
-  alternateStage: RefObject<HTMLDivElement | null>;
   onComplete: () => void;
 }) {
-  const duration = speech.text.length > 32 ? 2800 : LEGENDARY_DIALOGUE_MS;
+  const duration = legendaryDialogueDuration(speech.text);
   const root = useRef<HTMLDivElement>(null),
     done = useRef(onComplete);
   done.current = onComplete;
   useEffect(() => {
     const finish = () => done.current();
-    const timer = window.setTimeout(finish, duration);
     const outsideInput = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node)) finish();
     };
@@ -42,45 +37,39 @@ export function LegendaryDialogueSpotlight({
     document.addEventListener("pointerdown", outsideInput, true);
     document.addEventListener("keydown", finish, true);
     return () => {
-      clearTimeout(timer);
       document.removeEventListener("pointerdown", outsideInput, true);
       document.removeEventListener("keydown", finish, true);
     };
   }, [speech.id, duration]);
   useLayoutEffect(() => {
-    let frame = 0,
-      signature = "";
+    let signature = "";
     const place = () => {
       const node = root.current;
       if (!node) return;
-      const choices = [stage.current, alternateStage.current]
-        .filter(Boolean)
-        .map((el) => el!.getBoundingClientRect());
-      const rect =
-        choices.find(
-          (r) => Math.min(innerHeight - 8, r.bottom) - Math.max(8, r.top) >= 96,
-        ) ??
-        choices.sort(
-          (a, b) =>
-            Math.min(innerHeight, b.bottom) -
-            Math.max(0, b.top) -
-            (Math.min(innerHeight, a.bottom) - Math.max(0, a.top)),
-        )[0];
-      const visibleTop = rect ? Math.max(8, rect.top) : innerHeight * 0.25,
-        visibleBottom = rect
-          ? Math.min(innerHeight - 8, rect.bottom)
-          : innerHeight * 0.75;
-      const available = visibleBottom - visibleTop;
-      const height = Math.min(210, Math.max(96, available - 8)),
-        width = Math.min(760, innerWidth - 24);
-      const left = (innerWidth - width) / 2,
-        top = Math.max(
-          8,
-          Math.min(
-            innerHeight - height - 8,
-            visibleTop + (available - height) / 2,
-          ),
-        );
+      const width = Math.min(680, innerWidth - 24);
+      // Viewport overlay: independent of board layout, camera motion and scroll.
+      const height = innerWidth > 768 ? 132 : 152;
+      const left = (innerWidth - width) / 2;
+      let top = Math.max(
+        12,
+        parseFloat(
+          getComputedStyle(node).getPropertyValue("--spotlight-safe-top"),
+        ) || 0,
+      );
+      // Browser focus may scroll the turn controls to the viewport's top.
+      // Keep the entrance above play, but leave those live controls exposed.
+      for (const control of document.querySelectorAll(".ko-game-controls")) {
+        const r = control.getBoundingClientRect();
+        if (
+          r.width &&
+          r.bottom > top &&
+          r.top < top + height &&
+          r.left < left + width &&
+          r.right > left
+        ) {
+          top = Math.min(innerHeight - height - 8, r.bottom + 8);
+        }
+      }
       const next = [left, top, width, height].join(":");
       if (next === signature) return;
       signature = next;
@@ -103,13 +92,16 @@ export function LegendaryDialogueSpotlight({
         }
       }
     };
-    const follow = () => {
-      place();
-      frame = requestAnimationFrame(follow);
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true, capture: true });
+    window.visualViewport?.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+      window.visualViewport?.removeEventListener("resize", place);
     };
-    follow();
-    return () => cancelAnimationFrame(frame);
-  }, [stage, alternateStage, speech.id]);
+  }, [speech.id]);
   const src = cosmeticImage(
     cosmetics[speech.playerId],
     "CARD_SKIN",

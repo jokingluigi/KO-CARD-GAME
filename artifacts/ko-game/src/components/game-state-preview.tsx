@@ -1,3 +1,4 @@
+import { legendaryDialogueDuration } from "./wrestler-dialogue-timing";
 import {ChampionSpeechBubble} from "./champion-speech-bubble";
 import {WrestlerDialogue,type WrestlerSpeech} from "./wrestler-dialogue";
 import { ChampionKoDialogue } from "./champion-ko-dialogue";
@@ -282,7 +283,6 @@ export function GameStatePreview({
   const playerHandRef = React.useRef<HTMLDivElement | null>(null);
   const playerDeckRef = React.useRef<HTMLDivElement | null>(null);
   const opponentDeckRef = React.useRef<HTMLDivElement | null>(null);
-  const playerFieldRef=React.useRef<HTMLDivElement|null>(null),opponentFieldRef=React.useRef<HTMLDivElement|null>(null);
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
@@ -850,8 +850,21 @@ export function GameStatePreview({
   const playerChampionPortrait=cosmeticImage(cosmetics[me.id],'CHAMPION_SKIN',me.champion?.id??'',me.champion?.questCompleted?'awakened':'portrait',originalPlayerPortrait);
 
   const visibleWrestlerSpeech=wrestlerSpeech[0]?.ready && !koSpeechActive && state.status!=='FINISHED' && !playError && !attackHint && !effectTargeting && !selectedCardId && !selectedAttackerId && !confirmEndTurn && !introActive && !settingsOpen && !historyOpen && !emoteOpen && !openGraveyardPlayerId ? wrestlerSpeech[0] : null;
+  const headSpeech=wrestlerSpeech[0];
+  const speechDuration=headSpeech?.phase==='ENTER_FIELD' && getCardDefinition(headSpeech.definitionId)?.rarity==='LEGENDARY' ? legendaryDialogueDuration(headSpeech.text) : 2600;
+  React.useEffect(()=>{
+    if(!headSpeech?.ready)return;
+    const id=headSpeech.id, deadline=Date.now()+speechDuration;
+    // The queue owns expiry. Hiding/remounting a presentation must not restart it.
+    const expire=()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==id));
+    const resume=()=>{if(Date.now()>=deadline)expire();};
+    const timer=window.setTimeout(expire,speechDuration);
+    document.addEventListener('visibilitychange',resume);
+    window.addEventListener('pageshow',resume);
+    return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);window.removeEventListener('pageshow',resume);};
+  },[state.gameId,headSpeech?.id,headSpeech?.ready,speechDuration]);
   const legendarySpotlight=visibleWrestlerSpeech?.phase==="ENTER_FIELD" && getCardDefinition(visibleWrestlerSpeech.definitionId)?.rarity==="LEGENDARY";
-  const wrestlerDialogue=visibleWrestlerSpeech ? <WrestlerDialogue key={visibleWrestlerSpeech.id} speech={visibleWrestlerSpeech} definition={getCardDefinition(visibleWrestlerSpeech.definitionId)} cosmetics={cosmetics} selfId={me.id} stage={visibleWrestlerSpeech.playerId===me.id?opponentFieldRef:playerFieldRef} alternateStage={visibleWrestlerSpeech.playerId===me.id?playerFieldRef:opponentFieldRef} onComplete={()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==visibleWrestlerSpeech.id))} /> : null;
+  const wrestlerDialogue=visibleWrestlerSpeech ? <WrestlerDialogue key={visibleWrestlerSpeech.id} speech={visibleWrestlerSpeech} definition={getCardDefinition(visibleWrestlerSpeech.definitionId)} cosmetics={cosmetics} selfId={me.id} onComplete={()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==visibleWrestlerSpeech.id))} /> : null;
   // Warm only the two equipped awakening images; do not fetch the full catalog.
   React.useEffect(() => {
     for (const url of [me.champion?.questCompletedPortraitEnabled ? me.champion.questCompletedPortraitUrl : null,
@@ -1166,7 +1179,7 @@ export function GameStatePreview({
             </div>}
 
              {/* Opponent Board + Zones */}
-              <div ref={opponentFieldRef} className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+              <div className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
                  <div className="ko-board-cards flex gap-2 md:gap-4">
                {opp.board.map((card, i) => (
                  <BoardSlot
@@ -1311,7 +1324,7 @@ export function GameStatePreview({
             </div>}
           </aside>
              {/* My Board + Zones */}
-              <div ref={playerFieldRef} className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+              <div className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
                  <div className="ko-board-cards flex gap-2 md:gap-4">
                {me.board.map((card, i) => (
                  <BoardSlot
