@@ -1224,4 +1224,4 @@ test("image emote throttling has no per-turn quota and replaces the previous ima
 await import("../../../artifacts/api-server/src/routes/packs.test");
 
 // Shared only by isolated database regression suites, never application code.
-export {database,pg,api,cards,deck};
+export {database,pg,api,cards,deck,registered,uploaded};

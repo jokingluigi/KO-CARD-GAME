@@ -126,6 +126,7 @@ export const CHAMPION_EMOTE_LABELS: Record<ChampionEmote, string> = {
 };
 export type ChampionVoiceLines = Partial<Record<ChampionEmote | 'VICTORY' | 'DEFEAT', string>>;
 export type ChampionPresentationLines = {
+  BATTLE_SPRITE?: import("@workspace/cosmetics").BattleSprite;
   /** Spoken once at the quest completion event, distinct from post-quest emotes. */
   QUEST_COMPLETE?: string;
   BEFORE_QUEST?: ChampionVoiceLines;

@@ -1,3 +1,4 @@
+import {parseBattleSprite} from "@workspace/cosmetics";
 import { hydrateLegacySkins } from "./legacy-skin-cosmetics";
 import { ensureAdminSkins } from "./admin-skin-access";
 import { logger } from "./logger";
@@ -72,7 +73,7 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
       continue;
     const imageAssets = Object.fromEntries(
       Object.entries(item.imageAssets).filter(([key, url]) =>
-        key === "__display"
+        key === "__battle" ? item.type === "CHAMPION_SKIN" && !!parseBattleSprite(url) : key === "__display"
           ? !!parseCosmeticDisplay(url)
           : (["art", "portrait", "intro", "awakened"].includes(key) ||
               (item.type === "CHAMPION_SKIN" &&

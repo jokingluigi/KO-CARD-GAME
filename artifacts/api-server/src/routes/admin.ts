@@ -1,3 +1,5 @@
+import {verifyCatalogAssets} from "./cosmetics";
+import {parseBattleSprite} from "@workspace/cosmetics";
 import {AssetCleanupGate} from "../lib/asset-cleanup-gate";
 import { availableCardTags } from "../lib/card-tag-catalog";
 import { validCountdownCardSettings } from '@workspace/effect-registry';
@@ -197,6 +199,8 @@ function parseChampionInput(value: unknown, existing: Record<string, unknown> = 
   result.isCraftable = input.isCraftable !== false;
   result.imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]) ? input.imageDisplayMode : 'COVER';
   for (const key of ['abilityEffects','gameStartAbilityEffects','questCondition','questRewardEffects','upgradedAbilityEffects','presentationLines']) result[key] = input[key] ?? (key === 'abilityEffects' || key === 'presentationLines' ? {} : null);
+  const sprite=(result.presentationLines as Record<string,unknown>|null)?.BATTLE_SPRITE;
+  if(sprite!==undefined&&!parseBattleSprite(sprite))return null;
   const completionLine = (result.presentationLines as Record<string, unknown> | null)?.QUEST_COMPLETE;
   if (completionLine !== undefined && (typeof completionLine !== 'string' || completionLine.length > 120 || /<[^>]*>/.test(completionLine))) return null;
   if (result.questProgressRequired == null && result.questCondition && typeof result.questCondition === 'object') {
@@ -1708,6 +1712,7 @@ router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
   if (!input) { response.status(400).json({ message: championInputError(request.body) }); return; }
+  try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
   if (
     input.imageAssetId &&
     !(await validNewImageAsset(input.imageAssetId, input.imageUploadToken))
@@ -1767,6 +1772,7 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: id ? championInputError(request.body) : "챔피언 ID를 확인해 주세요." });
     return;
   }
+  try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
   expectedVersion ??= existing.version;
   const versionCheck = expectedVersion === null
     ? null

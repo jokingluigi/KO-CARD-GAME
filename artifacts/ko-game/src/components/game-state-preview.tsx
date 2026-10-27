@@ -1,3 +1,4 @@
+import {ChampionBattleActor} from "./champion-battle-actor";
 import { legendaryDialogueDuration } from "./wrestler-dialogue-timing";
 import {ChampionSpeechBubble} from "./champion-speech-bubble";
 import {WrestlerDialogue,type WrestlerSpeech} from "./wrestler-dialogue";
@@ -1115,18 +1116,7 @@ export function GameStatePreview({
                          handleAttackChampion();
                        }}
                  >
-                   <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/>{opponentChampionPortrait && (
-                     <CardArtwork
-                       src={opponentChampionPortrait} fallbackSrc={originalOpponentPortrait}
-                       displayOverride={cosmeticImageSettings(cosmetics[opp.id],"CHAMPION_SKIN",opp.champion?.id??"",opp.champion?.questCompleted?"awakened":"portrait")}
-                       alt=""
-                       className="ko-champion-portrait-art absolute inset-0 h-full w-full"
-                       imageDisplayMode="CONTAIN"
-                       imageScale={1}
-                       imagePositionX={50}
-                       imagePositionY={50}
-                     />
-                   )}
+                   <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/>
 
                    {opponentChampionProtected && (
                      <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
@@ -1615,18 +1605,7 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
-                    <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/>{playerChampionPortrait && (
-                      <CardArtwork
-                        src={playerChampionPortrait} fallbackSrc={originalPlayerPortrait}
-                        displayOverride={cosmeticImageSettings(cosmetics[me.id],"CHAMPION_SKIN",me.champion?.id??"",me.champion?.questCompleted?"awakened":"portrait")}
-                        alt=""
-                        className="ko-champion-portrait-art absolute inset-0 h-full w-full"
-                        imageDisplayMode="CONTAIN"
-                        imageScale={1}
-                        imagePositionX={50}
-                        imagePositionY={50}
-                      />
-                    )}
+                    <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/>
 
                    {playerChampionProtected && (
                      <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">

@@ -1,0 +1,94 @@
+.ko-battle-actor,
+.ko-battle-actor * {
+  pointer-events: none !important;
+}
+.ko-battle-actor {
+  overflow: hidden;
+  isolation: isolate;
+}
+.ko-battle-actor__body {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 90%;
+}
+.ko-battle-actor[data-reaction="HIT"] {
+  animation: ko-actor-hit 260ms ease-out;
+}
+.ko-battle-actor[data-reaction="ABILITY"] {
+  animation: ko-actor-ability 500ms ease-out;
+}
+.ko-battle-actor[data-reaction="AWAKEN"] {
+  animation: ko-actor-ability 800ms ease-out;
+}
+@keyframes ko-actor-hit {
+  20% {
+    translate: 5px 2px;
+    rotate: 2deg;
+  }
+  60% {
+    translate: -2px 0;
+    rotate: -1deg;
+  }
+  100% {
+    translate: 0;
+    rotate: 0deg;
+  }
+}
+@keyframes ko-actor-ability {
+  35% {
+    scale: 1.04;
+  }
+  100% {
+    scale: 1;
+  }
+}
+.ko-board-preview .ko-player-info {
+  grid-template-columns: var(--board-portrait-w) minmax(0, 1fr) minmax(0, 1fr);
+}
+.ko-board-preview .ko-player-info .ko-champion-core > .relative {
+  grid-column: 1;
+}
+.ko-board-preview .ko-player-info .ko-player-stats,
+.ko-board-preview .ko-player-info .ko-player-zones {
+  grid-column: 2;
+}
+.ko-board-preview .ko-opponent-hud {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--board-portrait-w);
+}
+.ko-board-preview .ko-opponent-hud .ko-opponent-champion {
+  grid-column: 3;
+}
+.ko-board-preview .ko-opponent-hud .ko-champion-heading,
+.ko-board-preview .ko-opponent-hud .ko-quest-panel {
+  grid-column: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ko-battle-actor {
+    animation: none !important;
+  }
+}
+/* Outrank the old shared .ko-champion-core > .relative center-column rule. */
+.ko-game-shell.ko-board-preview .ko-opponent-hud .ko-opponent-champion {
+  grid-column: 3;
+}
+.ko-game-shell.ko-board-preview .ko-opponent-hud .ko-champion-heading,
+.ko-game-shell.ko-board-preview .ko-opponent-hud .ko-opponent-quest {
+  grid-column: 2;
+}
+.ko-game-shell.ko-board-preview .ko-player-info .ko-champion-core > .relative {
+  grid-column: 1;
+}
+.ko-battle-actor .ko-battle-actor__body img {
+  object-fit: var(--actor-fit, contain) !important;
+}
+.ko-game-shell.ko-board-preview .ko-opponent-hud,
+.ko-game-shell.ko-board-preview .ko-player-info {
+  max-width: 640px;
+}
+.ko-game-shell.ko-board-preview .ko-opponent-hud {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--board-portrait-w);
+}
+.ko-game-shell.ko-board-preview .ko-player-info {
+  grid-template-columns: var(--board-portrait-w) minmax(0, 1fr) minmax(0, 1fr);
+}
+.ko-game-shell.ko-board-preview :is(.ko-player-champion,.ko-opponent-champion):has([data-sprite-source="registered"]){background:transparent}

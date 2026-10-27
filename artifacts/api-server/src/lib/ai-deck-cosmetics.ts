@@ -1,3 +1,4 @@
+import {parseBattleSprite} from "@workspace/cosmetics";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, aiDeckCosmeticsTable, cosmeticItemsTable } from "@workspace/db";
 import {
@@ -26,7 +27,7 @@ export function aiSkinLoadout(items: CosmeticItem[]): CosmeticLoadout {
       continue;
     const imageAssets = Object.fromEntries(
       Object.entries(item.imageAssets ?? {}).filter(([key, value]) =>
-        key === "__display"
+        key === "__battle" ? item.type === "CHAMPION_SKIN" && !!parseBattleSprite(value) : key === "__display"
           ? !!parseCosmeticDisplay(value)
           : (["art", "portrait", "intro", "awakened"].includes(key) ||
               (item.type === "CHAMPION_SKIN" &&

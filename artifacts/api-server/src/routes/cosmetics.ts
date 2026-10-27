@@ -1,4 +1,4 @@
-import { parseCosmeticDisplay } from "@workspace/cosmetics";
+import { parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
 import {
   legacySkinItem,
   legacySkinId,
@@ -161,6 +161,10 @@ function parseItem(body: unknown, legacy = false) {
     throw new CosmeticError(400, "이미지를 등록해 주세요.");
   const imageAssets: Record<string, string> = {};
   for (const [key, url] of Object.entries(assets)) {
+    if(key==='__battle'){
+      const sprite=parseBattleSprite(url);if(b.type!=='CHAMPION_SKIN'||!sprite)throw new CosmeticError(400,'대전 스프라이트 설정을 확인해 주세요.');
+      imageAssets[key]=JSON.stringify(sprite);continue;
+    }
     if (key === "__display") {
       const display = parseCosmeticDisplay(url);
       if (!display)
@@ -234,14 +238,14 @@ async function validateTokenAssets(input: ReturnType<typeof parseItem>) {
       "선택한 챔피언에 연결된 챔피언 토큰만 등록할 수 있습니다.",
     );
 }
-async function verifyCatalogAssets(
+export async function verifyCatalogAssets(
   assets: Record<string, string>,
   known = new Set<string>(),
 ) {
   for (const url of new Set(
     Object.entries(assets)
       .filter(([key]) => key !== "__display")
-      .map(([, url]) => url),
+      .flatMap(([key,url])=>key==='__battle'?Object.values(parseBattleSprite(url)?.frames??{}).map(frame=>frame.url):[url]),
   )) {
     if (known.has(url)) continue;
     if (!url.startsWith("/api/storage/objects/uploads/cosmetics/"))

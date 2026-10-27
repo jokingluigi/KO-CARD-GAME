@@ -8,7 +8,7 @@ export const COSMETIC_TYPES = [
 export type CosmeticType = (typeof COSMETIC_TYPES)[number];
 export type CosmeticAssets = Partial<
   Record<
-    "art" | "portrait" | "intro" | "awakened" | "__display" | `token:${string}`,
+    "art" | "portrait" | "intro" | "awakened" | "__display" | "__battle" | `token:${string}`,
     string
   >
 >;
@@ -193,3 +193,4 @@ export function cosmeticImageSettings(
     ? cosmeticAssetDisplay(item.imageAssets, slot)
     : undefined;
 }
+export * from './battle-sprite';

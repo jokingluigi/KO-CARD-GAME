@@ -1,3 +1,5 @@
+import {BattleSpriteEditor} from "./battle-sprite-editor";
+import {parseBattleSprite} from "@workspace/cosmetics";
 import { CardArtwork } from "./card-artwork";
 import { ImageDisplaySlider } from "./image-display-slider";
 import { useEffect, useState } from "react";
@@ -395,6 +397,7 @@ export function AdminCosmetics() {
             </p>
           )}
           <div className="cosmetics-assets">
+            {form.type==='CHAMPION_SKIN'&&<BattleSpriteEditor value={parseBattleSprite(form.imageAssets.__battle)} onChange={sprite=>setForm({...form,imageAssets:{...form.imageAssets,__battle:JSON.stringify(sprite)}})}/>}
             {(form.type === "CHAMPION_SKIN"
               ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])]
               : ["art"]
