@@ -18,7 +18,7 @@ node --max-old-space-size=128 artifacts/api-server/dist-sprite-preview/index.mjs
 
 Required environment: `KO_ISOLATED_SPRITE_PREVIEW=1`, dedicated `ADMIN_EMAIL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`. Render provides `PORT` and `RENDER_EXTERNAL_URL`. For local smoke tests use `PREVIEW_ORIGIN` and optionally `PREVIEW_DATA_DIR`. Do not configure `DATABASE_URL` or Supabase credentials.
 
-The first start generates an independent administrator, collection, two legal decks and AI opponents from the dated 2026-10-12 QA card/champion catalog. These are test-only inventory grants; the production grant/battle policies are unchanged. This catalog is not a claim that current production balance has been synchronized. Credentials belong only in host environment variables, never commits.
+The build worker creates a closed database template containing only the dated 2026-10-12 QA card/champion catalog, without users or credentials. Runtime copies this template to its disposable directory to avoid memory-heavy initdb on a 512MB instance. The first start generates an independent administrator, collection, two legal decks and AI opponents. These are test-only inventory grants; the production grant/battle policies are unchanged. This catalog is not a claim that current production balance has been synchronized. Credentials belong only in host environment variables, never commits.
 
 Signed uploads are limited to a 15-minute token bound to the object path. Signing, direct writes and backend downloads require a random server-only storage key. Image completion and manifest saving still pass the existing authenticated admin APIs and decoded-image validation. Uploaded objects are saved inside the isolated preview database, not in production storage.
 

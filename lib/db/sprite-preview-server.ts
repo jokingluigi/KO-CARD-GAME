@@ -1,11 +1,11 @@
 /** Isolated, disposable preview deployment. Never imported by the production entry point. */
 import { createRequire } from "node:module";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile, mkdir, access, cp } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createServer } from "node:http";
 import { drizzle } from "drizzle-orm/pglite";
-import { getTableColumns, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "./src/schema";
 
 if (process.env.KO_ISOLATED_SPRITE_PREVIEW !== "1")
@@ -34,6 +34,16 @@ const origin =
   `http://127.0.0.1:${port}`;
 const root = resolve(process.env.PREVIEW_DATA_DIR || "/tmp/ko-sprite-preview");
 await mkdir(root, { recursive: true });
+try {
+  await access(resolve(root, "database/PG_VERSION"));
+} catch {
+  await cp(
+    resolve("artifacts/api-server/dist-sprite-preview/database-template"),
+    resolve(root, "database"),
+    { recursive: true },
+  );
+}
+
 const dbRequire = createRequire(resolve("lib/db/package.json"));
 const { PGlite } = dbRequire("@electric-sql/pglite");
 const pg = new PGlite(resolve(root, "database"), {
@@ -46,15 +56,6 @@ const pg = new PGlite(resolve(root, "database"), {
 });
 await pg.waitReady;
 const database = drizzle(pg, { schema });
-const tables = await pg.query("select to_regclass('public.cards') as name");
-const firstStart = !tables.rows[0]?.name;
-if (firstStart) {
-  await pg.exec(await readFile("scripts/sprite-preview/schema.sql", "utf8"));
-  await pg.exec(await readFile("lib/db/migrations/0053_cosmetics.sql", "utf8"));
-  await pg.exec(
-    await readFile("lib/db/migrations/0033_server_maintenance.sql", "utf8"),
-  );
-}
 await pg.exec(
   "CREATE TABLE IF NOT EXISTS preview_objects (key text PRIMARY KEY, bytes bytea NOT NULL, mime text NOT NULL)",
 );
@@ -68,47 +69,18 @@ for (const method of [
   "execute",
 ] as const)
   Object.assign(db, { [method]: database[method].bind(database) });
-function rowsFor(table: any, rows: any[]) {
-  const cols = getTableColumns(table);
-  return rows.map((row) =>
-    Object.fromEntries(
-      Object.entries(row)
-        .filter(([k]) => k in cols)
-        .map(([k, v]) => [
-          k,
-          (cols[k] as any).dataType === "date" && typeof v === "string"
-            ? new Date(v)
-            : v,
-        ]),
-    ),
-  );
-}
-if (firstStart) {
-  const cards = JSON.parse(
-    await readFile(
-      "artifacts/ko-game/src/game/qa/fixtures/cards-2026-10-12-all.json",
-      "utf8",
-    ),
-  );
-  const champions = JSON.parse(
-    await readFile(
-      "artifacts/ko-game/src/game/qa/fixtures/champions-2026-10-12-all.json",
-      "utf8",
-    ),
-  );
-  await database
-    .insert(schema.cardsTable)
-    .values(rowsFor(schema.cardsTable, cards));
-  await database
-    .insert(schema.championsTable)
-    .values(rowsFor(schema.championsTable, champions));
-}
 if (
   !process.env.ADMIN_EMAIL ||
   !process.env.ADMIN_PASSWORD ||
   !process.env.ADMIN_USERNAME
 )
   throw Error("Dedicated preview administrator credentials required");
+const firstStart = !(
+  await database
+    .select({ id: schema.usersTable.id })
+    .from(schema.usersTable)
+    .where(eq(schema.usersTable.email, process.env.ADMIN_EMAIL))
+).length;
 const { ensureProductionAdmin } =
   await import("../../artifacts/api-server/src/lib/production-admin");
 await ensureProductionAdmin();
