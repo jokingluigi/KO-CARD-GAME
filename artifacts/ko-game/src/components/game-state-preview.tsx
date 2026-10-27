@@ -1059,7 +1059,7 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
+      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,

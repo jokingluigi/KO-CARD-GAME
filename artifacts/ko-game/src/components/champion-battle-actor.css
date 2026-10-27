@@ -42,53 +42,333 @@
     scale: 1;
   }
 }
-.ko-board-preview .ko-player-info {
-  grid-template-columns: var(--board-portrait-w) minmax(0, 1fr) minmax(0, 1fr);
-}
-.ko-board-preview .ko-player-info .ko-champion-core > .relative {
-  grid-column: 1;
-}
-.ko-board-preview .ko-player-info .ko-player-stats,
-.ko-board-preview .ko-player-info .ko-player-zones {
-  grid-column: 2;
-}
-.ko-board-preview .ko-opponent-hud {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--board-portrait-w);
-}
-.ko-board-preview .ko-opponent-hud .ko-opponent-champion {
-  grid-column: 3;
-}
-.ko-board-preview .ko-opponent-hud .ko-champion-heading,
-.ko-board-preview .ko-opponent-hud .ko-quest-panel {
-  grid-column: 2;
-}
 @media (prefers-reduced-motion: reduce) {
   .ko-battle-actor {
     animation: none !important;
   }
 }
-/* Outrank the old shared .ko-champion-core > .relative center-column rule. */
-.ko-game-shell.ko-board-preview .ko-opponent-hud .ko-opponent-champion {
-  grid-column: 3;
+/* The actor is part of the battlefield, rather than a portrait card.
+   Its existing parent remains the real attack/ability target and VFX anchor. */
+.ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
+  --actor-width: clamp(136px, 38vw, 176px);
+  --actor-height: 138px;
+  --actor-hud-height: 185px;
+  --board-hud-h: var(--actor-hud-height);
+  grid-template-rows: 24px var(--actor-hud-height) auto 100px auto var(
+      --actor-hud-height
+    ) minmax(var(--board-hand-h), max-content);
 }
-.ko-game-shell.ko-board-preview .ko-opponent-hud .ko-champion-heading,
-.ko-game-shell.ko-board-preview .ko-opponent-hud .ko-opponent-quest {
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-opponent-hud, .ko-player-info) {
+  width: 100%;
+  max-width: none;
+  height: var(--actor-hud-height);
+  grid-template-rows: 40px 48px 44px 44px;
+  gap: 3px 8px;
+  align-items: stretch;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-opponent-hud {
+  grid-template-columns: minmax(0, 1fr) var(--actor-width);
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-player-info {
+  grid-template-columns: var(--actor-width) minmax(0, 1fr);
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-player-info
+  .ko-champion-core
+  > .relative {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  width: var(--actor-width);
+  height: var(--actor-height);
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-champion, .ko-opponent-champion) {
+  width: var(--actor-width);
+  height: var(--actor-height);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-opponent-hud
+  .ko-opponent-champion {
+  grid-column: 2;
+  grid-row: 1 / 4;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-player-info
+  :is(
+    .ko-champion-heading,
+    .ko-player-stats,
+    .ko-player-quest,
+    .ko-player-ability,
+    .ko-player-zones
+  ) {
   grid-column: 2;
 }
-.ko-game-shell.ko-board-preview .ko-player-info .ko-champion-core > .relative {
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-opponent-hud
+  :is(
+    .ko-champion-heading,
+    .ko-opponent-stats,
+    .ko-opponent-quest,
+    .ko-opponent-zones
+  ) {
   grid-column: 1;
 }
-.ko-battle-actor .ko-battle-actor__body img {
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-opponent-hud, .ko-player-info)
+  .ko-champion-heading {
+  grid-row: 1;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-stats, .ko-opponent-stats) {
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  height: 48px;
+  gap: 5px;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-stats, .ko-opponent-stats)
+  > div {
+  height: 48px;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-stats, .ko-opponent-stats)
+  .font-display {
+  font-size: 20px;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-quest, .ko-opponent-quest) {
+  grid-row: 3;
+  align-self: stretch;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-player-ability {
+  grid-row: 4;
+  align-self: stretch;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-zones, .ko-opponent-zones) {
+  grid-row: 4;
+  height: 44px;
+  align-self: start;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-battle-actor {
+  overflow: hidden;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-battle-actor[data-sprite-source="registered"] {
+  /* Keep the transparent silhouette intact; no card frame or black backing. */
+  mask-image: none;
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-battle-actor[data-sprite-source="illustration-fallback"] {
+  /* Existing art is only a fallback. Fade its lower edge into the table,
+     without pretending that an opaque illustration is a transparent sprite. */
+  mask-image: linear-gradient(#000 0 78%, transparent 100%);
+}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-battle-actor
+  .ko-battle-actor__body
+  img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: var(--actor-fit, contain) !important;
 }
-.ko-game-shell.ko-board-preview .ko-opponent-hud,
-.ko-game-shell.ko-board-preview .ko-player-info {
-  max-width: 640px;
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  :is(.ko-player-champion, .ko-opponent-champion):focus-visible {
+  outline: 2px solid var(--board-bright);
+  outline-offset: 2px;
 }
-.ko-game-shell.ko-board-preview .ko-opponent-hud {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--board-portrait-w);
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena[data-targeting="true"]
+  :is(.ko-player-champion, .ko-opponent-champion).cursor-crosshair {
+  outline: 2px dashed var(--board-bright);
+  outline-offset: 2px;
 }
-.ko-game-shell.ko-board-preview .ko-player-info {
-  grid-template-columns: var(--board-portrait-w) minmax(0, 1fr) minmax(0, 1fr);
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-player-info
+  .ko-player-zones {
+  grid-column: 1;
 }
-.ko-game-shell.ko-board-preview :is(.ko-player-champion,.ko-opponent-champion):has([data-sprite-source="registered"]){background:transparent}
+.ko-game-shell.ko-board-preview
+  .ko-game-stage.ko-champion-arena
+  .ko-opponent-hud
+  .ko-opponent-zones {
+  grid-column: 2;
+}
+/* Wide screens reserve distinct wings for the commanders. The card field
+   keeps four full-size columns; hands keep their existing card dimensions. */
+@media (min-width: 1000px), (min-width: 740px) and (orientation: landscape) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
+    --actor-width: 100%;
+    --actor-height: 300px;
+    grid-template-columns: 210px minmax(0, 1fr) 210px;
+    grid-template-rows: 64px auto 100px auto minmax(260px, max-content);
+    column-gap: 20px;
+    max-width: 1540px;
+    padding: 16px;
+    align-content: center;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-opponent-hand {
+    grid-column: 2;
+    grid-row: 1;
+    height: 56px;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-opponent-hand
+    > div {
+    width: 36px;
+    height: 50px;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-opponent-hud {
+    grid-column: 3;
+    grid-row: 1 / 5;
+    align-self: start;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-player-info {
+    grid-column: 1;
+    grid-row: 3 / 6;
+    align-self: end;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-opponent-hud, .ko-player-info) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 300px 44px 48px 44px 44px 32px;
+    height: auto;
+    gap: 6px;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-player-info
+    .ko-champion-core
+    > .relative,
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-opponent-hud
+    .ko-opponent-champion {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-opponent-hud, .ko-player-info)
+    :is(
+      .ko-champion-heading,
+      .ko-player-stats,
+      .ko-opponent-stats,
+      .ko-player-quest,
+      .ko-opponent-quest,
+      .ko-player-ability,
+      .ko-zone-stack
+    ) {
+    grid-column: 1;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-opponent-hud, .ko-player-info)
+    .ko-champion-heading {
+    grid-row: 2;
+    font-size: 13px;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-player-stats, .ko-opponent-stats) {
+    grid-row: 3;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-player-quest, .ko-opponent-quest) {
+    grid-row: 4;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-player-ability {
+    grid-row: 5;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-player-zones, .ko-opponent-zones) {
+    grid-row: 6;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-opponent-board-row {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-game-controls {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-player-board-row {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-player-hand {
+    grid-column: 2 / 4;
+    grid-row: 5;
+  }
+}
+
+@media (min-width: 740px) and (max-width: 999px) and (orientation: landscape) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
+    --actor-height: 200px;
+    grid-template-columns: 148px minmax(0, 1fr) 148px;
+    grid-template-rows: 40px auto 100px auto minmax(260px, max-content);
+    column-gap: 12px;
+    padding: 8px;
+  }
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    :is(.ko-opponent-hud, .ko-player-info) {
+    grid-template-rows: 200px 44px 48px 44px 44px 32px;
+  }
+}

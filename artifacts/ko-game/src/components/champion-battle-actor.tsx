@@ -216,6 +216,10 @@ export function ChampionBattleActor({
       for (const image of images) image.src = "";
     };
   }, [state.gameId, identity, config ? JSON.stringify(config) : ""]);
+  const fallbackDisplay =
+    selected && !selected.frame && !failed.has(selected.url)
+      ? appearance.display(selected.url)
+      : undefined;
   return (
     <div
       className="ko-champion-portrait-art ko-battle-actor absolute inset-0"
@@ -235,7 +239,13 @@ export function ChampionBattleActor({
           style={
             {
               transform: `scaleX(${placement?.flip ? -1 : 1})`,
-              "--actor-fit": placement?.crop ? "cover" : "contain",
+              "--actor-fit": selected?.frame
+                ? placement?.crop
+                  ? "cover"
+                  : "contain"
+                : fallbackDisplay?.imageDisplayMode === "CONTAIN"
+                  ? "contain"
+                  : "cover",
             } as React.CSSProperties
           }
         >
@@ -248,16 +258,14 @@ export function ChampionBattleActor({
             fallbackSrc={appearance.illustrations.find(
               (url) => url !== selected.url,
             )}
-            displayOverride={
-              !selected.frame && !failed.has(selected.url)
-                ? appearance.display(selected.url)
-                : undefined
-            }
+            displayOverride={fallbackDisplay}
             alt=""
-            imageDisplayMode={placement?.crop ? "COVER" : "CONTAIN"}
+            imageDisplayMode={
+              selected.frame ? (placement?.crop ? "COVER" : "CONTAIN") : "COVER"
+            }
             imageScale={placement?.scale ?? 1}
             imagePositionX={placement?.x ?? 50}
-            imagePositionY={placement?.y ?? 50}
+            imagePositionY={placement?.y ?? (selected.frame ? 50 : 0)}
             className="h-full w-full"
           />
         </div>
