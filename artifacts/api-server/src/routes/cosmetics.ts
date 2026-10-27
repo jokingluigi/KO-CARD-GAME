@@ -1,4 +1,4 @@
-import { parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
+import { spriteFrames, parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
 import {
   legacySkinItem,
   legacySkinId,
@@ -245,7 +245,7 @@ export async function verifyCatalogAssets(
   for (const url of new Set(
     Object.entries(assets)
       .filter(([key]) => key !== "__display")
-      .flatMap(([key,url])=>key==='__battle'?Object.values(parseBattleSprite(url)?.frames??{}).map(frame=>frame.url):[url]),
+      .flatMap(([key,url])=>key==='__battle'?(parseBattleSprite(url)?spriteFrames(parseBattleSprite(url)!):[]).map(frame=>frame.url):[url]),
   )) {
     if (known.has(url)) continue;
     if (!url.startsWith("/api/storage/objects/uploads/cosmetics/"))
