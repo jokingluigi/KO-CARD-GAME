@@ -28,25 +28,27 @@ for(const [width,height,reduced] of JSON.parse(process.env.KO_DIALOGUE_SIZES??'[
   await page.keyboard.press('Escape');const closeInfo=info.getByRole('button',{name:'상세정보 닫기',exact:true});if(await closeInfo.isVisible())await closeInfo.click();
  }
  // Observe the actual landing commit and cut-in appearance, rather than sleeping to a guessed time.
- await page.evaluate(()=>{window.__speechTimes={};new MutationObserver(()=>{const a=document.querySelector('.card-play-animation[data-play-landed=true]');if(a&&!window.__speechTimes.landed)window.__speechTimes.landed=performance.now();if(document.querySelector('.ko-wrestler-cutin')&&!window.__speechTimes.cutin)window.__speechTimes.cutin=performance.now();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-play-landed']});});
+ await page.evaluate(()=>{window.__speechTimes={};new MutationObserver(()=>{const a=document.querySelector('.card-play-animation[data-play-landed=true]');if(a&&!window.__speechTimes.landed)window.__speechTimes.landed=performance.now();if(document.querySelector('[data-wrestler-speaker]')&&!window.__speechTimes.cutin)window.__speechTimes.cutin=performance.now();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-play-landed']});});
  await page.locator('.ko-player-hand .ko-hand-card').first().click();await page.locator('.ko-player-board-row .ko-board-slot').first().click();
  const cutin=page.getByRole('status',{name:'선수 대사',exact:true});await cutin.getByText('넌 지금 자연을 적으로 돌렸다!',{exact:true}).waitFor();
  assert.equal(await cutin.locator('strong').textContent(),'RM우디르');assert.ok((await cutin.textContent()).includes('LEGENDARY'));
  if(await bubble.count())assert.ok(!(await bubble.textContent()).includes('넌 지금 자연을 적으로 돌렸다!'));
  const times=await page.evaluate(()=>window.__speechTimes);assert.ok(times.landed&&times.cutin&&times.cutin>=times.landed-20,JSON.stringify(times));
- await page.waitForFunction(()=>document.querySelector(".ko-wrestler-cutin")?.getAnimations().every(animation=>animation.playState==="finished"));
- const {rect,rail}=await page.evaluate(()=>{const box=n=>{const r=n.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}};return{rect:box(document.querySelector('.ko-wrestler-cutin')),rail:box(document.querySelector('[data-testid=battle-command-strip]'))}});assert.ok(rect.x>=rail.x-2&&rect.y>=rail.y-2&&rect.x+rect.width<=rail.x+rail.width+2&&rect.y+rect.height<=rail.y+rail.height+2,JSON.stringify({rect,rail}));
- await cutin.locator("img").evaluate(image=>image.decode());await page.waitForTimeout(450);await page.screenshot({path:`${out}/legendary-${width}-${reduced}.png`});
+ await page.waitForFunction(()=>(()=>{const n=document.querySelector("[data-wrestler-speaker]");return n&&Number(getComputedStyle(n).opacity)>.99})());
+ const dimensions=await cutin.evaluate(node=>{const r=node.getBoundingClientRect(),art=node.querySelector('.ko-legendary-spotlight__art').getBoundingClientRect(),line=node.querySelector('.ko-legendary-spotlight__line');const overlaps=[...document.querySelectorAll('.ko-game-controls,.ko-champion-ability,.ko-player-stats,.ko-opponent-stats,.ko-player-hand')].filter(el=>{const b=el.getBoundingClientRect();return r.left<b.right&&r.right>b.left&&r.top<b.bottom&&r.bottom>b.top;}).map(el=>el.className);return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom,artWidth:art.width,nameSize:parseFloat(getComputedStyle(node.querySelector('strong')).fontSize),quoteSize:parseFloat(getComputedStyle(line).fontSize),quoteFits:line.scrollHeight<=line.clientHeight+1,overlaps};});
+ assert.ok(dimensions.width>=width*.5&&dimensions.height>=90&&dimensions.artWidth>=100,JSON.stringify(dimensions));assert.ok(dimensions.quoteFits,JSON.stringify(dimensions));assert.deepEqual(dimensions.overlaps,[],JSON.stringify(dimensions));
+ assert.ok(dimensions.x>=0&&dimensions.y>=0&&dimensions.right<=width+1&&dimensions.bottom<=height+1,JSON.stringify(dimensions));
+ await cutin.locator("img").evaluate(image=>image.decode());await page.waitForTimeout(450);await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(40);await page.screenshot({path:`${out}/legendary-${width}-${reduced}.png`});
  if(width===390&&!reduced){
   await page.waitForFunction(()=>document.querySelector('[data-testid=preview-busy]')?.textContent==='false');
   const before=await page.getByTestId('state-json').textContent();
   await page.locator('.ko-player-hand .ko-hand-card').first().click();
   assert.equal(await cutin.count(),0);assert.equal(await bubble.count(),0);
   await page.getByTestId('battle-command-strip').getByRole('button',{name:'선택 취소',exact:true}).click();
-  await cutin.waitFor();assert.equal(await page.getByTestId('state-json').textContent(),before);
+  assert.equal(await cutin.count(),0);assert.equal(await page.getByTestId('state-json').textContent(),before);
   results.push({selectionInstructionsWin:true,cancelAccessible:true,noGameStateMutation:true});
  }
- await page.waitForFunction(()=>!document.querySelector('.ko-wrestler-cutin'));await page.waitForFunction(()=>document.querySelector('[data-testid=preview-busy]')?.textContent==='false');
+ await page.waitForFunction(()=>!document.querySelector('[data-wrestler-speaker]'));await page.waitForFunction(()=>document.querySelector('[data-testid=preview-busy]')?.textContent==='false');
  // A reconnect/same state update cannot replay a consumed line.
  await page.evaluate(()=>{const s=JSON.parse(document.querySelector('[data-testid=state-json]').textContent);window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:s}}));});await page.waitForTimeout(120);assert.equal(await cutin.count(),0);
  if(width===390&&!reduced){
@@ -61,10 +63,10 @@ for(const [width,height,reduced] of JSON.parse(process.env.KO_DIALOGUE_SIZES??'[
   await page.evaluate(async()=>{const {executeAction}=await import('/src/game/index.ts');let s=window.__queueState;for(let i=0;i<2;i++){const r=executeAction(s,{type:'PLAY_WRESTLER',playerId:s.players[1].id,cardInstanceId:'queued-'+i,boardSlot:i});if(!r.success)throw Error(r.message);s=r.state;}window.__queueState=s;window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:s}}));});
   await page.locator('[data-wrestler-speaker="queued-0"]').waitFor();assert.equal(await page.locator('[data-wrestler-speaker="queued-1"]').count(),0);
   await page.locator('[data-wrestler-speaker="queued-1"]').waitFor({timeout:7000});assert.equal(await page.locator('[data-wrestler-speaker="queued-0"]').count(),0);
-  await page.waitForFunction(()=>!document.querySelector('.ko-wrestler-cutin'));
+  await page.waitForFunction(()=>!document.querySelector('[data-wrestler-speaker]'));
   results.push({sameBatchTwoSpeakers:true});
  }
- assert.deepEqual(errors,[]);results.push({width,height,reduced,championIdentity:true,legendaryIdentity:true,landedBeforeSpeech:true,railBounds:true,noCriticalOverlap:true,noReplay:true});await page.close();
+ assert.deepEqual(errors,[]);results.push({width,height,reduced,championIdentity:true,legendaryIdentity:true,landedBeforeSpeech:true,largeSpotlight:true,noCriticalOverlap:true,noReplay:true});await page.close();
 }
 await writeFile(out+'/results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results));
 }finally{await browser.close();}
