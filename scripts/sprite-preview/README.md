@@ -13,7 +13,7 @@ node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs scripts/sprite-previe
 Start:
 
 ```sh
-node artifacts/api-server/dist-sprite-preview/index.mjs
+node --max-old-space-size=128 artifacts/api-server/dist-sprite-preview/index.mjs
 ```
 
 Required environment: `KO_ISOLATED_SPRITE_PREVIEW=1`, dedicated `ADMIN_EMAIL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`. Render provides `PORT` and `RENDER_EXTERNAL_URL`. For local smoke tests use `PREVIEW_ORIGIN` and optionally `PREVIEW_DATA_DIR`. Do not configure `DATABASE_URL` or Supabase credentials.

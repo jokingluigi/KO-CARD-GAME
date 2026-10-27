@@ -36,7 +36,14 @@ const root = resolve(process.env.PREVIEW_DATA_DIR || "/tmp/ko-sprite-preview");
 await mkdir(root, { recursive: true });
 const dbRequire = createRequire(resolve("lib/db/package.json"));
 const { PGlite } = dbRequire("@electric-sql/pglite");
-const pg = new PGlite(resolve(root, "database"));
+const pg = new PGlite(resolve(root, "database"), {
+  initialMemory: 128 * 1024 * 1024,
+  postgresqlconf: [
+    "shared_buffers=16MB",
+    "work_mem=2MB",
+    "maintenance_work_mem=16MB",
+  ],
+});
 await pg.waitReady;
 const database = drizzle(pg, { schema });
 const tables = await pg.query("select to_regclass('public.cards') as name");
@@ -146,26 +153,22 @@ if (firstStart) {
   for (const [i, champion] of champions
     .filter((c) => c.status === "PUBLISHED")
     .entries()) {
-    await database
-      .insert(schema.aiDecksTable)
-      .values({
-        id: `preview-ai-${i}`,
+    await database.insert(schema.aiDecksTable).values({
+      id: `preview-ai-${i}`,
+      name: champion.name + " 테스트 덱",
+      championDefinitionId: champion.id,
+      cardDefinitionIds: deck,
+      enabled: true,
+    });
+    if (i < 2)
+      await database.insert(schema.decksTable).values({
+        id: `preview-deck-${i}`,
+        userId: admin.id,
         name: champion.name + " 테스트 덱",
         championDefinitionId: champion.id,
         cardDefinitionIds: deck,
-        enabled: true,
+        isSelected: i === 0,
       });
-    if (i < 2)
-      await database
-        .insert(schema.decksTable)
-        .values({
-          id: `preview-deck-${i}`,
-          userId: admin.id,
-          name: champion.name + " 테스트 덱",
-          championDefinitionId: champion.id,
-          cardDefinitionIds: deck,
-          isSelected: i === 0,
-        });
   }
 }
 const secret = randomBytes(32).toString("hex");
@@ -313,3 +316,10 @@ attachOnlineMatchWebSocket(server);
 server.listen(port, "0.0.0.0", () =>
   console.log("SPRITE_PREVIEW_READY " + origin),
 );
+
+process.on("SIGTERM", () => {
+  server.close(async () => {
+    await pg.close();
+    process.exit(0);
+  });
+});
