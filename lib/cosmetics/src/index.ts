@@ -194,3 +194,4 @@ export function cosmeticImageSettings(
     : undefined;
 }
 export * from './battle-sprite';
+export * from './champion-sprite-skin';

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  parseBattleSprite,
+  championSpriteSkin,
+  championSpriteCandidates,
   selectSpriteFrame,
   spriteFrames,
   reactSprite,
@@ -36,18 +37,28 @@ export function ChampionBattleActor({
   hitContact?: boolean;
 }) {
   const player = state.players.find((p) => p.id === playerId)!;
-  const skin = parseBattleSprite(
-    loadout?.skins[skinKey("CHAMPION_SKIN", player.champion?.id ?? "")]
-      ?.imageAssets.__battle,
-  );
-  const base = parseBattleSprite(
-    player.champion?.presentationLines?.BATTLE_SPRITE,
-  );
+  const appearance = championSpriteSkin({
+    championId: player.champion?.id ?? "",
+    loadout,
+    base: player.champion?.presentationLines?.BATTLE_SPRITE,
+    normal: player.champion?.imageUrl ?? original,
+    awakenedPortrait: player.champion?.questCompletedPortraitEnabled
+      ? player.champion.questCompletedPortraitUrl
+      : original,
+    awakened: Boolean(player.champion?.questCompleted),
+  });
+  const config = appearance.config;
+  const identity = appearance.id;
+  const setIdentity =
+    identity +
+    ":" +
+    (player.champion?.questCompleted && config?.awakening === "REPLACE"
+      ? "awakened"
+      : "normal");
   const [reaction, setReaction] = useState<{
     event: SpriteEvent;
     until: number;
   }>({ event: "IDLE", until: 0 });
-  const config = skin ?? base;
   const selfDamage = useRef(false);
   const health = useRef(player.health);
   const pendingHit = useRef(false);
@@ -148,40 +159,33 @@ export function ChampionBattleActor({
         ? ("VICTORY" as const)
         : ("DEFEAT" as const)
       : undefined;
-  const candidates = [] as Array<{
-    url: string;
-    frame?: import("@workspace/cosmetics").SpriteFrame;
-  }>;
-  for (const config of [skin, base]) {
-    if (!config) continue;
-    const frame = selectSpriteFrame(config, {
-      awakened: Boolean(player.champion?.questCompleted),
-      low: getPlayerSurvivalHealth(state, playerId) <= (config.lowHealth ?? 5),
-      outcome,
-      reaction: reaction.event,
-      selfDamage: selfDamage.current,
-    });
-    if (frame) candidates.push({ url: frame.url, frame });
-  }
-  for (const url of [portrait, original]) if (url) candidates.push({ url });
+  const candidates = championSpriteCandidates(appearance, {
+    awakened: Boolean(player.champion?.questCompleted),
+    low: getPlayerSurvivalHealth(state, playerId) <= (config?.lowHealth ?? 5),
+    outcome,
+    reaction: reaction.event,
+    selfDamage: selfDamage.current,
+  });
   const [failed, setFailed] = useState<Set<string>>(new Set());
   useEffect(
     () => setFailed(new Set()),
     [
       state.gameId,
-      skin ? JSON.stringify(skin) : "",
-      base ? JSON.stringify(base) : "",
+      identity,
+      config ? JSON.stringify(config) : "",
       portrait,
       original,
     ],
   );
   const selected = candidates.find((c) => !failed.has(c.url));
-  const [ready, setReady] = useState("");
+  const [loaded, setLoaded] = useState({ id: "", url: "" });
+  const ready = loaded.id === setIdentity ? loaded.url : "";
+  const setReady = (url: string) => setLoaded({ id: setIdentity, url });
   const placement =
     ready === selected?.url
       ? selected?.frame?.[self ? "self" : "opponent"]
       : undefined;
-  useEffect(() => setReady(""), [state.gameId, playerId]);
+  useEffect(() => setReady(""), [state.gameId, playerId, setIdentity]);
   useEffect(() => {
     let cancelled = false;
     if (selected) {
@@ -199,10 +203,10 @@ export function ChampionBattleActor({
     return () => {
       cancelled = true;
     };
-  }, [selected?.url]);
+  }, [selected?.url, setIdentity]);
   useEffect(() => {
     const images: HTMLImageElement[] = [];
-    for (const config of [skin, base])
+    for (const config of [appearance.config])
       for (const f of config ? spriteFrames(config) : []) {
         const image = new Image();
         image.src = f.url;
@@ -211,11 +215,7 @@ export function ChampionBattleActor({
     return () => {
       for (const image of images) image.src = "";
     };
-  }, [
-    state.gameId,
-    skin ? JSON.stringify(skin) : "",
-    base ? JSON.stringify(base) : "",
-  ]);
+  }, [state.gameId, identity, config ? JSON.stringify(config) : ""]);
   return (
     <div
       className="ko-champion-portrait-art ko-battle-actor absolute inset-0"
@@ -223,6 +223,10 @@ export function ChampionBattleActor({
         selected?.frame ? "registered" : "illustration-fallback"
       }
       data-reaction={reaction.event}
+      data-sprite-skin={identity}
+      data-sprite-set={
+        setIdentity.endsWith(":awakened") ? "awakened" : "normal"
+      }
       aria-hidden="true"
     >
       {selected ? (
@@ -239,19 +243,14 @@ export function ChampionBattleActor({
             src={
               ready === selected.url
                 ? selected.url
-                : ready || portrait || original || selected.url
+                : ready || appearance.illustrations[0] || selected.url
             }
-            fallbackSrc={portrait}
+            fallbackSrc={appearance.illustrations.find(
+              (url) => url !== selected.url,
+            )}
             displayOverride={
-              !selected.frame &&
-              selected.url === portrait &&
-              !failed.has(portrait ?? "")
-                ? cosmeticImageSettings(
-                    loadout,
-                    "CHAMPION_SKIN",
-                    player.champion?.id ?? "",
-                    player.champion?.questCompleted ? "awakened" : "portrait",
-                  )
+              !selected.frame && !failed.has(selected.url)
+                ? appearance.display(selected.url)
                 : undefined
             }
             alt=""

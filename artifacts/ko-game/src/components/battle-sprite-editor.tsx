@@ -115,7 +115,7 @@ export function BattleSpriteEditor({
       className="my-4 min-w-0 space-y-3 border border-neutral-700 p-3 [&_select]:max-w-full [&_input[type=number]]:w-20"
       disabled={busy}
     >
-      <legend>대전 대화용 스프라이트</legend>
+      <legend>현재 외형 스킨의 대전 스프라이트</legend><p className="text-xs">이 설정은 현재 편집 중인 스킨에만 저장됩니다. 챔피언 편집 화면은 기본 외형 스킨입니다. 다른 스킨의 표정이나 각성 세트를 가져오지 않습니다.</p>
       <p className="text-xs">
         주요 아군: 레전더리 또는 설정 코스트 이상. 큰 피해: 출처가 확인된 아군
         효과가 상대 챔피언에게 실제로 적용한 피해량. 자해: sourcePlayerId가
