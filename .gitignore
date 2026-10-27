@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Generated disposable sprite-preview deployment output
+/artifacts/api-server/dist-sprite-preview/
+/scripts/sprite-preview/schema.sql
