@@ -1,5 +1,6 @@
+import type { CosmeticDisplaySettings } from "@workspace/cosmetics";
 export type CinematicKind = 'ATTACK' | 'SUMMON' | 'ABILITY' | 'BIG_SPELL' | 'LEGENDARY' | 'CHAMPION' | 'AWAKENING' | 'BOSS' | 'HIDDEN_BOSS' | 'FINISHER' | 'RESULT';
-export type CinematicRequest = {id:string;kind:CinematicKind;title:string;subtitle?:string;art?:string|null;strength?:number;focus?:{x:number;y:number};duration?:number;questCompletion?:boolean};
+export type CinematicRequest = {id:string;kind:CinematicKind;title:string;subtitle?:string;art?:string|null;artFallback?:string|null;artDisplay?:CosmeticDisplaySettings;strength?:number;focus?:{x:number;y:number};duration?:number;questCompletion?:boolean};
 export type CinematicEvent = CinematicRequest & {createdAt:number;duration:number};
 export const CINEMATIC_PRIORITY:Record<CinematicKind,number>={SUMMON:1,ATTACK:2,ABILITY:3,BIG_SPELL:4,LEGENDARY:5,CHAMPION:6,AWAKENING:7,BOSS:8,HIDDEN_BOSS:8,FINISHER:9,RESULT:10};
 export const CINEMATIC_TIMING={quick:320,action:560,panel:650,reveal:760,awakening:1100,boss:1500,result:650};

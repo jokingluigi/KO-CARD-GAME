@@ -1,3 +1,5 @@
+import {readAIDeckCosmetics} from "./ai-deck-cosmetics";
+import type {CosmeticLoadout} from "@workspace/cosmetics";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   aiDecksTable,
@@ -54,7 +56,7 @@ export type AIDeckValidation = {
   requiredCardDefinitionIds: string[];
 };
 
-export type AIDeckView = AIDeckRecord & AIDeckValidation;
+export type AIDeckView = AIDeckRecord & AIDeckValidation & {cosmeticIds?:string[];cosmetics?:CosmeticLoadout};
 
 export function aiDeckSizeReason(cardCount: number): string | null {
   return cardCount < AI_DECK_MIN_SIZE || cardCount > AI_DECK_MAX_SIZE
@@ -218,9 +220,11 @@ export async function resolveAIDeck(
   deck: AIDeckRecord,
   context: DeckValidationContext = "AI_DECK",
   database: Pick<typeof db, "select"> = db,
+  includeCosmetics=true,
 ): Promise<AIDeckView> {
   const validation = await validateAIDeckReferences(deck.championDefinitionId, deck.cardDefinitionIds, context, database);
-  return { ...deck, ...validation };
+  const selected=database===db&&includeCosmetics?(await readAIDeckCosmetics([deck.id])).get(deck.id):undefined;
+  return { ...deck, ...validation, ...selected };
 }
 
 export async function listAIDecks(options?: { enabledOnly?: boolean; context?: DeckValidationContext }, database: Pick<typeof db, "select"> = db): Promise<AIDeckView[]> {
@@ -229,5 +233,7 @@ export async function listAIDecks(options?: { enabledOnly?: boolean; context?: D
     .from(aiDecksTable)
     .where(options?.enabledOnly ? eq(aiDecksTable.enabled, true) : undefined)
     .orderBy(asc(aiDecksTable.displayOrder), asc(aiDecksTable.name));
-  return Promise.all(decks.map((deck) => resolveAIDeck(deck, options?.context, database)));
+  const resolved=await Promise.all(decks.map(deck=>resolveAIDeck(deck,options?.context,database,false)));
+  const selected=database===db?await readAIDeckCosmetics(decks.map(deck=>deck.id)):new Map();
+  return resolved.map(deck=>({...deck,...selected.get(deck.id)}));
 }
