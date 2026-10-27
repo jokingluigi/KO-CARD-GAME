@@ -1,3 +1,4 @@
+import {presentationHealingAfter} from "./presentation-health";
 import type { CardInstance } from '../cards/types';
 import type { NewCardRule } from '../cards/new-card-effects';
 import type { GameState } from '../types/game-state';
@@ -25,11 +26,14 @@ export function healNewCardAware(state:GameState,playerId:string,amount:number,t
   const overflow=Math.max(0,health+amount-max);
   const grow=p.board.some(c=>hasNewCardRule(c,'카스토'))?overflow:0;
   const nextMax=max+grow,nextHealth=Math.min(nextMax,health+amount);
+  const presentationHealing = (!c || c.isDirectDeployedChampion) && nextHealth > health
+    ? presentationHealingAfter(p,health,nextHealth)
+    : p.presentationHealing;
   const turn=healingTurn(state),key=`${turn}:${playerId}`;
   const turnOwner=[...state.events].reverse().find(event=>event.type==='TURN_STARTED'||event.type==='TURN_ENDED')?.playerId ?? state.activePlayerId;
   const healed=nextHealth>health && turnOwner===playerId;
   const category=!c || c.isDirectDeployedChampion ? 'champion' : 'wrestler';
-  return {...state,...(healed?{ownTurnHealing:{...state.ownTurnHealing,[key]:{...state.ownTurnHealing?.[key],[category]:true}}}:{}),overhealByTurn:{...state.overhealByTurn,[key]:(state.overhealByTurn?.[key]??0)+overflow},players:state.players.map(owner=>owner.id!==playerId?owner:c?{...owner,board:owner.board.map(card=>card?.instanceId===targetId?{...card,currentHealth:nextHealth,maxHealth:nextMax}:card) as typeof owner.board}:{...owner,health:nextHealth,maxHealth:nextMax,champion:owner.champion?{...owner.champion,health:nextHealth,maxHealth:nextMax}:null})};
+  return {...state,...(healed?{ownTurnHealing:{...state.ownTurnHealing,[key]:{...state.ownTurnHealing?.[key],[category]:true}}}:{}),overhealByTurn:{...state.overhealByTurn,[key]:(state.overhealByTurn?.[key]??0)+overflow},players:state.players.map(owner=>owner.id!==playerId?owner:c?{...owner,presentationHealing,board:owner.board.map(card=>card?.instanceId===targetId?{...card,currentHealth:nextHealth,maxHealth:nextMax}:card) as typeof owner.board}:{...owner,presentationHealing,health:nextHealth,maxHealth:nextMax,champion:owner.champion?{...owner.champion,health:nextHealth,maxHealth:nextMax}:null})};
 }
 
 /** Incoming vulnerability is a field aura, independent of temporary damage modifiers. */

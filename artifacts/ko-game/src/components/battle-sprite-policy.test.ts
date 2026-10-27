@@ -19,10 +19,10 @@ test('reaction completion returns to low state; replaced set cannot leak normal 
  assert.equal(selectSpriteFrame(config,{awakened:true,low:true,reaction:'IDLE'})!.url,awake.url);
  assert.equal(parseBattleSprite({...config,awakened:undefined}),null);
 });
-test('self damage override, disabled reactions, result persistence and timing are deterministic',()=>{
+test('final damage bands ignore legacy self damage artwork override; disabled reactions and timing remain deterministic',()=>{
  const normal={url:'https://example.invalid/normal.png',self:p,opponent:p};const laugh={...normal,url:'https://example.invalid/laugh.png'};
  const config={version:1 as const,frames:{default:normal,laugh},reactions:{HIT:'default'},selfDamage:'laugh',disabled:['ATTACK' as const],timing:{HIT:650}};
- assert.equal(selectSpriteFrame(config,{awakened:false,low:false,reaction:'HIT',selfDamage:true})!.url,laugh.url);
+ assert.equal(selectSpriteFrame(config,{awakened:false,low:false,reaction:'HIT',selfDamage:true})!.url,normal.url);
  assert.equal(selectSpriteFrame(config,{awakened:false,low:false,reaction:'ATTACK'})!.url,normal.url);
  assert.equal(reactSprite({event:'IDLE',until:0},'HIT',100,config).until,750);
  assert.equal(reactSprite({event:'DEFEAT',until:10000},'AWAKEN',100).event,'DEFEAT');

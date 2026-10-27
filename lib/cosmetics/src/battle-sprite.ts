@@ -4,6 +4,7 @@ export const SPRITE_EVENTS = [
   "ATTACK",
   "HIT",
   "HEAL",
+  "HEAVY_HIT",
   "BIG_HIT",
   "ALLY_RETIRED",
   "ABILITY",
@@ -11,6 +12,63 @@ export const SPRITE_EVENTS = [
   "VICTORY",
   "DEFEAT",
 ] as const;
+/** The ten artwork slots; AWAKEN is a transition, never an eleventh expression. */
+export const SPRITE_EXPRESSIONS = {
+  default: "기본",
+  attack: "공격",
+  hurt: "피격",
+  heavy_hurt: "강한 피격",
+  low: "저체력",
+  summon: "소환",
+  surprised: "놀람",
+  victory: "승리",
+  defeat: "패배",
+  relief: "안도",
+} as const;
+export const FINAL_SPRITE_EVENTS = [
+  "IDLE",
+  "ATTACK",
+  "HIT",
+  "HEAVY_HIT",
+  "SUMMON",
+  "ALLY_RETIRED",
+  "HEAL",
+  "AWAKEN",
+  "VICTORY",
+  "DEFEAT",
+] as const;
+export const spriteEventLabels: Record<string, string> = {
+  IDLE: "기본",
+  ATTACK: "공격",
+  HIT: "피격",
+  HEAVY_HIT: "강한 피격",
+  SUMMON: "소환",
+  ALLY_RETIRED: "놀람",
+  HEAL: "안도",
+  AWAKEN: "각성 전환",
+  VICTORY: "승리",
+  DEFEAT: "패배",
+};
+export const spriteDefaultTiming: Record<string, number> = {
+  ATTACK: 800,
+  HIT: 600,
+  HEAVY_HIT: 900,
+  SUMMON: 600,
+  ALLY_RETIRED: 900,
+  HEAL: 700,
+  AWAKEN: 1500,
+};
+const eventExpression: Partial<Record<SpriteEvent, string>> = {
+  IDLE: "default",
+  ATTACK: "attack",
+  HIT: "hurt",
+  HEAVY_HIT: "heavy_hurt",
+  SUMMON: "summon",
+  ALLY_RETIRED: "surprised",
+  HEAL: "relief",
+  VICTORY: "victory",
+  DEFEAT: "defeat",
+};
 export type SpriteEvent = (typeof SPRITE_EVENTS)[number];
 export type SpritePlacement = {
   scale: number;
@@ -183,10 +241,11 @@ export function parseBattleSprite(
 export const spritePriority: Record<SpriteEvent, number> = {
   IDLE: 0,
   SUMMON: 1,
-  ATTACK: 2,
-  ALLY_RETIRED: 3,
-  HIT: 4,
-  HEAL: 4,
+  ATTACK: 4,
+  ALLY_RETIRED: 6,
+  HIT: 5,
+  HEAVY_HIT: 7,
+  HEAL: 2,
   BIG_HIT: 2,
   ABILITY: 5,
   AWAKEN: 8,
@@ -200,7 +259,12 @@ export function reactSprite(
   config?: BattleSprite,
 ) {
   if (config?.disabled?.includes(event)) return current;
-  if (event === "HIT" && current.event === "HIT" && current.until > now + 400)
+  // Coalesce repeated identical reactions without extending their deadline.
+  if (
+    ["HIT", "HEAVY_HIT"].includes(event) &&
+    current.event === event &&
+    current.until > now
+  )
     return current;
   if (
     current.until > now &&
@@ -211,18 +275,9 @@ export function reactSprite(
     event,
     until:
       now +
-      (config?.timing?.[event] ??
-        (["VICTORY", "DEFEAT"].includes(event)
-          ? 86400000
-          : event === "AWAKEN"
-            ? 1500
-            : event === "ABILITY"
-              ? 900
-              : event === "HIT"
-                ? 600
-                : event === "HEAL"
-                  ? 700
-                  : 800)),
+      (["VICTORY", "DEFEAT"].includes(event)
+        ? Number.MAX_SAFE_INTEGER - now
+        : (config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800)),
   };
 }
 
@@ -244,18 +299,24 @@ export function selectSpriteFrame(
   const state = input.outcome ?? (input.low ? "LOW" : "IDLE");
   const persistent =
     set.states?.[state] ??
-    set.reactions[state === "LOW" ? "IDLE" : state] ??
-    "default";
+    (state === "LOW"
+      ? set.frames.low
+        ? "low"
+        : "default"
+      : (set.reactions[state] ??
+        (set.frames[eventExpression[state]!]
+          ? eventExpression[state]!
+          : "default")));
   const transient =
     input.reaction !== "IDLE" &&
+    input.reaction !== "AWAKEN" &&
     !config.disabled?.includes(input.reaction) &&
     !input.outcome;
+  // Missing transient artwork returns to this set's default, not another state/skin.
   const key = transient
-    ? ((input.selfDamage && input.reaction === "HIT"
-        ? set.selfDamage
-        : undefined) ??
-      set.reactions[input.reaction] ??
-      persistent)
+    ? (set.reactions[input.reaction] ??
+      eventExpression[input.reaction] ??
+      "default")
     : persistent;
   return set.frames[key] ?? set.frames.default;
 }
@@ -264,4 +325,97 @@ export function spriteFrames(config: BattleSprite) {
     ...Object.values(config.frames),
     ...Object.values(config.awakened?.frames ?? {}),
   ];
+}
+
+/** Converts the earlier optional mappings into the final ten editable artwork slots.
+ * It is a read-time projection; saved legacy manifests are never overwritten implicitly. */
+export function finalSpriteSet(input: BattleSprite): BattleSprite {
+  const aliases: Record<string, string[]> = {
+    default: ["default"],
+    attack: [
+      input.reactions.ATTACK!,
+      input.reactions.ABILITY!,
+      "attack",
+      "ability",
+    ],
+    hurt: [input.reactions.HIT!, "hurt"],
+    heavy_hurt: [input.reactions.HEAVY_HIT!, "heavy_hurt"],
+    low: [input.states?.LOW!, "low"],
+    summon: [input.reactions.SUMMON!, "summon"],
+    surprised: [input.reactions.ALLY_RETIRED!, "surprised", "retire"],
+    victory: [input.states?.VICTORY!, input.reactions.VICTORY!, "victory"],
+    defeat: [input.states?.DEFEAT!, input.reactions.DEFEAT!, "defeat"],
+    relief: [input.reactions.HEAL!, "relief"],
+  };
+  const frames: Record<string, SpriteFrame> = {};
+  for (const [key, choices] of Object.entries(aliases)) {
+    const frame =
+      input.frames[key] ??
+      choices
+        .filter((x) => x && (key === "default" || x !== "default"))
+        .map((x) => input.frames[x])
+        .find(Boolean);
+    if (frame) frames[key] = frame;
+  }
+  const reactions: BattleSprite["reactions"] = {};
+  for (const [event, key] of Object.entries(eventExpression)) {
+    const explicit = input.reactions[event as SpriteEvent];
+    if (explicit && frames[explicit])
+      reactions[event as SpriteEvent] = explicit;
+    else if (frames[key!]) reactions[event as SpriteEvent] = key;
+  }
+  const states: BattleSprite["states"] = {};
+  for (const [state, key] of Object.entries({
+    IDLE: "default",
+    LOW: "low",
+    VICTORY: "victory",
+    DEFEAT: "defeat",
+  })) {
+    const explicit =
+      input.states?.[state as keyof NonNullable<BattleSprite["states"]>];
+    if (explicit && frames[explicit])
+      states[state as keyof typeof states] = explicit;
+    else if (frames[key]) states[state as keyof typeof states] = key;
+  }
+  return {
+    ...input,
+    frames,
+    reactions,
+    states,
+    selfDamage: undefined,
+    lowHealth: undefined,
+    bigDamage: undefined,
+    majorCost: undefined,
+    disabled: input.disabled?.filter((e) =>
+      FINAL_SPRITE_EVENTS.includes(e as (typeof FINAL_SPRITE_EVENTS)[number]),
+    ),
+    ...(input.awakened ? { awakened: finalSpriteSet(input.awakened) } : {}),
+  };
+}
+
+/** Uploading a slot binds its own state/event without deleting other artwork. */
+export function withSpriteFrame(
+  config: BattleSprite,
+  key: string,
+  frame: SpriteFrame,
+): BattleSprite {
+  const reactions = { ...config.reactions };
+  for (const [event, expression] of Object.entries(eventExpression))
+    if (expression === key) reactions[event as SpriteEvent] = key;
+  const states = { ...config.states };
+  const state = (
+    {
+      default: "IDLE",
+      low: "LOW",
+      victory: "VICTORY",
+      defeat: "DEFEAT",
+    } as const
+  )[key as "default" | "low" | "victory" | "defeat"];
+  if (state) states[state] = key;
+  return {
+    ...config,
+    frames: { ...config.frames, [key]: frame },
+    reactions,
+    states,
+  };
 }

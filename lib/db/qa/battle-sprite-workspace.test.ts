@@ -133,3 +133,70 @@ test("skin-only sprite save does not replace artwork, target, equipment or defau
     200,
   );
 });
+
+test("all ten expressions and independent awakened framing survive workspace save/re-entry", async () => {
+  const { SPRITE_EXPRESSIONS, selectSpriteFrame } =
+    await import("../../cosmetics/src/index");
+  const targets = (await api(root)).body.targets;
+  const target = targets.find(
+    (t: any) => t.key === "skin:" + registered.CHAMPION_SKIN.id,
+  );
+  const frames = Object.fromEntries(
+    Object.keys(SPRITE_EXPRESSIONS).map((key, index) => [
+      key,
+      {
+        url: uploaded,
+        self: { ...p, scale: 1 + index / 20 },
+        opponent: { ...p, x: 40 + index, flip: index % 2 === 0 },
+      },
+    ]),
+  );
+  const config = {
+    version: 1,
+    frames,
+    reactions: {},
+    awakening: "REPLACE",
+    awakened: {
+      version: 1,
+      frames: {
+        default: {
+          url: uploaded,
+          self: { ...p, scale: 2 },
+          opponent: { ...p, scale: 0.7 },
+        },
+      },
+      reactions: {},
+    },
+  };
+  const beforeDefault = targets.find(
+    (t: any) => t.kind === "default" && t.championId === target.championId,
+  ).config;
+  const response = await api(root + "/skin/" + target.id, "admin", "PATCH", {
+    sprite: config,
+    revision: target.revision,
+  });
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  const reloaded = (await api(root)).body.targets;
+  const stored = reloaded.find((t: any) => t.key === target.key).config;
+  assert.deepEqual(stored, config);
+  assert.equal(Object.keys(stored.frames).length, 10);
+  assert.equal(
+    selectSpriteFrame(stored, { awakened: false, low: true, reaction: "IDLE" })
+      ?.self.scale,
+    1.2,
+  );
+  assert.equal(
+    selectSpriteFrame(stored, {
+      awakened: true,
+      low: true,
+      reaction: "HEAVY_HIT",
+    })?.self.scale,
+    2,
+  );
+  assert.deepEqual(
+    reloaded.find(
+      (t: any) => t.kind === "default" && t.championId === target.championId,
+    ).config,
+    beforeDefault,
+  );
+});

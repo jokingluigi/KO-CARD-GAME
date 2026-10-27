@@ -56,6 +56,8 @@ export interface PendingRuleListener {
 }
 
 export interface PlayerState {
+  /** Cumulative actual healing for presentation; not a quest/event or gameplay input. */
+  presentationHealing?: { sequence: number; total: number };
   id: string;
   health: number;
   maxHealth: number;
@@ -117,6 +119,8 @@ export interface GameState {
   consumedRuleKeys?: string[];
   /** Effect resolution is deliberately part of game state, not UI state. */
   targetingState?: {
+    /** Display-only identity of this serialized effect processing unit. */
+    presentationResolutionId?: string;
     active: true;
     fusion?: { stage: "CHOOSE" | "SOURCE" | "TARGET" | "VANISH" | "BATCH"; source?: CardInstance; target?: CardInstance; sourcePlayerId?: string; targetPlayerId?: string; remainingSourceIds?: string[]; targetInstanceId?: string };
     championRewardReplacement?: { championId: string; token: CardInstance };

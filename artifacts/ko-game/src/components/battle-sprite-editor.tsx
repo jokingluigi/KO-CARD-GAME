@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import {
-  SPRITE_EVENTS,
+  FINAL_SPRITE_EVENTS as SPRITE_EVENTS,
+  SPRITE_EXPRESSIONS,
+  spriteEventLabels,
+  spriteDefaultTiming,
+  finalSpriteSet,
+  withSpriteFrame,
   selectSpriteFrame,
   reactSprite,
   defaultSpritePlacement,
@@ -13,13 +18,17 @@ export function BattleSpriteEditor({
   onChange: save,
   workspace = false,
   onBusyChange,
+  fallbackImage,
 }: {
+  fallbackImage?: string | null;
   workspace?: boolean;
   onBusyChange?: (busy: boolean) => void;
   value?: BattleSprite | null;
   onChange: (value: BattleSprite) => void;
 }) {
-  const root = value ?? { version: 1 as const, frames: {}, reactions: {} };
+  const root = finalSpriteSet(
+    value ?? { version: 1 as const, frames: {}, reactions: {} },
+  );
   const [editing, setEditing] = useState<"NORMAL" | "AWAKENED">("NORMAL");
   const config =
     editing === "AWAKENED"
@@ -44,14 +53,19 @@ export function BattleSpriteEditor({
     save(result);
   };
   const [awake, setAwake] = useState(false),
-    [low, setLow] = useState(false),
-    [selfHit, setSelfHit] = useState(false);
+    [health, setHealth] = useState(10);
+  const low = health >= 1 && health <= 5;
   const [reaction, setReaction] = useState<{
     event: import("@workspace/cosmetics").SpriteEvent;
     until: number;
   }>({ event: "IDLE", until: 0 });
   useEffect(() => {
-    if (!reaction.until) return;
+    if (
+      !reaction.until ||
+      reaction.event === "VICTORY" ||
+      reaction.event === "DEFEAT"
+    )
+      return;
     const timer = setTimeout(
       () => setReaction({ event: "IDLE", until: 0 }),
       Math.max(0, reaction.until - Date.now()),
@@ -65,7 +79,7 @@ export function BattleSpriteEditor({
     [busy, setBusy] = useState(false);
   const frame = config.frames[expression];
   const put = (frame: SpriteFrame) =>
-    onChange({ ...config, frames: { ...config.frames, [expression]: frame } });
+    onChange(withSpriteFrame(config, expression, frame));
   async function upload(file: File) {
     setBusy(true);
     onBusyChange?.(true);
@@ -106,8 +120,16 @@ export function BattleSpriteEditor({
       );
       put({
         url: image.imageUrl,
-        self: { ...(frame?.self ?? defaultSpritePlacement) },
-        opponent: { ...(frame?.opponent ?? defaultSpritePlacement) },
+        self: {
+          ...(frame?.self ??
+            config.frames.default?.self ??
+            defaultSpritePlacement),
+        },
+        opponent: {
+          ...(frame?.opponent ??
+            config.frames.default?.opponent ??
+            defaultSpritePlacement),
+        },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "등록 실패");
@@ -142,8 +164,31 @@ export function BattleSpriteEditor({
               ? reaction.event
               : undefined,
           reaction: reaction.event,
-          selfDamage: selfHit,
         });
+  const [failedPreview, setFailedPreview] = useState<Set<string>>(new Set());
+  useEffect(
+    () => setFailedPreview(new Set()),
+    [value, editing, awake, fallbackImage],
+  );
+  const previewSet =
+    workspace && previewMode === "FRAME"
+      ? config
+      : awake && root.awakening === "REPLACE"
+        ? (root.awakened ?? root)
+        : root;
+  const previewCandidates = [previewFrame, previewSet.frames.default].filter(
+    (f): f is SpriteFrame => Boolean(f),
+  );
+  const visiblePreviewFrame = previewCandidates.find(
+    (f) => !failedPreview.has(f.url),
+  );
+  const previewURL =
+    visiblePreviewFrame?.url ??
+    (fallbackImage && !failedPreview.has(fallbackImage)
+      ? fallbackImage
+      : undefined);
+  const previewPlacement =
+    visiblePreviewFrame?.[side] ?? defaultSpritePlacement;
   const reactionPreview = (
     <section
       className="ko-sprite-reaction-preview border p-3"
@@ -211,43 +256,57 @@ export function BattleSpriteEditor({
           각성
         </label>
         <label>
+          챔피언 체력
           <input
-            type="checkbox"
-            checked={low}
+            aria-label="미리보기 체력"
+            type="number"
+            min={0}
+            max={99}
+            value={health}
             onChange={(e) => {
-              setLow(e.target.checked);
-              if (workspace) setPreviewMode("REACTION");
+              setHealth(Number(e.target.value));
+              setPreviewMode("REACTION");
             }}
           />
-          저체력
         </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={selfHit}
-            onChange={(e) => {
-              setSelfHit(e.target.checked);
-              if (workspace) setPreviewMode("REACTION");
-            }}
-          />
-          자해 원인
-        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setPreviewMode("REACTION");
+            setHealth((h) => h + 2);
+            setReaction((c) => reactSprite(c, "HEAL", Date.now(), root));
+          }}
+        >
+          실제 회복 +2
+        </button>
+        <span>{low ? "저체력 (1~5)" : "기본 (6 이상)"}</span>
       </div>
       <div
         className="ko-sprite-preview-canvas h-40 overflow-hidden"
         data-side={side}
+        data-reaction={reaction.event}
+        data-state={
+          reaction.event === "VICTORY" || reaction.event === "DEFEAT"
+            ? reaction.event
+            : low
+              ? "LOW"
+              : "IDLE"
+        }
       >
-        {previewFrame ? (
+        {previewURL ? (
           <div className="ko-sprite-preview-figure">
             <img
               alt="상태·반응 미리보기"
-              src={previewFrame.url}
+              src={previewURL}
+              onError={() =>
+                setFailedPreview((old) => new Set([...old, previewURL]))
+              }
               className="h-full w-full"
               style={{
-                objectFit: previewFrame[side].crop ? "cover" : "contain",
-                objectPosition: `${previewFrame[side].x}% ${previewFrame[side].y}%`,
-                transform: `scale(${previewFrame[side].scale}) scaleX(${previewFrame[side].flip ? -1 : 1})`,
-                transformOrigin: `${previewFrame[side].x}% ${previewFrame[side].y}%`,
+                objectFit: previewPlacement.crop ? "cover" : "contain",
+                objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
+                transform: `scale(${previewPlacement.scale}) scaleX(${previewPlacement.flip ? -1 : 1})`,
+                transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
               }}
             />
           </div>
@@ -266,7 +325,7 @@ export function BattleSpriteEditor({
               setReaction((c) => reactSprite(c, event, Date.now(), root));
             }}
           >
-            {event} 재생
+            {spriteEventLabels[event]} 재생
           </button>
         ))}
         <button
@@ -296,9 +355,10 @@ export function BattleSpriteEditor({
         외형 스킨입니다. 다른 스킨의 표정이나 각성 세트를 가져오지 않습니다.
       </p>
       <p className="text-xs">
-        주요 아군: 레전더리 또는 설정 코스트 이상. 큰 피해: 출처가 확인된 아군
-        효과가 상대 챔피언에게 실제로 적용한 피해량. 자해: sourcePlayerId가
-        자신인 피해.
+        표정은 10개입니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5. 공격은
+        주문·고유능력 사용 확정, 놀람은 내 레전더리 선수의
+        리타이어·파괴·소멸입니다. 각성은 별도 표정이 아닌 세트 전환입니다. 누락
+        표정은 현재 세트의 기본 이미지를 사용합니다.
       </p>
       <div className="ko-sprite-editor-layout">
         {workspace && reactionPreview}
@@ -347,18 +407,10 @@ export function BattleSpriteEditor({
               onChange={(e) => setExpression(e.target.value)}
               className="ml-2 bg-neutral-900 p-2"
             >
-              {[
-                "default",
-                "summon",
-                "attack",
-                "hurt",
-                "retire",
-                "ability",
-                "awakened",
-                "victory",
-                "defeat",
-              ].map((key) => (
-                <option key={key}>{key}</option>
+              {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
               ))}
             </select>
           </label>
@@ -489,61 +541,31 @@ export function BattleSpriteEditor({
             open={!workspace || undefined}
           >
             <summary>상태·사건별 표정 연결과 반응 시간</summary>
-            {(["lowHealth", "bigDamage", "majorCost"] as const).map((key) => (
-              <label className="block" key={key}>
-                {key === "lowHealth"
-                  ? "저체력 HP 이하"
-                  : key === "bigDamage"
-                    ? "큰 피해 최소 적용량"
-                    : "주요 아군 최소 코스트"}
-                <input
-                  type="number"
-                  min={0}
-                  max={999}
-                  value={root[key] ?? (key === "bigDamage" ? 6 : 5)}
-                  onChange={(e) =>
-                    save({ ...root, [key]: Number(e.target.value) })
-                  }
-                />
-              </label>
-            ))}
             {!workspace && reactionPreview}
             {(["IDLE", "LOW", "VICTORY", "DEFEAT"] as const).map((state) => (
               <label key={state}>
-                {state} 상태
+                {state === "LOW" ? "저체력" : spriteEventLabels[state]} 상태
                 <select
                   value={config.states?.[state] ?? ""}
                   onChange={(e) => {
                     const states = { ...config.states };
-                    if (e.target.value) states[state] = e.target.value;
+                    if (e.target.value || config.frames.default)
+                      states[state] = e.target.value || "default";
                     else delete states[state];
                     onChange({ ...config, states });
                   }}
                 >
                   <option value="">기본 이미지</option>
                   {Object.keys(config.frames).map((key) => (
-                    <option key={key}>{key}</option>
+                    <option key={key} value={key}>
+                      {SPRITE_EXPRESSIONS[
+                        key as keyof typeof SPRITE_EXPRESSIONS
+                      ] ?? key}
+                    </option>
                   ))}
                 </select>
               </label>
             ))}
-            <label>
-              자기 효과 피해 표정
-              <select
-                value={config.selfDamage ?? ""}
-                onChange={(e) =>
-                  onChange({
-                    ...config,
-                    selfDamage: e.target.value || undefined,
-                  })
-                }
-              >
-                <option value="">기본 피격 반응</option>
-                {Object.keys(config.frames).map((key) => (
-                  <option key={key}>{key}</option>
-                ))}
-              </select>
-            </label>
             {SPRITE_EVENTS.filter(
               (e) => !["IDLE", "VICTORY", "DEFEAT"].includes(e),
             ).map((event) => (
@@ -560,22 +582,13 @@ export function BattleSpriteEditor({
                     })
                   }
                 />
-                {event} 사용 · 유지(ms)
+                {spriteEventLabels[event]} 사용 · 유지(ms)
                 <input
                   type="number"
                   min={100}
                   max={3000}
                   value={
-                    root.timing?.[event] ??
-                    (event === "HIT"
-                      ? 600
-                      : event === "HEAL"
-                        ? 700
-                        : event === "ABILITY"
-                          ? 900
-                          : event === "AWAKEN"
-                            ? 1500
-                            : 800)
+                    root.timing?.[event] ?? spriteDefaultTiming[event] ?? 800
                   }
                   onChange={(e) =>
                     save({
@@ -591,27 +604,34 @@ export function BattleSpriteEditor({
             ))}
 
             <div className="grid grid-cols-2 gap-2">
-              {SPRITE_EVENTS.map((event) => (
-                <label key={event} className="text-xs">
-                  {event}
-                  <select
-                    aria-label={event + " 표정 연결"}
-                    className="block w-full bg-neutral-900 p-2"
-                    value={config.reactions[event] ?? ""}
-                    onChange={(e) => {
-                      const reactions = { ...config.reactions };
-                      if (e.target.value) reactions[event] = e.target.value;
-                      else delete reactions[event];
-                      onChange({ ...config, reactions });
-                    }}
-                  >
-                    <option value="">기본 표정</option>
-                    {Object.keys(config.frames).map((key) => (
-                      <option key={key}>{key}</option>
-                    ))}
-                  </select>
-                </label>
-              ))}
+              {SPRITE_EVENTS.filter((event) => event !== "AWAKEN").map(
+                (event) => (
+                  <label key={event} className="text-xs">
+                    {spriteEventLabels[event]}
+                    <select
+                      aria-label={event + " 표정 연결"}
+                      className="block w-full bg-neutral-900 p-2"
+                      value={config.reactions[event] ?? ""}
+                      onChange={(e) => {
+                        const reactions = { ...config.reactions };
+                        if (e.target.value || config.frames.default)
+                          reactions[event] = e.target.value || "default";
+                        else delete reactions[event];
+                        onChange({ ...config, reactions });
+                      }}
+                    >
+                      <option value="">기본 표정</option>
+                      {Object.keys(config.frames).map((key) => (
+                        <option key={key} value={key}>
+                          {SPRITE_EXPRESSIONS[
+                            key as keyof typeof SPRITE_EXPRESSIONS
+                          ] ?? key}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ),
+              )}
             </div>
           </details>
         </div>

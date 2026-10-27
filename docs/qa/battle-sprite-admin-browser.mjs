@@ -67,6 +67,9 @@ try {
       await details.locator("summary").click();
   }
   await open();
+  assert.equal(await page.getByLabel("스프라이트 표정").locator("option").count(),10);
+  assert.deepEqual(await page.getByLabel("스프라이트 표정").locator("option").allTextContents(),
+    ["기본","공격","피격","강한 피격","저체력","소환","놀람","승리","패배","안도"]);
   await upload();
   const size = await page.locator(".ko-sprite-preview-canvas").boundingBox();
   assert.ok(size.height >= 420 && size.width >= 260, JSON.stringify(size));
@@ -102,12 +105,12 @@ try {
     "REPLACE",
   );
   await page.getByLabel("각성", { exact: true }).check();
-  await page.getByLabel("저체력", { exact: true }).check();
+  await page.getByLabel("미리보기 체력", { exact: true }).fill("4");
   assert.equal(
     await page.getByAltText("상태·반응 미리보기").getAttribute("src"),
     awakeURL,
   );
-  await page.getByRole("button", { name: "HIT 재생", exact: true }).click();
+  await page.getByRole("button", { name: "피격 재생", exact: true }).click();
   await page.waitForTimeout(750);
   assert.equal(
     await page.getByAltText("상태·반응 미리보기").getAttribute("src"),
@@ -160,7 +163,7 @@ try {
     .click();
   await save();
   await open();
-  assert.equal(await page.getByAltText("상태·반응 미리보기").count(), 0);
+  assert.notEqual(await page.getByAltText("상태·반응 미리보기").getAttribute("src"), awakeURL);
   assert.deepEqual(errors, []);
   console.log(
     "PASS standalone skin-bound workspace, large mobile/desktop previews, fullscreen, upload/framing/flip, save/reopen, awake fallback, reaction timeout and unregister",

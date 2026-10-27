@@ -1,3 +1,4 @@
+import {presentationHealingAfter} from "./presentation-health";
 import { TOWER_VANILLA_CHAMPION_ID } from '../champions/tower-vanilla';
 import { MINION_A_ID } from '../champions/minion-a';
 import type { ActionResult } from '../actions/types';
@@ -70,6 +71,7 @@ function applyChampionEffect(
       );
       return {
         ...player,
+        presentationHealing:presentationHealingAfter(player,player.health,health),
         health,
         champion: { ...player.champion, health },
       };

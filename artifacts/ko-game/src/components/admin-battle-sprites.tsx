@@ -215,6 +215,7 @@ export function AdminBattleSprites() {
             </span>
           </p>
           <BattleSpriteEditor
+            fallbackImage={selected?.imageUrl}
             key={selected.key}
             value={value}
             workspace

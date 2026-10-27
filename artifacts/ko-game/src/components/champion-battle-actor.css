@@ -11,10 +11,11 @@
   height: 100%;
   transform-origin: 50% 90%;
 }
-.ko-battle-actor[data-reaction="HIT"] {
+.ko-battle-actor[data-reaction="HIT"],
+.ko-battle-actor[data-reaction="HEAVY_HIT"] {
   animation: ko-actor-hit 260ms ease-out;
 }
-.ko-battle-actor[data-reaction="ABILITY"] {
+.ko-battle-actor[data-reaction="ATTACK"] {
   animation: ko-actor-ability 500ms ease-out;
 }
 .ko-battle-actor[data-reaction="AWAKEN"] {

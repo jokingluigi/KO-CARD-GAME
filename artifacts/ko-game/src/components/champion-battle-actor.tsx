@@ -2,16 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import {
   championSpriteSkin,
   championSpriteCandidates,
-  selectSpriteFrame,
   spriteFrames,
   reactSprite,
-  skinKey,
-  cosmeticImageSettings,
   type SpriteEvent,
-  type BattleSprite,
   type CosmeticLoadout,
 } from "@workspace/cosmetics";
 import { getPlayerSurvivalHealth, type GameState } from "@/game";
+import {
+  championSpriteEvents,
+  spriteEventCursor,
+  spriteIsLow,
+} from "./champion-sprite-events";
 import { CardArtwork } from "./card-artwork";
 import "./champion-battle-actor.css";
 /** Lives inside the existing champion target/ref: all targeting geometry stays real. */
@@ -59,94 +60,67 @@ export function ChampionBattleActor({
     event: SpriteEvent;
     until: number;
   }>({ event: "IDLE", until: 0 });
-  const selfDamage = useRef(false);
-  const health = useRef(player.health);
-  const pendingHit = useRef(false);
-  const cursor = useRef({ game: state.gameId, count: state.events.length });
+  const pendingHit = useRef<SpriteEvent | null>(null);
+  const previous = useRef(state);
+  const cursor = useRef(spriteEventCursor(state));
+  const appearanceKey = useRef(state.gameId + ":" + setIdentity);
   useEffect(() => {
+    const key = state.gameId + ":" + setIdentity;
     if (
       cursor.current.game !== state.gameId ||
       state.events.length < cursor.current.count
     ) {
-      cursor.current = { game: state.gameId, count: state.events.length };
-      health.current = player.health;
-      pendingHit.current = false;
+      pendingHit.current = null;
+      cursor.current = spriteEventCursor(state);
+      previous.current = state;
+      appearanceKey.current = key;
       setReaction({ event: "IDLE", until: 0 });
       return;
     }
-    const events = state.events.slice(cursor.current.count);
-    cursor.current.count = state.events.length;
-    if (events.length && player.health > health.current)
-      setReaction((current) =>
-        reactSprite(current, "HEAL", Date.now(), config ?? undefined),
-      );
-    health.current = player.health;
-    for (const e of events) {
-      let event: SpriteEvent | undefined;
+    const changed = appearanceKey.current !== key;
+    if (changed) pendingHit.current = null;
+    appearanceKey.current = key;
+    const events = championSpriteEvents(
+      previous.current,
+      state,
+      playerId,
+      cursor.current,
+    );
+    previous.current = state;
+    const visibleEvents = events.filter((event) => {
       if (
-        e.type === "STAT_CHANGED" &&
-        e.stat === "health" &&
-        (e.delta ?? 0) > 0 &&
-        e.target?.type === "PLAYER" &&
-        e.target.playerId === playerId
-      )
-        event = "HEAL";
-      if (e.type === "ENTER_FIELD" && e.playerId === playerId) event = "SUMMON";
-      if (e.type === "ATTACK_DECLARED" && e.playerId === playerId)
-        event = "ATTACK";
-      if (
-        e.type === "DAMAGE_DEALT" &&
-        (e.amount ?? 0) > 0 &&
-        e.target?.type === "PLAYER" &&
-        e.target.playerId === playerId
+        (event === "HIT" || event === "HEAVY_HIT") &&
+        attackActive &&
+        !hitContact
       ) {
-        event = "HIT";
-        selfDamage.current = e.sourceContext?.sourcePlayerId === playerId;
+        if (pendingHit.current !== "HEAVY_HIT") pendingHit.current = event;
+        return false;
       }
-      if (
-        e.type === "DAMAGE_DEALT" &&
-        (e.amount ?? 0) > 0 &&
-        (e.amount ?? 0) >= (config?.bigDamage ?? 6) &&
-        e.target?.type === "PLAYER" &&
-        e.target.playerId !== playerId &&
-        e.sourceContext?.sourcePlayerId === playerId
-      )
-        event = "BIG_HIT";
-      if (e.type === "CARD_RETIRED" && e.playerId === playerId) {
-        const card = player.graveyard.find(
-          (c) => c.instanceId === e.cardInstanceId,
-        );
-        const d = state.cardPool?.find((d) => d.id === card?.definitionId);
-        if (
-          d?.rarity === "LEGENDARY" ||
-          (d?.cost ?? 0) >= (config?.majorCost ?? 5)
-        )
-          event = "ALLY_RETIRED";
-      }
-      if (e.type === "CHAMPION_ABILITY_USED" && e.playerId === playerId)
-        event = "ABILITY";
-      if (e.type === "CHAMPION_QUEST_COMPLETED" && e.playerId === playerId)
-        event = "AWAKEN";
-      if (event === "HIT" && attackActive && !hitContact) {
-        pendingHit.current = true;
-        continue;
-      }
-      if (event)
-        setReaction((current) =>
-          reactSprite(current, event!, Date.now(), config ?? undefined),
-        );
-    }
-  }, [state.gameId, state.events, playerId, attackActive, hitContact]);
+      return true;
+    });
+    setReaction((current) => {
+      let next = changed ? { event: "IDLE" as SpriteEvent, until: 0 } : current;
+      for (const event of visibleEvents)
+        next = reactSprite(next, event, Date.now(), config ?? undefined);
+      return next;
+    });
+  }, [state, playerId, setIdentity, attackActive, hitContact]);
   useEffect(() => {
     if (pendingHit.current && (hitContact || !attackActive)) {
-      pendingHit.current = false;
+      const event = pendingHit.current;
+      pendingHit.current = null;
       setReaction((current) =>
-        reactSprite(current, "HIT", Date.now(), config ?? undefined),
+        reactSprite(current, event, Date.now(), config ?? undefined),
       );
     }
-  }, [hitContact, attackActive]);
+  }, [hitContact, attackActive, state.gameId, setIdentity]);
   useEffect(() => {
-    if (!reaction.until) return;
+    if (
+      !reaction.until ||
+      reaction.event === "VICTORY" ||
+      reaction.event === "DEFEAT"
+    )
+      return;
     const timer = setTimeout(
       () => setReaction({ event: "IDLE", until: 0 }),
       Math.max(0, reaction.until - Date.now()),
@@ -161,10 +135,9 @@ export function ChampionBattleActor({
       : undefined;
   const candidates = championSpriteCandidates(appearance, {
     awakened: Boolean(player.champion?.questCompleted),
-    low: getPlayerSurvivalHealth(state, playerId) <= (config?.lowHealth ?? 5),
+    low: spriteIsLow(getPlayerSurvivalHealth(state, playerId)),
     outcome,
     reaction: reaction.event,
-    selfDamage: selfDamage.current,
   });
   const [failed, setFailed] = useState<Set<string>>(new Set());
   useEffect(
@@ -226,7 +199,11 @@ export function ChampionBattleActor({
       data-sprite-source={
         selected?.frame ? "registered" : "illustration-fallback"
       }
-      data-reaction={reaction.event}
+      data-reaction={outcome ?? reaction.event}
+      data-sprite-state={
+        outcome ??
+        (spriteIsLow(getPlayerSurvivalHealth(state, playerId)) ? "LOW" : "IDLE")
+      }
       data-sprite-skin={identity}
       data-sprite-set={
         setIdentity.endsWith(":awakened") ? "awakened" : "normal"

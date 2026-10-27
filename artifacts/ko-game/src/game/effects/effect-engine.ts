@@ -1569,11 +1569,18 @@ function applyRandomTargetSummon(
   return setLastTargetIds(nextState, summonedIds);
 }
 
+function presentationResolutionId(state: GameState, playerId: string): string {
+  let depth=0;
+  for(let frame=state.targetingState;frame;frame=frame.continuation) depth++;
+  return `resolution:${playerId}:${state.events.length}:${depth}`;
+}
+
 function beginResolution(state: GameState, frame: NonNullable<GameState['targetingState']>): GameState {
   return resolvePendingEffects({
     ...state,
     targetingState: {
       ...frame,
+      presentationResolutionId: frame.presentationResolutionId ?? presentationResolutionId(state,frame.playerId),
       // The parent has just executed the effect that caused this trigger.
       // Resume at the following effect after the child resolves, preventing
       // summon/enter chains from replaying the parent effect.
@@ -1590,6 +1597,7 @@ export function appendEffectContinuation(
   state: GameState,
   frame: NonNullable<GameState['targetingState']>,
 ): GameState {
+  frame = {...frame,presentationResolutionId:frame.presentationResolutionId ?? presentationResolutionId(state,frame.playerId)};
   const append = (current: NonNullable<GameState['targetingState']>): NonNullable<GameState['targetingState']> => ({
     ...current,
     continuation: current.continuation ? append(current.continuation) : frame,
@@ -1983,7 +1991,23 @@ export function getActiveAbility(
       );
 }
 
+/** Annotate real summon results with the existing invocation's deterministic event offset.
+ * No game event is added and no trigger/source attribution is changed. Nested
+ * effect invocations retain their own identity. */
 export function applyEffect(
+  state: GameState, playerId: string, sourceCard: CardInstance, effect: CardEffect,
+  chosenTargetInstanceIds?: string[], triggerContext?: TriggerContext,
+): GameState {
+  const result = applyEffectWithPresentation(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext);
+  const id = (state.targetingState?.sourceInstanceId === sourceCard.instanceId
+    ? state.targetingState.presentationResolutionId : undefined) ?? `effect:${playerId}:${state.events.length}`;
+  const fresh = result.events.slice(state.events.length);
+  if (!fresh.some(e => e.type === 'ENTER_FIELD' && !e.presentationResolutionId)) return result;
+  return { ...result, events: result.events.map((e, i) => i >= state.events.length &&
+    e.type === 'ENTER_FIELD' && !e.presentationResolutionId ? {...e, presentationResolutionId:id} : e) };
+}
+
+function applyEffectWithPresentation(
   state: GameState,
   playerId: string,
   sourceCard: CardInstance,

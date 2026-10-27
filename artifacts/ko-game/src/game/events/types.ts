@@ -54,6 +54,8 @@ export interface EventAttribution {
 }
 
 export interface GameEvent {
+  /** Display-only effect invocation identity. Never used by game rules. */
+  presentationResolutionId?: string;
   type: GameEventType;
   /** Server-observed occurrence turn; used by aggregate statistics. */
   turn?: number;
