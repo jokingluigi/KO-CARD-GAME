@@ -1,5 +1,4 @@
 import { LegendaryDialogueSpotlight } from "./legendary-dialogue-spotlight";
-import { useEffect, useRef, type RefObject } from "react";
 import { CardArtwork } from "./card-artwork";
 import {
   cosmeticImage,
@@ -24,26 +23,15 @@ export function WrestlerDialogue({
   cosmetics,
   selfId,
   onComplete,
-  stage,
-  alternateStage,
 }: {
   speech: WrestlerSpeech;
   definition?: CardDefinition;
   cosmetics: MatchCosmetics;
   selfId: string;
   onComplete: () => void;
-  stage: RefObject<HTMLDivElement | null>;
-  alternateStage: RefObject<HTMLDivElement | null>;
 }) {
   const spotlight =
     definition?.rarity === "LEGENDARY" && speech.phase === "ENTER_FIELD";
-  const done = useRef(onComplete);
-  done.current = onComplete;
-  useEffect(() => {
-    if (spotlight) return;
-    const timer = window.setTimeout(() => done.current(), 2600);
-    return () => clearTimeout(timer);
-  }, [speech.id, spotlight]);
   if (spotlight && definition)
     return (
       <LegendaryDialogueSpotlight
@@ -51,8 +39,6 @@ export function WrestlerDialogue({
         definition={definition}
         cosmetics={cosmetics}
         selfId={selfId}
-        stage={stage}
-        alternateStage={alternateStage}
         onComplete={onComplete}
       />
     );
