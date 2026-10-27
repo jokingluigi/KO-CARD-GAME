@@ -1,4 +1,7 @@
 .ko-legendary-spotlight {
+  --spotlight-entry-y: -22px;
+  --spotlight-exit-y: -14px;
+  --spotlight-safe-bottom: env(safe-area-inset-bottom, 0px);
   --spotlight-safe-top: env(safe-area-inset-top, 0px);
   position: fixed;
   z-index: 232;
@@ -18,6 +21,10 @@
   box-shadow: 0 6px 0 #0005;
   animation: ko-legendary-dialogue var(--legendary-dialogue-duration)
     cubic-bezier(0.16, 0.8, 0.25, 1) both;
+}
+.ko-legendary-spotlight[data-side="self"] {
+  --spotlight-entry-y: 22px;
+  --spotlight-exit-y: 14px;
 }
 .ko-legendary-spotlight * {
   pointer-events: none;
@@ -92,7 +99,7 @@
 @keyframes ko-legendary-dialogue {
   0% {
     opacity: 0;
-    transform: translateY(-22px);
+    transform: translateY(var(--spotlight-entry-y));
   }
   9%,
   87% {
@@ -101,7 +108,7 @@
   }
   100% {
     opacity: 0;
-    transform: translateY(-14px);
+    transform: translateY(var(--spotlight-exit-y));
   }
 }
 @media (min-width: 769px) {

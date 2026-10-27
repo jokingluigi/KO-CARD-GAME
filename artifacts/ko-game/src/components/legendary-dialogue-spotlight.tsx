@@ -25,6 +25,7 @@ export function LegendaryDialogueSpotlight({
   onComplete: () => void;
 }) {
   const duration = legendaryDialogueDuration(speech.text);
+  const own = speech.playerId === selfId;
   const root = useRef<HTMLDivElement>(null),
     done = useRef(onComplete);
   done.current = onComplete;
@@ -48,17 +49,23 @@ export function LegendaryDialogueSpotlight({
       if (!node) return;
       const width = Math.min(680, innerWidth - 24);
       // Viewport overlay: independent of board layout, camera motion and scroll.
-      const height = innerWidth > 768 ? 132 : 152;
+      let height = innerWidth > 768 ? 132 : 152;
       const left = (innerWidth - width) / 2;
-      let top = Math.max(
+      const edge = Math.max(
         12,
         parseFloat(
-          getComputedStyle(node).getPropertyValue("--spotlight-safe-top"),
+          getComputedStyle(node).getPropertyValue(
+            own ? "--spotlight-safe-bottom" : "--spotlight-safe-top",
+          ),
         ) || 0,
       );
-      // Browser focus may scroll the turn controls to the viewport's top.
-      // Keep the entrance above play, but leave those live controls exposed.
-      for (const control of document.querySelectorAll(".ko-game-controls")) {
+      const bottom = innerHeight - edge;
+      let top = own ? bottom - height : edge;
+      // Keep live controls exposed even after browser focus scrolls the board.
+      const controls = own
+        ? ".ko-game-controls,.ko-champion-ability,.cosmetic-emote-tools > button"
+        : ".ko-game-controls";
+      for (const control of document.querySelectorAll(controls)) {
         const r = control.getBoundingClientRect();
         if (
           r.width &&
@@ -67,7 +74,17 @@ export function LegendaryDialogueSpotlight({
           r.left < left + width &&
           r.right > left
         ) {
-          top = Math.min(innerHeight - height - 8, r.bottom + 8);
+          if (own) {
+            const spaceBelow = bottom - r.bottom - 8;
+            if (spaceBelow >= 96) {
+              height = Math.min(height, spaceBelow);
+              top = bottom - height;
+            } else {
+              top = Math.max(8, r.top - height - 8);
+            }
+          } else {
+            top = Math.min(innerHeight - height - 8, r.bottom + 8);
+          }
         }
       }
       const next = [left, top, width, height].join(":");
@@ -92,16 +109,22 @@ export function LegendaryDialogueSpotlight({
         }
       }
     };
-    place();
+    let frame = 0;
+    const follow = () => {
+      place();
+      if (own) frame = requestAnimationFrame(follow);
+    };
+    follow();
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, { passive: true, capture: true });
     window.visualViewport?.addEventListener("resize", place);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
       window.visualViewport?.removeEventListener("resize", place);
     };
-  }, [speech.id]);
+  }, [speech.id, own]);
   const src = cosmeticImage(
     cosmetics[speech.playerId],
     "CARD_SKIN",
