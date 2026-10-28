@@ -14,7 +14,12 @@ export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefOb
   // An arched HUD contains a separate vital plate: shatter its actual art
   // aperture, not an enlarged copy including the surrounding chrome.
   const surface=target.querySelector('.ko-portrait-arch')
-    ? target.querySelector<HTMLElement>('.ko-battle-actor') ?? target : target;
+    ? target.querySelector<HTMLElement>('.ko-portrait-window') ?? target.querySelector<HTMLElement>('.ko-battle-actor') ?? target : target;
+  const apertureMask=getComputedStyle(surface).maskImage;
+  if(apertureMask && apertureMask!=='none') {
+   const cracks=container.querySelector<SVGElement>('.ko-hud-defeat__cracks');
+   if(cracks)cracks.style.maskImage=apertureMask;
+  }
   const previousVisibility=surface.style.visibility;
   const rect=surface.getBoundingClientRect();
   const body=surface.querySelector<HTMLElement>('.ko-battle-actor__body');
@@ -25,6 +30,11 @@ export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefOb
   const src=image?.currentSrc||image?.src;
   const fragments=Array.from(container.querySelectorAll<HTMLElement>('.ko-hud-shard'));
   for(const fragment of fragments) {
+   // Keep the arch cutout on each moving shard, without clipping its flight.
+   if(apertureMask && apertureMask!=='none') {
+    fragment.style.maskImage=apertureMask;fragment.style.maskSize='100% 100%';
+    fragment.style.maskRepeat='no-repeat';
+   }
    if(src)fragment.style.backgroundImage=`url(${JSON.stringify(src)})`;
    if(image?.naturalWidth && image.naturalHeight){
     const style=getComputedStyle(image),factor=style.objectFit==='contain'?Math.min(rect.width/image.naturalWidth,rect.height/image.naturalHeight):Math.max(rect.width/image.naturalWidth,rect.height/image.naturalHeight);

@@ -226,6 +226,11 @@ try {
           surface: surface.getBoundingClientRect().toJSON(),
           burst: burst.getBoundingClientRect().toJSON(),
           target: target.getBoundingClientRect().toJSON(),
+          apertureMask: getComputedStyle(
+            target.querySelector(".ko-portrait-window"),
+          ).maskImage,
+          shardMask: getComputedStyle(burst.querySelector(".ko-hud-shard"))
+            .maskImage,
           healthVisible: getComputedStyle(
             target.querySelector(".ko-portrait-health"),
           ).visibility,
@@ -237,15 +242,24 @@ try {
       assert.ok(ko.burst.height < ko.target.height);
       assert.equal(ko.healthVisible, "visible");
       assert.equal(ko.mirrored, true);
+      assert.ok(ko.apertureMask.includes("data:image/svg+xml"));
+      assert.equal(ko.apertureMask, ko.shardMask);
       if (width === 390)
         await page.screenshot({ path: out + "/ko-mobile.png", fullPage: true });
       results.push({ width, height, ...layout, ko });
     } else results.push({ width, height, ...layout });
-    if(width===390) {
-      await page.locator('[data-preview-tools]').evaluate(n=>n.style.display='');
-      await page.getByRole('button',{name:'기존 / 블랙·골드',exact:true}).click();
-      assert.equal(await page.locator('.ko-portrait-arch').count(),0);
-      assert.match(await page.locator('.ko-player-stats').innerText(),/챔피언 체력/);
+    if (width === 390) {
+      await page
+        .locator("[data-preview-tools]")
+        .evaluate((n) => (n.style.display = ""));
+      await page
+        .getByRole("button", { name: "기존 / 블랙·골드", exact: true })
+        .click();
+      assert.equal(await page.locator(".ko-portrait-arch").count(), 0);
+      assert.match(
+        await page.locator(".ko-player-stats").innerText(),
+        /챔피언 체력/,
+      );
     }
     assert.deepEqual(errors, []);
     const video = page.video();

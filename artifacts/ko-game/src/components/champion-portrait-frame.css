@@ -121,19 +121,32 @@
   border-color: #d48270;
   background: #301418;
 }
-/* The sprite can crest the arch; opaque fallback illustrations remain inside it. */
-.ko-game-shell.ko-board-preview .ko-champion-arena .ko-battle-actor {
-  inset: 0 11px 62px;
-  z-index: 1;
-  width: auto;
-  height: auto;
+/* A fixed aperture clips the moving/scaled image independently of its animation. */
+.ko-portrait-window {
+  display: contents;
 }
-.ko-game-shell.ko-board-preview
-  .ko-champion-arena
-  .ko-battle-actor[data-sprite-source="illustration-fallback"] {
-  top: 24px;
-  border-radius: 47% 47% 0 0 / 35% 35% 0 0;
-  mask-image: none;
+.ko-game-shell.ko-board-preview .ko-champion-arena .ko-portrait-window {
+  --portrait-aperture-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 40A49 40 0 0 1 49 0H51A49 40 0 0 1 100 40V100H0Z'/%3E%3C/svg%3E");
+  display: block;
+  position: absolute;
+  inset: 23px 11px 62px;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 49% 49% 0 0 / 40% 40% 0 0;
+  -webkit-mask-image: var(--portrait-aperture-mask);
+  mask-image: var(--portrait-aperture-mask);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+}
+.ko-game-shell.ko-board-preview .ko-champion-arena .ko-battle-actor {
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
 }
 .ko-champion-arena .ko-battle-actor > span {
   position: absolute;
@@ -197,7 +210,7 @@
   .ko-portrait-health__value small {
     font-size: 14px;
   }
-  .ko-game-shell.ko-board-preview .ko-champion-arena .ko-battle-actor {
+  .ko-game-shell.ko-board-preview .ko-champion-arena .ko-portrait-window {
     bottom: 72px;
   }
 }

@@ -308,7 +308,7 @@ export function BattleSpriteEditor({
               }
               className="h-full w-full"
               style={{
-                objectFit: previewPlacement.crop ? "cover" : "contain",
+                objectFit: "contain",
                 objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
                 transform: `scale(${previewPlacement.scale})`,
                 transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
@@ -464,7 +464,7 @@ export function BattleSpriteEditor({
                     alt="스프라이트 배치 미리보기"
                     className="h-full w-full"
                     style={{
-                      objectFit: frame[side].crop ? "cover" : "contain",
+                      objectFit: "contain",
                       objectPosition: `${frame[side].x}% ${frame[side].y}%`,
                       transform: `scale(${frame[side].scale})`,
                       transformOrigin: `${frame[side].x}% ${frame[side].y}%`,
@@ -502,21 +502,10 @@ export function BattleSpriteEditor({
                   {frame[side][key]}
                 </label>
               ))}
-              {(["crop"] as const).map((key) => (
-                <label key={key} className="mr-3">
-                  <input
-                    type="checkbox"
-                    checked={frame[side][key]}
-                    onChange={(e) =>
-                      put({
-                        ...frame,
-                        [side]: { ...frame[side], [key]: e.target.checked },
-                      })
-                    }
-                  />
-                  영역 채우기 크롭
-                </label>
-              ))}
+              <p className="text-xs text-neutral-400">
+                비율 유지 자동 맞춤입니다. 배율·위치는 조절할 수 있으며 실제
+                대전에서는 아치 밖이 잘립니다.
+              </p>
               <button
                 type="button"
                 className="border p-2"

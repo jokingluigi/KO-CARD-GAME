@@ -1,0 +1,1 @@
+PASS 7 viewport frames/health grouping; real damage/ability/KO at mobile and desktop; mirrored shatter aperture and visible chrome

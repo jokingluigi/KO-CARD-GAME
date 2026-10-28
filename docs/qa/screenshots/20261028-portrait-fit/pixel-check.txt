@@ -1,0 +1,1 @@
+PASS 6 browser screenshots: magnified artwork hidden at arch corners, center visible; unclipped negative control spills as expected

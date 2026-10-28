@@ -26,6 +26,7 @@ export function ChampionBattleActor({
   name,
   attackActive = false,
   hitContact = false,
+  framed = false,
 }: {
   state: GameState;
   playerId: string;
@@ -36,6 +37,7 @@ export function ChampionBattleActor({
   name: string;
   attackActive?: boolean;
   hitContact?: boolean;
+  framed?: boolean;
 }) {
   const player = state.players.find((p) => p.id === playerId)!;
   const appearance = championSpriteSkin({
@@ -220,13 +222,15 @@ export function ChampionBattleActor({
           style={
             {
               transform: `scaleX(${self ? 1 : -1})`,
-              "--actor-fit": displayFrame
-                ? placement?.crop
-                  ? "cover"
-                  : "contain"
-                : fallbackDisplay?.imageDisplayMode === "CONTAIN"
-                  ? "contain"
-                  : "cover",
+              "--actor-fit": framed
+                ? "contain"
+                : displayFrame
+                  ? placement?.crop
+                    ? "cover"
+                    : "contain"
+                  : fallbackDisplay?.imageDisplayMode === "CONTAIN"
+                    ? "contain"
+                    : "cover",
             } as React.CSSProperties
           }
         >
@@ -236,7 +240,13 @@ export function ChampionBattleActor({
             displayOverride={fallbackDisplay}
             alt=""
             imageDisplayMode={
-              displayFrame ? (placement?.crop ? "COVER" : "CONTAIN") : "COVER"
+              framed
+                ? "CONTAIN"
+                : displayFrame
+                  ? placement?.crop
+                    ? "COVER"
+                    : "CONTAIN"
+                  : "COVER"
             }
             imageScale={placement?.scale ?? 1}
             imagePositionX={placement?.x ?? 50}
