@@ -329,6 +329,14 @@ export function spriteFrames(config: BattleSprite) {
 
 /** Converts the earlier optional mappings into the final ten editable artwork slots.
  * It is a read-time projection; saved legacy manifests are never overwritten implicitly. */
+function facingFrame(frame: SpriteFrame): SpriteFrame {
+  return {
+    ...frame,
+    self: { ...frame.self, flip: false },
+    opponent: { ...frame.opponent, flip: true },
+  };
+}
+
 export function finalSpriteSet(input: BattleSprite): BattleSprite {
   const aliases: Record<string, string[]> = {
     default: ["default"],
@@ -355,7 +363,7 @@ export function finalSpriteSet(input: BattleSprite): BattleSprite {
         .filter((x) => x && (key === "default" || x !== "default"))
         .map((x) => input.frames[x])
         .find(Boolean);
-    if (frame) frames[key] = frame;
+    if (frame) frames[key] = facingFrame(frame);
   }
   const reactions: BattleSprite["reactions"] = {};
   for (const [event, key] of Object.entries(eventExpression)) {
@@ -414,7 +422,7 @@ export function withSpriteFrame(
   if (state) states[state] = key;
   return {
     ...config,
-    frames: { ...config.frames, [key]: frame },
+    frames: { ...config.frames, [key]: facingFrame(frame) },
     reactions,
     states,
   };

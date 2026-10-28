@@ -540,3 +540,28 @@ test("editor normalization preserves uploaded artwork and explicit reuse without
   assert.equal(finalSpriteSet(uploaded).frames.hurt.url, frame("new-hurt").url);
   assert.equal(uploaded.reactions.HIT, "hurt");
 });
+
+test("all skin sets save self original and opponent mirrored without individual orientation setup", async () => {
+  const { withSpriteFrame } = await import("@workspace/cosmetics");
+  const wrong = {
+    ...frame("facing"),
+    self: { ...p, flip: true },
+    opponent: { ...p, flip: false },
+  };
+  const c = finalSpriteSet({
+    version: 1,
+    frames: { default: wrong, hurt: wrong },
+    reactions: {},
+    awakening: "REPLACE",
+    awakened: { version: 1, frames: { default: wrong }, reactions: {} },
+  });
+  for (const set of [c, c.awakened!])
+    for (const f of Object.values(set.frames)) {
+      assert.equal(f.self.flip, false);
+      assert.equal(f.opponent.flip, true);
+    }
+  const added = withSpriteFrame(c, "attack", wrong).frames.attack;
+  assert.equal(added.self.flip, false);
+  assert.equal(added.opponent.flip, true);
+  assert.equal(c.frames.default.self.scale, wrong.self.scale);
+});

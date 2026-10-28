@@ -215,7 +215,7 @@ export function ChampionBattleActor({
           className="ko-battle-actor__body"
           style={
             {
-              transform: `scaleX(${placement?.flip ? -1 : 1})`,
+              transform: `scaleX(${self ? 1 : -1})`,
               "--actor-fit": selected?.frame
                 ? placement?.crop
                   ? "cover"

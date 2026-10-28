@@ -187,8 +187,10 @@ export function BattleSpriteEditor({
     (fallbackImage && !failedPreview.has(fallbackImage)
       ? fallbackImage
       : undefined);
-  const previewPlacement =
-    visiblePreviewFrame?.[side] ?? defaultSpritePlacement;
+  const previewPlacement = {
+    ...(visiblePreviewFrame?.[side] ?? defaultSpritePlacement),
+    flip: side === "opponent",
+  };
   const reactionPreview = (
     <section
       className="ko-sprite-reaction-preview border p-3"
@@ -294,7 +296,10 @@ export function BattleSpriteEditor({
         }
       >
         {previewURL ? (
-          <div className="ko-sprite-preview-figure">
+          <div
+            className="ko-sprite-preview-figure"
+            style={{ transform: `scaleX(${side === "opponent" ? -1 : 1})` }}
+          >
             <img
               alt="상태·반응 미리보기"
               src={previewURL}
@@ -305,7 +310,7 @@ export function BattleSpriteEditor({
               style={{
                 objectFit: previewPlacement.crop ? "cover" : "contain",
                 objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
-                transform: `scale(${previewPlacement.scale}) scaleX(${previewPlacement.flip ? -1 : 1})`,
+                transform: `scale(${previewPlacement.scale})`,
                 transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
               }}
             />
@@ -397,7 +402,8 @@ export function BattleSpriteEditor({
           </label>
           <p className="text-xs text-neutral-400">
             기본(default)을 먼저 등록하세요. 표정이 없으면 기본 이미지로
-            표시됩니다. 반전은 위치별로 직접 선택합니다.
+            표시됩니다. 내 위치는 원본 방향, 상대 위치는 좌우 반전으로 자동
+            적용·저장됩니다.
           </p>
           <label>
             표정
@@ -446,11 +452,12 @@ export function BattleSpriteEditor({
               >
                 <div
                   className="absolute h-44 w-32 overflow-hidden"
-                  style={
-                    side === "self"
+                  style={{
+                    ...(side === "self"
                       ? { left: 0, bottom: 0 }
-                      : { right: 0, top: 0 }
-                  }
+                      : { right: 0, top: 0 }),
+                    transform: `scaleX(${side === "opponent" ? -1 : 1})`,
+                  }}
                 >
                   <img
                     src={frame.url}
@@ -459,7 +466,7 @@ export function BattleSpriteEditor({
                     style={{
                       objectFit: frame[side].crop ? "cover" : "contain",
                       objectPosition: `${frame[side].x}% ${frame[side].y}%`,
-                      transform: `scale(${frame[side].scale}) scaleX(${frame[side].flip ? -1 : 1})`,
+                      transform: `scale(${frame[side].scale})`,
                       transformOrigin: `${frame[side].x}% ${frame[side].y}%`,
                     }}
                   />
@@ -495,7 +502,7 @@ export function BattleSpriteEditor({
                   {frame[side][key]}
                 </label>
               ))}
-              {(["flip", "crop"] as const).map((key) => (
+              {(["crop"] as const).map((key) => (
                 <label key={key} className="mr-3">
                   <input
                     type="checkbox"
@@ -507,7 +514,7 @@ export function BattleSpriteEditor({
                       })
                     }
                   />
-                  {key === "flip" ? "좌우 반전" : "영역 채우기 크롭"}
+                  영역 채우기 크롭
                 </label>
               ))}
               <button

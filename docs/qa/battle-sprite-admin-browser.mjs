@@ -77,9 +77,7 @@ try {
   await scale.focus();
   await scale.press("ArrowRight");
   const expectedScale = await scale.inputValue();
-  await page.getByLabel("좌우 반전", { exact: true }).check();
   await page.getByLabel("큰 미리보기 위치").selectOption("opponent");
-  await page.getByLabel("좌우 반전", { exact: true }).check();
   await page.getByLabel("스프라이트 표정").selectOption("hurt");
   await upload();
   await advanced();
