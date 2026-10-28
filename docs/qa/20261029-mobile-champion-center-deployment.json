@@ -1,0 +1,39 @@
+{
+  "commit": "284ea8bc7f070f9521b13ea80ea28f2a7f784e69",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbh6h77lk1mc73fdbj6g",
+  "status": "live",
+  "liveCommit": "284ea8bc7f070f9521b13ea80ea28f2a7f784e69",
+  "assets": [
+    {
+      "file": "champion-sprite-visual-VG_iP6MB.js",
+      "sha256": "92553ebf614b7de6e224aeadc31a73817dc7c06e9f64353bd8939dae65d214f5",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-I94PLse6.css",
+      "sha256": "e870b54a18487a1a1ebc3f5bc6977506b3a6e7cefce2a2d7af6d8cd929e81165",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "home-C6RQ0dw5.js",
+      "sha256": "38597b1e177e1ebf494927176bc1f4c3fe253c601eb612dab2c56fd7b9a112b6",
+      "status": 200,
+      "matchesLocal": true
+    }
+  ],
+  "entry": {
+    "status": 200,
+    "scripts": [
+      "/server-connection.js",
+      "/assets/index-D1cg0WxC.js"
+    ]
+  },
+  "healthStatus": 200,
+  "maintenance": {
+    "enabled": true,
+    "allowed": false
+  }
+}

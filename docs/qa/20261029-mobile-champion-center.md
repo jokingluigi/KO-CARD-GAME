@@ -49,3 +49,9 @@
 - `champion-sprite-motion.test.ts`, `docs/qa/mobile-champion-layout-browser.mjs`, `champion-motion-browser.mjs`, `final-ten-sprites-browser.mjs`: 실제 대전/테스트 게임·배치·몸짓 측정·회귀 검사.
 
 기존 카드/챔피언·게임 규칙·보상·퀘스트·스킨 보유/선택은 변경하지 않았다. 상대 초상화 자동 반전도 유지한다.
+
+## 운영 반영
+
+기존 즉시 배포 요청에 따라 프런트만 검증 커밋 `284ea8b`로 수동 배포했다. `dep-dbh6h77lk1mc73fdbj6g`는 해당 커밋으로 live다. API는 인증 개선 릴리스 그대로 유지하여 불필요한 서버 재시작을 하지 않았다.
+
+새 HTML 진입점, 실제 Home 테스트 도구 JS, 초상화 JS, 중앙 배치 CSS를 운영에서 받아 검증 빌드와 SHA-256이 일치하는 것을 확인했다. health200, 점검 enabled=true/allowed=false 유지. main 병합과 운영 manifest/카드/계정 데이터 수정은 하지 않았다. 운영 관리자 전체 경기를 새로 수행한 것으로 보고하지 않는다. [배포 영수증](20261029-mobile-champion-center-deployment.json).
