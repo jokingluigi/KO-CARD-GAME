@@ -152,13 +152,21 @@ export function ChampionBattleActor({
   );
   const selected = candidates.find((c) => !failed.has(c.url));
   const [loaded, setLoaded] = useState({ id: "", url: "" });
-  const ready = loaded.id === setIdentity ? loaded.url : "";
-  const setReady = (url: string) => setLoaded({ id: setIdentity, url });
-  const placement =
-    ready === selected?.url
-      ? selected?.frame?.[self ? "self" : "opponent"]
-      : undefined;
-  useEffect(() => setReady(""), [state.gameId, playerId, setIdentity]);
+  const loadIdentity = `${state.gameId}:${playerId}:${setIdentity}`;
+  const ready = loaded.id === loadIdentity ? loaded.url : "";
+  const setReady = (url: string) => setLoaded({ id: loadIdentity, url });
+  const displayUrl = ready || selected?.url;
+  const currentSet =
+    player.champion?.questCompleted && config?.awakening === "REPLACE"
+      ? config.awakened
+      : config;
+  const displayFrame =
+    displayUrl === selected?.url
+      ? selected?.frame
+      : Object.values(currentSet?.frames ?? {}).find(
+          (frame) => frame.url === displayUrl,
+        );
+  const placement = displayFrame?.[self ? "self" : "opponent"];
   useEffect(() => {
     let cancelled = false;
     if (selected) {
@@ -176,7 +184,7 @@ export function ChampionBattleActor({
     return () => {
       cancelled = true;
     };
-  }, [selected?.url, setIdentity]);
+  }, [selected?.url, loadIdentity]);
   useEffect(() => {
     const images: HTMLImageElement[] = [];
     for (const config of [appearance.config])
@@ -190,15 +198,11 @@ export function ChampionBattleActor({
     };
   }, [state.gameId, identity, config ? JSON.stringify(config) : ""]);
   const fallbackDisplay =
-    selected && !selected.frame && !failed.has(selected.url)
-      ? appearance.display(selected.url)
-      : undefined;
+    displayUrl && !displayFrame ? appearance.display(displayUrl) : undefined;
   return (
     <div
       className="ko-champion-portrait-art ko-battle-actor absolute inset-0"
-      data-sprite-source={
-        selected?.frame ? "registered" : "illustration-fallback"
-      }
+      data-sprite-source={displayFrame ? "registered" : "illustration-fallback"}
       data-reaction={outcome ?? reaction.event}
       data-sprite-state={
         outcome ??
@@ -216,7 +220,7 @@ export function ChampionBattleActor({
           style={
             {
               transform: `scaleX(${self ? 1 : -1})`,
-              "--actor-fit": selected?.frame
+              "--actor-fit": displayFrame
                 ? placement?.crop
                   ? "cover"
                   : "contain"
@@ -227,22 +231,16 @@ export function ChampionBattleActor({
           }
         >
           <CardArtwork
-            src={
-              ready === selected.url
-                ? selected.url
-                : ready || appearance.illustrations[0] || selected.url
-            }
-            fallbackSrc={appearance.illustrations.find(
-              (url) => url !== selected.url,
-            )}
+            key={`${loadIdentity}:${displayUrl}`}
+            src={displayUrl}
             displayOverride={fallbackDisplay}
             alt=""
             imageDisplayMode={
-              selected.frame ? (placement?.crop ? "COVER" : "CONTAIN") : "COVER"
+              displayFrame ? (placement?.crop ? "COVER" : "CONTAIN") : "COVER"
             }
             imageScale={placement?.scale ?? 1}
             imagePositionX={placement?.x ?? 50}
-            imagePositionY={placement?.y ?? (selected.frame ? 50 : 0)}
+            imagePositionY={placement?.y ?? (displayFrame ? 50 : 0)}
             className="h-full w-full"
           />
         </div>

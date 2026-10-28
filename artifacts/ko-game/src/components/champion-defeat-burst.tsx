@@ -11,8 +11,15 @@ export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefOb
   const target=anchor.current,container=root.current;
   if(!target||!container){complete.current();return;}
   const reduced=prefersReducedMotion(),burstAt=reduced?80:180,duration=reduced?350:1580;
-  const previousVisibility=target.style.visibility;
-  const rect=target.getBoundingClientRect();
+  // An arched HUD contains a separate vital plate: shatter its actual art
+  // aperture, not an enlarged copy including the surrounding chrome.
+  const surface=target.querySelector('.ko-portrait-arch')
+    ? target.querySelector<HTMLElement>('.ko-battle-actor') ?? target : target;
+  const previousVisibility=surface.style.visibility;
+  const rect=surface.getBoundingClientRect();
+  const body=surface.querySelector<HTMLElement>('.ko-battle-actor__body');
+  const bodyTransform=body?getComputedStyle(body).transform:'none';
+  container.style.transform=bodyTransform!=='none' && new DOMMatrix(bodyTransform).a<0?'scaleX(-1)':'';
   container.style.left=rect.left+'px';container.style.top=rect.top+'px';container.style.width=rect.width+'px';container.style.height=rect.height+'px';
   const image=target.querySelector<HTMLImageElement>('.ko-champion-portrait-art img')??target.querySelector<HTMLImageElement>('img');
   const src=image?.currentSrc||image?.src;
@@ -30,7 +37,7 @@ export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefOb
   container.dataset.phase='crack';
   const motions:Animation[]=[];
   const burst=window.setTimeout(()=>{
-   target.style.visibility='hidden';container.dataset.phase='burst';fracture.current?.();
+   surface.style.visibility='hidden';container.dataset.phase='burst';fracture.current?.();
    if(!document.hidden) audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/champion-glass-shatter.wav',85,9);
    for(const [i,fragment] of fragments.entries()){
     const column=Math.floor(i/2)%4,row=Math.floor(i/8),angle=Math.atan2(row-2+(i%2?.3:-.3),column-1.5)+((i*17)%9-4)*.06;
@@ -43,7 +50,7 @@ export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefOb
    }
   },burstAt);
   const finish=window.setTimeout(()=>{container.dataset.phase='done';complete.current();},duration);
-  return()=>{clearTimeout(burst);clearTimeout(finish);motions.forEach(m=>m.cancel());target.style.visibility=previousVisibility;};
+  return()=>{clearTimeout(burst);clearTimeout(finish);motions.forEach(m=>m.cancel());surface.style.visibility=previousVisibility;};
  },[id,anchor]);
  // Forty triangular pieces tile the original portrait without duplicating its position or scale.
  const shards=Array.from({length:40},(_,i)=>{

@@ -1,3 +1,4 @@
+import {ChampionPortraitFrame} from "./champion-portrait-frame";
 import {ChampionBattleActor} from "./champion-battle-actor";
 import { legendaryDialogueDuration } from "./wrestler-dialogue-timing";
 import {ChampionSpeechBubble} from "./champion-speech-bubble";
@@ -1088,7 +1089,7 @@ export function GameStatePreview({
             <div className="ko-opponent-hud ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
                   {blackGold && opponentZones}
                   <span className="ko-champion-heading max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-opponent-nickname">
-                   {`${opponentNickname || "상대"} · ${opponentChampionName || opp.champion?.name || "챔피언"}`}
+                   {blackGold ? (opponentNickname || "상대") : `${opponentNickname || "상대"} · ${opponentChampionName || opp.champion?.name || "챔피언"}`}
                  </span>
                 <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                  <div
@@ -1107,6 +1108,7 @@ export function GameStatePreview({
                        role="button"
                        tabIndex={0}
                        aria-label="상대 챔피언 대상"
+                       aria-description={blackGold ? `${opponentChampionName || opp.champion?.name || '챔피언'}, 체력 ${displayHealth(opponentSurvivalHealth)} / ${opp.champion?.maxHealth ?? 20}` : undefined}
                        onClick={effectTargeting
                          ? handleAttackChampion
                          : selectedAttackerId ? handleAttackChampion : undefined}
@@ -1116,10 +1118,11 @@ export function GameStatePreview({
                          handleAttackChampion();
                        }}
                  >
+                   {blackGold && <ChampionPortraitFrame name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
                    <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/>
 
                    {opponentChampionProtected && (
-                     <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
+                     <span className="ko-champion-protection pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
                        PROTECTED
                      </span>
                    )}
@@ -1128,7 +1131,7 @@ export function GameStatePreview({
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
                   )}
                   {selectedAttackerId && legalAttackTargets.has(opp.id) && (
-                    <span className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-red-950 px-1.5 py-0.5 text-[8px] font-bold text-white">기본 피해 {attackBaseDamage}</span>
+                    <span className="ko-champion-target-hint pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-red-950 px-1.5 py-0.5 text-[8px] font-bold text-white">기본 피해 {attackBaseDamage}</span>
                   )}
                 </div>
                 <div className="ko-opponent-stats flex w-[76px] shrink-0 flex-col items-start gap-1">
@@ -1138,12 +1141,12 @@ export function GameStatePreview({
                       <span key={opp.currentGold} className="presentation-stat-change">{opp.currentGold}</span> / {opponentMaxGold}
                     </div>
                   </div>
-                  <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
+                  {!blackGold && <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
                     <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
                     <div className="font-display text-sm font-black text-white md:text-lg">
                       <MotionNumber value={opponentSurvivalHealth} format={displayHealth} /> / {opp.champion?.maxHealth ?? 20}
                     </div>
-                  </div>
+                  </div>}
                 </div>
               </div>
               {opp.champion?.quest && (
@@ -1586,7 +1589,7 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
                {blackGold && playerZones}
-               <span className="ko-champion-heading !flex min-w-0 items-center gap-1 text-[11px] font-black text-white md:text-sm"><span className="min-w-0 flex-1 truncate" data-testid="text-online-player-nickname">{`${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span><CosmeticEmoteTools loadout={cosmetics[me.id]} onSend={onImageEmote} hide={hideImageEmotes} onHide={setHideImageEmotes}/></span>
+               <span className="ko-champion-heading !flex min-w-0 items-center gap-1 text-[11px] font-black text-white md:text-sm"><span className="min-w-0 flex-1 truncate" data-testid="text-online-player-nickname">{blackGold ? (playerNickname || "나") : `${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span><CosmeticEmoteTools loadout={cosmetics[me.id]} onSend={onImageEmote} hide={hideImageEmotes} onHide={setHideImageEmotes}/></span>
               <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                 <div className="relative shrink-0">
                   <div
@@ -1594,6 +1597,7 @@ export function GameStatePreview({
                     role="button"
                     tabIndex={0}
                     aria-label={effectTargeting ? '내 챔피언 대상' : '내 챔피언 감정표현 열기'}
+                    aria-description={blackGold ? `${playerChampionName || me.champion?.name || '챔피언'}, 체력 ${displayHealth(mySurvivalHealth)} / ${me.champion?.maxHealth ?? 20}` : undefined}
                     aria-expanded={!effectTargeting && emoteOpen}
                     onClick={() => { if (effectTargeting) onEffectTarget(me.id); else if (onEmote && state.status === 'IN_PROGRESS') setEmoteOpen((open) => !open); }}
                     onKeyDown={(event) => {
@@ -1605,10 +1609,11 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
+                    {blackGold && <ChampionPortraitFrame name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
                     <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/>
 
                    {playerChampionProtected && (
-                     <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
+                     <span className="ko-champion-protection pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
                        PROTECTED
                      </span>
                    )}
@@ -1625,12 +1630,12 @@ export function GameStatePreview({
                       <span key={me.currentGold} className="presentation-stat-change">{me.currentGold}</span> / {myMaxGold}
                    </div>
                 </div>
-                <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
+                {!blackGold && <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
                  <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>
                   <div className="font-display text-sm font-black text-white md:text-xl">
                     <MotionNumber value={mySurvivalHealth} format={displayHealth} /> / {me.champion?.maxHealth ?? 20}
                  </div>
-                </div>
+                </div>}
                </div>
               </div>
 

@@ -1,0 +1,1 @@
+PASS 8 fresh games, both sprites decode, failed reaction uses same-set default, initial original never requested ahead of valid sprite; same-image reaction keeps its own framing

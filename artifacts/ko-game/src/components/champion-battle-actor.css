@@ -52,8 +52,8 @@
    Its existing parent remains the real attack/ability target and VFX anchor. */
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
   --actor-width: clamp(164px, 46vw, 220px);
-  --actor-height: 200px;
-  --actor-hud-height: 247px;
+  --actor-height: 260px;
+  --actor-hud-height: 307px;
   --board-hud-h: var(--actor-hud-height);
   grid-template-rows: 24px var(--actor-hud-height) auto 100px auto var(
       --actor-hud-height
@@ -144,7 +144,7 @@
   :is(.ko-player-stats, .ko-opponent-stats) {
   grid-row: 2;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   height: 48px;
   gap: 5px;
 }
@@ -187,15 +187,14 @@
 .ko-game-shell.ko-board-preview
   .ko-game-stage.ko-champion-arena
   .ko-battle-actor[data-sprite-source="registered"] {
-  /* Keep the transparent silhouette intact; no card frame or black backing. */
+  /* Keep the transparent silhouette intact in front of the arched backing. */
   mask-image: none;
 }
 .ko-game-shell.ko-board-preview
   .ko-game-stage.ko-champion-arena
   .ko-battle-actor[data-sprite-source="illustration-fallback"] {
-  /* Existing art is only a fallback. Fade its lower edge into the table,
-     without pretending that an opaque illustration is a transparent sprite. */
-  mask-image: linear-gradient(#000 0 78%, transparent 100%);
+  /* Opaque fallback art stays inside the new arched aperture. */
+  mask-image: none;
 }
 .ko-game-shell.ko-board-preview
   .ko-game-stage.ko-champion-arena
@@ -236,7 +235,7 @@
 @media (min-width: 1000px), (min-width: 740px) and (orientation: landscape) {
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
     --actor-width: 100%;
-    --actor-height: 400px;
+    --actor-height: 448px;
     --actor-wing: clamp(210px, 20vw, 320px);
     grid-template-columns: var(--actor-wing) minmax(0, 1fr) var(--actor-wing);
     grid-template-rows: 64px auto 100px auto minmax(260px, max-content);
@@ -362,7 +361,7 @@
 
 @media (min-width: 740px) and (max-width: 999px) and (orientation: landscape) {
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
-    --actor-height: 280px;
+    --actor-height: 328px;
     grid-template-columns: 148px minmax(0, 1fr) 148px;
     grid-template-rows: 40px auto 100px auto minmax(260px, max-content);
     column-gap: 12px;

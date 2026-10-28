@@ -1,0 +1,232 @@
+/* Original KO chrome: an open arched rim, matte backing and a central vital plate.
+   All layers live inside the existing champion target/ref and own their stacking. */
+.ko-champion-arena :is(.ko-player-champion, .ko-opponent-champion) {
+  isolation: isolate;
+  --portrait-brass: #a18a53;
+  --portrait-edge: #49402c;
+  --portrait-ink: #101011;
+}
+.ko-portrait-arch,
+.ko-portrait-rim,
+.ko-portrait-plinth,
+.ko-portrait-name,
+.ko-portrait-health {
+  position: absolute;
+  pointer-events: none;
+}
+.ko-portrait-arch {
+  inset: 18px 6px 32px;
+  z-index: 0;
+  border: 1px solid #342e23;
+  border-radius: 49% 49% 12px 12px / 34% 34% 10px 10px;
+  background: var(--portrait-ink);
+  box-shadow:
+    0 3px 0 #080808,
+    0 0 0 4px #161513;
+}
+.ko-portrait-rim {
+  inset: 18px 6px 32px;
+  z-index: 2;
+  border: 2px solid var(--portrait-brass);
+  border-radius: 49% 49% 12px 12px / 34% 34% 10px 10px;
+  box-shadow:
+    inset 0 0 0 3px #161513,
+    0 0 0 1px #080808;
+}
+.ko-portrait-rim::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--portrait-edge);
+  border-radius: inherit;
+}
+.ko-portrait-rim :is(i, b) {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 18px;
+  background: #191817;
+  border: 1px solid var(--portrait-brass);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.ko-portrait-rim i {
+  left: -5px;
+}
+.ko-portrait-rim b {
+  right: -5px;
+}
+.ko-portrait-plinth {
+  z-index: 3;
+  bottom: 23px;
+  left: 0;
+  right: 0;
+  height: 49px;
+  background: #151515;
+  border: 1px solid var(--portrait-brass);
+  border-radius: 3px;
+  box-shadow:
+    0 3px 0 #050505,
+    inset 0 0 0 3px #25221b;
+}
+.ko-portrait-name {
+  z-index: 4;
+  left: 8px;
+  right: 8px;
+  bottom: 52px;
+  color: #e3d5ad;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 2px #000;
+}
+.ko-portrait-health {
+  z-index: 4;
+  bottom: 0;
+  left: 50%;
+  translate: -50% 0;
+  min-width: 104px;
+  height: 52px;
+  padding: 3px 9px 5px;
+  border: 2px solid var(--portrait-brass);
+  border-radius: 11px 11px 20px 20px;
+  background: #211316;
+  box-shadow:
+    0 3px 0 #070707,
+    inset 0 0 0 2px #100d0c;
+  color: #fff6e7;
+  text-align: center;
+  white-space: nowrap;
+}
+.ko-portrait-health__label {
+  display: block;
+  font-size: 8px;
+  line-height: 10px;
+  letter-spacing: 0.12em;
+  color: #c4b590;
+}
+.ko-portrait-health__value {
+  display: block;
+  font-size: 27px;
+  line-height: 29px;
+  font-variant-numeric: tabular-nums;
+}
+.ko-portrait-health__value small {
+  font-size: 12px;
+  color: #b6aa94;
+}
+.ko-portrait-health[data-low="true"] {
+  border-color: #d48270;
+  background: #301418;
+}
+/* The sprite can crest the arch; opaque fallback illustrations remain inside it. */
+.ko-game-shell.ko-board-preview .ko-champion-arena .ko-battle-actor {
+  inset: 0 11px 62px;
+  z-index: 1;
+  width: auto;
+  height: auto;
+}
+.ko-game-shell.ko-board-preview
+  .ko-champion-arena
+  .ko-battle-actor[data-sprite-source="illustration-fallback"] {
+  top: 24px;
+  border-radius: 47% 47% 0 0 / 35% 35% 0 0;
+  mask-image: none;
+}
+.ko-champion-arena .ko-battle-actor > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #b3a68a;
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+}
+/* Reserved chrome space preserves the character aperture and all card sizing. */
+.ko-champion-arena
+  :is(.ko-player-champion, .ko-opponent-champion):has(
+    .ko-battle-actor:is([data-reaction="HIT"], [data-reaction="HEAVY_HIT"])
+  )
+  .ko-portrait-rim {
+  animation: ko-portrait-rim-impact 350ms ease-out;
+}
+.ko-champion-arena
+  :is(.ko-player-champion, .ko-opponent-champion):has(
+    .ko-battle-actor[data-reaction="AWAKEN"]
+  )
+  .ko-portrait-rim {
+  animation: ko-portrait-rim-awaken 900ms ease-out;
+}
+@keyframes ko-portrait-rim-impact {
+  20% {
+    border-color: #e4bda2;
+  }
+  100% {
+    border-color: var(--portrait-brass);
+  }
+}
+@keyframes ko-portrait-rim-awaken {
+  35% {
+    border-color: #f0d28b;
+  }
+  100% {
+    border-color: var(--portrait-brass);
+  }
+}
+@media (min-width: 1000px), (min-width: 740px) and (orientation: landscape) {
+  .ko-portrait-name {
+    font-size: 15px;
+    bottom: 60px;
+    line-height: 22px;
+  }
+  .ko-portrait-plinth {
+    height: 57px;
+    bottom: 25px;
+  }
+  .ko-portrait-health {
+    min-width: 124px;
+    height: 58px;
+  }
+  .ko-portrait-health__value {
+    font-size: 32px;
+    line-height: 34px;
+  }
+  .ko-portrait-health__value small {
+    font-size: 14px;
+  }
+  .ko-game-shell.ko-board-preview .ko-champion-arena .ko-battle-actor {
+    bottom: 72px;
+  }
+}
+@media (min-width: 740px) and (max-width: 999px) and (orientation: landscape) {
+  .ko-portrait-name {
+    font-size: 12px;
+  }
+  .ko-portrait-health {
+    min-width: 104px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ko-champion-arena .ko-portrait-rim {
+    animation: none !important;
+  }
+}
+
+/* Existing protection and target hints stay above the name/vital plate. */
+.ko-champion-arena .ko-champion-protection {
+  bottom: 82px;
+}
+.ko-champion-arena .ko-champion-target-hint {
+  bottom: 105px;
+}
+@media (min-width: 1000px), (min-width: 740px) and (orientation: landscape) {
+  .ko-champion-arena .ko-champion-protection {
+    bottom: 92px;
+  }
+  .ko-champion-arena .ko-champion-target-hint {
+    bottom: 115px;
+  }
+}
