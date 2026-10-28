@@ -13,6 +13,7 @@ export function createMaintenanceGate(read=readMaintenance,authenticate=getAuthe
   if(['/healthz','/server-status','/auth/me','/auth/login','/auth/logout'].includes(req.path))return next();
   const settings=await read();if(!settings.enabled)return next();
   const user=await authenticate(req);
+  if(user)req.authUser=user;
   if(maintenanceAllows(true,user?.role))return next();
   res.setHeader('Retry-After','30');res.status(503).json({code:'SERVER_MAINTENANCE',message:settings.message});
  }catch(error){next(error);}

@@ -499,7 +499,7 @@ router.use(async (request, response, next) => {
   }
 
   try {
-    const user = await getAuthenticatedUser(request);
+    const user = request.authUser ?? await getAuthenticatedUser(request);
     if (!user) {
       response.status(401).json({ message: "로그인이 필요합니다." });
       return;

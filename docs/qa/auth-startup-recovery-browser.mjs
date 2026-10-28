@@ -98,20 +98,7 @@ try {
     await page.locator("input[type=email]").fill(account.email);
     await page.locator("input[type=password]").fill("fixture-password");
     await page.locator("button[type=submit]").click();
-    await page.getByRole("button", { name: "서버 연결 중..." }).waitFor();
-    assert.equal(posts, 0);
-    assert.equal(
-      await page.locator("input[type=password]").inputValue(),
-      "fixture-password",
-    );
-    await page.waitForTimeout(width === 390 ? 9000 : 300);
-    assert.equal(
-      await page.locator("input[type=password]").inputValue(),
-      "fixture-password",
-    );
-    assert.equal(posts, 0);
-    assert.ok(releaseHealth);
-    await releaseHealth();
+    assert.equal(releaseHealth,undefined,'default login no longer waits for health');
     await page
       .getByText(account.nickname, { exact: true })
       .waitFor({ timeout: 10000 });
@@ -132,7 +119,7 @@ try {
     );
     report.push({
       width,
-      case: "slow session and server wake preserve input, post once, ignore late guest",
+      case: "slow session does not block immediate login; post once and ignore late guest",
       status: "PASS",
     });
     await context.close();

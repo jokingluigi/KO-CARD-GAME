@@ -11,7 +11,7 @@
   function request(path) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 60000);
-    const entry = { request: null, expiresAt: Infinity };
+    const entry = { request: null, expiresAt: Infinity, cancel: () => controller.abort() };
     entry.request = fetch(new URL(path, api), {
       credentials: 'include', cache: 'no-store', signal: controller.signal,
     }).then(response => {

@@ -84,7 +84,7 @@ test('parallel session restores share one request; a network failure does not ca
   globalThis.fetch = async () => { reads++; return new Response(JSON.stringify({ authenticated: true, user: account })); };
   assert.equal((await fetchCurrentUser()).user?.id, account.id);
   assert.equal((await fetchCurrentUser()).user?.id, account.id);
-  assert.equal(reads, 2, 'navigation reuses a recently confirmed user');
+  assert.equal(reads, 3, 'one bounded fallback after failure; navigation reuses a recently confirmed user');
 });
 
 test('logout invalidates the navigation cache', async () => {
@@ -125,7 +125,7 @@ test('leaving the form while waking cancels the eventual credential submission',
   if(!String(path).endsWith('/healthz')){posts++;throw Error('unexpected credentials');}
   return new Promise((_resolve,reject)=>init?.signal?.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError'))));
  };
- const pending=submitAuth('login',{email:account.email,password:'test-only-password'},{signal:controller.signal});controller.abort();await assert.rejects(pending);assert.equal(posts,0);
+ const pending=submitAuth('login',{email:account.email,password:'test-only-password'},{signal:controller.signal,wakeTimeoutMs:1000});controller.abort();await assert.rejects(pending);assert.equal(posts,0);
 });
 test('a login POST failure is reported without automatic credential replay',async()=>{
  let posts=0;globalThis.fetch=async(path)=>{
@@ -133,4 +133,11 @@ test('a login POST failure is reported without automatic credential replay',asyn
   posts++;throw new TypeError('connection lost after submit');
  };
  await assert.rejects(submitAuth('login',{email:account.email,password:'test-only-password'}),AuthRequestError);assert.equal(posts,1);
+});
+
+test('normal login posts immediately without waiting for a health round trip',async()=>{
+ const calls:string[]=[],stages:string[]=[];
+ globalThis.fetch=async(path,init)=>{calls.push(String(path));assert.equal(init?.method,'POST');return new Response(JSON.stringify({authenticated:true,user:account}));};
+ assert.equal((await submitAuth('login',{email:account.email,password:'test-only-password'},{onStage:stage=>stages.push(stage)})).id,account.id);
+ assert.deepEqual(calls,['/api/auth/login']);assert.deepEqual(stages,['submitting']);
 });

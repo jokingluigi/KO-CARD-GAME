@@ -126,3 +126,16 @@ test('production HTML wakes the existing API without sending authentication cook
  assert.equal(calls[0].credentials,'omit');
  assert.deepEqual(calls.slice(1).map(c=>c.credentials),['include','include']);
 });
+
+test('an old maintenance response cannot replace a fresh status request after login',async()=>{
+ const {invalidateServerStatus}=await import('./startup-client');
+ let first!:(r:Response)=>void,second!:(r:Response)=>void,reads=0;
+ invalidateServerStatus();
+ globalThis.fetch=async()=>new Promise(resolve=>{if(++reads===1)first=resolve;else second=resolve;});
+ const old=requestServerStatus();invalidateServerStatus();
+ const fresh=requestServerStatus();
+ first(json({enabled:true,allowed:false,message:'old'}));await old;
+ assert.equal(requestServerStatus(),fresh,'old finally must not clear the new single-flight request');
+ second(json({enabled:true,allowed:true,message:'current'}));
+ assert.equal((await fresh).allowed,true);assert.equal(reads,2);
+});

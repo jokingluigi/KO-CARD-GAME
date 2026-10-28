@@ -55,7 +55,7 @@ for(const [name,width,height] of [['desktop',1280,800],['mobile',390,844]])for(c
     await page.locator('input[type="password"]').fill('test-only-password');
     const submit=page.locator('button[type="submit"]');
     await submit.click();
-    await page.getByText('서버 응답이 지연되고 있습니다. 잠시 후 다시 로그인해 주세요.',{exact:true}).waitFor({timeout:25000});
+    await page.getByText('서버 응답이 지연되고 있습니다. 잠시 후 다시 로그인해 주세요.',{exact:true}).waitFor({timeout:65000});
     if(await submit.isDisabled())throw Error('login form stayed disabled after timeout');
     await submit.click();
     await page.getByText('ENTRY_QA',{exact:true}).waitFor({timeout:5000});

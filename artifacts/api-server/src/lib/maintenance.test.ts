@@ -15,3 +15,14 @@ test('maintenance blocks guests and ordinary sessions with explicit 503 while ad
 test('maintenance store failure reaches error handling and does not grant access',async()=>{
  let failure:any;const gate=createMaintenanceGate(async()=>{throw Error('unavailable');});await gate({path:'/cards'} as never,{} as never,e=>{failure=e;});assert.match(failure.message,/unavailable/);
 });
+
+test('maintenance shares only the verified user within the same request',async()=>{
+ const user={id:'admin',role:'ADMIN'},req:any={path:'/admin/session'};
+ const gate=createMaintenanceGate(async()=>({enabled:true,message:'maintenance'}),async()=>user as never);
+ let allowed=false;await gate(req,{} as never,()=>{allowed=true});
+ assert.equal(allowed,true);assert.equal(req.authUser,user);
+ const other:any={path:'/admin/session'};
+ const deny=createMaintenanceGate(async()=>({enabled:true,message:'maintenance'}),async()=>null);
+ let blocked=false;await deny(other,{setHeader(){},status(){return this},json(){blocked=true}} as never,()=>{});
+ assert.equal(blocked,true);assert.equal(other.authUser,undefined);
+});

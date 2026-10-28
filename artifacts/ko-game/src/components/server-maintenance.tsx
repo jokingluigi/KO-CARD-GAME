@@ -1,7 +1,8 @@
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
-import {requestServerStatus,type ServerStatus} from '@/lib/startup-client';
+import {requestServerStatus,invalidateServerStatus,type ServerStatus} from '@/lib/startup-client';
 import {isMaintenanceBlocked} from '@/lib/entry-state';
 import {AuthPage} from './auth-page';
+import {SESSION_CHANGED_EVENT} from '@/lib/auth-client';
 const api=`${import.meta.env.BASE_URL.replace(/\/$/,'')}/api`;
 export function ServerMaintenanceGate({children}:{children:ReactNode}){
  const [status,setStatus]=useState<ServerStatus|null>(null);
@@ -22,6 +23,11 @@ export function ServerMaintenanceGate({children}:{children:ReactNode}){
   async function poll(){await refresh();if(!stopped)timer=setTimeout(()=>void poll(),5000);}
   void poll();
   return()=>{stopped=true;mounted.current=false;generation.current++;clearTimeout(timer);};
+ },[refresh]);
+ useEffect(()=>{
+  const changed=()=>{invalidateServerStatus();void refresh();};
+  window.addEventListener(SESSION_CHANGED_EVENT,changed);
+  return()=>window.removeEventListener(SESSION_CHANGED_EVENT,changed);
  },[refresh]);
  if(!isMaintenanceBlocked(status))return <>{children}</>;
  if(login)return <><button className="fixed right-3 top-3 z-[200] rounded bg-amber-400 p-3 text-black" onClick={()=>setLogin(false)}>점검 안내로</button><AuthPage loginOnly onAuthenticated={()=>{setLogin(false);void refresh();}}/></>;

@@ -31,7 +31,7 @@ try{
   assert.equal(await email.inputValue(),'input-preserved@example.invalid');
   assert.equal(await page.getByRole('heading',{name:'로그인 연결이 지연되고 있어',exact:true}).count(),0);
   await page.locator('.ko-main-menu').waitFor({timeout:10000});
-  assert.equal(reads,1,'keep the initial session GET alive across the old eight-second cutoff');
+  assert.equal(reads,2,'keep the original session alive and allow exactly one bounded fresh GET');
   assert.equal(writes,0,'restore the existing session without passwords, new login or logout');
   assert.deepEqual(errors,[]);
   results.push({width,delayMs:delay,sessionReads:reads,writes,passed:true});await context.close();

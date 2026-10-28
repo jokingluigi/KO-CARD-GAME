@@ -1,4 +1,9 @@
-import { invalidateStartupAuth, takeStartupAuth } from "./startup-client";
+import { restoreSession } from "./session-restore";
+import {
+  invalidateStartupAuth,
+  takeStartupAuthEntry,
+  invalidateServerStatus,
+} from "./startup-client";
 
 export type AuthUser = {
   id: string;
@@ -22,7 +27,7 @@ const authApiBase = `${authBasePath}/api/auth`;
 // Session restoration may span a free-service cold start. The form is shown
 // independently after 1.2 seconds, so this does not block login input.
 export const AUTH_REQUEST_TIMEOUT_MS = 60_000;
-export const AUTH_SUBMIT_TIMEOUT_MS = 20_000;
+export const AUTH_SUBMIT_TIMEOUT_MS = 60_000;
 let authRevision = 0;
 let currentUserRequest: Promise<AuthResponse> | null = null;
 let confirmedAuth: { response: AuthResponse; expiresAt: number } | null = null;
@@ -32,6 +37,7 @@ function invalidateAuth(): void {
   confirmedAuth = null;
   currentUserRequest = null;
   invalidateStartupAuth();
+  invalidateServerStatus();
 }
 
 export class AuthRequestError extends Error {
@@ -150,55 +156,48 @@ async function readCurrentUser(options: {
   timeoutMs?: number;
 }): Promise<AuthResponse> {
   const revision = authRevision;
-  const startup = takeStartupAuth();
-  const timeoutMs = options.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS;
+  const startup = takeStartupAuthEntry();
   const controller = new AbortController();
-  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    let response: Response;
-    try {
-      if (startup) {
-        try {
-          const result = await Promise.race([
-            startup,
-            new Promise<never>((_, reject) =>
-              controller.signal.addEventListener(
-                "abort",
-                () =>
-                  reject(
-                    new AuthRequestError("인증 서버에 연결할 수 없습니다."),
-                  ),
-                { once: true },
-              ),
-            ),
-          ]);
-          return rememberAuth(result, revision, options);
-        } catch (error) {
-          if (controller.signal.aborted) throw error;
-          // Retry a failed prefetch within the same overall request deadline.
-        }
-      }
-      response = await fetch(`${authApiBase}/me`, {
-        credentials: "include",
-        cache: "no-store",
-        signal: controller.signal,
-      });
-    } catch (error) {
-      if (controller.signal.aborted) {
-        throw new AuthRequestError("인증 서버에 연결할 수 없습니다.");
-      }
-      throw new AuthRequestError("인증 상태를 확인하지 못했습니다.");
-    }
-    if (!response.ok) {
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS,
+  );
+  async function read(): Promise<AuthResponse> {
+    const response = await fetch(`${authApiBase}/me`, {
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok)
       throw new AuthRequestError(
         await readResponseMessage(response, "인증 상태를 확인하지 못했습니다."),
         response.status,
       );
-    }
-    const result = (await response.json()) as AuthResponse;
+    return (await response.json()) as AuthResponse;
+  }
+  try {
+    const result = await restoreSession(
+      startup?.request ?? read(),
+      read,
+      controller.signal,
+      1500,
+      (error) =>
+        !(error instanceof AuthRequestError) ||
+        error.status === undefined ||
+        error.status >= 500 ||
+        error.status === 408 ||
+        error.status === 429,
+    );
     return rememberAuth(result, revision, options);
+  } catch (error) {
+    if (controller.signal.aborted)
+      throw new AuthRequestError("인증 서버에 연결할 수 없습니다.");
+    if (error instanceof AuthRequestError) throw error;
+    throw new AuthRequestError("인증 상태를 확인하지 못했습니다.");
   } finally {
     globalThis.clearTimeout(timer);
+    controller.abort();
+    startup?.cancel?.();
   }
 }
 
@@ -216,13 +215,26 @@ function rememberAuth(
   return result;
 }
 
-export const SESSION_CHANGED_EVENT = 'ko-session-changed';
+export const SESSION_CHANGED_EVENT = "ko-session-changed";
 function publishSession(response: AuthResponse, broadcast = false) {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT, {detail:response}));
-  if (broadcast) try { window.localStorage.setItem('ko-session-change', JSON.stringify({at:Date.now(),loggedIn:response.authenticated})); } catch { /* storage can be disabled */ }
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(SESSION_CHANGED_EVENT, { detail: response }),
+  );
+  if (broadcast)
+    try {
+      window.localStorage.setItem(
+        "ko-session-change",
+        JSON.stringify({ at: Date.now(), loggedIn: response.authenticated }),
+      );
+    } catch {
+      /* storage can be disabled */
+    }
 }
-export function refreshCurrentUser() { invalidateAuth(); return fetchCurrentUser(); }
+export function refreshCurrentUser() {
+  invalidateAuth();
+  return fetchCurrentUser();
+}
 
 export async function logout(): Promise<void> {
   invalidateAuth();
@@ -230,7 +242,7 @@ export async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
-  publishSession({authenticated:false,user:null}, true);
+  publishSession({ authenticated: false, user: null }, true);
 }
 
 export async function changeNickname(nickname: string): Promise<AuthUser> {
@@ -264,11 +276,12 @@ export async function submitAuth(
   } = {},
 ): Promise<AuthUser> {
   invalidateAuth();
-  options.onStage?.("connecting");
-  await waitForAuthServer(
-    options.wakeTimeoutMs ?? options.timeoutMs ?? 60_000,
-    options.signal,
-  );
+  // Normal login starts immediately. A health preflight is optional for explicit
+  // callers only; it must not serialize every login behind another round trip.
+  if (options.wakeTimeoutMs !== undefined) {
+    options.onStage?.("connecting");
+    await waitForAuthServer(options.wakeTimeoutMs, options.signal);
+  }
   if (options.signal?.aborted)
     throw new DOMException("Cancelled", "AbortError");
   options.onStage?.("submitting");

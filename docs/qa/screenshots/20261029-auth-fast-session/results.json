@@ -1,0 +1,34 @@
+[
+  {
+    "width": 390,
+    "realCookiePersistent": true,
+    "loginMs": 935,
+    "restoredMs": 514,
+    "stalledRecoveryMs": 2000,
+    "adminRecoveryMs": 2110,
+    "loginPosts": 1,
+    "loginHealthPreflights": 0,
+    "reloadWithoutLogin": true,
+    "revokedSessionRejected": true
+  },
+  {
+    "width": 1440,
+    "realCookiePersistent": true,
+    "loginMs": 882,
+    "restoredMs": 536,
+    "stalledRecoveryMs": 1995,
+    "adminRecoveryMs": 2022,
+    "loginPosts": 1,
+    "loginHealthPreflights": 0,
+    "reloadWithoutLogin": true,
+    "revokedSessionRejected": true
+  },
+  {
+    "slowLoginResponseMs": 21862,
+    "singleCredentialPost": true,
+    "passwordPreserved": true
+  },
+  {
+    "staleMaintenanceResponseIgnored": true
+  }
+]
