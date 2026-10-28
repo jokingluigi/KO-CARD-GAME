@@ -1,0 +1,78 @@
+{
+  "commit": "c356554993e5efca9da0287bcb80772a1f077e71",
+  "services": [
+    {
+      "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbh65amk1f9s73ej4ca0",
+      "status": "live",
+      "commit": "c356554993e5efca9da0287bcb80772a1f077e71"
+    },
+    {
+      "serviceId": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbh65augekts73ap1p9g",
+      "status": "live",
+      "commit": "c356554993e5efca9da0287bcb80772a1f077e71"
+    }
+  ],
+  "checkedAt": "2026-10-29T06:03:15.728150+09:00",
+  "checks": [
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "path": "/api/healthz",
+      "status": 200,
+      "durationMs": 433
+    },
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "path": "/api/auth/me",
+      "status": 200,
+      "durationMs": 386,
+      "guestCorrect": true,
+      "cacheControl": "private, no-store, max-age=0"
+    },
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "path": "/api/server-status",
+      "status": 200,
+      "durationMs": 419,
+      "maintenanceEnabled": true,
+      "allowed": false
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "path": "/api/healthz",
+      "status": 200,
+      "durationMs": 443
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "path": "/api/auth/me",
+      "status": 200,
+      "durationMs": 385,
+      "guestCorrect": true,
+      "cacheControl": "private, no-store, max-age=0"
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "path": "/api/server-status",
+      "status": 200,
+      "durationMs": 407,
+      "maintenanceEnabled": true,
+      "allowed": false
+    }
+  ],
+  "assets": [
+    {
+      "file": "index-DRgZLGZL.js",
+      "sha256": "2058b1d15b55b0620eb9c486ead8fb4a33d4a84c2f5c51cb43a2e2410ae257f6",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "server-connection.js",
+      "status": 200,
+      "sha256": "1bce9397ecab2862b6140b3c2d686c764e01a3ab32878fac3a2018a4da364aaf",
+      "matchesLocal": true
+    }
+  ]
+}
