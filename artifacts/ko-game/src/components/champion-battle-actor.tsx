@@ -222,15 +222,10 @@ export function ChampionBattleActor({
           style={
             {
               transform: `scaleX(${self ? 1 : -1})`,
-              "--actor-fit": framed
-                ? "contain"
-                : displayFrame
-                  ? placement?.crop
-                    ? "cover"
-                    : "contain"
-                  : fallbackDisplay?.imageDisplayMode === "CONTAIN"
-                    ? "contain"
-                    : "cover",
+              "--actor-fit": displayFrame
+                ? placement?.crop ? "cover" : "contain"
+                : framed || fallbackDisplay?.imageDisplayMode === "CONTAIN"
+                  ? "contain" : "cover",
             } as React.CSSProperties
           }
         >
@@ -240,13 +235,9 @@ export function ChampionBattleActor({
             displayOverride={fallbackDisplay}
             alt=""
             imageDisplayMode={
-              framed
-                ? "CONTAIN"
-                : displayFrame
-                  ? placement?.crop
-                    ? "COVER"
-                    : "CONTAIN"
-                  : "COVER"
+              displayFrame
+                ? placement?.crop ? "COVER" : "CONTAIN"
+                : framed ? "CONTAIN" : "COVER"
             }
             imageScale={placement?.scale ?? 1}
             imagePositionX={placement?.x ?? 50}

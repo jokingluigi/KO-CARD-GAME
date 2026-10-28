@@ -66,8 +66,8 @@ try {
       const img = page.locator(`.ko-${side}-champion .ko-battle-actor img`);
       assert.equal(
         await img.evaluate((n) => getComputedStyle(n).objectFit),
-        "contain",
-        "framed art fits even a legacy cover setting",
+        "cover",
+        "framed art respects saved cover setting",
       );
       const mask = await page
         .locator(`.ko-${side}-champion .ko-portrait-window`)
@@ -80,6 +80,14 @@ try {
       assert.equal(mask.overflow, "hidden");
       assert.equal(mask.pointer, "none");
     }
+    await page.evaluate(() => {
+      for (const p of window.__aperture.players) {
+        const f = p.champion.presentationLines.BATTLE_SPRITE.frames.default;
+        f.self.crop = false; f.opponent.crop = false;
+      }
+      window.__publishAperture();
+    });
+    await page.waitForFunction(() => [...document.querySelectorAll(".ko-battle-actor img")].every(i => getComputedStyle(i).objectFit === "contain"));
     await page.evaluate(() => {
       for (const p of window.__aperture.players) {
         const f = p.champion.presentationLines.BATTLE_SPRITE.frames.default;
@@ -149,7 +157,7 @@ try {
   }
   await writeFile(out + "/results.json", JSON.stringify(results, null, 2));
   console.log(
-    "PASS mobile/desktop, both sides, legacy cover auto-fit, 200% rendered zoom (legacy 300% setting), hit inside static arch mask",
+    "PASS mobile/desktop, both sides, saved cover and contain modes, 200% rendered zoom (legacy 300% setting), hit inside static arch mask",
   );
 } finally {
   await browser.close();

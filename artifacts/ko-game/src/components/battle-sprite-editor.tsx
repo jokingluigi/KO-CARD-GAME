@@ -308,7 +308,7 @@ export function BattleSpriteEditor({
               }
               className="h-full w-full"
               style={{
-                objectFit: "contain",
+                objectFit: previewPlacement.crop ? "cover" : "contain",
                 objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
                 transform: `scale(${previewPlacement.scale})`,
                 transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
@@ -320,17 +320,28 @@ export function BattleSpriteEditor({
         )}
       </div>
       <div className="ko-sprite-reaction-buttons">
-        {SPRITE_EVENTS.filter((e) => e !== "IDLE").map((event) => (
+        {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
           <button
             className="border p-2"
             type="button"
-            key={event}
+            key={key}
+            data-expression={key}
             onClick={() => {
-              if (workspace) setPreviewMode("REACTION");
-              setReaction((c) => reactSprite(c, event, Date.now(), root));
+              setPreviewMode("REACTION");
+              if (key === "default" || key === "low") {
+                setHealth(key === "low" ? 5 : 10);
+                setReaction({ event: "IDLE", until: 0 });
+              } else {
+                const event = ({
+                  attack: "ATTACK", hurt: "HIT", heavy_hurt: "HEAVY_HIT",
+                  summon: "SUMMON", surprised: "ALLY_RETIRED",
+                  victory: "VICTORY", defeat: "DEFEAT", relief: "HEAL",
+                } as const)[key as Exclude<keyof typeof SPRITE_EXPRESSIONS, "default" | "low">];
+                setReaction((c) => reactSprite(c, event, Date.now(), root));
+              }
             }}
           >
-            {spriteEventLabels[event]} 재생
+            {label} 재생
           </button>
         ))}
         <button
@@ -420,6 +431,19 @@ export function BattleSpriteEditor({
               ))}
             </select>
           </label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" aria-label="등록할 표정 10개">
+            {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
+              <button
+                type="button"
+                key={key}
+                aria-pressed={expression === key}
+                className={`min-h-11 border p-2 text-left text-sm ${expression === key ? "border-amber-400 text-amber-200" : "border-neutral-700"}`}
+                onClick={() => { setExpression(key); setPreviewMode("FRAME"); }}
+              >
+                {label}<span className="ml-2 text-xs text-neutral-400">{config.frames[key] ? "등록됨" : "미등록"}</span>
+              </button>
+            ))}
+          </div>
           <input
             aria-label="대전 스프라이트 업로드"
             type="file"
@@ -464,7 +488,7 @@ export function BattleSpriteEditor({
                     alt="스프라이트 배치 미리보기"
                     className="h-full w-full"
                     style={{
-                      objectFit: "contain",
+                      objectFit: frame[side].crop ? "cover" : "contain",
                       objectPosition: `${frame[side].x}% ${frame[side].y}%`,
                       transform: `scale(${frame[side].scale})`,
                       transformOrigin: `${frame[side].x}% ${frame[side].y}%`,
@@ -502,9 +526,24 @@ export function BattleSpriteEditor({
                   {frame[side][key]}
                 </label>
               ))}
+              <label className="block">
+                이미지 맞춤
+                <select
+                  aria-label="스프라이트 이미지 맞춤"
+                  className="ml-2 bg-neutral-900 p-2"
+                  value={frame[side].crop ? "cover" : "contain"}
+                  onChange={(e) => put({
+                    ...frame,
+                    [side]: { ...frame[side], crop: e.target.value === "cover" },
+                  })}
+                >
+                  <option value="contain">전체 보이기 · 비율 유지</option>
+                  <option value="cover">여백 없이 채우기 · 가장자리 잘림</option>
+                </select>
+              </label>
               <p className="text-xs text-neutral-400">
-                비율 유지 자동 맞춤입니다. 배율·위치는 조절할 수 있으며 실제
-                대전에서는 아치 밖이 잘립니다.
+                현재 표정·배치 위치별로 저장됩니다. 채우기는 이미지 가장자리를
+                자르며, 어느 방식이든 아치 밖으로 넘치지 않습니다.
               </p>
               <button
                 type="button"
