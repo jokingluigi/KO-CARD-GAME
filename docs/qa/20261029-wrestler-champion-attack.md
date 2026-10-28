@@ -11,3 +11,5 @@
 [모바일 선수 공격 화면](screenshots/20261029-wrestler-champion-attack/attack-wrestler-390.png) · [브라우저 결과](screenshots/20261029-wrestler-champion-attack/results.json). 이미지는 QA 임시 스프라이트이며 최종 원화를 사용한 것처럼 보고하지 않는다.
 
 변경 파일: `champion-sprite-events.ts`, `champion-sprite-motion.ts`, `battle-sprite-editor.tsx`, `champion-sprite-events.test.ts`, `docs/qa/wrestler-champion-attack-browser.mjs`. main 병합·스키마/운영 데이터 변경 없음.
+
+운영 프런트 `dep-dbh6kq59fdbs738f3a8g`가 검증 커밋 `f20bb2a`로 live다. 실제 대전/초상화/관리자 미리보기 JS를 운영에서 받아 검증 빌드와 SHA-256 일치 및 health200을 확인했다. API 재시작·데이터 수정 없이 프런트만 배포했다. [배포 영수증](20261029-wrestler-champion-attack-deployment.json).

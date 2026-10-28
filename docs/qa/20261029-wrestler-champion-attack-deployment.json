@@ -1,0 +1,28 @@
+{
+  "commit": "f20bb2ae813679eee537834ac0cb5c44b46f2e05",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbh6kq59fdbs738f3a8g",
+  "status": "live",
+  "liveCommit": "f20bb2ae813679eee537834ac0cb5c44b46f2e05",
+  "assets": [
+    {
+      "file": "admin-battle-sprites-DcqAJquZ.js",
+      "sha256": "8879386edb262858d5d581287e04059991da9b4f00e244481c1d5eff92b4c200",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-C-l9heZx.js",
+      "sha256": "768f49f10f8e5a03fe30e0d8df552a6eb646c7b3e4e80690653c4821fafaa239",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-C4WLDoSk.js",
+      "sha256": "6c4a17f26e32a9f0532a0966e4b1e885365e2a9695849602476578225d0a5084",
+      "status": 200,
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}
