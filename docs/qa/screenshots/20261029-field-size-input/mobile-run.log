@@ -1,0 +1,21 @@
+PASS 360x640
+PASS 360x740
+PASS 375x812
+PASS 390x844
+PASS 412x915
+PASS 844x390
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.evaluate: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[aria-label="상세정보 닫기"]')[22m
+
+    at drag (/workspace/KO-CARD-GAME/docs/qa/field-size-input-browser.mjs:167:14)
+    at async file:///workspace/KO-CARD-GAME/docs/qa/field-size-input-browser.mjs:245:5 {
+  log: [ `  - waiting for locator('[aria-label="상세정보 닫기"]')` ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

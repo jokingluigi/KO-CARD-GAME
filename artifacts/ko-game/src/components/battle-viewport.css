@@ -307,3 +307,12 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-cards > :has(.ko-hand-card--selected) {
   top:0;
 }
+
+/* Field gestures own their pointers; a vertical attack must not become page pan.
+   The hand keeps its independent horizontal scrolling policy. */
+.ko-game-shell.ko-board-preview .ko-board-slot { touch-action: none; }
+/* Information remains explicit. Its old invisible 44px square covered most of
+   a small field card; only the visible corner now intercepts battle input. */
+.ko-game-shell.ko-board-preview .ko-board-inspect-button {
+  width:24px; height:24px; min-width:24px; min-height:24px;
+}

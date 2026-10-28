@@ -1,8 +1,11 @@
 /* Portrait phones: commanders occupy the centre; essential public information
    uses the two side rails. Desktop/landscape keep their diagonal layout. */
 @media (max-width: 999px) and (orientation: portrait) {
-  .ko-game-shell.ko-board-preview {
+  .ko-game-shell.ko-board-preview,
+  .ko-game-shell.ko-board-preview:has(.ko-battle-command button) {
     --fit-hud-h: clamp(136px, 20dvh, 164px);
+    /* Prioritise four full-width field targets over the hand reading strip. */
+    --fit-hand-h: clamp(92px, 15dvh, 136px);
   }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
     --actor-width: clamp(150px, 46vw, 196px);

@@ -431,10 +431,10 @@ export function CardRenderer({
             }}
           >
             {fitRules ? <FittedCardRules
-              text={displayRulesText || "효과 없음"} interactive={highlight !== "target"}
+              text={displayRulesText || "효과 없음"} interactive={size !== "board" && highlight !== "target"}
               className={`w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${size === "detail" ? "text-[16px]" : size === "admin" ? "text-[10px]" : "text-[8px]"} leading-tight`}
             /> : <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
-              <CardRulesText text={displayRulesText || "효과 없음"} interactive={highlight !== "target"}/>
+              <CardRulesText text={displayRulesText || "효과 없음"} interactive={size !== "board" && highlight !== "target"}/>
             </span>}
           </div>
         )}
