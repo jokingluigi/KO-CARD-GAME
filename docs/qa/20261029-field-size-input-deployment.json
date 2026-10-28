@@ -1,0 +1,28 @@
+{
+  "commit": "6ebeceb845eb30eee98e902140bd6ad5a89d8595",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbh7880n74is73bm8pi0",
+  "status": "live",
+  "liveCommit": "6ebeceb845eb30eee98e902140bd6ad5a89d8595",
+  "assets": [
+    {
+      "file": "match-result-overlay-CHF1tsEH.css",
+      "sha256": "6082c988f3af2bc930152f72b1cb4400f827d4dd54d53ba1f6c5a59e31035f9e",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-CRSmw8Ic.js",
+      "sha256": "c8983a4c4ce9e9c252e05953eac916ada48c92a0a298cc12cba230de0c7f1f19",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "index-CmPiSjL7.js",
+      "sha256": "e42c7efca57e056ddb4a4229bb586cb7c0d0b48f2078250b435af4c662a7832c",
+      "status": 200,
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}
