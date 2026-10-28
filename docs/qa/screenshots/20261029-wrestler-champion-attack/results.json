@@ -1,0 +1,22 @@
+[
+  {
+    "width": 390,
+    "confirmedCardAttack": true,
+    "confirmedChampionAttack": true,
+    "selectAndCancelIgnored": true,
+    "lowHealthRestored": true,
+    "opponentSkinAndMirror": true,
+    "noDuplicateProjectile": true,
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "confirmedCardAttack": true,
+    "confirmedChampionAttack": true,
+    "selectAndCancelIgnored": true,
+    "lowHealthRestored": true,
+    "opponentSkinAndMirror": true,
+    "noDuplicateProjectile": true,
+    "pageErrors": []
+  }
+]

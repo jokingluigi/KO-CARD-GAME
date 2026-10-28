@@ -2,6 +2,7 @@ import type { SpriteMotionSettings, SpriteEvent } from "@workspace/cosmetics";
 export type ChampionMotionKind =
   | "TURN"
   | "SPELL"
+  | "WRESTLER_ATTACK"
   | "ABILITY"
   | "SUMMON"
   | "LEGENDARY_SUMMON"
@@ -83,6 +84,7 @@ export function motionDuration(
   const base = {
     TURN: CHAMPION_MOTION.turnMs,
     SPELL: CHAMPION_MOTION.spellMs,
+    WRESTLER_ATTACK: CHAMPION_MOTION.summonMs,
     ABILITY: CHAMPION_MOTION.abilityMs,
     SUMMON: CHAMPION_MOTION.summonMs,
     LEGENDARY_SUMMON: CHAMPION_MOTION.legendaryMs,
@@ -98,6 +100,7 @@ export function motionDuration(
   // Awakening remains on the existing cinematic clock, not the character speed.
   const limit: Partial<Record<ChampionMotionKind, number>> = {
     SPELL: 750,
+    WRESTLER_ATTACK: 550,
     ABILITY: 750,
     SUMMON: 550,
     LEGENDARY_SUMMON: 550,
@@ -145,6 +148,7 @@ export function motionFrames(
     Math.max(-limit, Math.min(limit, n));
   const forwardGesture = [
     "SPELL",
+    "WRESTLER_ATTACK",
     "ABILITY",
     "SUMMON",
     "LEGENDARY_SUMMON",
@@ -225,7 +229,11 @@ export function motionFrames(
       key(0.82, -sign * 0.6 * rebound, 0.3, -sign * 0.15 * rebound),
       key(1),
     ];
-  if (cue.kind === "SUMMON" || cue.kind === "LEGENDARY_SUMMON") {
+  if (
+    cue.kind === "SUMMON" ||
+    cue.kind === "LEGENDARY_SUMMON" ||
+    cue.kind === "WRESTLER_ATTACK"
+  ) {
     const power = cue.kind === "LEGENDARY_SUMMON" ? 1.6 : 1;
     return [
       key(0),

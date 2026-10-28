@@ -226,7 +226,7 @@ test("real hidden-zone vanish, return and transform do not surprise", () => {
       [],
     );
 });
-test("ordinary wrestler attack is not a spell/ability reaction; confirmed uses are, failed play is not", () => {
+test("incomplete attack declarations are ignored; confirmed casts react and failed play does not", () => {
   const s = setup();
   assert.deepEqual(
     collect(s, append(s, { type: "ATTACK_DECLARED", playerId: "player-1" })),
@@ -568,48 +568,212 @@ test("all skin sets preserve automatic original-self and mirrored-opponent polic
 
 for (const selfDamage of [false, true]) {
   for (const amount of [0, 1, 4, 5]) {
-    test(`real effect ${selfDamage ? 'self' : 'opponent'} damage ${amount} uses confirmed result`, () => {
+    test(`real effect ${selfDamage ? "self" : "opponent"} damage ${amount} uses confirmed result`, () => {
       const s = setup();
-      const source = generateCardInstance(normal, { instanceId: 'actual-damage-source' });
+      const source = generateCardInstance(normal, {
+        instanceId: "actual-damage-source",
+      });
       const target = selfDamage ? s.players[0] : s.players[1];
       const effect = selfDamage
-        ? { type: 'STRUCTURED', action: 'DAMAGE', target: { zone: 'PLAYER', owner: 'SELF', selection: 'ALL' }, values: { amount } }
-        : { type: 'DAMAGE_OPPONENT_CHAMPION', amount };
-      const result = applyEffect(s, 'player-1', source, effect as Parameters<typeof applyEffect>[3]);
-      assert.equal(result.players.find(p => p.id === target.id)!.health, target.health - amount);
-      assert.deepEqual(collect(s, result, target.id), amount ? [amount >= 5 ? 'HEAVY_HIT' : 'HIT'] : []);
+        ? {
+            type: "STRUCTURED",
+            action: "DAMAGE",
+            target: { zone: "PLAYER", owner: "SELF", selection: "ALL" },
+            values: { amount },
+          }
+        : { type: "DAMAGE_OPPONENT_CHAMPION", amount };
+      const result = applyEffect(
+        s,
+        "player-1",
+        source,
+        effect as Parameters<typeof applyEffect>[3],
+      );
+      assert.equal(
+        result.players.find((p) => p.id === target.id)!.health,
+        target.health - amount,
+      );
+      assert.deepEqual(
+        collect(s, result, target.id),
+        amount ? [amount >= 5 ? "HEAVY_HIT" : "HIT"] : [],
+      );
     });
   }
 }
-test('real protected champion absorbs an attempted strong hit without a hurt expression', () => {
+test("real protected champion absorbs an attempted strong hit without a hurt expression", () => {
   const s = setup();
-  s.players[1].board[0] = { ...generateCardInstance(normal, { instanceId: 'protector' }), boardSlot: 0, isChampionToken: true };
-  const result = applyEffect(s, 'player-1', generateCardInstance(normal, {instanceId:'protected-damage-source'}), { type: 'DAMAGE_OPPONENT_CHAMPION', amount: 9 });
+  s.players[1].board[0] = {
+    ...generateCardInstance(normal, { instanceId: "protector" }),
+    boardSlot: 0,
+    isChampionToken: true,
+  };
+  const result = applyEffect(
+    s,
+    "player-1",
+    generateCardInstance(normal, { instanceId: "protected-damage-source" }),
+    { type: "DAMAGE_OPPONENT_CHAMPION", amount: 9 },
+  );
   assert.equal(result.players[1].health, s.players[1].health);
-  assert.ok(result.events.some(e => e.type === 'DAMAGE_DEALT' && e.amount === 0));
-  assert.deepEqual(collect(s, result, 'player-2'), []);
+  assert.ok(
+    result.events.some((e) => e.type === "DAMAGE_DEALT" && e.amount === 0),
+  );
+  assert.deepEqual(collect(s, result, "player-2"), []);
 });
 
-test('real retire/destroy/vanish outputs preserve separate events and only own legendary surprises', async () => {
-  const { destroyCard } = await import('../game/engine/destroy-card');
-  const { resolveStateBasedDeaths } = await import('../game/effects/effect-engine');
-  for (const type of ['RETIRE', 'DESTROY', 'VANISH']) {
-    for (const own of [false, true]) for (const isLegendary of [false, true]) {
-      const s = setup(), index = own ? 0 : 1;
-      const card = { ...generateCardInstance(isLegendary ? legendary : normal, { instanceId:'real-exit' }), boardSlot:0 as const };
-      s.players[index].board[0]=card;
-      let after: GameState;
-      if(type==='VANISH') after=vanishCard(s,card.instanceId);
-      else if(type==='DESTROY') {
-        const result=destroyCard(s,s.players[index].id,card.instanceId);
-        assert.ok(result.success);after=result.state;
-      } else {
-        const damaged=structuredClone(s);damaged.players[index].board[0]!.currentHealth=0;
-        after=resolveStateBasedDeaths(damaged);
+test("real retire/destroy/vanish outputs preserve separate events and only own legendary surprises", async () => {
+  const { destroyCard } = await import("../game/engine/destroy-card");
+  const { resolveStateBasedDeaths } =
+    await import("../game/effects/effect-engine");
+  for (const type of ["RETIRE", "DESTROY", "VANISH"]) {
+    for (const own of [false, true])
+      for (const isLegendary of [false, true]) {
+        const s = setup(),
+          index = own ? 0 : 1;
+        const card = {
+          ...generateCardInstance(isLegendary ? legendary : normal, {
+            instanceId: "real-exit",
+          }),
+          boardSlot: 0 as const,
+        };
+        s.players[index].board[0] = card;
+        let after: GameState;
+        if (type === "VANISH") after = vanishCard(s, card.instanceId);
+        else if (type === "DESTROY") {
+          const result = destroyCard(s, s.players[index].id, card.instanceId);
+          assert.ok(result.success);
+          after = result.state;
+        } else {
+          const damaged = structuredClone(s);
+          damaged.players[index].board[0]!.currentHealth = 0;
+          after = resolveStateBasedDeaths(damaged);
+        }
+        assert.equal(after.players[index].board[0], null, type);
+        assert.ok(
+          after.events.some(
+            (e) =>
+              e.type ===
+              (
+                {
+                  RETIRE: "CARD_RETIRED",
+                  DESTROY: "CARD_DESTROYED",
+                  VANISH: "CARD_VANISHED",
+                } as const
+              )[type as "RETIRE" | "DESTROY" | "VANISH"],
+          ),
+          type,
+        );
+        assert.deepEqual(
+          collect(s, after),
+          own && isLegendary ? ["ALLY_RETIRED"] : [],
+          `${type} own=${own} legendary=${isLegendary}`,
+        );
       }
-      assert.equal(after.players[index].board[0],null,type);
-      assert.ok(after.events.some(e=>e.type===({RETIRE:'CARD_RETIRED',DESTROY:'CARD_DESTROYED',VANISH:'CARD_VANISHED'} as const)[type as 'RETIRE'|'DESTROY'|'VANISH']),type);
-      assert.deepEqual(collect(s,after),own&&isLegendary?['ALLY_RETIRED']:[],`${type} own=${own} legendary=${isLegendary}`);
-    }
   }
+});
+
+for (const targetKind of ["WRESTLER", "PLAYER"] as const)
+  test(`confirmed wrestler attack on ${targetKind} commands only its owner's champion`, () => {
+    const s = setup();
+    const source = {
+      ...generateCardInstance(normal, { instanceId: "command-source" }),
+      boardSlot: 0 as const,
+      enteredThisTurn: false,
+    };
+    s.players[0].board[0] = source;
+    const defender = {
+      ...generateCardInstance(normal, { instanceId: "command-defender" }),
+      boardSlot: 0 as const,
+      enteredThisTurn: false,
+    };
+    if (targetKind === "WRESTLER") s.players[1].board[0] = defender;
+    const result = executeAction(s, {
+      type: "ATTACK",
+      playerId: "player-1",
+      attackerInstanceId: source.instanceId,
+      target:
+        targetKind === "PLAYER"
+          ? { type: "PLAYER", playerId: "player-2" }
+          : {
+              type: "WRESTLER",
+              playerId: "player-2",
+              cardInstanceId: defender.instanceId,
+            },
+    });
+    assert.equal(result.success, true, result.message);
+    const cues: import("./champion-sprite-motion").ChampionMotionCue[] = [];
+    assert.deepEqual(
+      championSpriteEvents(
+        s,
+        result.state,
+        "player-1",
+        spriteEventCursor(s),
+        cues,
+      ),
+      ["ATTACK"],
+    );
+    assert.equal(cues[0].kind, "WRESTLER_ATTACK");
+    assert.equal(cues[0].target, undefined);
+    assert.deepEqual(
+      collect(s, result.state, "player-2"),
+      targetKind === "PLAYER" ? ["HIT"] : [],
+      "counter damage is not another attack declaration",
+    );
+  });
+test("failed wrestler attack and unchanged selection do not react; accepted attack is consumed once", () => {
+  const s = setup();
+  s.players[0].board[0] = {
+    ...generateCardInstance(normal, { instanceId: "ready" }),
+    boardSlot: 0,
+    enteredThisTurn: false,
+  };
+  const failed = executeAction(s, {
+    type: "ATTACK",
+    playerId: "player-1",
+    attackerInstanceId: "missing",
+    target: { type: "PLAYER", playerId: "player-2" },
+  });
+  assert.equal(failed.success, false);
+  assert.deepEqual(collect(s, failed.state), []);
+  assert.deepEqual(collect(s, s), []);
+  const result = executeAction(s, {
+    type: "ATTACK",
+    playerId: "player-1",
+    attackerInstanceId: "ready",
+    target: { type: "PLAYER", playerId: "player-2" },
+  });
+  assert.equal(result.success, true, result.message);
+  const cursor = spriteEventCursor(s);
+  assert.deepEqual(championSpriteEvents(s, result.state, "player-1", cursor), [
+    "ATTACK",
+  ]);
+  assert.deepEqual(
+    championSpriteEvents(result.state, result.state, "player-1", cursor),
+    [],
+  );
+  assert.deepEqual(
+    championSpriteEvents(
+      result.state,
+      result.state,
+      "player-1",
+      spriteEventCursor(result.state),
+    ),
+    [],
+  );
+});
+test("opponent wrestler attack uses that opponent champion, not the viewer champion", () => {
+  const s = setup();
+  s.activePlayerId = "player-2";
+  s.players[1].board[0] = {
+    ...generateCardInstance(normal, { instanceId: "enemy-source" }),
+    boardSlot: 0,
+    enteredThisTurn: false,
+  };
+  const result = executeAction(s, {
+    type: "ATTACK",
+    playerId: "player-2",
+    attackerInstanceId: "enemy-source",
+    target: { type: "PLAYER", playerId: "player-1" },
+  });
+  assert.equal(result.success, true, result.message);
+  assert.deepEqual(collect(s, result.state, "player-2"), ["ATTACK"]);
+  assert.deepEqual(collect(s, result.state), ["HIT"]);
 });

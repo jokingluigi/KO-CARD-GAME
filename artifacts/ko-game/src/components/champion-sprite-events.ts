@@ -195,6 +195,15 @@ export function championSpriteEvents(
         support: unique.length === 0,
       });
     }
+    if (e.type === "ATTACK_DECLARED") {
+      const sourceId =
+        e.source?.type === "CARD" ? e.source.cardInstanceId : e.cardInstanceId;
+      const type =
+        e.sourceSnapshot?.cardType ??
+        cards.find((c) => c.instanceId === sourceId)?.cardType;
+      if (type === "WRESTLER")
+        emit("ATTACK", { kind: "WRESTLER_ATTACK", support: true });
+    }
     if (e.type === "CHAMPION_QUEST_COMPLETED") emit("AWAKEN");
     if (e.type === "ENTER_FIELD") {
       const card = cards.find((c) => c.instanceId === e.cardInstanceId);

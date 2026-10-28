@@ -505,6 +505,7 @@ export function BattleSpriteEditor({
           [
             ["턴 시작", "TURN", "IDLE"],
             ["주문", "SPELL", "ATTACK"],
+            ["선수 공격", "WRESTLER_ATTACK", "ATTACK"],
             ["고유능력", "ABILITY", "ATTACK"],
             ["일반 소환", "SUMMON", "SUMMON"],
             ["레전더리 소환", "LEGENDARY_SUMMON", "SUMMON"],
