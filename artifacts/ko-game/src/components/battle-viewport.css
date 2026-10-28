@@ -10,7 +10,7 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
   overflow: hidden;
   box-sizing: border-box;
   --fit-hud-h: clamp(136px, 16.8dvh, 164px);
-  --fit-hand-h: clamp(140px, 20dvh, 188px);
+  --fit-hand-h: clamp(196px, 25dvh, 224px);
   --fit-controls-h: 80px;
   --fit-field-h: calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2 * var(--fit-hud-h) - var(--fit-hand-h) - var(--fit-controls-h) - 48px) / 2);
 }
@@ -74,18 +74,19 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-player-hand {
   height:var(--fit-hand-h);
   min-height:0;
+  align-items:flex-end;
   padding:18px 0 2px;
   overflow-x:auto;
   overflow-y:hidden;
   overscroll-behavior-x:contain;
 }
-.ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-cards { top:0; padding:0 8px 4px; }
+.ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-cards { top:0; padding:0 8px 3px; }
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-card {
   width:calc((var(--fit-hand-h) - 28px) / 1.4);
   height:calc(var(--fit-hand-h) - 28px);
 }
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-card--selected {
-  transform:translateY(-8px) scale(1.04);
+  transform:translateY(-2px) scale(1.1);
 }
 /* Portrait: one full-height commander, compact information beside it. */
 @media (max-width:999px) and (orientation:portrait) {
@@ -126,7 +127,7 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 /* PC / landscape: retain diagonal wings, budget their height independently. */
 @media (min-width:1000px), (orientation:landscape) {
   .ko-game-shell.ko-board-preview {
-    --fit-hand-h:clamp(148px,24dvh,224px);
+    --fit-hand-h:clamp(184px,28dvh,272px);
     --fit-field-h:calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--fit-hand-h) - var(--fit-controls-h) - 72px) / 2);
   }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
@@ -201,12 +202,14 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-card {
   min-width:44px;
   min-height:62px;
+  translate:none;
+  scale:1;
 }
 
 /* Very short displays use the opponent HUD's otherwise empty ability row
    for instructions/cancel, reserving actual card height instead of shrinking
    the hand on selection. These are the same controls and event bindings. */
-@media (orientation:landscape) and (max-height:600px), (orientation:portrait) and (max-height:700px) {
+@media (orientation:landscape) and (max-height:600px), (max-width:999px) and (orientation:portrait) {
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-game-controls { grid-template-rows:44px; }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command {
     position:fixed;
@@ -267,4 +270,40 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
     font-size:8px;
     line-height:10px;
   }
+}
+
+/* Give hand cards a real reading size; reuse the opponent's empty ability row
+   for guidance rather than paying for another vertical strip in portrait. */
+@media (max-width:999px) and (orientation:portrait) {
+  .ko-game-shell.ko-board-preview,
+  .ko-game-shell.ko-board-preview:has(.ko-battle-command button) { --fit-controls-h:52px; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest { grid-row:3; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command {
+    left:8px;
+    right:calc(var(--actor-width) + 13px);
+    top:calc(env(safe-area-inset-top) + 24px + var(--fit-hud-h) - 44px);
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest > div {
+    position:relative;
+    height:24px;
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest .ko-quest-meter {
+    position:absolute;
+    left:3px;
+    right:3px;
+    bottom:1px;
+    margin:0;
+  }
+}
+@media (min-width:1000px), (orientation:landscape) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-card--selected {
+    transform:translateY(-2px) scale(1.08);
+  }
+}
+
+.ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-card:not(.ko-hand-card--selected):hover {
+  transform:translateY(-3px) scale(1.04);
+}
+.ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-cards > :has(.ko-hand-card--selected) {
+  top:0;
 }
