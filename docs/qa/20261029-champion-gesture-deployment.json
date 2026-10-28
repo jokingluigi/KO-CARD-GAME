@@ -1,0 +1,57 @@
+{
+  "commit": "2134adbd30dd9cebe58991fdb8b992d34b0c062d",
+  "services": [
+    {
+      "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbh1sj6i0phs73ages90",
+      "status": "live",
+      "commit": "2134adbd30dd9cebe58991fdb8b992d34b0c062d"
+    },
+    {
+      "serviceId": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbh1sj942hec73e8g2mg",
+      "status": "live",
+      "commit": "2134adbd30dd9cebe58991fdb8b992d34b0c062d"
+    }
+  ],
+  "verification": [
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "path": "/api/healthz",
+      "status": 200
+    },
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "path": "/api/server-status",
+      "status": 200,
+      "enabled": true,
+      "allowed": false
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "path": "/api/healthz",
+      "status": 200
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "path": "/api/server-status",
+      "status": 200,
+      "enabled": true,
+      "allowed": false
+    }
+  ],
+  "assets": [
+    {
+      "file": "champion-sprite-visual-DSIu3eCB.css",
+      "status": 200,
+      "sha256": "ff1c46e7fdf3c6705d101df1c6552ab2d5842cf8e0041dec86972c367ebd7164",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-UHaIvuWm.js",
+      "status": 200,
+      "sha256": "1158135a00abf96d1990afcc394f66addb4824678f29904b0439dd68c9272247",
+      "matchesLocal": true
+    }
+  ]
+}
