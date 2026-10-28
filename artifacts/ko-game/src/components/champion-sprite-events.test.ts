@@ -541,7 +541,7 @@ test("editor normalization preserves uploaded artwork and explicit reuse without
   assert.equal(uploaded.reactions.HIT, "hurt");
 });
 
-test("skin sets preserve explicit asymmetric orientation per side through projection and upload", async () => {
+test("all skin sets preserve automatic original-self and mirrored-opponent policy through projection and upload", async () => {
   const { withSpriteFrame } = await import("@workspace/cosmetics");
   const wrong = {
     ...frame("facing"),
@@ -557,12 +557,12 @@ test("skin sets preserve explicit asymmetric orientation per side through projec
   });
   for (const set of [c, c.awakened!])
     for (const f of Object.values(set.frames)) {
-      assert.equal(f.self.flip, true);
-      assert.equal(f.opponent.flip, false);
+      assert.equal(f.self.flip, false);
+      assert.equal(f.opponent.flip, true);
     }
   const added = withSpriteFrame(c, "attack", wrong).frames.attack;
-  assert.equal(added.self.flip, true);
-  assert.equal(added.opponent.flip, false);
+  assert.equal(added.self.flip, false);
+  assert.equal(added.opponent.flip, true);
   assert.equal(c.frames.default.self.scale, wrong.self.scale);
 });
 

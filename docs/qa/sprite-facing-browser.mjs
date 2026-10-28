@@ -31,12 +31,12 @@ try {
  await verify(false,true,'normal');
  await page.evaluate(()=>{for(const p of window.__facing.state.players)p.health=5;window.__publishFacing();});
  await page.waitForFunction(()=>document.querySelector('.ko-player-champion .ko-battle-actor img')?.src.includes('facing-low-0'));
- await verify(true,false,'normal');
+ await verify(false,true,'normal');
  await page.evaluate(()=>{for(const p of window.__facing.state.players)p.champion.questCompleted=true;window.__publishFacing();});
- await verify(true,false,'awakened');
+ await verify(false,true,'awakened');
  // No new event history on a remount: restore current selected skin/set/HP immediately.
  await page.evaluate(()=>{window.__facing.state.gameId='reconnect-facing';window.__publishFacing();});
- await verify(true,false,'awakened');
+ await verify(false,true,'awakened');
  await page.evaluate(()=>{
   for(const player of window.__facing.state.players) {
    player.champion.questCompleted=false;
@@ -49,11 +49,12 @@ try {
   window.__facing.state.gameId='art-fallback';window.__publishFacing();
  });
  await page.waitForFunction(()=>[...document.querySelectorAll('.ko-battle-actor')].every(a=>a.dataset.spriteSource==='illustration-fallback'&&a.querySelector('img')?.src.includes('facing-art-')));
+ await verify(false,true,'normal');
  await page.evaluate(()=>{
   for(const player of window.__facing.state.players){const item=window.__facing.cosmetics[player.id].skins['champion:'+player.champion.id];item.imageAssets.art='/api/storage/objects/uploads/cosmetics/facing-broken-art.png';}
   window.__facing.state.gameId='name-fallback';window.__publishFacing();
  });
  await page.waitForFunction(()=>[...document.querySelectorAll('.ko-battle-actor')].every(a=>!a.querySelector('img')&&a.querySelector('span')?.textContent));
  assert.equal(await page.locator('.ko-turn-end').isVisible(),true);
- console.log('PASS actual shared battle: both selected skins, explicit independent normal/low/awake flips and remount state restored; no automatic opponent mirror; skin-art and name fallbacks keep battle available');
+ console.log('PASS actual shared battle: both selected skins, automatic mirrored opponent and original self across normal/low/awake, remount and illustration fallback; skin-art and name fallbacks keep battle available');
 } finally {await browser.close();}

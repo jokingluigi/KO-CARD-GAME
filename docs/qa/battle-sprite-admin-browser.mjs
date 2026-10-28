@@ -91,13 +91,13 @@ try {
   await upload(process.env.KO_SPRITE_QA_WEBP ?? "qa-results/cosmetics/upload-fixture.png");
   await advanced();
   await page.getByLabel("HIT 표정 연결", { exact: true }).selectOption("hurt");
-  await page.getByLabel("스프라이트 좌우 반전", { exact: true }).check();
+  assert.equal(await page.locator(".ko-sprite-preview-figure").evaluate(n => getComputedStyle(n).transform), "matrix(-1, 0, 0, 1, 0, 0)");
   await save();
   await open();
   assert.equal(await scale.inputValue(), expectedScale);
   await page.getByLabel("큰 미리보기 위치").selectOption("opponent");
   await page.getByLabel("스프라이트 표정").selectOption("hurt");
-  assert.equal(await page.getByLabel("스프라이트 좌우 반전", { exact: true }).isChecked(), true);
+  assert.equal(await page.locator(".ko-sprite-preview-figure").evaluate(n => getComputedStyle(n).transform), "matrix(-1, 0, 0, 1, 0, 0)");
   await advanced();
   assert.equal(
     await page.getByLabel("HIT 표정 연결", { exact: true }).inputValue(),

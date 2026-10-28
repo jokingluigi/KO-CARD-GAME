@@ -190,6 +190,7 @@ export function BattleSpriteEditor({
       : undefined);
   const previewPlacement = {
     ...(visiblePreviewFrame?.[side] ?? defaultSpritePlacement),
+    flip: side === "opponent",
 
   };
   const reactionPreview = (
@@ -414,7 +415,7 @@ export function BattleSpriteEditor({
           </label>
           <p className="text-xs text-neutral-400">
             기본(default)을 먼저 등록하세요. 표정이 없으면 같은 세트의 기본 이미지로
-            표시됩니다. 좌우 반전은 내 위치·상대 위치별 설정을 따릅니다.
+            표시됩니다. 내 위치는 원본 방향, 상대 위치는 좌우 반전으로 자동 적용됩니다.
           </p>
           <label>
             표정
@@ -480,7 +481,7 @@ export function BattleSpriteEditor({
                     ...(side === "self"
                       ? { left: 0, bottom: 0 }
                       : { right: 0, top: 0 }),
-                    transform: `scaleX(${frame[side].flip ? -1 : 1})`,
+                    transform: `scaleX(${side === "opponent" ? -1 : 1})`,
                   }}
                 >
                   <img
@@ -526,14 +527,6 @@ export function BattleSpriteEditor({
                   {key === "scale" ? normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale : frame[side][key]}
                 </label>
               ))}
-              <label className="block">
-                <input
-                  aria-label="스프라이트 좌우 반전"
-                  type="checkbox"
-                  checked={frame[side].flip}
-                  onChange={(e) => put({ ...frame, [side]: { ...frame[side], flip: e.target.checked } })}
-                /> 현재 표정·위치 좌우 반전
-              </label>
               <label className="block">
                 이미지 맞춤
                 <select

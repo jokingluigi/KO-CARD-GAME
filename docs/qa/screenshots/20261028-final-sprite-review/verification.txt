@@ -1,7 +1,7 @@
 unit: ℹ tests 40; ℹ pass 40; ℹ fail 0; ℹ duration_ms 414.746787
 admin-clean: ℹ tests 28; ℹ pass 28; ℹ fail 0; ℹ duration_ms 13994.813367
 admin-browser: PASS standalone skin-bound workspace, large mobile/desktop previews, fullscreen, upload/framing/flip, save/reopen, awake fallback, reaction timeout and unregister
-facing: PASS actual shared battle: both selected skins, explicit independent normal/low/awake flips and remount state restored; no automatic opponent mirror; skin-art and name fallbacks keep battle available
+facing: PASS actual shared battle: both selected skins, automatic mirrored opponent and original self across normal/low/awake, remount and illustration fallback; skin-art and name fallbacks keep battle available
 image-source: PASS 8 fresh games, both sprites decode, failed reaction uses same-set default, initial original never requested ahead of valid sprite; same-image reaction keeps its own framing
 editor-options: PASS actual editor: 10 visible registration slots and previews; low slot upload selection; cover/contain saved per frame and displayed; low preview and heal return
 types: completed; no compile errors

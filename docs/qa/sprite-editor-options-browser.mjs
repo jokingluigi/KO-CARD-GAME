@@ -31,14 +31,9 @@ try {
  assert.equal(await page.getByAltText('상태·반응 미리보기').evaluate(n=>getComputedStyle(n).objectFit),'cover');
  await fit.selectOption('contain');
  assert.equal(await page.evaluate(()=>window.__spriteOptions.frames.low.self.crop),false);
- const flip=page.getByLabel('스프라이트 좌우 반전',{exact:true});
- await flip.check();
- assert.equal(await page.evaluate(()=>window.__spriteOptions.frames.low.self.flip),true);
- assert.equal(await page.locator('.ko-sprite-preview-figure').evaluate(n=>getComputedStyle(n).transform),'matrix(-1, 0, 0, 1, 0, 0)');
+ assert.equal(await page.locator('.ko-sprite-preview-figure').evaluate(n=>getComputedStyle(n).transform),'matrix(1, 0, 0, 1, 0, 0)');
  await page.getByLabel('스프라이트 배치 위치',{exact:true}).selectOption('opponent');
- assert.equal(await flip.isChecked(),false,'opponent orientation is independent, never forced');
- await flip.check();
- assert.equal(await page.evaluate(()=>window.__spriteOptions.frames.low.opponent.flip),true);
+ assert.equal(await page.locator('.ko-sprite-preview-figure').evaluate(n=>getComputedStyle(n).transform),'matrix(-1, 0, 0, 1, 0, 0)');
  await page.getByRole('button',{name:'저체력 재생',exact:true}).click();
  assert.equal(await page.getByLabel('미리보기 체력').inputValue(),'5');
  assert.equal(await page.locator('.ko-sprite-preview-canvas').getAttribute('data-state'),'LOW');

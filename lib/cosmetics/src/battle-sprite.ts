@@ -167,8 +167,8 @@ export function parseBattleSprite(
       }
       frames[key] = {
         url: frame.url,
-        self: { ...frame.self },
-        opponent: { ...frame.opponent },
+        self: { ...frame.self, flip: false },
+        opponent: { ...frame.opponent, flip: true },
       };
     }
     if (Object.keys(frames).length && !frames.default) return null;
@@ -332,8 +332,8 @@ export function spriteFrames(config: BattleSprite) {
 function cloneFrame(frame: SpriteFrame): SpriteFrame {
   return {
     ...frame,
-    self: { ...frame.self },
-    opponent: { ...frame.opponent },
+    self: { ...frame.self, flip: false },
+    opponent: { ...frame.opponent, flip: true },
   };
 }
 
