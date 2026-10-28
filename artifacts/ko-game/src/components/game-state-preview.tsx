@@ -81,6 +81,7 @@ import { displayHealth } from './match-display-utils';
 import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-display-state';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
+import "./battle-viewport.css";
 
 // CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
