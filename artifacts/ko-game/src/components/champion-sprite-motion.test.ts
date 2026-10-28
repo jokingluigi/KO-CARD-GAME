@@ -397,3 +397,31 @@ test("six presets inherit independently, remain bounded, and mechanically remove
     null,
   );
 });
+
+test("centred mobile commanders exert vertically toward the field while hit direction stays authoritative", () => {
+  for (const [self, sign] of [
+    [true, -1],
+    [false, 1],
+  ] as const) {
+    const f = motionFrames(
+      { id: "mobile", kind: "SPELL", event: "ATTACK" },
+      self,
+      0.8,
+      1,
+      false,
+      undefined,
+      undefined,
+      true,
+    );
+    const peak = String(f[2].transform).match(
+      /translate\(([-.\d]+)px,([-.\d]+)px\)/,
+    )!;
+    assert.equal(Number(peak[1]), 0);
+    assert.ok(Number(peak[2]) * sign > 0);
+    const hit = { id: "hit", kind: "HIT" as const, event: "HIT" as const };
+    assert.deepEqual(
+      motionFrames(hit, self, 0.8, 1, false, { x: 1, y: 0 }, undefined, true),
+      motionFrames(hit, self, 0.8, 1, false, { x: 1, y: 0 }),
+    );
+  }
+});

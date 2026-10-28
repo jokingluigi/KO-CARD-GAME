@@ -82,6 +82,7 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-dis
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
 import "./battle-viewport.css";
+import "./mobile-champion-layout.css";
 
 // CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
@@ -138,6 +139,7 @@ interface GameStatePreviewProps {
   opponentNickname?: string | null;
   opponentChampionName?: string | null;
   onReturnToAdmin?: () => void;
+  adminTestTools?: React.ReactNode;
   onReturnToMainMenu?: () => void;
 }
 
@@ -192,6 +194,7 @@ export function GameStatePreview({
   opponentNickname,
   opponentChampionName,
   onReturnToAdmin,
+  adminTestTools,
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
   // The reviewed board is the default in every battle mode. CLASSIC remains
@@ -1416,6 +1419,7 @@ export function GameStatePreview({
                  </div>
                  {!surrenderConfirming ? (
                    <div className="space-y-3">
+                     {adminTestTools && <section aria-label="관리자 테스트 도구" className="border-b border-amber-800 pb-3" onClick={event=>{if((event.target as HTMLElement).closest('button'))closeSettings();}}>{adminTestTools}</section>}
                      <button type="button" onClick={() => { closeSettings(); setTutorialStep(0); }}
                        className="w-full rounded border border-amber-600 bg-amber-950/40 px-3 py-2 text-xs font-black text-amber-200">
                        경기 튜토리얼

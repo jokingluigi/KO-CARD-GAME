@@ -1577,13 +1577,6 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
           />
         )
       )}
-      {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] flex max-w-[calc(100vw-16px)] flex-wrap items-center justify-center gap-2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">
-        {!isTowerSandbox && <button type="button" onClick={()=>setTestDeckOpen(true)} className="min-h-11 rounded bg-amber-300 px-3 text-black">테스트 덱 구성</button>}
-        <span>{isTowerSandbox ? '타워 단일 전투 테스트 · 보상 없음' : '관리자 DRAFT 테스트'}</span>
-        {isTowerSandbox && <button type="button" onClick={() => navigate('/admin/tower-test')} className="min-h-11 rounded border border-amber-500 px-2">테스트 설정</button>}
-        <button type="button" onClick={() => addTrainingDummy(true)} className="rounded bg-amber-300 px-2 py-1 text-black">안 죽는 샌드백</button>
-        <button type="button" onClick={() => addTrainingDummy(false)} className="rounded bg-amber-300 px-2 py-1 text-black">체력 1 샌드백</button>
-      </div>}
     {isAdminTestMatch && !isTowerSandbox && testDeckOpen && <AdminTestDeck initialChampionIds={[gameState.players[0].champion!.id,gameState.players[1].champion!.id]} onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks,champions,championIds)=>{
       try {
         setRuntimeCardDefinitions(cards);
@@ -1593,7 +1586,13 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         setSelectedCardId(null);setSelectedAttackerId(null);setPlayError(null);setTestDeckOpen(false);
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
     }}/>}
-    <GameStatePreview cosmetics={isAiMatch?aiCosmetics:undefined} localImageEmotes
+    <GameStatePreview adminTestTools={isAdminTestMatch ? <div className="grid gap-2 text-xs text-amber-200">
+        <strong>{isTowerSandbox ? '타워 테스트 도구 · 보상 없음' : '테스트 경기 도구'}</strong>
+        {!isTowerSandbox && <button type="button" onClick={()=>setTestDeckOpen(true)} className="min-h-11 border border-amber-600 bg-amber-950 px-3 text-amber-100">테스트 덱 구성</button>}
+        {isTowerSandbox && <button type="button" onClick={()=>navigate('/admin/tower-test')} className="min-h-11 border border-amber-600 px-3">테스트 설정</button>}
+        <button type="button" onClick={()=>addTrainingDummy(true)} className="min-h-11 border border-amber-600 px-3">안 죽는 샌드백</button>
+        <button type="button" onClick={()=>addTrainingDummy(false)} className="min-h-11 border border-amber-600 px-3">체력 1 샌드백</button>
+      </div> : undefined} cosmetics={isAiMatch?aiCosmetics:undefined} localImageEmotes
       playerNickname={isAiMatch?authUser?.nickname:undefined}
       opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
       key={`game:${gameState.gameId}`}

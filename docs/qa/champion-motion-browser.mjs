@@ -9,11 +9,9 @@ await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const results = [];
 try {
-  for (const [width, height] of [
-    [390, 844],
-    ...(gestures ? [[844, 390]] : []),
-    [1440, 900],
-  ]) {
+  for (const [width, height] of process.env.KO_MOTION_MOBILE_ONLY === "1"
+    ? [[390, 844]]
+    : [[390, 844], ...(gestures ? [[844, 390]] : []), [1440, 900]]) {
     const ctx = await browser.newContext({
       viewport: { width, height },
       ...(width === 390
@@ -240,6 +238,82 @@ try {
         .locator(`:scope[data-motion="${kind}"]`)
         .waitFor({ timeout: 3000 });
     }
+    if (process.env.KO_MOTION_MOBILE_ONLY === "1")
+      await page.evaluate(() => {
+        const root = document.querySelector(
+          ".ko-player-champion .ko-sprite-visual",
+        );
+        window.__spriteMeasured = {};
+        let last;
+        const observer = new MutationObserver(() => {
+          const id = root.getAttribute("data-motion-id"),
+            kind = root.getAttribute("data-motion");
+          if (!id || id === last || !kind) return;
+          last = id;
+          const record = {
+            id,
+            maxTranslationPx: 0,
+            samples: 0,
+            finished: false,
+          };
+          window.__spriteMeasured[kind] = record;
+          const tick = () => {
+            if (
+              !root.isConnected ||
+              root.getAttribute("data-motion-id") !== id
+            ) {
+              record.finished = true;
+              return;
+            }
+            const n = root.querySelector(".ko-sprite-pose"),
+              v = getComputedStyle(n).transform;
+            if (v !== "none") {
+              const m = new DOMMatrixReadOnly(v);
+              record.maxTranslationPx = Math.max(
+                record.maxTranslationPx,
+                Math.hypot(m.m41, m.m42),
+              );
+            }
+            record.samples++;
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+        observer.observe(root, {
+          attributes: true,
+          attributeFilter: ["data-motion-id", "data-moving"],
+        });
+      });
+    const movementSamples = {};
+    async function measureMovement(label, node = own) {
+      if (process.env.KO_MOTION_MOBILE_ONLY !== "1") return;
+      const kind = { spell: "SPELL", ability: "ABILITY", heavy: "HEAVY_HIT" }[
+        label
+      ];
+      await page.waitForFunction(
+        (kind) => window.__spriteMeasured[kind]?.finished,
+        kind,
+        { timeout: 3000 },
+      );
+      const result = await page.evaluate((kind) => {
+        const r = window.__spriteMeasured[kind];
+        return {
+          maxTranslationPx: Math.round(r.maxTranslationPx * 100) / 100,
+          samples: r.samples,
+        };
+      }, kind);
+      movementSamples[label] = result;
+      if (label === "spell")
+        assert.ok(
+          result.maxTranslationPx >= 3,
+          "visible fieldward spell gesture on phone",
+        );
+      if (label === "heavy")
+        assert.ok(
+          result.maxTranslationPx >= 8,
+          "visible heavy recoil on phone",
+        );
+    }
     async function waitQuiet() {
       await page.waitForTimeout(gestures ? 1500 : 1050);
     }
@@ -255,11 +329,13 @@ try {
     });
     await motion("SPELL");
     assert.equal(await page.locator("[data-sprite-link=SPELL]").count(), 1);
+    await measureMovement("spell");
     await page.waitForTimeout(80);
     await page.screenshot({ path: `${out}/spell-${width}.png` });
     await waitQuiet();
     await action({ type: "USE_CHAMPION_ABILITY", playerId: "player-1" });
     await motion("ABILITY");
+    await measureMovement("ability");
     await waitQuiet();
     const stable = await page.locator(".ko-player-champion").boundingBox();
     await damage(4);
@@ -289,6 +365,7 @@ try {
     await motion("HEAVY_HIT");
     await action({ type: "EMOTE", playerId: "player-1", emote: "THREATEN" });
     assert.equal(await own.getAttribute("data-motion"), "HEAVY_HIT");
+    await measureMovement("heavy");
     await waitQuiet();
     await page.evaluate(async () => {
       const { healNewCardAware } =
@@ -494,8 +571,17 @@ try {
       await page.waitForTimeout(80);
       await damage(5);
       await motion("HEAVY_HIT");
-      const firstPose=await own.locator('.ko-sprite-pose').evaluate(n=>n.getAnimations()[0]?.effect.getKeyframes()[0]?.transform);
-      assert.ok(firstPose && firstPose !== 'none' && firstPose !== 'matrix(1, 0, 0, 1, 0, 0)', 'interruption should start from the currently displayed pose');
+      const firstPose = await own
+        .locator(".ko-sprite-pose")
+        .evaluate(
+          (n) => n.getAnimations()[0]?.effect.getKeyframes()[0]?.transform,
+        );
+      assert.ok(
+        firstPose &&
+          firstPose !== "none" &&
+          firstPose !== "matrix(1, 0, 0, 1, 0, 0)",
+        "interruption should start from the currently displayed pose",
+      );
       await damage(1);
       assert.equal(await own.getAttribute("data-motion"), "HEAVY_HIT");
       await waitQuiet();
@@ -648,6 +734,7 @@ try {
       reducedMotion: true,
       resultAndReconnect: true,
       stableHud: true,
+      ...(Object.keys(movementSamples).length ? { movementSamples } : {}),
       ...(gestures
         ? {
             ordinarySummon: true,

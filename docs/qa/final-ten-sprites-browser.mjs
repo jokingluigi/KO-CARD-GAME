@@ -194,7 +194,8 @@ try {
     });
     assert.equal(geometry.overflow, false);
     assert.equal(geometry.pointer, "none");
-    assert.ok(geometry.self.left < geometry.enemy.left);
+    if(width<1000 && width<height)assert.ok(Math.abs(geometry.self.left-geometry.enemy.left)<1,'phone commanders share the centre column');
+    else assert.ok(geometry.self.left < geometry.enemy.left);
     assert.ok(geometry.hand.top >= geometry.field.bottom);
     if (width === 390 || width === 1440) {
       await page.screenshot({

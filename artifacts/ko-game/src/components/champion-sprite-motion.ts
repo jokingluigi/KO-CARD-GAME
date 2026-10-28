@@ -135,6 +135,7 @@ export function motionFrames(
   reduced = false,
   direction?: { x: number; y: number },
   settings?: SpriteMotionSettings,
+  centered = false,
 ): Keyframe[] {
   const sign = self ? 1 : -1,
     m = resolveMotion(settings);
@@ -142,12 +143,27 @@ export function motionFrames(
     Math.min(1.2, Math.max(0.35, ratio)) * Math.min(1.5, intensity);
   const clamp = (n: number, limit: number) =>
     Math.max(-limit, Math.min(limit, n));
-  const pose = (x = 0, y = 0, r = 0, scale = 1, brightness = 1) => ({
-    transform: reduced
-      ? "translate(0px,0px) rotate(0deg) scale(1)"
-      : `translate(${clamp(x * amount * m.movement, 18)}px,${clamp(y * amount * m.movement, 16)}px) rotate(${clamp(r * amount * m.rotation, 3.5)}deg) scale(${1 + clamp((scale - 1) * m.scale * amount, 0.045)})`,
-    filter: `brightness(${reduced ? Math.min(1.12, brightness) : brightness})`,
-  });
+  const forwardGesture = [
+    "SPELL",
+    "ABILITY",
+    "SUMMON",
+    "LEGENDARY_SUMMON",
+    "SURPRISED",
+    "VICTORY",
+    "EMOTE",
+  ].includes(cue.kind);
+  const pose = (x = 0, y = 0, r = 0, scale = 1, brightness = 1) => {
+    // Centred phone commanders exert toward the field vertically; hits retain
+    // their real source direction and never inherit this voluntary gesture axis.
+    const dx = centered && forwardGesture ? 0 : x;
+    const dy = centered && forwardGesture ? y - x : y;
+    return {
+      transform: reduced
+        ? "translate(0px,0px) rotate(0deg) scale(1)"
+        : `translate(${clamp(dx * amount * m.movement, 18)}px,${clamp(dy * amount * m.movement, 16)}px) rotate(${clamp(r * amount * m.rotation, 3.5)}deg) scale(${1 + clamp((scale - 1) * m.scale * amount, 0.045)})`,
+      filter: `brightness(${reduced ? Math.min(1.12, brightness) : brightness})`,
+    };
+  };
   const end = pose();
   const key = (offset: number, x = 0, y = 0, r = 0, scale = 1, bright = 1) => ({
     ...pose(x, y, r, scale, bright),

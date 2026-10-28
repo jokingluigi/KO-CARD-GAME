@@ -1,0 +1,39 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "frameSamples": 600,
+    "headlessRafP95Ms": 16.8,
+    "burstAndPreferenceCleanup": true,
+    "turn": true,
+    "spell": true,
+    "ability": true,
+    "damageBoundary": true,
+    "selfDamage": true,
+    "emotePriorityAndReturn": true,
+    "legendarySummonAndExit": true,
+    "maskedAwakeSwap": true,
+    "reducedMotion": true,
+    "resultAndReconnect": true,
+    "stableHud": true,
+    "movementSamples": {
+      "spell": {
+        "maxTranslationPx": 3.78,
+        "samples": 15
+      },
+      "ability": {
+        "maxTranslationPx": 6,
+        "samples": 32
+      },
+      "heavy": {
+        "maxTranslationPx": 11.14,
+        "samples": 21
+      }
+    },
+    "ordinarySummon": true,
+    "lowAttackHitHealRecovery": true,
+    "presetSwapAndKeep": true,
+    "strongHitNotOverwritten": true,
+    "desynchronizedBreath": true
+  }
+]

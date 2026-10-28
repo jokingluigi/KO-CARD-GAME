@@ -64,6 +64,8 @@ export function ChampionSpriteVisual({
     ink = useRef<HTMLDivElement>(null),
     sheen = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(220);
+  const [centered, setCentered] = useState(false),
+    [motionFloor, setMotionFloor] = useState(0.35);
   const continuity = useRef<{
     identity: string;
     set?: string;
@@ -72,8 +74,17 @@ export function ChampionSpriteVisual({
   } | null>(null);
   useLayoutEffect(() => {
     if (!host.current) return;
-    const update = () =>
-      setHeight(host.current?.getBoundingClientRect().height ?? 220);
+    const update = () => {
+      if (!host.current) return;
+      setHeight(host.current.getBoundingClientRect().height);
+      const css = getComputedStyle(host.current);
+      setCentered(
+        css.getPropertyValue("--sprite-battle-axis").trim() === "vertical",
+      );
+      setMotionFloor(
+        Number(css.getPropertyValue("--sprite-motion-floor")) || 0.35,
+      );
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(host.current);
@@ -177,14 +188,20 @@ export function ChampionSpriteVisual({
         } catch {}
     };
     setMoving(true);
+    const css = getComputedStyle(anchor);
+    const vertical =
+      css.getPropertyValue("--sprite-battle-axis").trim() === "vertical";
+    const minimum =
+      Number(css.getPropertyValue("--sprite-motion-floor")) || 0.35;
     const frames = motionFrames(
       cue,
       self,
-      Math.min(1, rect.height / 220),
+      Math.max(minimum, Math.min(1, rect.height / 220)),
       intensity,
       reduced,
       direction,
       motion,
+      vertical,
     );
     const saved = continuity.current;
     if (saved?.identity === identity && saved.set === setIdentity) {
@@ -293,11 +310,12 @@ export function ChampionSpriteVisual({
       ? motionFrames(
           { id: "persistent", kind: state, event: state },
           self,
-          Math.min(1, height / 220),
+          Math.max(motionFloor, Math.min(1, height / 220)),
           impactMultiplier(readCombatPreferences().intensity),
           reduced,
           undefined,
           motion,
+          centered,
         ).at(-1)!
       : undefined;
   return (
@@ -306,6 +324,7 @@ export function ChampionSpriteVisual({
       className="ko-sprite-visual"
       data-state={state}
       data-motion-preset={profile.preset}
+      data-motion-axis={centered ? "vertical" : "diagonal"}
       data-moving={moving}
       data-reacting={reacting}
       data-reduced={reduced}
