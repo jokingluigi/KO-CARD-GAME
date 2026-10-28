@@ -69,7 +69,7 @@ try {
   await open();
   assert.equal(await page.getByLabel("스프라이트 표정").locator("option").count(),10);
   assert.deepEqual(await page.getByLabel("스프라이트 표정").locator("option").allTextContents(),
-    ["기본","공격","피격","강한 피격","저체력","소환","놀람","승리","패배","안도"]);
+    ["기본","공격","약한 피격","강한 피격","저체력","소환","놀람","승리","패배","회복"]);
   await upload();
   const size = await page.locator(".ko-sprite-preview-canvas").boundingBox();
   assert.ok(size.height >= 420 && size.width >= 260, JSON.stringify(size));

@@ -16,14 +16,14 @@ export const SPRITE_EVENTS = [
 export const SPRITE_EXPRESSIONS = {
   default: "기본",
   attack: "공격",
-  hurt: "피격",
+  hurt: "약한 피격",
   heavy_hurt: "강한 피격",
   low: "저체력",
   summon: "소환",
   surprised: "놀람",
   victory: "승리",
   defeat: "패배",
-  relief: "안도",
+  relief: "회복",
 } as const;
 export const FINAL_SPRITE_EVENTS = [
   "IDLE",
@@ -40,11 +40,11 @@ export const FINAL_SPRITE_EVENTS = [
 export const spriteEventLabels: Record<string, string> = {
   IDLE: "기본",
   ATTACK: "공격",
-  HIT: "피격",
+  HIT: "약한 피격",
   HEAVY_HIT: "강한 피격",
   SUMMON: "소환",
   ALLY_RETIRED: "놀람",
-  HEAL: "안도",
+  HEAL: "회복",
   AWAKEN: "각성 전환",
   VICTORY: "승리",
   DEFEAT: "패배",
