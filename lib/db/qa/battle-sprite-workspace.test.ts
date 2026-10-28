@@ -255,3 +255,15 @@ test('skin motion origins/accent and emote maps round-trip independently for nor
   assert.deepEqual(stored.config,config);
   for(const bad of [{...config,effects:{accent:'url(evil)'}},{...config,emotes:{THANKS:'not-registered'}},{...config,effects:{origin:{self:{x:101,y:50}}}}])assert.equal((await api(root+'/skin/'+target.id,'admin','PATCH',{sprite:bad,revision:stored.revision})).status,400);
 });
+
+test('motion presets and per-set controls persist and invalid overrides are rejected', async()=>{
+  const target=(await api(root)).body.targets.find((t:any)=>t.key==='skin:'+registered.CHAMPION_SKIN.id);
+  const config={...sprite(),motion:{preset:'HEAVY',movement:.8,rotation:1.1,speed:.75,rebound:.3,pivotX:45,pivotY:92},awakening:'REPLACE',awakened:{...sprite(),motion:{preset:'AGGRESSIVE',movement:1.2,scale:.8}}};
+  const saved=await api(root+'/skin/'+target.id,'admin','PATCH',{sprite:config,revision:target.revision});
+  assert.equal(saved.status,200,JSON.stringify(saved.body));
+  const stored=(await api(root)).body.targets.find((t:any)=>t.key===target.key);
+  assert.deepEqual(stored.config,config);
+  for(const motion of [{preset:'FAKE'},{speed:0},{movement:500},{pivotY:101},{rebound:-1},{script:'alert(1)'}]) {
+    assert.equal((await api(root+'/skin/'+target.id,'admin','PATCH',{sprite:{...config,motion},revision:stored.revision})).status,400);
+  }
+});

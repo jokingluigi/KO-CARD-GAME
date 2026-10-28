@@ -6,6 +6,7 @@ import {
   type ReactNode,
   type CSSProperties,
 } from "react";
+import type { SpriteMotionSettings, SpriteEvent } from "@workspace/cosmetics";
 import { createPortal } from "react-dom";
 import {
   normalizeImageDisplaySettings,
@@ -21,6 +22,8 @@ import {
   motionFrames,
   motionDuration,
   type ChampionMotionCue,
+  resolveMotion,
+  expressionLead,
 } from "./champion-sprite-motion";
 import "./champion-sprite-visual.css";
 export function ChampionSpriteVisual({
@@ -37,6 +40,8 @@ export function ChampionSpriteVisual({
   viewerPlayerId,
   playerId,
   preview = false,
+  motion,
+  setIdentity,
 }: {
   children: ReactNode;
   cue?: ChampionMotionCue;
@@ -51,11 +56,36 @@ export function ChampionSpriteVisual({
   viewerPlayerId?: string;
   playerId?: string;
   preview?: boolean;
+  motion?: SpriteMotionSettings;
+  setIdentity?: string;
 }) {
   const host = useRef<HTMLDivElement>(null),
     body = useRef<HTMLDivElement>(null),
     ink = useRef<HTMLDivElement>(null),
     sheen = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(220);
+  const continuity = useRef<{
+    identity: string;
+    set?: string;
+    transform: string;
+    filter: string;
+  } | null>(null);
+  useLayoutEffect(() => {
+    if (!host.current) return;
+    const update = () =>
+      setHeight(host.current?.getBoundingClientRect().height ?? 220);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(host.current);
+    return () => observer.disconnect();
+  }, []);
+  const motionKey = JSON.stringify(motion ?? {});
+  const profile = resolveMotion(motion);
+  const phase =
+    Array.from(identity).reduce(
+      (n, c) => (n * 31 + c.charCodeAt(0)) >>> 0,
+      self ? 17 : 79,
+    ) % 5000;
   const played = useRef<string | undefined>(undefined);
   const [reduced, setReduced] = useState(prefersReducedMotion),
     [moving, setMoving] = useState(false),
@@ -84,7 +114,10 @@ export function ChampionSpriteVisual({
   useLayoutEffect(() => {
     setMoving(false);
     setLink(null);
-    if (!cue || played.current === cue.id || !body.current) return;
+    if (!cue || played.current === cue.id || !body.current) {
+      continuity.current = null;
+      return;
+    }
     played.current = cue.id;
     if (document.hidden) return;
     const node = body.current,
@@ -130,8 +163,8 @@ export function ChampionSpriteVisual({
       intensity = impactMultiplier(preferences.intensity),
       decorated = preferences.quality !== "LOW",
       duration = reduced
-        ? Math.min(180, motionDuration(cue.kind))
-        : motionDuration(cue.kind);
+        ? Math.min(180, motionDuration(cue.kind, motion))
+        : motionDuration(cue.kind, motion);
     const animate = (
       n: HTMLElement | null,
       frames: Keyframe[],
@@ -144,17 +177,25 @@ export function ChampionSpriteVisual({
         } catch {}
     };
     setMoving(true);
-    animate(
-      node,
-      motionFrames(
-        cue,
-        self,
-        Math.min(1, rect.height / 220),
-        intensity,
-        reduced,
-        direction,
-      ),
+    const frames = motionFrames(
+      cue,
+      self,
+      Math.min(1, rect.height / 220),
+      intensity,
+      reduced,
+      direction,
+      motion,
     );
+    const saved = continuity.current;
+    if (saved?.identity === identity && saved.set === setIdentity) {
+      frames[0] = {
+        ...frames[0],
+        transform: saved.transform,
+        filter: saved.filter,
+      };
+    }
+    continuity.current = null;
+    animate(node, frames);
     const emphasized = [
       "TURN",
       "ABILITY",
@@ -231,18 +272,40 @@ export function ChampionSpriteVisual({
     window.addEventListener("resize", clear);
     return () => {
       if (timer) clearTimeout(timer);
+      if (motions.some((a) => a.playState === "running") && node.isConnected) {
+        const current = getComputedStyle(node);
+        continuity.current = {
+          identity,
+          set: setIdentity,
+          transform: current.transform,
+          filter: current.filter,
+        };
+      } else continuity.current = null;
       motions.forEach((a) => a.cancel());
       document.removeEventListener("visibilitychange", hidden);
       window.removeEventListener("resize", clear);
     };
-  }, [cue?.id, identity, reduced, revision]);
+  }, [cue?.id, identity, setIdentity, reduced, revision, motionKey]);
   // Outcome poses also restore on reconnect without replaying an entrance.
   const settings = normalizeImageDisplaySettings(display);
+  const persistent =
+    state === "VICTORY" || state === "DEFEAT"
+      ? motionFrames(
+          { id: "persistent", kind: state, event: state },
+          self,
+          Math.min(1, height / 220),
+          impactMultiplier(readCombatPreferences().intensity),
+          reduced,
+          undefined,
+          motion,
+        ).at(-1)!
+      : undefined;
   return (
     <div
       ref={host}
       className="ko-sprite-visual"
       data-state={state}
+      data-motion-preset={profile.preset}
       data-moving={moving}
       data-reacting={reacting}
       data-reduced={reduced}
@@ -253,9 +316,22 @@ export function ChampionSpriteVisual({
         {
           "--sprite-accent": accent,
           "--sprite-facing": self ? 1 : -1,
-          "--sprite-breath-ms": CHAMPION_MOTION.breathMs + "ms",
-          "--sprite-low-breath-ms": CHAMPION_MOTION.lowBreathMs + "ms",
-          "--sprite-breath-y": -CHAMPION_MOTION.breathPx + "px",
+          "--sprite-breath-ms":
+            (CHAMPION_MOTION.breathMs + phase * 0.12) / profile.speed + "ms",
+          "--sprite-low-breath-ms":
+            (CHAMPION_MOTION.lowBreathMs + phase * 0.12) / profile.speed + "ms",
+          "--sprite-breath-y":
+            -CHAMPION_MOTION.breathPx *
+              Math.min(1, height / 220) *
+              Math.min(1, profile.movement) +
+            "px",
+          "--sprite-breath-phase": -phase + "ms",
+          "--sprite-low-y":
+            Math.min(4, height * 0.014) * profile.movement + "px",
+          "--sprite-low-tilt": (self ? -0.25 : 0.25) * profile.rotation + "deg",
+          "--sprite-pivot": `${profile.pivotX}% ${profile.pivotY}%`,
+          "--sprite-result-transform": persistent?.transform ?? "none",
+          "--sprite-result-filter": persistent?.filter ?? "none",
           "--sprite-low-brightness": CHAMPION_MOTION.lowBrightness,
           "--sprite-defeat-y": CHAMPION_MOTION.defeatY + "px",
           "--sprite-defeat-dim": CHAMPION_MOTION.defeatDim,
@@ -267,36 +343,38 @@ export function ChampionSpriteVisual({
       }
     >
       <div ref={ink} className="ko-sprite-ink" aria-hidden="true" />
-      <div className="ko-sprite-breath">
-        <div ref={body} className="ko-sprite-pose">
-          {children}
-          {image && cue?.kind === "HEAL" && (
-            <div ref={sheen} className="ko-sprite-sheen" aria-hidden="true">
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  transform: `scaleX(${self ? 1 : -1})`,
-                }}
-              >
-                <img
-                  src={image}
-                  alt=""
+      <div className="ko-sprite-stance">
+        <div className="ko-sprite-breath">
+          <div ref={body} className="ko-sprite-pose">
+            {children}
+            {image && cue?.kind === "HEAL" && (
+              <div ref={sheen} className="ko-sprite-sheen" aria-hidden="true">
+                <div
                   style={{
                     width: "100%",
                     height: "100%",
-                    objectFit:
-                      settings.imageDisplayMode === "CONTAIN"
-                        ? "contain"
-                        : "cover",
-                    objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
-                    transform: `scale(${settings.imageScale})`,
-                    transformOrigin: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
+                    transform: `scaleX(${self ? 1 : -1})`,
                   }}
-                />
+                >
+                  <img
+                    src={image}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit:
+                        settings.imageDisplayMode === "CONTAIN"
+                          ? "contain"
+                          : "cover",
+                      objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
+                      transform: `scale(${settings.imageScale})`,
+                      transformOrigin: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       {link &&
@@ -318,4 +396,20 @@ export function ChampionSpriteVisual({
         )}
     </div>
   );
+}
+
+/** Expressions share the gesture's exertion phase; no gameplay is delayed. */
+export function useMotionExpression(
+  event: SpriteEvent,
+  cue?: ChampionMotionCue,
+  motion?: SpriteMotionSettings,
+) {
+  const [ready, setReady] = useState<string>();
+  const delay = prefersReducedMotion() ? 0 : expressionLead(cue?.kind, motion);
+  useEffect(() => {
+    if (!cue || !delay) return;
+    const timer = setTimeout(() => setReady(cue.id), delay);
+    return () => clearTimeout(timer);
+  }, [cue?.id, delay]);
+  return delay && ready !== cue?.id ? ("IDLE" as const) : event;
 }

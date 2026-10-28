@@ -102,7 +102,26 @@ export const defaultEmoteExpressions: Record<string, string> = {
   OOPS: "surprised",
   THREATEN: "attack",
 };
+export const SPRITE_MOTION_PRESETS = {
+  BALANCED: "기본형",
+  HEAVY: "중량형",
+  AGILE: "민첩형",
+  RESTRAINED: "절제형",
+  AGGRESSIVE: "과격형",
+  MECHANICAL: "기계형",
+} as const;
+export type SpriteMotionSettings = {
+  preset?: keyof typeof SPRITE_MOTION_PRESETS;
+  movement?: number;
+  rotation?: number;
+  scale?: number;
+  speed?: number;
+  rebound?: number;
+  pivotX?: number;
+  pivotY?: number;
+};
 export type BattleSprite = {
+  motion?: SpriteMotionSettings;
   emotes?: Partial<Record<(typeof SPRITE_EMOTES)[number], string | null>>;
   effects?: {
     accent?: string;
@@ -208,6 +227,36 @@ export function parseBattleSprite(
       reactions[event as SpriteEvent] = key;
     }
     const extra: Partial<BattleSprite> = {};
+    if (v.motion !== undefined) {
+      const m = v.motion;
+      if (!m || typeof m !== "object" || Array.isArray(m)) return null;
+      const ranges: Record<string, [number, number]> = {
+        movement: [0, 1.5],
+        rotation: [0, 1.5],
+        scale: [0, 1.5],
+        speed: [0.5, 1.5],
+        rebound: [0, 1],
+        pivotX: [0, 100],
+        pivotY: [0, 100],
+      };
+      for (const [k, x] of Object.entries(m)) {
+        if (x === undefined) continue;
+        if (k === "preset") {
+          if (typeof x !== "string" || !Object.hasOwn(SPRITE_MOTION_PRESETS, x))
+            return null;
+        } else if (
+          !ranges[k] ||
+          typeof x !== "number" ||
+          !Number.isFinite(x) ||
+          x < ranges[k][0] ||
+          x > ranges[k][1]
+        )
+          return null;
+      }
+      extra.motion = Object.fromEntries(
+        Object.entries(m).filter(([, x]) => x !== undefined),
+      );
+    }
     if (v.emotes !== undefined) {
       if (!v.emotes || typeof v.emotes !== "object" || Array.isArray(v.emotes))
         return null;

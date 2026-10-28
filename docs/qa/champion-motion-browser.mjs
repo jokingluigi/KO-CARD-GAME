@@ -1,13 +1,17 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
-const out = "qa-results/champion-motion";
+const gestures = process.env.KO_GESTURE_QA === "1";
+const out = gestures
+  ? "qa-results/champion-gestures"
+  : "qa-results/champion-motion";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const results = [];
 try {
   for (const [width, height] of [
     [390, 844],
+    ...(gestures ? [[844, 390]] : []),
     [1440, 900],
   ]) {
     const ctx = await browser.newContext({
@@ -171,6 +175,18 @@ try {
       ].every((i) => i.complete && i.naturalWidth),
     );
     assert.equal(await own.getAttribute("data-motion"), null);
+    if (gestures) {
+      const phase = await own
+        .locator(".ko-sprite-breath")
+        .evaluate((n) => getComputedStyle(n).animationDelay);
+      const other = await enemy
+        .locator(".ko-sprite-breath")
+        .evaluate((n) => getComputedStyle(n).animationDelay);
+      assert.notEqual(phase, other, "opponents must not breathe in lockstep");
+      await page.screenshot({ path: `${out}/idle-${width}.png` });
+      await page.waitForTimeout(1200);
+    }
+
     await page.evaluate(() => {
       window.__motionFrameTimes = [];
       let last = performance.now();
@@ -225,7 +241,7 @@ try {
         .waitFor({ timeout: 3000 });
     }
     async function waitQuiet() {
-      await page.waitForTimeout(1050);
+      await page.waitForTimeout(gestures ? 1500 : 1050);
     }
     await action({ type: "END_TURN", playerId: "player-1" });
     await motion("TURN", enemy);
@@ -306,6 +322,86 @@ try {
     );
     await waitQuiet();
     assert.equal(await own.getAttribute("data-state"), "LOW");
+    if (gestures) {
+      await page.evaluate(async () => {
+        const { generateCardInstance } = await import("/src/game/index.ts");
+        window.__motionState.players[0].hand.push(
+          generateCardInstance(window.__motionDefs[2], {
+            instanceId: "low-spell",
+          }),
+        );
+        window.__publishMotion();
+      });
+      await action({
+        type: "PLAY_TECHNIQUE",
+        playerId: "player-1",
+        cardInstanceId: "low-spell",
+      });
+      await motion("SPELL");
+      await waitQuiet();
+      assert.equal(await own.getAttribute("data-state"), "LOW");
+      assert.notEqual(
+        await own
+          .locator(".ko-sprite-stance")
+          .evaluate((n) => getComputedStyle(n).transform),
+        "none",
+      );
+      await damage(1);
+      await motion("HIT");
+      await waitQuiet();
+      assert.equal(
+        await own
+          .locator(".ko-sprite-pose")
+          .evaluate((n) => n.getAnimations().length),
+        0,
+      );
+      assert.equal(await own.getAttribute("data-state"), "LOW");
+      await page.screenshot({ path: `${out}/low-${width}.png` });
+      await page.evaluate(async () => {
+        const { healNewCardAware } =
+          await import("/src/game/engine/new-card-rules.ts");
+        window.__motionState = healNewCardAware(
+          window.__motionState,
+          "player-1",
+          5,
+        );
+        window.__publishMotion();
+      });
+      await motion("HEAL");
+      await waitQuiet();
+      assert.equal(await own.getAttribute("data-state"), "IDLE");
+      assert.equal(
+        await own
+          .locator(".ko-sprite-stance")
+          .evaluate((n) => getComputedStyle(n).transform),
+        "none",
+      );
+      await page.evaluate(async () => {
+        const { applyEffect, generateCardInstance } =
+          await import("/src/game/index.ts");
+        window.__motionState = applyEffect(
+          window.__motionState,
+          "player-1",
+          generateCardInstance(window.__motionDefs[0], {
+            instanceId: "ordinary-summoner",
+          }),
+          {
+            type: "STRUCTURED",
+            action: "SUMMON",
+            target: {
+              zone: "BOARD",
+              owner: "SELF",
+              selection: "ALL",
+              count: 1,
+            },
+            values: { definition: window.__motionDefs[0], count: 1 },
+          },
+        );
+        window.__publishMotion();
+      });
+      await motion("SUMMON");
+      await waitQuiet();
+    }
     await page.evaluate(() => {
       window.__motionState.players[0].health = 20;
       window.__publishMotion();
@@ -382,6 +478,73 @@ try {
       "awakened",
     );
     await page.waitForTimeout(1300);
+    if (gestures) {
+      await page.evaluate(() => {
+        window.__motionConfig.awakened.motion = {
+          preset: "AGGRESSIVE",
+          movement: 0.7,
+          pivotY: 87,
+        };
+        window.__motionConfig.motion = { preset: "HEAVY" };
+        window.__loadMotion();
+      });
+      assert.equal(await own.getAttribute("data-motion-preset"), "HEAVY");
+      await damage(4);
+      await motion("HIT");
+      await page.waitForTimeout(80);
+      await damage(5);
+      await motion("HEAVY_HIT");
+      const firstPose=await own.locator('.ko-sprite-pose').evaluate(n=>n.getAnimations()[0]?.effect.getKeyframes()[0]?.transform);
+      assert.ok(firstPose && firstPose !== 'none' && firstPose !== 'matrix(1, 0, 0, 1, 0, 0)', 'interruption should start from the currently displayed pose');
+      await damage(1);
+      assert.equal(await own.getAttribute("data-motion"), "HEAVY_HIT");
+      await waitQuiet();
+      assert.equal(
+        await own
+          .locator(".ko-sprite-pose")
+          .evaluate((n) => n.getAnimations().length),
+        0,
+      );
+      await page.evaluate(() => window.__loadMotion(true));
+      await action({
+        type: "PLAY_TECHNIQUE",
+        playerId: "player-1",
+        cardInstanceId: "motion-cast",
+      });
+      await motion("AWAKEN");
+      await page.waitForTimeout(300);
+      assert.equal(await own.getAttribute("data-motion-preset"), "AGGRESSIVE");
+      await waitQuiet();
+      await page.evaluate(() => {
+        window.__motionConfig.awakening = "KEEP";
+        window.__loadMotion(true);
+      });
+      await action({
+        type: "PLAY_TECHNIQUE",
+        playerId: "player-1",
+        cardInstanceId: "motion-cast",
+      });
+      await motion("AWAKEN");
+      await waitQuiet();
+      assert.equal(await own.getAttribute("data-motion-preset"), "HEAVY");
+      assert.equal(
+        await page
+          .locator(".ko-player-champion .ko-battle-actor")
+          .getAttribute("data-sprite-set"),
+        "normal",
+      );
+      await action({ type: "SURRENDER", playerId: "player-2" });
+      await page.waitForTimeout(1900);
+      assert.equal(await own.getAttribute("data-state"), "VICTORY");
+      assert.equal(
+        await own
+          .locator(".ko-sprite-breath")
+          .evaluate((n) => getComputedStyle(n).animationName),
+        "none",
+      );
+      await page.screenshot({ path: `${out}/result-${width}.png` });
+      await page.evaluate(() => window.__loadMotion());
+    }
     await page.evaluate(async () => {
       const { saveCombatPreferences } =
         await import("/src/components/combat-preferences.ts");
@@ -485,6 +648,15 @@ try {
       reducedMotion: true,
       resultAndReconnect: true,
       stableHud: true,
+      ...(gestures
+        ? {
+            ordinarySummon: true,
+            lowAttackHitHealRecovery: true,
+            presetSwapAndKeep: true,
+            strongHitNotOverwritten: true,
+            desynchronizedBreath: true,
+          }
+        : {}),
     });
     await ctx.close();
   }

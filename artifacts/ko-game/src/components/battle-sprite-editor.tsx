@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
-import { ChampionSpriteVisual } from "./champion-sprite-visual";
+import { useState, useEffect, useRef } from "react";
+import {
+  ChampionSpriteVisual,
+  useMotionExpression,
+} from "./champion-sprite-visual";
 import {
   type ChampionMotionCue,
   type ChampionMotionKind,
@@ -21,6 +24,8 @@ import {
   defaultSpritePlacement,
   type BattleSprite,
   type SpriteFrame,
+  type SpriteMotionSettings,
+  SPRITE_MOTION_PRESETS,
 } from "@workspace/cosmetics";
 import { cosmeticsRequest } from "@/lib/cosmetics-client";
 export function BattleSpriteEditor({
@@ -29,8 +34,10 @@ export function BattleSpriteEditor({
   workspace = false,
   onBusyChange,
   fallbackImage,
+  inheritedMotion,
 }: {
   fallbackImage?: string | null;
+  inheritedMotion?: SpriteMotionSettings;
   workspace?: boolean;
   onBusyChange?: (busy: boolean) => void;
   value?: BattleSprite | null;
@@ -69,6 +76,15 @@ export function BattleSpriteEditor({
       result.awakening = "KEEP";
     save(result);
   };
+  const sequenceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  useEffect(
+    () => () => {
+      if (sequenceTimer.current) clearTimeout(sequenceTimer.current);
+    },
+    [editing],
+  );
   const [showOrigin, setShowOrigin] = useState(false);
   const [awake, setAwake] = useState(false),
     [health, setHealth] = useState(10);
@@ -205,6 +221,18 @@ export function BattleSpriteEditor({
   }, []);
   const [previewMode, setPreviewMode] = useState<"FRAME" | "REACTION">("FRAME");
   useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
+  const effectivePreviewSet =
+    awake && root.awakening === "REPLACE" ? root.awakened! : root;
+  const previewMotion = {
+    ...inheritedMotion,
+    ...root.motion,
+    ...effectivePreviewSet.motion,
+  };
+  const expressionEvent = useMotionExpression(
+    reaction.event,
+    reaction.cue,
+    previewMotion,
+  );
   const previewFrame =
     workspace && previewMode === "FRAME"
       ? frame
@@ -215,7 +243,7 @@ export function BattleSpriteEditor({
             reaction.event === "VICTORY" || reaction.event === "DEFEAT"
               ? reaction.event
               : undefined,
-          reaction: reaction.event,
+          reaction: expressionEvent,
           emote: reaction.cue?.emote,
         });
   const [failedPreview, setFailedPreview] = useState<Set<string>>(new Set());
@@ -352,6 +380,10 @@ export function BattleSpriteEditor({
           <ChampionSpriteVisual
             preview
             cue={reaction.cue}
+            motion={previewMotion}
+            setIdentity={
+              awake && root.awakening === "REPLACE" ? "awakened" : "normal"
+            }
             identity={editing}
             self={side === "self"}
             state={
@@ -747,6 +779,107 @@ export function BattleSpriteEditor({
               </button>
             </>
           )}
+          <details className="ko-sprite-motion-settings" open>
+            <summary>현재 세트의 움직임 성격·강도</summary>
+            <p className="text-xs text-neutral-400">
+              미설정 항목은 챔피언 기본 → 선택 스킨 일반 → 현재 세트 순서로
+              상속합니다. 그림만 움직이며 표정·판정은 바뀌지 않습니다.
+            </p>
+            <label>
+              움직임 프리셋
+              <select
+                aria-label="움직임 프리셋"
+                value={config.motion?.preset ?? "INHERIT"}
+                onChange={(e) =>
+                  onChange({
+                    ...config,
+                    motion: {
+                      ...config.motion,
+                      preset:
+                        e.target.value === "INHERIT"
+                          ? undefined
+                          : (e.target
+                              .value as keyof typeof SPRITE_MOTION_PRESETS),
+                    },
+                  })
+                }
+              >
+                <option value="INHERIT">상속 (미설정 시 기본형)</option>
+                {Object.entries(SPRITE_MOTION_PRESETS).map(([k, label]) => (
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {(
+              [
+                ["movement", "이동", 0, 1.5, 0.05],
+                ["rotation", "회전", 0, 1.5, 0.05],
+                ["scale", "확대", 0, 1.5, 0.05],
+                ["speed", "속도", 0.5, 1.5, 0.05],
+                ["rebound", "반동", 0, 1, 0.05],
+                ["pivotX", "회전 기준 X", 0, 100, 1],
+                ["pivotY", "회전 기준 Y", 0, 100, 1],
+              ] as const
+            ).map(([key, label, min, max, step]) => (
+              <label key={key}>
+                {label}
+                <input
+                  aria-label={`움직임 ${label}`}
+                  type="number"
+                  min={min}
+                  max={max}
+                  step={step}
+                  placeholder="상속"
+                  value={config.motion?.[key] ?? ""}
+                  onChange={(e) => {
+                    const n =
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value);
+                    if (
+                      n !== undefined &&
+                      (!Number.isFinite(n) || n < min || n > max)
+                    )
+                      return;
+                    onChange({
+                      ...config,
+                      motion: { ...config.motion, [key]: n },
+                    });
+                  }}
+                />
+              </label>
+            ))}
+            <button
+              type="button"
+              onClick={() => onChange({ ...config, motion: undefined })}
+            >
+              움직임 설정 상속으로 초기화
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                playMotion("HIT", "HIT", { damage: 2 });
+                if (sequenceTimer.current) clearTimeout(sequenceTimer.current);
+                sequenceTimer.current = setTimeout(
+                  () => playMotion("HEAVY_HIT", "HEAVY_HIT", { damage: 5 }),
+                  100,
+                );
+              }}
+            >
+              피격 → 강한 피격 전환
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setHealth(4);
+                playMotion("HEAL", "HEAL");
+              }}
+            >
+              저체력에서 안도 후 복귀
+            </button>
+          </details>
           <details className="ko-sprite-effects-settings">
             <summary>현재 세트의 강조색·효과 출발점</summary>
             <label>

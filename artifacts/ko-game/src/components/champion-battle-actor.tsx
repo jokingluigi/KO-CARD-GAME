@@ -13,7 +13,10 @@ import {
   spriteEventCursor,
   spriteIsLow,
 } from "./champion-sprite-events";
-import { ChampionSpriteVisual } from "./champion-sprite-visual";
+import {
+  ChampionSpriteVisual,
+  useMotionExpression,
+} from "./champion-sprite-visual";
 import {
   CHAMPION_MOTION,
   type ChampionMotionCue,
@@ -210,11 +213,25 @@ export function ChampionBattleActor({
         ? ("VICTORY" as const)
         : ("DEFEAT" as const)
       : undefined;
+  const motionSet =
+    displayAwakened && config?.awakening === "REPLACE"
+      ? config.awakened
+      : config;
+  const motionSettings = {
+    ...appearance.motionDefaults,
+    ...config?.motion,
+    ...motionSet?.motion,
+  };
+  const expressionEvent = useMotionExpression(
+    reaction.event,
+    reaction.cue,
+    motionSettings,
+  );
   const candidates = championSpriteCandidates(appearance, {
     awakened: displayAwakened,
     low: spriteIsLow(getPlayerSurvivalHealth(state, playerId)),
     outcome,
-    reaction: reaction.event,
+    reaction: expressionEvent,
     emote: reaction.cue?.emote,
   });
   const [failed, setFailed] = useState<Set<string>>(new Set());
@@ -294,6 +311,8 @@ export function ChampionBattleActor({
     >
       <ChampionSpriteVisual
         cue={reaction.cue}
+        motion={motionSettings}
+        setIdentity={setIdentity}
         state={
           outcome ??
           (spriteIsLow(getPlayerSurvivalHealth(state, playerId))

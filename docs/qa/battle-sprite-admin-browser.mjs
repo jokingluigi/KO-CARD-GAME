@@ -80,6 +80,13 @@ try {
   assert.deepEqual(await page.getByLabel("스프라이트 표정").locator("option").allTextContents(),
     ["기본","공격","피격","강한 피격","저체력","소환","놀람","승리","패배","안도"]);
   await upload();
+  await page.getByLabel('움직임 프리셋',{exact:true}).selectOption('HEAVY');
+  await page.getByLabel('움직임 이동',{exact:true}).fill('0.8');
+  await page.getByLabel('움직임 속도',{exact:true}).fill('0.75');
+  await page.getByLabel('움직임 회전 기준 Y',{exact:true}).fill('92');
+  await page.getByRole('button',{name:'고유능력 효과',exact:true}).click();
+  assert.equal(await page.locator('.ko-sprite-visual').getAttribute('data-motion-preset'),'HEAVY');
+  await page.waitForTimeout(1100);
   const size = await page.locator(".ko-sprite-preview-canvas").boundingBox();
   assert.ok(size.height >= 420 && size.width >= 260, JSON.stringify(size));
   const scale = page.getByLabel("스프라이트 scale", { exact: true });
@@ -106,6 +113,10 @@ try {
   await save();
   await open();
   assert.equal(await scale.inputValue(), expectedScale);
+  assert.equal(await page.getByLabel('움직임 프리셋',{exact:true}).inputValue(),'HEAVY');
+  assert.equal(await page.getByLabel('움직임 이동',{exact:true}).inputValue(),'0.8');
+  assert.equal(await page.getByLabel('움직임 속도',{exact:true}).inputValue(),'0.75');
+  assert.equal(await page.getByLabel('움직임 회전 기준 Y',{exact:true}).inputValue(),'92');
   await page.getByLabel("큰 미리보기 위치").selectOption("opponent");
   await page.getByLabel("스프라이트 표정").selectOption("hurt");
   assert.equal(await page.locator(".ko-sprite-preview-figure").evaluate(n => getComputedStyle(n).transform), "matrix(-1, 0, 0, 1, 0, 0)");
@@ -122,6 +133,7 @@ try {
   await page.getByLabel("스프라이트 표정").selectOption("default");
   await page.getByLabel("편집 세트", { exact: true }).selectOption("AWAKENED");
   await upload();
+  await page.getByLabel('움직임 프리셋',{exact:true}).selectOption('AGGRESSIVE');
   const awakeURL = await page
     .getByAltText("상태·반응 미리보기")
     .getAttribute("src");

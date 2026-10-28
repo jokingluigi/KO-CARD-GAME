@@ -1,4 +1,5 @@
 .ko-sprite-visual,
+.ko-sprite-stance,
 .ko-sprite-breath,
 .ko-sprite-pose {
   position: relative;
@@ -11,7 +12,8 @@
 }
 .ko-sprite-breath {
   animation: ko-sprite-breathe var(--sprite-breath-ms) ease-in-out infinite;
-  transform-origin: 50% 90%;
+  animation-delay: var(--sprite-breath-phase);
+  transform-origin: var(--sprite-pivot, 50% 90%);
 }
 .ko-sprite-visual[data-state="LOW"] .ko-sprite-breath {
   animation-duration: var(--sprite-low-breath-ms);
@@ -30,16 +32,29 @@
   animation: none;
 }
 .ko-sprite-pose {
-  transform-origin: 50% 90%;
+  transform-origin: var(--sprite-pivot, 50% 90%);
 }
-.ko-sprite-visual[data-state="DEFEAT"][data-moving="false"] .ko-sprite-pose {
-  transform: translateY(var(--sprite-defeat-y));
-  filter: brightness(var(--sprite-defeat-dim));
+.ko-sprite-visual:is(
+    [data-state="DEFEAT"],
+    [data-state="VICTORY"]
+  )[data-moving="false"]
+  .ko-sprite-pose {
+  transform: var(--sprite-result-transform);
+  filter: var(--sprite-result-filter);
 }
-.ko-sprite-visual[data-state="VICTORY"][data-moving="false"] .ko-sprite-pose {
-  transform: translate(var(--sprite-victory-x), var(--sprite-victory-y))
-    scale(var(--sprite-victory-scale));
-  filter: brightness(1.08);
+.ko-sprite-stance {
+  transition: transform 180ms ease-out;
+  transform-origin: var(--sprite-pivot, 50% 90%);
+}
+.ko-sprite-visual[data-state="LOW"] .ko-sprite-stance {
+  transform: translateY(var(--sprite-low-y)) rotate(var(--sprite-low-tilt));
+}
+.ko-sprite-visual[data-state="LOW"] .ko-sprite-breath {
+  --sprite-breath-y: -0.5px;
+}
+.ko-sprite-visual[data-reduced="true"] .ko-sprite-stance {
+  transform: none;
+  transition: none;
 }
 .ko-sprite-visual[data-reduced="true"] .ko-sprite-pose {
   transform: none !important;

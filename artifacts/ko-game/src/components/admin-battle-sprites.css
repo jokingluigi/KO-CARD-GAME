@@ -180,19 +180,66 @@
 /* The shared motion surface is the actual sprite frame, not the whole
    placement canvas. Origin percentages and silhouette overlays stay aligned. */
 .ko-sprite-editor--workspace .ko-sprite-preview-canvas > .ko-sprite-visual {
-  position:absolute;
-  aspect-ratio:.72;
-  height:94%;
-  width:auto;
-  max-width:100%;
+  position: absolute;
+  aspect-ratio: 0.72;
+  height: 94%;
+  width: auto;
+  max-width: 100%;
 }
-.ko-sprite-editor--workspace .ko-sprite-preview-canvas[data-side="self"] > .ko-sprite-visual {left:0;bottom:0}
-.ko-sprite-editor--workspace .ko-sprite-preview-canvas[data-side="opponent"] > .ko-sprite-visual {right:0;top:0}
-.ko-sprite-editor--workspace .ko-sprite-preview-canvas .ko-sprite-visual .ko-sprite-preview-figure {
-  position:relative;
-  inset:0;
-  width:100%;
-  height:100%;
-  max-width:none;
-  aspect-ratio:auto;
+.ko-sprite-editor--workspace
+  .ko-sprite-preview-canvas[data-side="self"]
+  > .ko-sprite-visual {
+  left: 0;
+  bottom: 0;
+}
+.ko-sprite-editor--workspace
+  .ko-sprite-preview-canvas[data-side="opponent"]
+  > .ko-sprite-visual {
+  right: 0;
+  top: 0;
+}
+.ko-sprite-editor--workspace
+  .ko-sprite-preview-canvas
+  .ko-sprite-visual
+  .ko-sprite-preview-figure {
+  position: relative;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  aspect-ratio: auto;
+}
+
+.ko-sprite-motion-settings {
+  border-top: 1px solid #444;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.ko-sprite-motion-settings summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: #d5bb79;
+  font-weight: bold;
+}
+.ko-sprite-motion-settings > label {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-block: 8px;
+}
+.ko-sprite-motion-settings :is(input, select, button) {
+  min-height: 44px;
+  max-width: 100%;
+}
+.ko-sprite-motion-settings input {
+  width: 100%;
+  background: #111;
+  color: #eee;
+  border: 1px solid #555;
+  padding: 8px;
+}
+.ko-sprite-motion-settings button {
+  display: block;
+  margin-top: 8px;
 }

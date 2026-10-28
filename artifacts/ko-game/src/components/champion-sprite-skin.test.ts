@@ -30,3 +30,11 @@ test('selected skin never borrows default champion art after all current-skin ca
  const missing=resolve({...item(),imageAssets:{}},true);
  assert.deepEqual(championSpriteCandidates(missing,{awakened:true,low:false,reaction:'HIT'}),[]);
 });
+
+test('selected skin inherits only champion motion defaults while keeping its own images',()=>{
+ const appearance=championSpriteSkin({championId:'hero',base:{...base,motion:{preset:'HEAVY',speed:.8}},awakened:true,loadout:{...emptyCosmetics(),skins:{'champion:hero':item({...sprite,motion:{movement:.7},awakened:{...sprite.awakened!,motion:{preset:'AGILE'}}})}}});
+ assert.deepEqual(appearance.motionDefaults,{preset:'HEAVY',speed:.8});
+ assert.deepEqual(appearance.config!.motion,{movement:.7});
+ assert.equal(appearance.config!.awakened!.motion!.preset,'AGILE');
+ assert.ok(!championSpriteCandidates(appearance,{awakened:true,low:false,reaction:'HIT'}).some(c=>c.url.includes('base')));
+});

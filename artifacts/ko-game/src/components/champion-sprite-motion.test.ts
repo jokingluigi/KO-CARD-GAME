@@ -20,6 +20,8 @@ import {
 } from "../game";
 import {
   motionFrames,
+  resolveMotion,
+  expressionLead,
   motionDuration,
   explicitSingleDamageTarget,
   type ChampionMotionCue,
@@ -255,10 +257,143 @@ test("support, scripts and all-target damage do not invent single-target project
   );
 });
 
-test('emote mapping stays in the active skin set and explicit OFF preserves low state',()=>{
- const config={version:1 as const,frames:{default:frame('normal'),hurt:frame('normal-hurt'),low:frame('normal-low')},reactions:{},emotes:{THANKS:'hurt',OOPS:null},awakening:'REPLACE' as const,awakened:{version:1 as const,frames:{default:frame('awake')},reactions:{},emotes:{THANKS:'default'}}};
- assert.equal(selectSpriteFrame(config,{awakened:false,low:true,reaction:'EMOTE',emote:'THANKS'})!.url,config.frames.hurt.url);
- assert.equal(selectSpriteFrame(config,{awakened:false,low:true,reaction:'EMOTE',emote:'OOPS'})!.url,config.frames.low.url);
- assert.equal(selectSpriteFrame(config,{awakened:true,low:true,reaction:'EMOTE',emote:'THANKS'})!.url,config.awakened.frames.default.url);
- assert.equal(selectSpriteFrame(config,{awakened:true,low:true,reaction:'EMOTE',emote:'THREATEN'})!.url,config.awakened.frames.default.url);
+test("emote mapping stays in the active skin set and explicit OFF preserves low state", () => {
+  const config = {
+    version: 1 as const,
+    frames: {
+      default: frame("normal"),
+      hurt: frame("normal-hurt"),
+      low: frame("normal-low"),
+    },
+    reactions: {},
+    emotes: { THANKS: "hurt", OOPS: null },
+    awakening: "REPLACE" as const,
+    awakened: {
+      version: 1 as const,
+      frames: { default: frame("awake") },
+      reactions: {},
+      emotes: { THANKS: "default" },
+    },
+  };
+  assert.equal(
+    selectSpriteFrame(config, {
+      awakened: false,
+      low: true,
+      reaction: "EMOTE",
+      emote: "THANKS",
+    })!.url,
+    config.frames.hurt.url,
+  );
+  assert.equal(
+    selectSpriteFrame(config, {
+      awakened: false,
+      low: true,
+      reaction: "EMOTE",
+      emote: "OOPS",
+    })!.url,
+    config.frames.low.url,
+  );
+  assert.equal(
+    selectSpriteFrame(config, {
+      awakened: true,
+      low: true,
+      reaction: "EMOTE",
+      emote: "THANKS",
+    })!.url,
+    config.awakened.frames.default.url,
+  );
+  assert.equal(
+    selectSpriteFrame(config, {
+      awakened: true,
+      low: true,
+      reaction: "EMOTE",
+      emote: "THREATEN",
+    })!.url,
+    config.awakened.frames.default.url,
+  );
+});
+
+test("gesture stages separate anticipation, lagging tilt, brace, and recovery", () => {
+  const cue = (kind: ChampionMotionCue["kind"]) => ({
+    id: kind,
+    kind,
+    event: "IDLE" as const,
+  });
+  const spell = motionFrames(cue("SPELL"), true);
+  assert.match(String(spell[1].transform), /translate\(-1.5px/);
+  assert.match(String(spell[2].transform), /translate\(4px/);
+  const heal = motionFrames(cue("HEAL"), true);
+  assert.match(String(heal[1].transform), /translate\(0px,2.5px\)/);
+  const hit = motionFrames(cue("HIT"), true),
+    heavy = motionFrames(cue("HEAVY_HIT"), true);
+  assert.notDeepEqual(hit, heavy);
+  assert.equal(heavy[3].offset, 0.43);
+  assert.ok(expressionLead("ABILITY") > expressionLead("SUMMON"));
+  assert.equal(expressionLead("HIT"), 0);
+});
+test("six presets inherit independently, remain bounded, and mechanically remove overshoot", () => {
+  assert.equal(
+    resolveMotion({ preset: "HEAVY" }, { rotation: 0.4 }).preset,
+    "HEAVY",
+  );
+  assert.equal(resolveMotion({ preset: "AGILE" }).speed, 1.25);
+  assert.equal(resolveMotion({ preset: "MECHANICAL" }).rebound, 0);
+  for (const preset of [
+    "BALANCED",
+    "HEAVY",
+    "AGILE",
+    "RESTRAINED",
+    "AGGRESSIVE",
+    "MECHANICAL",
+  ] as const) {
+    const settings = {
+      preset,
+      movement: 1.5,
+      rotation: 1.5,
+      scale: 1.5,
+      speed: 0.5,
+      rebound: 1,
+    };
+    for (const kind of [
+      "HIT",
+      "HEAVY_HIT",
+      "SPELL",
+      "ABILITY",
+      "SUMMON",
+      "SURPRISED",
+      "HEAL",
+    ] as const) {
+      const frames = motionFrames(
+        { id: "x", kind, event: "IDLE" },
+        true,
+        3,
+        5,
+        false,
+        undefined,
+        settings,
+      );
+      for (const f of frames) {
+        const match = String(f.transform).match(
+          /translate\(([-.\d]+)px,([-.\d]+)px\) rotate\(([-.\d]+)deg\) scale\(([-.\d]+)\)/,
+        )!;
+        assert.ok(Math.abs(Number(match[1])) <= 18);
+        assert.ok(Math.abs(Number(match[2])) <= 16);
+        assert.ok(Math.abs(Number(match[3])) <= 3.5);
+        assert.ok(Math.abs(Number(match[4]) - 1) <= 0.045001);
+      }
+      assert.match(
+        String(frames.at(-1)!.transform),
+        /translate\(0px,0px\).*rotate\(0deg\).*scale\(1\)/,
+      );
+    }
+  }
+  assert.equal(
+    parseBattleSprite({
+      version: 1,
+      frames: { default: frame("x") },
+      reactions: {},
+      motion: { preset: "HEAVY", speed: 0 },
+    }),
+    null,
+  );
 });

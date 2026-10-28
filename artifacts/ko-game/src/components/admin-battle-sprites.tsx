@@ -216,6 +216,15 @@ export function AdminBattleSprites() {
           </p>
           <BattleSpriteEditor
             fallbackImage={selected?.imageUrl}
+            inheritedMotion={
+              selected.kind === "skin"
+                ? targets.find(
+                    (t) =>
+                      t.kind === "default" &&
+                      t.championId === selected.championId,
+                  )?.config?.motion
+                : undefined
+            }
             key={selected.key}
             value={value}
             workspace

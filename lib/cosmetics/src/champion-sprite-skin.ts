@@ -55,6 +55,7 @@ export function championSpriteSkin(input: {
         )
       : undefined;
   return {
+    motionDefaults: parseBattleSprite(input.base)?.motion,
     id: item?.id ?? `default:${input.championId}`,
     config,
     illustrations: [...new Set(illustrations)],
