@@ -36,10 +36,10 @@ export function championSpriteSkin(input: {
   const illustrations = [
     ...(useAwake && awake ? [awake] : []),
     ...(regular ? [regular] : []),
-    ...(input.awakened && input.awakenedPortrait
+    ...(!item && input.awakened && input.awakenedPortrait
       ? [input.awakenedPortrait]
       : []),
-    ...(input.normal ? [input.normal] : []),
+    ...(!item && input.normal ? [input.normal] : []),
   ];
   const display = (url: string) =>
     item && (url === regular || url === awake)

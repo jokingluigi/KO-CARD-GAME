@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { normalizeImageDisplaySettings } from "../game/cards/types";
 import {
   FINAL_SPRITE_EVENTS as SPRITE_EVENTS,
   SPRITE_EXPRESSIONS,
@@ -189,7 +190,7 @@ export function BattleSpriteEditor({
       : undefined);
   const previewPlacement = {
     ...(visiblePreviewFrame?.[side] ?? defaultSpritePlacement),
-    flip: side === "opponent",
+
   };
   const reactionPreview = (
     <section
@@ -298,7 +299,7 @@ export function BattleSpriteEditor({
         {previewURL ? (
           <div
             className="ko-sprite-preview-figure"
-            style={{ transform: `scaleX(${side === "opponent" ? -1 : 1})` }}
+            style={{ transform: `scaleX(${previewPlacement.flip ? -1 : 1})` }}
           >
             <img
               alt="상태·반응 미리보기"
@@ -310,7 +311,7 @@ export function BattleSpriteEditor({
               style={{
                 objectFit: previewPlacement.crop ? "cover" : "contain",
                 objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
-                transform: `scale(${previewPlacement.scale})`,
+                transform: `scale(${normalizeImageDisplaySettings({ imageScale: previewPlacement.scale }).imageScale})`,
                 transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
               }}
             />
@@ -371,7 +372,7 @@ export function BattleSpriteEditor({
         외형 스킨입니다. 다른 스킨의 표정이나 각성 세트를 가져오지 않습니다.
       </p>
       <p className="text-xs">
-        표정은 10개입니다. 약한 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5. 회복은 실제 체력이 증가했을 때입니다. 공격은
+        표정은 10개입니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5. 안도(회복)는 실제 체력이 증가했을 때입니다. 공격은
         주문·고유능력 사용 확정, 놀람은 내 레전더리 선수의
         리타이어·파괴·소멸입니다. 각성은 별도 표정이 아닌 세트 전환입니다. 누락
         표정은 현재 세트의 기본 이미지를 사용합니다.
@@ -412,9 +413,8 @@ export function BattleSpriteEditor({
             </select>
           </label>
           <p className="text-xs text-neutral-400">
-            기본(default)을 먼저 등록하세요. 표정이 없으면 기본 이미지로
-            표시됩니다. 내 위치는 원본 방향, 상대 위치는 좌우 반전으로 자동
-            적용·저장됩니다.
+            기본(default)을 먼저 등록하세요. 표정이 없으면 같은 세트의 기본 이미지로
+            표시됩니다. 좌우 반전은 내 위치·상대 위치별 설정을 따릅니다.
           </p>
           <label>
             표정
@@ -480,7 +480,7 @@ export function BattleSpriteEditor({
                     ...(side === "self"
                       ? { left: 0, bottom: 0 }
                       : { right: 0, top: 0 }),
-                    transform: `scaleX(${side === "opponent" ? -1 : 1})`,
+                    transform: `scaleX(${frame[side].flip ? -1 : 1})`,
                   }}
                 >
                   <img
@@ -490,7 +490,7 @@ export function BattleSpriteEditor({
                     style={{
                       objectFit: frame[side].crop ? "cover" : "contain",
                       objectPosition: `${frame[side].x}% ${frame[side].y}%`,
-                      transform: `scale(${frame[side].scale})`,
+                      transform: `scale(${normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale})`,
                       transformOrigin: `${frame[side].x}% ${frame[side].y}%`,
                     }}
                   />
@@ -510,9 +510,9 @@ export function BattleSpriteEditor({
                     aria-label={"스프라이트 " + key}
                     type="range"
                     min={key === "scale" ? 0.5 : 0}
-                    max={key === "scale" ? 3 : 100}
+                    max={key === "scale" ? 2 : 100}
                     step={key === "scale" ? 0.05 : 1}
-                    value={frame[side][key]}
+                    value={key === "scale" ? normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale : frame[side][key]}
                     onChange={(e) =>
                       put({
                         ...frame,
@@ -523,9 +523,17 @@ export function BattleSpriteEditor({
                       })
                     }
                   />
-                  {frame[side][key]}
+                  {key === "scale" ? normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale : frame[side][key]}
                 </label>
               ))}
+              <label className="block">
+                <input
+                  aria-label="스프라이트 좌우 반전"
+                  type="checkbox"
+                  checked={frame[side].flip}
+                  onChange={(e) => put({ ...frame, [side]: { ...frame[side], flip: e.target.checked } })}
+                /> 현재 표정·위치 좌우 반전
+              </label>
               <label className="block">
                 이미지 맞춤
                 <select
@@ -542,7 +550,7 @@ export function BattleSpriteEditor({
                 </select>
               </label>
               <p className="text-xs text-neutral-400">
-                현재 표정·배치 위치별로 저장됩니다. 채우기는 이미지 가장자리를
+                현재 표정·배치 위치별로 저장됩니다. 배율은 실제 대전과 같은 최대 200%입니다. 채우기는 이미지 가장자리를
                 자르며, 어느 방식이든 아치 밖으로 넘치지 않습니다.
               </p>
               <button

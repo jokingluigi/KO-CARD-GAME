@@ -11,7 +11,7 @@ test('default appearance is its own skin; explicit selection never inherits base
  assert.equal(championSpriteCandidates(selected,{awakened:false,low:false,reaction:'HIT'})[0].frame,undefined);
 });
 test('partial selected skin and awakened sets never borrow champion or other skin expressions',()=>{
- for(const awakened of [false,true])for(const reaction of ['IDLE','HIT','ABILITY','AWAKEN'] as const){const skin=resolve(item(sprite),awakened);const c=championSpriteCandidates(skin,{awakened,low:true,reaction});assert.equal(c[0].url,`https://example.invalid/skin-a${awakened?'-awake':''}.png`);assert.ok(!c.some(c=>c.frame?.url.includes('base')));}
+ for(const awakened of [false,true])for(const reaction of ['IDLE','HIT','ABILITY','AWAKEN'] as const){const skin=resolve(item(sprite),awakened);const c=championSpriteCandidates(skin,{awakened,low:true,reaction});assert.equal(c[0].url,`https://example.invalid/skin-a${awakened?'-awake':''}.png`);assert.ok(!c.some(c=>c.url.includes('base')));}
 });
 test('KEEP and no-sprite selected skins keep their own illustration even after awakening',()=>{
  const keep=resolve(item({...sprite,awakening:'KEEP'}),true);assert.equal(keep.illustrations[0],'https://example.invalid/skin-a-art.png');
@@ -21,4 +21,12 @@ test('frame failure order stays in selected set then selected illustration; targ
  const config={...sprite,frames:{...sprite.frames,hurt:f('skin-hurt')},reactions:{HIT:'hurt'}};
  const c=championSpriteCandidates(resolve(item(config)),{awakened:false,low:false,reaction:'HIT'});assert.deepEqual(c.slice(0,3).map(c=>c.url),['https://example.invalid/skin-hurt.png','https://example.invalid/skin-a.png','https://example.invalid/skin-a-art.png']);
  assert.equal(resolve({...item(sprite),targetId:'other'}).id,'default:hero');
+});
+
+test('selected skin never borrows default champion art after all current-skin candidates fail',()=>{
+ const selected=resolve(item(sprite),true);
+ const candidates=championSpriteCandidates(selected,{awakened:true,low:true,reaction:'HEAVY_HIT'});
+ assert.deepEqual(candidates.map(c=>c.url),['https://example.invalid/skin-a-awake.png','https://example.invalid/skin-a-art.png']);
+ const missing=resolve({...item(),imageAssets:{}},true);
+ assert.deepEqual(championSpriteCandidates(missing,{awakened:true,low:false,reaction:'HIT'}),[]);
 });

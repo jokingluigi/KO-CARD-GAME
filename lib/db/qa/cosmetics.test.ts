@@ -98,7 +98,7 @@ root.get(
   (req: any, res: any) => {
     const bytes = assets.get(req.params.key.join("/").replace(/^qa\//, ""));
     if (!bytes) return res.status(404).json({ message: "Object not found" });
-    res.type("png").send(bytes);
+    res.type(req.params.key.join("/").split(".").pop() ?? "png").send(bytes);
   },
 );
 const { default: app } = await import("../../../artifacts/api-server/src/app");

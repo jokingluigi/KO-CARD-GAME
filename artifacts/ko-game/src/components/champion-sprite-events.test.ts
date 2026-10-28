@@ -541,7 +541,7 @@ test("editor normalization preserves uploaded artwork and explicit reuse without
   assert.equal(uploaded.reactions.HIT, "hurt");
 });
 
-test("all skin sets save self original and opponent mirrored without individual orientation setup", async () => {
+test("skin sets preserve explicit asymmetric orientation per side through projection and upload", async () => {
   const { withSpriteFrame } = await import("@workspace/cosmetics");
   const wrong = {
     ...frame("facing"),
@@ -557,11 +557,59 @@ test("all skin sets save self original and opponent mirrored without individual 
   });
   for (const set of [c, c.awakened!])
     for (const f of Object.values(set.frames)) {
-      assert.equal(f.self.flip, false);
-      assert.equal(f.opponent.flip, true);
+      assert.equal(f.self.flip, true);
+      assert.equal(f.opponent.flip, false);
     }
   const added = withSpriteFrame(c, "attack", wrong).frames.attack;
-  assert.equal(added.self.flip, false);
-  assert.equal(added.opponent.flip, true);
+  assert.equal(added.self.flip, true);
+  assert.equal(added.opponent.flip, false);
   assert.equal(c.frames.default.self.scale, wrong.self.scale);
+});
+
+for (const selfDamage of [false, true]) {
+  for (const amount of [0, 1, 4, 5]) {
+    test(`real effect ${selfDamage ? 'self' : 'opponent'} damage ${amount} uses confirmed result`, () => {
+      const s = setup();
+      const source = generateCardInstance(normal, { instanceId: 'actual-damage-source' });
+      const target = selfDamage ? s.players[0] : s.players[1];
+      const effect = selfDamage
+        ? { type: 'STRUCTURED', action: 'DAMAGE', target: { zone: 'PLAYER', owner: 'SELF', selection: 'ALL' }, values: { amount } }
+        : { type: 'DAMAGE_OPPONENT_CHAMPION', amount };
+      const result = applyEffect(s, 'player-1', source, effect as Parameters<typeof applyEffect>[3]);
+      assert.equal(result.players.find(p => p.id === target.id)!.health, target.health - amount);
+      assert.deepEqual(collect(s, result, target.id), amount ? [amount >= 5 ? 'HEAVY_HIT' : 'HIT'] : []);
+    });
+  }
+}
+test('real protected champion absorbs an attempted strong hit without a hurt expression', () => {
+  const s = setup();
+  s.players[1].board[0] = { ...generateCardInstance(normal, { instanceId: 'protector' }), boardSlot: 0, isChampionToken: true };
+  const result = applyEffect(s, 'player-1', generateCardInstance(normal, {instanceId:'protected-damage-source'}), { type: 'DAMAGE_OPPONENT_CHAMPION', amount: 9 });
+  assert.equal(result.players[1].health, s.players[1].health);
+  assert.ok(result.events.some(e => e.type === 'DAMAGE_DEALT' && e.amount === 0));
+  assert.deepEqual(collect(s, result, 'player-2'), []);
+});
+
+test('real retire/destroy/vanish outputs preserve separate events and only own legendary surprises', async () => {
+  const { destroyCard } = await import('../game/engine/destroy-card');
+  const { resolveStateBasedDeaths } = await import('../game/effects/effect-engine');
+  for (const type of ['RETIRE', 'DESTROY', 'VANISH']) {
+    for (const own of [false, true]) for (const isLegendary of [false, true]) {
+      const s = setup(), index = own ? 0 : 1;
+      const card = { ...generateCardInstance(isLegendary ? legendary : normal, { instanceId:'real-exit' }), boardSlot:0 as const };
+      s.players[index].board[0]=card;
+      let after: GameState;
+      if(type==='VANISH') after=vanishCard(s,card.instanceId);
+      else if(type==='DESTROY') {
+        const result=destroyCard(s,s.players[index].id,card.instanceId);
+        assert.ok(result.success);after=result.state;
+      } else {
+        const damaged=structuredClone(s);damaged.players[index].board[0]!.currentHealth=0;
+        after=resolveStateBasedDeaths(damaged);
+      }
+      assert.equal(after.players[index].board[0],null,type);
+      assert.ok(after.events.some(e=>e.type===({RETIRE:'CARD_RETIRED',DESTROY:'CARD_DESTROYED',VANISH:'CARD_VANISHED'} as const)[type as 'RETIRE'|'DESTROY'|'VANISH']),type);
+      assert.deepEqual(collect(s,after),own&&isLegendary?['ALLY_RETIRED']:[],`${type} own=${own} legendary=${isLegendary}`);
+    }
+  }
 });

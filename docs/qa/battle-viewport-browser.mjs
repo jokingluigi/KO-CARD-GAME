@@ -51,10 +51,25 @@ try {
   assert.ok(selected.shell<=height+1);
   for(const b of selected.slots) assert.ok(b.w>=44 && b.h>=44 && b.y>=0 && b.y+b.h<=height, 'selected field target must stay visible and tappable '+JSON.stringify(b));
   assert.ok(selected.hand.y+selected.hand.h<=height+1);
-  assert.ok(selected.turn.y+selected.turn.h <= selected.cancel.y+1, 'cancel overlaps turn-end');
+  assert.ok(selected.turn.y+selected.turn.h <= selected.cancel.y+1 || selected.cancel.y+selected.cancel.h <= selected.turn.y+1 || selected.turn.x+selected.turn.w <= selected.cancel.x+1 || selected.cancel.x+selected.cancel.w <= selected.turn.x+1, 'cancel overlaps turn-end');
   assert.ok(selected.cancel.h>=44 && selected.cancel.y+selected.cancel.h<=height);
   assert.equal(errors.length,0);
-  results.push({width,height,...metrics,selected,errors});
+  let awakeningTextVisible = null;
+  if(width<=390 && height<=844) {
+    await page.evaluate(async()=>{
+      const {boardFixture,definitions}=await import('/qa/black-gold-fixture.ts');
+      const s=boardFixture();s.gameId='awakening-layout-'+crypto.randomUUID();
+      for(const pl of s.players){pl.champion.questCompleted=true;pl.champion.awakening={sequenceId:'qa',awakeningPower:4,sequenceActive:true,stage:'TANK',activeStageInstanceId:null,championInvulnerable:false,pendingStage:true};}
+      window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:s,definitions}}));
+    });
+    await page.getByLabel('위기 각성 상태').first().waitFor();
+    const own=await page.locator('.ko-player-quest [aria-label="위기 각성 상태"]').boundingBox();
+    const ability=await page.locator('.ko-player-ability').boundingBox();
+    assert.ok(own.y+own.height<=ability.y+1,'own awakening status hidden behind ability');
+    if(height<=700){const enemy=await page.locator('.ko-opponent-quest [aria-label="위기 각성 상태"]').boundingBox(),command=await page.locator('.ko-battle-command').boundingBox();assert.ok(enemy.y+enemy.height<=command.y+1,'enemy awakening status hidden behind command');}
+    awakeningTextVisible=true;
+  }
+  results.push({width,height,...metrics,selected,awakeningTextVisible,errors});
   await page.close();
  }
  await writeFile(out+'/results.json',JSON.stringify(results,null,2));

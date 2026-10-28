@@ -9,8 +9,8 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  --fit-hud-h: clamp(136px, 19dvh, 180px);
-  --fit-hand-h: clamp(108px, 16dvh, 160px);
+  --fit-hud-h: clamp(136px, 16.8dvh, 164px);
+  --fit-hand-h: clamp(140px, 20dvh, 188px);
   --fit-controls-h: 80px;
   --fit-field-h: calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2 * var(--fit-hud-h) - var(--fit-hand-h) - var(--fit-controls-h) - 48px) / 2);
 }
@@ -126,7 +126,7 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 /* PC / landscape: retain diagonal wings, budget their height independently. */
 @media (min-width:1000px), (orientation:landscape) {
   .ko-game-shell.ko-board-preview {
-    --fit-hand-h:clamp(100px,20dvh,180px);
+    --fit-hand-h:clamp(148px,24dvh,224px);
     --fit-field-h:calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--fit-hand-h) - var(--fit-controls-h) - 72px) / 2);
   }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
@@ -168,15 +168,15 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 
 @media (orientation:landscape) and (max-height:600px) {
   .ko-game-shell.ko-board-preview {
-    --fit-controls-h:76px;
-    --fit-hand-h:90px;
+    --fit-controls-h:52px;
+    --fit-hand-h:120px;
     --fit-field-h:calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--fit-hand-h) - var(--fit-controls-h) - 56px) / 2);
   }
 }
 /* Keep both control rows at a full touch height when a contextual action appears. */
 .ko-game-shell.ko-board-preview:has(.ko-battle-command button) { --fit-controls-h:100px; }
 @media (orientation:landscape) and (max-height:600px) {
-  .ko-game-shell.ko-board-preview:has(.ko-battle-command button) { --fit-hand-h:74px; }
+  .ko-game-shell.ko-board-preview:has(.ko-battle-command button) { --fit-controls-h:52px; }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena { grid-template-rows:24px minmax(0,1fr) var(--fit-controls-h) minmax(0,1fr) var(--fit-hand-h); }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-hand { height:24px; }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-hand > div { height:22px; width:16px; }
@@ -186,9 +186,85 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-player-hand { grid-column:2; }
 }
 @media (orientation:portrait) and (max-height:700px) {
-  .ko-game-shell.ko-board-preview:has(.ko-battle-command button) { --fit-hand-h:88px; }
+  .ko-game-shell.ko-board-preview,
+  .ko-game-shell.ko-board-preview:has(.ko-battle-command button) {
+    --fit-hand-h:138px;
+    --fit-controls-h:52px;
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest { grid-row:3; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command {
+    left:8px;
+    right:calc(var(--actor-width) + 13px);
+    top:calc(env(safe-area-inset-top) + 24px + var(--fit-hud-h) - 44px);
+  }
 }
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-hand-card {
   min-width:44px;
   min-height:62px;
+}
+
+/* Very short displays use the opponent HUD's otherwise empty ability row
+   for instructions/cancel, reserving actual card height instead of shrinking
+   the hand on selection. These are the same controls and event bindings. */
+@media (orientation:landscape) and (max-height:600px), (orientation:portrait) and (max-height:700px) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-game-controls { grid-template-rows:44px; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command {
+    position:fixed;
+    height:44px;
+    border:1px solid var(--board-muted);
+    background:var(--board-panel);
+    padding:0 3px;
+    z-index:140;
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command p { max-height:38px; }
+}
+@media (orientation:landscape) and (max-height:600px) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command {
+    top:calc(env(safe-area-inset-top) + var(--actor-height) + 120px);
+    right:max(8px,calc((100vw - 1740px) / 2 + 8px));
+    width:var(--actor-wing);
+  }
+}
+@media (orientation:portrait) and (max-height:700px) {
+  /* Preserve all public awakening text above the moved command row. */
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest > div {
+    position:relative;
+    height:24px;
+    min-height:24px;
+    padding:0 3px;
+    font-size:9px;
+    line-height:10px;
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest .ko-quest-meter {
+    position:absolute;
+    left:3px;
+    right:3px;
+    bottom:1px;
+    height:2px;
+    margin:0;
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-quest [aria-label="위기 각성 상태"] {
+    display:flex;
+    border:0;
+    gap:2px;
+    padding:0;
+    font-size:8px;
+    line-height:10px;
+  }
+}
+@media (max-width:999px) and (orientation:portrait) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena :is(.ko-player-quest,.ko-opponent-quest) > div {
+    min-height:24px;
+    padding:0 3px;
+    font-size:10px;
+    line-height:10px;
+  }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena :is(.ko-player-quest,.ko-opponent-quest) .ko-quest-meter { height:2px; margin-top:0; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena :is(.ko-player-quest,.ko-opponent-quest) [aria-label="위기 각성 상태"] {
+    border:0;
+    gap:2px;
+    padding:0;
+    font-size:8px;
+    line-height:10px;
+  }
 }

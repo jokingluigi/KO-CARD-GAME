@@ -200,3 +200,48 @@ test("all ten expressions and independent awakened framing survive workspace sav
     beforeDefault,
   );
 });
+
+test('both PvP views and recovered runtime retain distinct selected champion sprite sets', async () => {
+  const { userCardCollectionsTable, userChampionCollectionsTable } = await import('../src/schema');
+  const { championSpriteSkin, selectSpriteFrame } = await import('../../cosmetics/src/index');
+  const { startOnlineMatch, snapshotMessage, cleanupMatchRuntime, getRuntime } = await import('../../../artifacts/api-server/src/online/service');
+  const configs = [
+    { ...sprite(), awakening:'KEEP' },
+    { ...sprite(), awakening:'REPLACE', awakened:{ version:1, frames:{ default:{ url:uploaded, self:{...p,scale:1.8}, opponent:{...p,scale:0.7,flip:false} } }, reactions:{} } },
+  ];
+  const ids:string[]=[];
+  for(const [index,userId] of ['player-a','player-b'].entries()) {
+    const created=await api('/admin/cosmetics/items','admin','POST',{
+      ...registered.CHAMPION_SKIN,
+      name:'Sprite snapshot '+userId,
+      imageAssets:{art:uploaded,__battle:JSON.stringify(configs[index])},
+    });
+    assert.equal(created.status,201,JSON.stringify(created.body));
+    ids.push(created.body.item.id);
+    assert.equal((await api('/admin/cosmetics/users/'+userId+'/grants','admin','POST',{cosmeticId:ids[index],action:'GRANT'})).status,200);
+    assert.equal((await api('/cosmetics/equipment',userId,'PUT',{slot:'champion:cosmetic-hero',cosmeticId:ids[index]})).status,200);
+    // Restore only this isolated fixture's prerequisites after earlier inventory-policy tests.
+    await database.update(userCardCollectionsTable).set({quantity:3}).where(eq(userCardCollectionsTable.userId,userId));
+    await database.update(userChampionCollectionsTable).set({owned:true}).where(eq(userChampionCollectionsTable.userId,userId));
+  }
+  let runtime=await startOnlineMatch('player-a','deck-player-a','player-b','deck-player-b');
+  try {
+    const validate=(r:typeof runtime)=>{
+      for(const viewer of ['player-a','player-b']) {
+        const snapshot:any=snapshotMessage(r,viewer);
+        for(const [index,seat] of ['PLAYER_ONE','PLAYER_TWO'].entries()) {
+          const appearance=championSpriteSkin({championId:'cosmetic-hero',loadout:snapshot.cosmetics[seat],base:null,awakened:true});
+          assert.equal(appearance.id,ids[index]);
+          assert.deepEqual(appearance.config,configs[index]);
+          assert.equal(selectSpriteFrame(appearance.config!,{awakened:true,low:true,reaction:'HEAVY_HIT'})!.self.scale,index?1.8:1.4);
+        }
+      }
+    };
+    validate(runtime);
+    const state=JSON.stringify(runtime.state),id=runtime.matchId;
+    cleanupMatchRuntime(id);runtime.state.status='FINISHED';
+    const recovered=await getRuntime(id);assert.ok(recovered);runtime=recovered;
+    assert.equal(JSON.stringify(runtime.state),state);
+    validate(runtime);
+  } finally {runtime.state.status='FINISHED';cleanupMatchRuntime(runtime.matchId);}
+});

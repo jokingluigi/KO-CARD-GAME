@@ -55,7 +55,7 @@ try {
               default: {
                 url: "/api/storage/objects/uploads/cosmetics/arch-qa.png",
                 self: p,
-                opponent: p,
+                opponent: { ...p, flip: true },
               },
             },
             reactions: {},

@@ -13,6 +13,15 @@ try {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });
+  const apiOrigin = process.env.KO_COSMETICS_API_ORIGIN;
+  if (apiOrigin) {
+    assert.equal(new URL(apiOrigin).hostname, "127.0.0.1");
+    await context.route("**/api/**", async route => {
+      const url = new URL(route.request().url());
+      const response = await route.fetch({ url: apiOrigin + url.pathname + url.search });
+      await route.fulfill({ response });
+    });
+  }
   const [name, ...rest] = fixture.cookies.admin.split("=");
   await context.addCookies([{ name, value: rest.join("="), url: origin }]);
   const page = await context.newPage();
@@ -41,10 +50,10 @@ try {
       target,
     );
   }
-  async function upload() {
+  async function upload(file = "qa-results/cosmetics/upload-fixture.png") {
     await page
       .getByLabel("대전 스프라이트 업로드")
-      .setInputFiles("qa-results/cosmetics/upload-fixture.png");
+      .setInputFiles(file);
     await page.getByAltText("상태·반응 미리보기").waitFor();
     await page
       .getByRole("button", { name: "스프라이트 저장", exact: true })
@@ -69,7 +78,7 @@ try {
   await open();
   assert.equal(await page.getByLabel("스프라이트 표정").locator("option").count(),10);
   assert.deepEqual(await page.getByLabel("스프라이트 표정").locator("option").allTextContents(),
-    ["기본","공격","약한 피격","강한 피격","저체력","소환","놀람","승리","패배","회복"]);
+    ["기본","공격","피격","강한 피격","저체력","소환","놀람","승리","패배","안도"]);
   await upload();
   const size = await page.locator(".ko-sprite-preview-canvas").boundingBox();
   assert.ok(size.height >= 420 && size.width >= 260, JSON.stringify(size));
@@ -79,17 +88,22 @@ try {
   const expectedScale = await scale.inputValue();
   await page.getByLabel("큰 미리보기 위치").selectOption("opponent");
   await page.getByLabel("스프라이트 표정").selectOption("hurt");
-  await upload();
+  await upload(process.env.KO_SPRITE_QA_WEBP ?? "qa-results/cosmetics/upload-fixture.png");
   await advanced();
   await page.getByLabel("HIT 표정 연결", { exact: true }).selectOption("hurt");
+  await page.getByLabel("스프라이트 좌우 반전", { exact: true }).check();
   await save();
   await open();
+  assert.equal(await scale.inputValue(), expectedScale);
+  await page.getByLabel("큰 미리보기 위치").selectOption("opponent");
+  await page.getByLabel("스프라이트 표정").selectOption("hurt");
+  assert.equal(await page.getByLabel("스프라이트 좌우 반전", { exact: true }).isChecked(), true);
   await advanced();
   assert.equal(
     await page.getByLabel("HIT 표정 연결", { exact: true }).inputValue(),
     "hurt",
   );
-  assert.equal(await scale.inputValue(), expectedScale);
+  await page.getByLabel("스프라이트 표정").selectOption("default");
   await page.getByLabel("편집 세트", { exact: true }).selectOption("AWAKENED");
   await upload();
   const awakeURL = await page
