@@ -113,7 +113,7 @@ export function AttackAnimation({
           const r=node.getBoundingClientRect();
           return Math.abs(r.left+r.width/2-(target.left+target.width/2))<r.width/2 && Math.abs(r.top+r.height/2-(target.top+target.height/2))<r.height/2;
         }) : undefined;
-    const targetMotion=animate(championNode??targetRef.current,targetReactionFrames(dx,dy,animation.damage,timeline,reduced));
+    const targetMotion=championNode?.querySelector(".ko-sprite-visual")?undefined:animate(championNode??targetRef.current,targetReactionFrames(dx,dy,animation.damage,timeline,reduced));
     const origin=performance.now();
     let frame=0;
     let movementPlayed=false;

@@ -1,0 +1,38 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "frameSamples": 600,
+    "headlessRafP95Ms": 33.3,
+    "burstAndPreferenceCleanup": true,
+    "turn": true,
+    "spell": true,
+    "ability": true,
+    "damageBoundary": true,
+    "selfDamage": true,
+    "emotePriorityAndReturn": true,
+    "legendarySummonAndExit": true,
+    "maskedAwakeSwap": true,
+    "reducedMotion": true,
+    "resultAndReconnect": true,
+    "stableHud": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "frameSamples": 600,
+    "headlessRafP95Ms": 33.3,
+    "burstAndPreferenceCleanup": true,
+    "turn": true,
+    "spell": true,
+    "ability": true,
+    "damageBoundary": true,
+    "selfDamage": true,
+    "emotePriorityAndReturn": true,
+    "legendarySummonAndExit": true,
+    "maskedAwakeSwap": true,
+    "reducedMotion": true,
+    "resultAndReconnect": true,
+    "stableHud": true
+  }
+]

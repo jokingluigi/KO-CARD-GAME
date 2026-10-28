@@ -352,9 +352,10 @@ export function GameStatePreview({
   const startedDamageCueRef=React.useRef('');
   const handlePresentationCueStart=React.useCallback((cue:PresentationCue)=>{
     const target=cue.cardInstanceId ? boardCardRefs.current.get(cue.cardInstanceId) ?? handCardRefs.current.get(cue.cardInstanceId) : (cue.playerId===state.players[0]?.id || cue.championId===state.players[0]?.champion?.id) ? playerChampionRef.current : championRef.current;
-    if(cue.kind==='EFFECT'){motion.react(target,'EFFECT');return;}
-    if(cue.kind==='SILENCE'){motion.react(target,'SILENCE');return;}
-    if(cue.kind==='DAMAGE'&&!cue.combat)motion.react(target,'HIT',Math.min(3,(cue.value??1)/3));
+    const spriteTarget=Boolean(target?.querySelector('.ko-sprite-visual'));
+    if(cue.kind==='EFFECT'){if(!spriteTarget)motion.react(target,'EFFECT');return;}
+    if(cue.kind==='SILENCE'){if(!spriteTarget)motion.react(target,'SILENCE');return;}
+    if(cue.kind==='DAMAGE'&&!cue.combat&&!spriteTarget)motion.react(target,'HIT',Math.min(3,(cue.value??1)/3));
     if(cue.kind!=='DAMAGE'||cue.combat) return;
     const key=`${state.gameId}:${cue.id}`;
     if(startedDamageCueRef.current===key) return;
@@ -1047,7 +1048,7 @@ export function GameStatePreview({
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
       <CardRevealPresentation state={state} />
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
-      {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
+      {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} spriteManaged={blackGold} />}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
 
       {/* Background Ambience */}
@@ -1096,7 +1097,7 @@ export function GameStatePreview({
                  <div
                     ref={championRef}
                     className={`ko-opponent-champion group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
-                      attackImpactTriggered &&
+                      !blackGold && attackImpactTriggered &&
                       attackAnimation?.targetKind === "CHAMPION" &&
                       attackAnimation.damage > 0
                         ? `attack-target-hit--${attackAnimation.damageImpactLevel.toLowerCase()}`

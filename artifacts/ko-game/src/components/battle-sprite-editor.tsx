@@ -1,4 +1,13 @@
 import { useState, useEffect } from "react";
+import { ChampionSpriteVisual } from "./champion-sprite-visual";
+import {
+  type ChampionMotionCue,
+  type ChampionMotionKind,
+} from "./champion-sprite-motion";
+import {
+  CHAMPION_EMOTES,
+  CHAMPION_EMOTE_LABELS,
+} from "../game/champions/types";
 import { normalizeImageDisplaySettings } from "../game/cards/types";
 import {
   FINAL_SPRITE_EVENTS as SPRITE_EVENTS,
@@ -43,6 +52,13 @@ export function BattleSpriteEditor({
           ([, key]) => !!input.frames[key!],
         ),
       ),
+      emotes: input.emotes
+        ? Object.fromEntries(
+            Object.entries(input.emotes).filter(
+              ([, key]) => key === null || Boolean(input.frames[key!]),
+            ),
+          )
+        : undefined,
       selfDamage:
         input.selfDamage && input.frames[input.selfDamage]
           ? input.selfDamage
@@ -53,13 +69,48 @@ export function BattleSpriteEditor({
       result.awakening = "KEEP";
     save(result);
   };
+  const [showOrigin, setShowOrigin] = useState(false);
   const [awake, setAwake] = useState(false),
     [health, setHealth] = useState(10);
   const low = health >= 1 && health <= 5;
   const [reaction, setReaction] = useState<{
     event: import("@workspace/cosmetics").SpriteEvent;
     until: number;
+    cue?: ChampionMotionCue;
   }>({ event: "IDLE", until: 0 });
+  function playMotion(
+    kind: ChampionMotionKind,
+    event: import("@workspace/cosmetics").SpriteEvent,
+    extra: Partial<ChampionMotionCue> = {},
+  ) {
+    setPreviewMode("REACTION");
+    const current =
+      awake && root.awakening === "REPLACE" ? root.awakened : root;
+    if (
+      kind === "EMOTE" &&
+      current?.emotes?.[extra.emote as (typeof CHAMPION_EMOTES)[number]] ===
+        null
+    )
+      return;
+    setReaction((c) => {
+      if (kind === "TURN") {
+        if (c.until > Date.now()) return c;
+        return {
+          ...c,
+          cue: { id: crypto.randomUUID(), kind, event, ...extra },
+        };
+      }
+      const next = reactSprite(c, event, Date.now(), root);
+      return next === c
+        ? c
+        : { ...next, cue: { id: crypto.randomUUID(), kind, event, ...extra } };
+    });
+  }
+  useEffect(() => {
+    if (reaction.cue?.kind !== "AWAKEN") return;
+    const timer = setTimeout(() => setAwake(true), 220);
+    return () => clearTimeout(timer);
+  }, [reaction.cue?.id]);
   useEffect(() => {
     if (
       !reaction.until ||
@@ -165,6 +216,7 @@ export function BattleSpriteEditor({
               ? reaction.event
               : undefined,
           reaction: reaction.event,
+          emote: reaction.cue?.emote,
         });
   const [failedPreview, setFailedPreview] = useState<Set<string>>(new Set());
   useEffect(
@@ -191,7 +243,6 @@ export function BattleSpriteEditor({
   const previewPlacement = {
     ...(visiblePreviewFrame?.[side] ?? defaultSpritePlacement),
     flip: side === "opponent",
-
   };
   const reactionPreview = (
     <section
@@ -278,7 +329,7 @@ export function BattleSpriteEditor({
           onClick={() => {
             setPreviewMode("REACTION");
             setHealth((h) => h + 2);
-            setReaction((c) => reactSprite(c, "HEAL", Date.now(), root));
+            playMotion("HEAL", "HEAL");
           }}
         >
           실제 회복 +2
@@ -298,25 +349,60 @@ export function BattleSpriteEditor({
         }
       >
         {previewURL ? (
-          <div
-            className="ko-sprite-preview-figure"
-            style={{ transform: `scaleX(${previewPlacement.flip ? -1 : 1})` }}
+          <ChampionSpriteVisual
+            preview
+            cue={reaction.cue}
+            identity={editing}
+            self={side === "self"}
+            state={
+              reaction.event === "VICTORY" || reaction.event === "DEFEAT"
+                ? reaction.event
+                : low
+                  ? "LOW"
+                  : "IDLE"
+            }
+            reacting={reaction.event !== "IDLE"}
+            image={previewURL}
+            display={{
+              imageDisplayMode: previewPlacement.crop ? "COVER" : "CONTAIN",
+              imageScale: previewPlacement.scale,
+              imagePositionX: previewPlacement.x,
+              imagePositionY: previewPlacement.y,
+            }}
+            accent={previewSet.effects?.accent}
+            origin={previewSet.effects?.origin?.[side]}
           >
-            <img
-              alt="상태·반응 미리보기"
-              src={previewURL}
-              onError={() =>
-                setFailedPreview((old) => new Set([...old, previewURL]))
-              }
-              className="h-full w-full"
-              style={{
-                objectFit: previewPlacement.crop ? "cover" : "contain",
-                objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
-                transform: `scale(${normalizeImageDisplaySettings({ imageScale: previewPlacement.scale }).imageScale})`,
-                transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
-              }}
-            />
-          </div>
+            <div
+              className="ko-sprite-preview-figure"
+              style={{ transform: `scaleX(${previewPlacement.flip ? -1 : 1})` }}
+            >
+              <img
+                alt="상태·반응 미리보기"
+                src={previewURL}
+                onError={() =>
+                  setFailedPreview((old) => new Set([...old, previewURL]))
+                }
+                className="h-full w-full"
+                style={{
+                  objectFit: previewPlacement.crop ? "cover" : "contain",
+                  objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
+                  transform: `scale(${normalizeImageDisplaySettings({ imageScale: previewPlacement.scale }).imageScale})`,
+                  transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
+                }}
+              />
+            </div>
+            {showOrigin && (
+              <span
+                className="ko-sprite-origin-marker"
+                style={{
+                  left: `${previewSet.effects?.origin?.[side]?.x ?? (side === "self" ? 75 : 25)}%`,
+                  top: `${previewSet.effects?.origin?.[side]?.y ?? 58}%`,
+                }}
+              >
+                ＋
+              </span>
+            )}
+          </ChampionSpriteVisual>
         ) : (
           <p>기본 이미지를 등록하면 여기에 표시됩니다.</p>
         )}
@@ -334,12 +420,38 @@ export function BattleSpriteEditor({
                 setHealth(key === "low" ? 5 : 10);
                 setReaction({ event: "IDLE", until: 0 });
               } else {
-                const event = ({
-                  attack: "ATTACK", hurt: "HIT", heavy_hurt: "HEAVY_HIT",
-                  summon: "SUMMON", surprised: "ALLY_RETIRED",
-                  victory: "VICTORY", defeat: "DEFEAT", relief: "HEAL",
-                } as const)[key as Exclude<keyof typeof SPRITE_EXPRESSIONS, "default" | "low">];
-                setReaction((c) => reactSprite(c, event, Date.now(), root));
+                const event = (
+                  {
+                    attack: "ATTACK",
+                    hurt: "HIT",
+                    heavy_hurt: "HEAVY_HIT",
+                    summon: "SUMMON",
+                    surprised: "ALLY_RETIRED",
+                    victory: "VICTORY",
+                    defeat: "DEFEAT",
+                    relief: "HEAL",
+                  } as const
+                )[
+                  key as Exclude<
+                    keyof typeof SPRITE_EXPRESSIONS,
+                    "default" | "low"
+                  >
+                ];
+                playMotion(
+                  (
+                    {
+                      ATTACK: "SPELL",
+                      HIT: "HIT",
+                      HEAVY_HIT: "HEAVY_HIT",
+                      SUMMON: "SUMMON",
+                      ALLY_RETIRED: "SURPRISED",
+                      VICTORY: "VICTORY",
+                      DEFEAT: "DEFEAT",
+                      HEAL: "HEAL",
+                    } as const
+                  )[event],
+                  event,
+                );
               }
             }}
           >
@@ -351,6 +463,39 @@ export function BattleSpriteEditor({
           onClick={() => setReaction({ event: "IDLE", until: 0 })}
         >
           상태로 복귀
+        </button>
+      </div>
+      <div
+        className="ko-sprite-reaction-buttons"
+        aria-label="상황별 움직임 미리보기"
+      >
+        {(
+          [
+            ["턴 시작", "TURN", "IDLE"],
+            ["주문", "SPELL", "ATTACK"],
+            ["고유능력", "ABILITY", "ATTACK"],
+            ["일반 소환", "SUMMON", "SUMMON"],
+            ["레전더리 소환", "LEGENDARY_SUMMON", "SUMMON"],
+            ["각성 전환", "AWAKEN", "AWAKEN"],
+          ] as const
+        ).map(([label, kind, event]) => (
+          <button
+            type="button"
+            key={kind}
+            onClick={() => {
+              playMotion(kind, event);
+            }}
+          >
+            {label} 효과
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            playMotion("HIT", "HIT", { damage: 2, selfDamage: true })
+          }
+        >
+          자해 효과
         </button>
       </div>
       {workspace && (
@@ -373,10 +518,11 @@ export function BattleSpriteEditor({
         외형 스킨입니다. 다른 스킨의 표정이나 각성 세트를 가져오지 않습니다.
       </p>
       <p className="text-xs">
-        표정은 10개입니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5. 안도(회복)는 실제 체력이 증가했을 때입니다. 공격은
-        주문·고유능력 사용 확정, 놀람은 내 레전더리 선수의
-        리타이어·파괴·소멸입니다. 각성은 별도 표정이 아닌 세트 전환입니다. 누락
-        표정은 현재 세트의 기본 이미지를 사용합니다.
+        표정은 10개입니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5.
+        안도(회복)는 실제 체력이 증가했을 때입니다. 공격은 주문·고유능력 사용
+        확정, 놀람은 내 레전더리 선수의 리타이어·파괴·소멸입니다. 각성은 별도
+        표정이 아닌 세트 전환입니다. 누락 표정은 현재 세트의 기본 이미지를
+        사용합니다.
       </p>
       <div className="ko-sprite-editor-layout">
         {workspace && reactionPreview}
@@ -414,8 +560,9 @@ export function BattleSpriteEditor({
             </select>
           </label>
           <p className="text-xs text-neutral-400">
-            기본(default)을 먼저 등록하세요. 표정이 없으면 같은 세트의 기본 이미지로
-            표시됩니다. 내 위치는 원본 방향, 상대 위치는 좌우 반전으로 자동 적용됩니다.
+            기본(default)을 먼저 등록하세요. 표정이 없으면 같은 세트의 기본
+            이미지로 표시됩니다. 내 위치는 원본 방향, 상대 위치는 좌우 반전으로
+            자동 적용됩니다.
           </p>
           <label>
             표정
@@ -432,16 +579,26 @@ export function BattleSpriteEditor({
               ))}
             </select>
           </label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" aria-label="등록할 표정 10개">
+          <div
+            className="grid grid-cols-2 gap-2 sm:grid-cols-5"
+            role="group"
+            aria-label="등록할 표정 10개"
+          >
             {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
               <button
                 type="button"
                 key={key}
                 aria-pressed={expression === key}
                 className={`min-h-11 border p-2 text-left text-sm ${expression === key ? "border-amber-400 text-amber-200" : "border-neutral-700"}`}
-                onClick={() => { setExpression(key); setPreviewMode("FRAME"); }}
+                onClick={() => {
+                  setExpression(key);
+                  setPreviewMode("FRAME");
+                }}
               >
-                {label}<span className="ml-2 text-xs text-neutral-400">{config.frames[key] ? "등록됨" : "미등록"}</span>
+                {label}
+                <span className="ml-2 text-xs text-neutral-400">
+                  {config.frames[key] ? "등록됨" : "미등록"}
+                </span>
               </button>
             ))}
           </div>
@@ -513,7 +670,13 @@ export function BattleSpriteEditor({
                     min={key === "scale" ? 0.5 : 0}
                     max={key === "scale" ? 2 : 100}
                     step={key === "scale" ? 0.05 : 1}
-                    value={key === "scale" ? normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale : frame[side][key]}
+                    value={
+                      key === "scale"
+                        ? normalizeImageDisplaySettings({
+                            imageScale: frame[side].scale,
+                          }).imageScale
+                        : frame[side][key]
+                    }
                     onChange={(e) =>
                       put({
                         ...frame,
@@ -524,7 +687,11 @@ export function BattleSpriteEditor({
                       })
                     }
                   />
-                  {key === "scale" ? normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale : frame[side][key]}
+                  {key === "scale"
+                    ? normalizeImageDisplaySettings({
+                        imageScale: frame[side].scale,
+                      }).imageScale
+                    : frame[side][key]}
                 </label>
               ))}
               <label className="block">
@@ -533,18 +700,26 @@ export function BattleSpriteEditor({
                   aria-label="스프라이트 이미지 맞춤"
                   className="ml-2 bg-neutral-900 p-2"
                   value={frame[side].crop ? "cover" : "contain"}
-                  onChange={(e) => put({
-                    ...frame,
-                    [side]: { ...frame[side], crop: e.target.value === "cover" },
-                  })}
+                  onChange={(e) =>
+                    put({
+                      ...frame,
+                      [side]: {
+                        ...frame[side],
+                        crop: e.target.value === "cover",
+                      },
+                    })
+                  }
                 >
                   <option value="contain">전체 보이기 · 비율 유지</option>
-                  <option value="cover">여백 없이 채우기 · 가장자리 잘림</option>
+                  <option value="cover">
+                    여백 없이 채우기 · 가장자리 잘림
+                  </option>
                 </select>
               </label>
               <p className="text-xs text-neutral-400">
-                현재 표정·배치 위치별로 저장됩니다. 배율은 실제 대전과 같은 최대 200%입니다. 채우기는 이미지 가장자리를
-                자르며, 어느 방식이든 아치 밖으로 넘치지 않습니다.
+                현재 표정·배치 위치별로 저장됩니다. 배율은 실제 대전과 같은 최대
+                200%입니다. 채우기는 이미지 가장자리를 자르며, 어느 방식이든
+                아치 밖으로 넘치지 않습니다.
               </p>
               <button
                 type="button"
@@ -572,6 +747,111 @@ export function BattleSpriteEditor({
               </button>
             </>
           )}
+          <details className="ko-sprite-effects-settings">
+            <summary>현재 세트의 강조색·효과 출발점</summary>
+            <label>
+              강조색{" "}
+              <input
+                aria-label="스프라이트 효과 강조색"
+                type="color"
+                value={config.effects?.accent ?? "#b99a60"}
+                onChange={(e) =>
+                  onChange({
+                    ...config,
+                    effects: { ...config.effects, accent: e.target.value },
+                  })
+                }
+              />
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={showOrigin}
+                onChange={(e) => setShowOrigin(e.target.checked)}
+              />
+              효과 출발점 표시
+            </label>
+            {(["x", "y"] as const).map((axis) => (
+              <label key={axis} className="block">
+                {side === "self" ? "내 위치" : "상대 위치"} 출발점 {axis}
+                <input
+                  aria-label={"스프라이트 출발점 " + axis}
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={
+                    config.effects?.origin?.[side]?.[axis] ??
+                    (axis === "x" ? (side === "self" ? 75 : 25) : 58)
+                  }
+                  onChange={(e) =>
+                    onChange({
+                      ...config,
+                      effects: {
+                        ...config.effects,
+                        origin: {
+                          ...config.effects?.origin,
+                          [side]: {
+                            x:
+                              config.effects?.origin?.[side]?.x ??
+                              (side === "self" ? 75 : 25),
+                            y: config.effects?.origin?.[side]?.y ?? 58,
+                            [axis]: Number(e.target.value),
+                          },
+                        },
+                      },
+                    })
+                  }
+                />
+              </label>
+            ))}
+          </details>
+          <details className="ko-sprite-emote-settings">
+            <summary>감정표현과 현재 세트의 표정 연결</summary>
+            <p className="text-xs">
+              기존 10표정만 사용합니다. 약 1초 뒤 현재 기본·저체력으로 돌아오며
+              전투 반응이 우선합니다.
+            </p>
+            {CHAMPION_EMOTES.map((emote) => (
+              <div key={emote} className="flex flex-wrap gap-2 my-2">
+                <label>
+                  {CHAMPION_EMOTE_LABELS[emote]}{" "}
+                  <select
+                    aria-label={emote + " 감정표현 표정"}
+                    disabled={!config.frames.default}
+                    value={
+                      config.emotes?.[emote] === null
+                        ? "OFF"
+                        : (config.emotes?.[emote] ?? "AUTO")
+                    }
+                    onChange={(e) => {
+                      const emotes = { ...config.emotes };
+                      if (e.target.value === "AUTO") delete emotes[emote];
+                      else
+                        emotes[emote] =
+                          e.target.value === "OFF" ? null : e.target.value;
+                      onChange({ ...config, emotes });
+                    }}
+                  >
+                    <option value="AUTO">기본 연결</option>
+                    <option value="OFF">반응 사용 안 함</option>
+                    {Object.entries(SPRITE_EXPRESSIONS)
+                      .filter(([key]) => config.frames[key])
+                      .map(([key, label]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => playMotion("EMOTE", "EMOTE", { emote })}
+                >
+                  미리보기
+                </button>
+              </div>
+            ))}
+          </details>
           <details
             className="ko-sprite-advanced"
             open={!workspace || undefined}
@@ -640,34 +920,34 @@ export function BattleSpriteEditor({
             ))}
 
             <div className="grid grid-cols-2 gap-2">
-              {SPRITE_EVENTS.filter((event) => event !== "AWAKEN").map(
-                (event) => (
-                  <label key={event} className="text-xs">
-                    {spriteEventLabels[event]}
-                    <select
-                      aria-label={event + " 표정 연결"}
-                      className="block w-full bg-neutral-900 p-2"
-                      value={config.reactions[event] ?? ""}
-                      onChange={(e) => {
-                        const reactions = { ...config.reactions };
-                        if (e.target.value || config.frames.default)
-                          reactions[event] = e.target.value || "default";
-                        else delete reactions[event];
-                        onChange({ ...config, reactions });
-                      }}
-                    >
-                      <option value="">기본 표정</option>
-                      {Object.keys(config.frames).map((key) => (
-                        <option key={key} value={key}>
-                          {SPRITE_EXPRESSIONS[
-                            key as keyof typeof SPRITE_EXPRESSIONS
-                          ] ?? key}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ),
-              )}
+              {SPRITE_EVENTS.filter(
+                (event) => event !== "AWAKEN" && event !== "EMOTE",
+              ).map((event) => (
+                <label key={event} className="text-xs">
+                  {spriteEventLabels[event]}
+                  <select
+                    aria-label={event + " 표정 연결"}
+                    className="block w-full bg-neutral-900 p-2"
+                    value={config.reactions[event] ?? ""}
+                    onChange={(e) => {
+                      const reactions = { ...config.reactions };
+                      if (e.target.value || config.frames.default)
+                        reactions[event] = e.target.value || "default";
+                      else delete reactions[event];
+                      onChange({ ...config, reactions });
+                    }}
+                  >
+                    <option value="">기본 표정</option>
+                    {Object.keys(config.frames).map((key) => (
+                      <option key={key} value={key}>
+                        {SPRITE_EXPRESSIONS[
+                          key as keyof typeof SPRITE_EXPRESSIONS
+                        ] ?? key}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
             </div>
           </details>
         </div>

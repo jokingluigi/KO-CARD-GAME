@@ -50,6 +50,7 @@ export function PresentationFeedback({
   onStart?: (cue: PresentationCue) => void;
   lethal?:boolean;
 }) {
+  const spriteDamage=cue.kind==='DAMAGE'&&Boolean(cue.playerId)&&!cue.cardInstanceId;
   const screen=useScreenImpact(),screenRef=useRef(screen);screenRef.current=screen;
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -60,7 +61,7 @@ export function PresentationFeedback({
 
   useEffect(() => {
     completedRef.current = false;
-    if(cue.kind==='DAMAGE'&&!cue.combat)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
+    if(cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
     if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;
       const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'impact/impact_metal_medium_000.ogg',BLOCK:'impact/impact_metal_medium_000.ogg',DESTROY:'impact/impact_glass_heavy_000.ogg',RETIRE:'impact/impact_soft_heavy_000.ogg',GOLD:'rpg/handle_coins.ogg'};
       if(sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],40,4);
@@ -84,7 +85,7 @@ export function PresentationFeedback({
 
   return (
     <>
-    {(cue.kind==='DAMAGE'&&!cue.combat || ['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD'].includes(cue.kind)) &&
+    {(cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage || (['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD'].includes(cue.kind)&&!(cue.kind==='HEAL'&&cue.playerId&&!cue.cardInstanceId))) &&
       <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='BLOCK'||cue.kind==='ARMOR'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
         left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
     <div
@@ -99,7 +100,7 @@ export function PresentationFeedback({
         onCompleteRef.current();
       }}
     >
-      {cue.kind==='DAMAGE'&&!cue.combat&&<i className="presentation-feedback__effect-hit"/>}
+      {cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage&&<i className="presentation-feedback__effect-hit"/>}
       {cue.kind==='ARMOR'&&<i className="presentation-feedback__shield"/>}
       {cue.kind==='SILENCE'&&<i className="presentation-feedback__silence-ring"/>}
       {cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&

@@ -245,3 +245,13 @@ test('both PvP views and recovered runtime retain distinct selected champion spr
     validate(runtime);
   } finally {runtime.state.status='FINISHED';cleanupMatchRuntime(runtime.matchId);}
 });
+
+test('skin motion origins/accent and emote maps round-trip independently for normal and awakened sets',async()=>{
+  const target=(await api(root)).body.targets.find((t:any)=>t.key==='skin:'+registered.CHAMPION_SKIN.id);
+  const config={...sprite(),effects:{accent:'#c9a467',origin:{self:{x:73,y:58},opponent:{x:27,y:62}}},emotes:{THANKS:'default',OOPS:null},awakening:'REPLACE',awakened:{...sprite(),effects:{accent:'#8d79b0',origin:{self:{x:68,y:52}}},emotes:{THANKS:null,THREATEN:'default'}}};
+  const response=await api(root+'/skin/'+target.id,'admin','PATCH',{sprite:config,revision:target.revision});
+  assert.equal(response.status,200,JSON.stringify(response.body));
+  const stored=(await api(root)).body.targets.find((t:any)=>t.key===target.key);
+  assert.deepEqual(stored.config,config);
+  for(const bad of [{...config,effects:{accent:'url(evil)'}},{...config,emotes:{THANKS:'not-registered'}},{...config,effects:{origin:{self:{x:101,y:50}}}}])assert.equal((await api(root+'/skin/'+target.id,'admin','PATCH',{sprite:bad,revision:stored.revision})).status,400);
+});

@@ -91,6 +91,17 @@ try {
   await upload(process.env.KO_SPRITE_QA_WEBP ?? "qa-results/cosmetics/upload-fixture.png");
   await advanced();
   await page.getByLabel("HIT 표정 연결", { exact: true }).selectOption("hurt");
+  await page.locator('.ko-sprite-effects-settings summary').click();
+  await page.getByLabel('스프라이트 효과 강조색',{exact:true}).fill('#a1b2c3');
+  const originX=page.getByLabel('스프라이트 출발점 x',{exact:true});
+  await originX.focus();await originX.press('ArrowRight');
+  const savedOrigin=await originX.inputValue();
+  await page.locator('.ko-sprite-emote-settings summary').click();
+  const thanks=page.getByLabel('THANKS 감정표현 표정',{exact:true});
+  await thanks.selectOption('hurt');
+  await thanks.locator('..').locator('..').getByRole('button',{name:'미리보기',exact:true}).click();
+  assert.equal(await page.locator('.ko-sprite-preview-canvas').getAttribute('data-reaction'),'EMOTE');
+
   assert.equal(await page.locator(".ko-sprite-preview-figure").evaluate(n => getComputedStyle(n).transform), "matrix(-1, 0, 0, 1, 0, 0)");
   await save();
   await open();
@@ -98,6 +109,11 @@ try {
   await page.getByLabel("큰 미리보기 위치").selectOption("opponent");
   await page.getByLabel("스프라이트 표정").selectOption("hurt");
   assert.equal(await page.locator(".ko-sprite-preview-figure").evaluate(n => getComputedStyle(n).transform), "matrix(-1, 0, 0, 1, 0, 0)");
+  await page.locator('.ko-sprite-effects-settings summary').click();
+  assert.equal(await page.getByLabel('스프라이트 효과 강조색',{exact:true}).inputValue(),'#a1b2c3');
+  assert.equal(await page.getByLabel('스프라이트 출발점 x',{exact:true}).inputValue(),savedOrigin);
+  await page.locator('.ko-sprite-emote-settings summary').click();
+  assert.equal(await page.getByLabel('THANKS 감정표현 표정',{exact:true}).inputValue(),'hurt');
   await advanced();
   assert.equal(
     await page.getByLabel("HIT 표정 연결", { exact: true }).inputValue(),

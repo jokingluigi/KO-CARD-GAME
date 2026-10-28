@@ -33,6 +33,7 @@ export type PresentationCueDraft = {
   sourceCardInstanceId?: string;
   duration: number;
   combat?: boolean;
+  selfDamage?: boolean;
 };
 
 /** Cosmetic feedback must not hold the AI turn or legal player input. */
@@ -109,6 +110,7 @@ export function presentationCueDrafts(
             id,
             kind: "DAMAGE",
             combat: event.reason === 'COMBAT' || event.reason === 'BASIC_ATTACK',
+            selfDamage: event.target?.type==='PLAYER' && (event.sourceContext?.sourcePlayerId??event.playerId)===event.target.playerId,
             label: `-${event.amount}`,
             value: event.amount,
             sourceCardInstanceId: event.source?.type === 'CARD' ? event.source.cardInstanceId : undefined,

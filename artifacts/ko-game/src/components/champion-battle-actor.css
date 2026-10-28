@@ -373,3 +373,7 @@
     grid-template-rows: var(--actor-height) 44px 48px 44px 44px 32px;
   }
 }
+
+/* One body motion owner; the fixed target and HUD never inherit recoil. */
+.ko-battle-actor:has(.ko-sprite-visual){animation:none!important}
+.ko-champion-arena :is(.ko-player-champion,.ko-opponent-champion).presentation-card-pulse{animation:none}

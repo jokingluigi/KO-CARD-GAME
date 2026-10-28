@@ -11,6 +11,7 @@ export const SPRITE_EVENTS = [
   "AWAKEN",
   "VICTORY",
   "DEFEAT",
+  "EMOTE",
 ] as const;
 /** The ten artwork slots; AWAKEN is a transition, never an eleventh expression. */
 export const SPRITE_EXPRESSIONS = {
@@ -36,6 +37,7 @@ export const FINAL_SPRITE_EVENTS = [
   "AWAKEN",
   "VICTORY",
   "DEFEAT",
+  "EMOTE",
 ] as const;
 export const spriteEventLabels: Record<string, string> = {
   IDLE: "기본",
@@ -48,6 +50,7 @@ export const spriteEventLabels: Record<string, string> = {
   AWAKEN: "각성 전환",
   VICTORY: "승리",
   DEFEAT: "패배",
+  EMOTE: "감정표현",
 };
 export const spriteDefaultTiming: Record<string, number> = {
   ATTACK: 800,
@@ -57,6 +60,7 @@ export const spriteDefaultTiming: Record<string, number> = {
   ALLY_RETIRED: 900,
   HEAL: 700,
   AWAKEN: 1500,
+  EMOTE: 1000,
 };
 const eventExpression: Partial<Record<SpriteEvent, string>> = {
   IDLE: "default",
@@ -82,7 +86,28 @@ export type SpriteFrame = {
   self: SpritePlacement;
   opponent: SpritePlacement;
 };
+export const SPRITE_EMOTES = [
+  "HELLO",
+  "THANKS",
+  "WELL_PLAYED",
+  "SORRY",
+  "OOPS",
+  "THREATEN",
+] as const;
+export const defaultEmoteExpressions: Record<string, string> = {
+  HELLO: "default",
+  THANKS: "relief",
+  WELL_PLAYED: "victory",
+  SORRY: "hurt",
+  OOPS: "surprised",
+  THREATEN: "attack",
+};
 export type BattleSprite = {
+  emotes?: Partial<Record<(typeof SPRITE_EMOTES)[number], string | null>>;
+  effects?: {
+    accent?: string;
+    origin?: Partial<Record<"self" | "opponent", { x: number; y: number }>>;
+  };
   version: 1;
   awakening?: "KEEP" | "REPLACE";
   awakened?: BattleSprite;
@@ -167,8 +192,8 @@ export function parseBattleSprite(
       }
       frames[key] = {
         url: frame.url,
-        self: { ...frame.self, flip: false },
-        opponent: { ...frame.opponent, flip: true },
+        self: { ...frame.self },
+        opponent: { ...frame.opponent },
       };
     }
     if (Object.keys(frames).length && !frames.default) return null;
@@ -183,6 +208,51 @@ export function parseBattleSprite(
       reactions[event as SpriteEvent] = key;
     }
     const extra: Partial<BattleSprite> = {};
+    if (v.emotes !== undefined) {
+      if (!v.emotes || typeof v.emotes !== "object" || Array.isArray(v.emotes))
+        return null;
+      for (const [key, value] of Object.entries(v.emotes))
+        if (
+          !SPRITE_EMOTES.includes(key as (typeof SPRITE_EMOTES)[number]) ||
+          (value !== null && (typeof value !== "string" || !frames[value]))
+        )
+          return null;
+      extra.emotes = { ...v.emotes };
+    }
+    if (v.effects !== undefined) {
+      const fx = v.effects;
+      if (
+        !fx ||
+        typeof fx !== "object" ||
+        Array.isArray(fx) ||
+        (fx.accent !== undefined && !/^#[0-9a-f]{6}$/i.test(fx.accent))
+      )
+        return null;
+      if (fx.origin !== undefined) {
+        if (
+          !fx.origin ||
+          typeof fx.origin !== "object" ||
+          Array.isArray(fx.origin)
+        )
+          return null;
+        for (const [side, point] of Object.entries(fx.origin))
+          if (
+            !["self", "opponent"].includes(side) ||
+            !point ||
+            !Number.isFinite(point.x) ||
+            !Number.isFinite(point.y) ||
+            point.x < 0 ||
+            point.x > 100 ||
+            point.y < 0 ||
+            point.y > 100
+          )
+            return null;
+      }
+      extra.effects = {
+        ...fx,
+        origin: fx.origin ? { ...fx.origin } : undefined,
+      };
+    }
     if (v.awakening !== undefined) {
       if (!["KEEP", "REPLACE"].includes(v.awakening)) return null;
       extra.awakening = v.awakening;
@@ -240,6 +310,7 @@ export function parseBattleSprite(
 }
 export const spritePriority: Record<SpriteEvent, number> = {
   IDLE: 0,
+  EMOTE: 0.5,
   SUMMON: 1,
   ATTACK: 4,
   ALLY_RETIRED: 6,
@@ -290,6 +361,7 @@ export function selectSpriteFrame(
     outcome?: "VICTORY" | "DEFEAT";
     reaction: SpriteEvent;
     selfDamage?: boolean;
+    emote?: string;
   },
 ) {
   const set =
@@ -311,13 +383,22 @@ export function selectSpriteFrame(
     input.reaction !== "IDLE" &&
     input.reaction !== "AWAKEN" &&
     !config.disabled?.includes(input.reaction) &&
-    !input.outcome;
+    !input.outcome &&
+    !(
+      input.reaction === "EMOTE" &&
+      set.emotes?.[input.emote as (typeof SPRITE_EMOTES)[number]] === null
+    );
   // Missing transient artwork returns to this set's default, not another state/skin.
-  const key = transient
-    ? (set.reactions[input.reaction] ??
-      eventExpression[input.reaction] ??
-      "default")
-    : persistent;
+  const key =
+    transient && input.reaction === "EMOTE"
+      ? (set.emotes?.[input.emote as (typeof SPRITE_EMOTES)[number]] ??
+        defaultEmoteExpressions[input.emote ?? ""] ??
+        "default")
+      : transient
+        ? (set.reactions[input.reaction] ??
+          eventExpression[input.reaction] ??
+          "default")
+        : persistent;
   return set.frames[key] ?? set.frames.default;
 }
 export function spriteFrames(config: BattleSprite) {

@@ -1,12 +1,18 @@
 import type { GameState } from "../game/types/game-state";
-import type { SpriteEvent } from "@workspace/cosmetics";
+import { SPRITE_EMOTES, type SpriteEvent } from "@workspace/cosmetics";
 
 /** A per-match cursor, not a timer-based guess about effect batching. */
+import {
+  explicitSingleDamageTarget,
+  type ChampionMotionCue,
+  type ChampionMotionKind,
+} from "./champion-sprite-motion";
 export type SpriteEventCursor = {
   game: string;
   count: number;
   summons: Set<string>;
   exits: Set<string>;
+  surprises: Set<string>;
   healing: Record<string, number>;
 };
 export function spriteEventCursor(state: GameState): SpriteEventCursor {
@@ -15,6 +21,7 @@ export function spriteEventCursor(state: GameState): SpriteEventCursor {
     count: state.events.length,
     summons: new Set(),
     exits: new Set(),
+    surprises: new Set(),
     healing: Object.fromEntries(
       state.players.map((p) => [p.id, p.presentationHealing?.total ?? 0]),
     ),
@@ -29,6 +36,7 @@ export function championSpriteEvents(
   state: GameState,
   playerId: string,
   cursor: SpriteEventCursor,
+  cues?: ChampionMotionCue[],
 ): SpriteEvent[] {
   if (cursor.game !== state.gameId || state.events.length < cursor.count) {
     Object.assign(cursor, spriteEventCursor(state));
@@ -39,6 +47,26 @@ export function championSpriteEvents(
   const player = state.players.find((p) => p.id === playerId)!;
   const old = previous.players.find((p) => p.id === playerId)!;
   const reactions: SpriteEvent[] = [];
+  let eventIndex = start;
+  const emit = (event: SpriteEvent, extra: Partial<ChampionMotionCue> = {}) => {
+    reactions.push(event);
+    const kinds: Partial<Record<SpriteEvent, ChampionMotionKind>> = {
+      ATTACK: "SPELL",
+      HIT: "HIT",
+      HEAVY_HIT: "HEAVY_HIT",
+      HEAL: "HEAL",
+      SUMMON: "SUMMON",
+      ALLY_RETIRED: "SURPRISED",
+      AWAKEN: "AWAKEN",
+      EMOTE: "EMOTE",
+    };
+    cues?.push({
+      id: `${state.gameId}:${eventIndex}:${event}`,
+      kind: kinds[event] ?? "EMOTE",
+      event,
+      ...extra,
+    });
+  };
   const board = new Map(
     old.board.flatMap((c) => (c ? [[c.instanceId, c] as const] : [])),
   );
@@ -68,11 +96,15 @@ export function championSpriteEvents(
   // Tentative, rollback-capable effects do not produce an early relief reaction.
   if (!pending.size) {
     const total = player.presentationHealing?.total ?? 0;
-    if (total > (cursor.healing[playerId] ?? 0)) reactions.push("HEAL");
+    if (total > (cursor.healing[playerId] ?? 0))
+      emit("HEAL", {
+        id: `${state.gameId}:heal:${player.presentationHealing?.sequence}`,
+      });
     cursor.healing[playerId] = total;
   }
   let revisit = state.events.length;
   for (let i = start; i < state.events.length; i++) {
+    eventIndex = i;
     const e = state.events[i]!;
     if (pending.has(i)) {
       revisit = Math.min(revisit, i);
@@ -85,15 +117,85 @@ export function championSpriteEvents(
           board.get(e.target.cardInstanceId)?.isDirectDeployedChampion)) &&
       Number(e.amount) > 0
     ) {
-      reactions.push(Number(e.amount) >= 5 ? "HEAVY_HIT" : "HIT");
+      const sourcePlayerId = e.sourceContext?.sourcePlayerId ?? e.playerId;
+      const sourceId =
+        e.source?.type === "CARD" ? e.source.cardInstanceId : e.cardInstanceId;
+      const sourceCard = [
+        ...previous.players.flatMap((p) => p.board),
+        ...state.players.flatMap((p) => p.board),
+      ].find((c) => c?.instanceId === sourceId);
+      emit(Number(e.amount) >= 5 ? "HEAVY_HIT" : "HIT", {
+        damage: e.amount,
+        selfDamage: sourcePlayerId === playerId,
+        sourcePlayerId,
+        sourceSlot:
+          e.sourceSnapshot?.boardSlot ?? sourceCard?.boardSlot ?? undefined,
+        basicAttack:
+          e.reason === "BASIC_ATTACK" || Boolean(e.sourceContext?.combatRole),
+      });
     }
     if (e.playerId !== playerId) continue;
+    if (e.type === "TURN_STARTED")
+      cues?.push({
+        id: `${state.gameId}:${i}:turn`,
+        kind: "TURN",
+        event: "IDLE",
+      });
+    if (
+      e.type === "CHAMPION_EMOTE" &&
+      SPRITE_EMOTES.includes(e.reason as (typeof SPRITE_EMOTES)[number])
+    )
+      emit("EMOTE", { emote: e.reason });
     if (
       e.type === "CHAMPION_ABILITY_USED" ||
       (e.type === "CARD_PLAYED" && e.cardType === "TECHNIQUE")
-    )
-      reactions.push("ATTACK");
-    if (e.type === "CHAMPION_QUEST_COMPLETED") reactions.push("AWAKEN");
+    ) {
+      const nextCast = state.events.findIndex(
+        (x, j) =>
+          j > i &&
+          (x.type === "CARD_PLAYED" || x.type === "CHAMPION_ABILITY_USED"),
+      );
+      const targets = state.events
+        .slice(i + 1, nextCast < 0 ? undefined : nextCast)
+        .filter(
+          (x) =>
+            x.type === "DAMAGE_DEALT" &&
+            (x.sourceContext?.sourcePlayerId ?? x.playerId) === playerId &&
+            Number(x.amount) > 0,
+        )
+        .flatMap<NonNullable<ChampionMotionCue["target"]>>((x) => {
+          if (x.target?.type === "PLAYER")
+            return [{ playerId: x.target.playerId }];
+          if (x.target?.type !== "CARD") return [];
+          const id = x.target.cardInstanceId;
+          for (const p of [...state.players, ...previous.players]) {
+            const c = p.board.find((c) => c?.instanceId === id);
+            if (c) return [{ playerId: p.id, slot: c.boardSlot ?? undefined }];
+          }
+          return [];
+        });
+      const unique = [
+        ...new Map(
+          targets.map((t) => [`${t.playerId}:${t.slot ?? "champion"}`, t]),
+        ).values(),
+      ];
+      const definition = state.cardPool?.find(
+        (d) => d.id === e.cardDefinitionId,
+      );
+      const declared =
+        e.type === "CHAMPION_ABILITY_USED"
+          ? player.champion?.ability.effects
+          : definition?.abilities;
+      emit("ATTACK", {
+        kind: e.type === "CHAMPION_ABILITY_USED" ? "ABILITY" : "SPELL",
+        target:
+          unique.length === 1 && explicitSingleDamageTarget(declared)
+            ? unique[0]
+            : undefined,
+        support: unique.length === 0,
+      });
+    }
+    if (e.type === "CHAMPION_QUEST_COMPLETED") emit("AWAKEN");
     if (e.type === "ENTER_FIELD") {
       const card = cards.find((c) => c.instanceId === e.cardInstanceId);
       if (card) board.set(card.instanceId, card);
@@ -106,7 +208,26 @@ export function championSpriteEvents(
         `entry:${i}`;
       if (!cursor.summons.has(key)) {
         cursor.summons.add(key);
-        reactions.push("SUMMON");
+        const definition = state.cardPool?.find(
+          (d) => d.id === (e.cardDefinitionId ?? card?.definitionId),
+        );
+        emit("SUMMON", {
+          id: `${state.gameId}:summon:${key}`,
+          kind:
+            definition?.rarity === "LEGENDARY" ? "LEGENDARY_SUMMON" : "SUMMON",
+          targetSlot: e.boardSlot ?? card?.boardSlot ?? undefined,
+        });
+      } else if (cues) {
+        const definition = state.cardPool?.find(
+          (d) => d.id === (e.cardDefinitionId ?? card?.definitionId),
+        );
+        const existing = cues.find(
+          (c) => c.id === `${state.gameId}:summon:${key}`,
+        );
+        if (existing && definition?.rarity === "LEGENDARY") {
+          existing.kind = "LEGENDARY_SUMMON";
+          existing.targetSlot = e.boardSlot ?? card?.boardSlot ?? undefined;
+        }
       }
     }
     const leaving =
@@ -141,7 +262,16 @@ export function championSpriteEvents(
         !cursor.exits.has(key)
       ) {
         cursor.exits.add(key);
-        reactions.push("ALLY_RETIRED");
+        const resolution =
+          e.presentationResolutionId ??
+          e.sourceContext?.causationId ??
+          e.sourceContext?.rootSourceEventId;
+        if (
+          (!resolution || !cursor.surprises.has(resolution)) &&
+          !reactions.includes("ALLY_RETIRED")
+        )
+          emit("ALLY_RETIRED");
+        if (resolution) cursor.surprises.add(resolution);
       }
       board.delete(e.cardInstanceId);
     }

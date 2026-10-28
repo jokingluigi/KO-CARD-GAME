@@ -1,3 +1,4 @@
+import type {GameEvent} from "../events/types";
 import {isCounterattackRetirement,isCounterattackDamage} from '../events/retirement-rules';
 import { refreshPersistentFieldGrants } from '../engine/reviewed-field-rules';
 import { fusionTargets, queueForcedFusion, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
@@ -2002,9 +2003,10 @@ export function applyEffect(
   const id = (state.targetingState?.sourceInstanceId === sourceCard.instanceId
     ? state.targetingState.presentationResolutionId : undefined) ?? `effect:${playerId}:${state.events.length}`;
   const fresh = result.events.slice(state.events.length);
-  if (!fresh.some(e => e.type === 'ENTER_FIELD' && !e.presentationResolutionId)) return result;
+  const hasPresentation = (e: GameEvent) => ['ENTER_FIELD','CARD_RETIRED','CARD_DESTROYED','CARD_VANISHED','CARD_REMOVED'].includes(e.type);
+  if (!fresh.some(e => hasPresentation(e) && !e.presentationResolutionId)) return result;
   return { ...result, events: result.events.map((e, i) => i >= state.events.length &&
-    e.type === 'ENTER_FIELD' && !e.presentationResolutionId ? {...e, presentationResolutionId:id} : e) };
+    hasPresentation(e) && !e.presentationResolutionId ? {...e, presentationResolutionId:id} : e) };
 }
 
 function applyEffectWithPresentation(

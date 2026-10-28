@@ -69,6 +69,7 @@ export function championSpriteCandidates(
     outcome?: "VICTORY" | "DEFEAT";
     reaction: SpriteEvent;
     selfDamage?: boolean;
+    emote?: string;
   },
 ) {
   const candidates: Array<{
