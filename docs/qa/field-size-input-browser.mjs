@@ -13,6 +13,7 @@ try {
     [360, 740, true],
     [375, 812, true],
     [390, 844, true],
+    [393, 760, true],
     [412, 915, true],
     [844, 390, true],
     [1440, 900, false],
@@ -264,10 +265,11 @@ try {
     // Ordinary taps remain the same attack-selection path; wait for React's
     // selected-state commit before sending the target touch.
     await load();
-    const tap = async (node) =>
-      touch
-        ? node.tap({ position: { x: 18, y: 45 } })
-        : node.click({ position: { x: 18, y: 45 } });
+    const tap = async (node) => {
+      const bounds = await node.boundingBox();
+      const position = { x: bounds.width * 0.35, y: bounds.height * 0.78 };
+      return touch ? node.tap({ position }) : node.click({ position });
+    };
     await tap(own());
     await page
       .locator('.ko-player-board-row [data-card-highlight="selected"]')

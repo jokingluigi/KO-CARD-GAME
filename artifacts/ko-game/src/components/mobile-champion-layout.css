@@ -3,8 +3,12 @@
 @media (max-width: 999px) and (orientation: portrait) {
   .ko-game-shell.ko-board-preview,
   .ko-game-shell.ko-board-preview:has(.ko-battle-command button) {
-    --fit-hud-h: clamp(150px, calc(45dvh - 172px), 232px);
-    /* Prioritise four full-width field targets over the hand reading strip. */
+    /* Keep the taller portrait in the real browser's usable viewport too.
+       Below 716px, reserve 134px for the two field rows instead of letting
+       the portrait consume their remaining space. Selection uses this same
+       budget so showing Cancel cannot move a drag target. */
+    --fit-hud-h: clamp(150px, max(min(208px, calc(50dvh - 150px)), calc(45dvh - 172px)), 232px);
+    /* Keep a compact hand strip; field rows share the remaining height. */
     --fit-hand-h: clamp(90px, 11dvh, 102px);
     --fit-controls-h: 48px;
     --fit-field-h: calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2 * var(--fit-hud-h) - var(--fit-hand-h) - var(--fit-controls-h) - 28px) / 2);
