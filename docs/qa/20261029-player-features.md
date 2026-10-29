@@ -23,12 +23,13 @@ Implemented on the existing feature branch, using real player pages and the shar
 - `player-ai-rematch-browser.mjs`: actual Home → AI start → intro → surrender → mocked reward response → same-deck restart. Two different match IDs and the same deck ID verified. This is not a live reward claim/server replay test.
 - `player-rematch-browser.mjs`: actual quick lobby/client with mock WebSocket; second deck preserved, exactly one queue join, cancellation does not requeue; invalid previous deck does not join.
 - `player-pack-goals-browser.mjs`, both viewports: actual pack UI/open response/reveal/close → goal acquisition notice and persistence; exactly one mock pack-opening request.
+- Nested dialogs verified at both viewports: unowned skin preview sits above pack details, side-switch buttons receive actual clicks, Escape closes only the inner preview; opponent public-card dialog sits above battle settings.
 - Existing collection regression passed at both viewports: skin comparison, search/reflow, card detail/crafting, pack unseal/reveal/skip/close. Server writes were mocked only.
 - Existing eight-viewport no-scroll/resize suite passed; existing drag suite passed at 360×740, 375×812, 390×844, 412×915 and 1440×900.
 
 ## Review screens
 
-[Skin preview mobile](screenshots/20261029-player-features/skin-390.png) · [PC](screenshots/20261029-player-features/skin-1440.png) · [Goals/notebook](screenshots/20261029-player-features/notebook-390.png) · [Pack goal notice](screenshots/20261029-player-features/pack-goal-390.png) · [Public cards](screenshots/20261029-player-features/public-390.png) · [Result controls](screenshots/20261029-player-features/result-ui-390.png) · [Downloaded PNG](screenshots/20261029-player-features/battle-export-390.png).
+[Unowned skin nested preview](screenshots/20261029-player-features/nested-skin-390.png) · [Skin preview mobile](screenshots/20261029-player-features/skin-390.png) · [PC](screenshots/20261029-player-features/skin-1440.png) · [Goals/notebook](screenshots/20261029-player-features/notebook-390.png) · [Pack goal notice](screenshots/20261029-player-features/pack-goal-390.png) · [Public cards](screenshots/20261029-player-features/public-390.png) · [Result controls](screenshots/20261029-player-features/result-ui-390.png) · [Downloaded PNG](screenshots/20261029-player-features/battle-export-390.png).
 
 Screens are local actual components with mocked authenticated API responses and clearly marked diagnostic art, not live production user sessions or final sprite-art approval.
 

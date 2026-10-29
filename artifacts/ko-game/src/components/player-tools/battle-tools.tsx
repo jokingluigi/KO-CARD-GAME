@@ -45,7 +45,10 @@ export function PublicCards({
         상대 공개 카드 ({ids.length}종류)
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85dvh] overflow-auto bg-neutral-950 text-white">
+        <DialogContent
+          overlayClassName="!z-[200]"
+          className="!z-[210] max-h-[85dvh] overflow-auto bg-neutral-950 text-white"
+        >
           <DialogTitle>상대가 공개한 카드</DialogTitle>
           <DialogDescription>
             이번 접속에서 필드에 등장했거나 사용·공개가 명시적으로 확인된 결과로

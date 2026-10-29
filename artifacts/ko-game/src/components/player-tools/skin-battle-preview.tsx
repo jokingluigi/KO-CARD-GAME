@@ -247,7 +247,10 @@ export function SkinBattlePreview({ item }: { item: CosmeticItem }) {
         전투 액자·표정 미리보기
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-auto bg-neutral-950 text-white">
+        <DialogContent
+          overlayClassName="!z-[490]"
+          className="!z-[500] max-h-[90dvh] overflow-auto bg-neutral-950 text-white"
+        >
           {open && <SkinBattleContents item={item} />}
         </DialogContent>
       </Dialog>
