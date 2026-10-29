@@ -45,7 +45,7 @@ export function BattleCardDrag(props: Props) {
     };
     let gesture: Gesture | null = null,
       suppressUntil = 0;
-    const returns = new Set<HTMLElement>();
+    const returns = new Map<HTMLElement, HTMLDivElement>();
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const clearMarks = () => {
       for (const node of latest.current.slots.current.values()) {
@@ -71,7 +71,8 @@ export function BattleCardDrag(props: Props) {
       if (g.started) suppressUntil = performance.now() + 450;
       if (restore && g.ghost && !prefersReducedMotion()) {
         const ghost = g.ghost;
-        returns.add(ghost);
+        returns.set(ghost, g.node);
+        g.node.dataset.dragReturning = "true";
         const r = g.node.getBoundingClientRect();
         try {
           ghost.animate?.(
@@ -89,9 +90,10 @@ export function BattleCardDrag(props: Props) {
           /* Timed cleanup still restores the hand. */
         }
         const timer = setTimeout(() => {
-          ghost.remove();
-          returns.delete(ghost);
           timers.delete(timer);
+          if (!returns.delete(ghost)) return;
+          ghost.remove();
+          delete g.node.dataset.dragReturning;
         }, 180);
         timers.add(timer);
       } else g.ghost?.remove();
@@ -115,6 +117,7 @@ export function BattleCardDrag(props: Props) {
         useButton ? id === useButton.dataset.handDragCardId : n.contains(target) || Boolean(info && n.parentElement?.contains(info)),
       );
       if (!entry || allowed(entry[0]).length === 0) return;
+      for(const [ghost,source] of returns)if(source===entry[1]){ghost.remove();returns.delete(ghost);delete source.dataset.dragReturning;}
       const [id, node] = entry,
         r = node.getBoundingClientRect();
       gesture = {
@@ -150,6 +153,7 @@ export function BattleCardDrag(props: Props) {
         g.ghost = ghost;
         ghost.removeAttribute("id");
         ghost.removeAttribute("data-dragging");
+        ghost.removeAttribute("data-drag-returning");
         ghost.removeAttribute("role");
         ghost.setAttribute("aria-hidden", "true");
         ghost.inert = true;
@@ -287,7 +291,7 @@ export function BattleCardDrag(props: Props) {
     window.addEventListener("ko-gamepad-cancel", cancel);
     return () => {
       clean();
-      returns.forEach((n) => n.remove());
+      returns.forEach((source,ghost) => {ghost.remove();delete source.dataset.dragReturning;});
       timers.forEach(clearTimeout);
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointermove", move, true);

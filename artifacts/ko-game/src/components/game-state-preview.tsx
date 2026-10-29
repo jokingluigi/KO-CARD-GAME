@@ -1155,7 +1155,7 @@ export function GameStatePreview({
                          handleAttackChampion();
                        }}
                  >
-                   {blackGold && <ChampionPortraitFrame awakened={Boolean(opp.champion?.questCompleted)} emblem={opponentChampionPortrait} name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
+                   {blackGold && <ChampionPortraitFrame awakened={Boolean(opp.champion?.questCompleted)} name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
                    <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} framed={blackGold} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/></div>
 
                    {opponentChampionProtected && (
@@ -1651,7 +1651,7 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
-                    {blackGold && <ChampionPortraitFrame awakened={Boolean(me.champion?.questCompleted)} emblem={playerChampionPortrait} name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
+                    {blackGold && <ChampionPortraitFrame awakened={Boolean(me.champion?.questCompleted)} name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
                     <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} framed={blackGold} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/></div>
 
                    {playerChampionProtected && (

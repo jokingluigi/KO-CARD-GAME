@@ -8,13 +8,11 @@ export function ChampionPortraitFrame({
   name,
   health,
   maxHealth,
-  emblem,
   awakened=false,
 }: {
   name: string;
   health: number;
   maxHealth: number;
-  emblem?:string|null;
   awakened?:boolean;
 }) {
   return (
@@ -22,8 +20,8 @@ export function ChampionPortraitFrame({
       <div className="ko-portrait-arch" aria-hidden="true" />
       <div className="ko-portrait-rim" data-awakened={awakened} aria-hidden="true">
         {awakened&&<span className="ko-awakened-crown"/>}
-        <i style={emblem?{backgroundImage:`url("${emblem}")`,backgroundSize:"cover",backgroundPosition:"center"}:undefined}/>
-        <b style={emblem?{backgroundImage:`url("${emblem}")`,backgroundSize:"cover",backgroundPosition:"center"}:undefined}/>
+        <i/>
+        <b/>
         <svg className="ko-portrait-wear" viewBox="0 0 100 100" preserveAspectRatio="none"
           data-wear={health <= 0 || (health > 0 && health <= 5) ? 3 : health / Math.max(1,maxHealth) <= .35 ? 2 : health / Math.max(1,maxHealth) <= .65 ? 1 : 0}>
           <path className="ko-wear-light" d="M2 53L7 56L2 61M94 31L99 35L94 39"/>

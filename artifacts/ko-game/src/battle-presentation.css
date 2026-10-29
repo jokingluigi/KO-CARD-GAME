@@ -497,7 +497,7 @@
 
 /* Pointer drag stays local; the battle and hand layout never follow the pointer. */
 .ko-player-hand .ko-hand-card, .ko-player-hand .ko-technique-use-button { touch-action: pan-x; }
-.ko-hand-card[data-dragging=true] { opacity:.28 !important; }
+.ko-hand-card[data-dragging=true],.ko-hand-card[data-drag-returning=true] { opacity:0 !important; }
 .ko-card-drag-ghost { transform-origin:center; contain:layout style; filter:drop-shadow(0 8px 4px #000b); }
 .ko-card-drag-ghost * { pointer-events:none !important; }
 [data-drag-valid=true] { outline:1px solid #aa8845; outline-offset:-2px; }
