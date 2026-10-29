@@ -15,7 +15,7 @@
   pointer-events: none;
 }
 .ko-portrait-arch {
-  inset: 18px 6px 32px;
+  inset: 2px 6px 32px;
   z-index: 0;
   border: 1px solid #342e23;
   border-radius: 49% 49% 12px 12px / 34% 34% 10px 10px;
@@ -25,7 +25,7 @@
     0 0 0 4px #161513;
 }
 .ko-portrait-rim {
-  inset: 18px 6px 32px;
+  inset: 2px 6px 32px;
   z-index: 2;
   border: 2px solid var(--portrait-brass);
   border-radius: 49% 49% 12px 12px / 34% 34% 10px 10px;
@@ -130,7 +130,7 @@
   --portrait-aperture-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 40A49 40 0 0 1 49 0H51A49 40 0 0 1 100 40V100H0Z'/%3E%3C/svg%3E");
   display: block;
   position: absolute;
-  inset: 23px 11px 62px;
+  inset: 7px 11px 62px;
   z-index: 1;
   pointer-events: none;
   overflow: hidden;

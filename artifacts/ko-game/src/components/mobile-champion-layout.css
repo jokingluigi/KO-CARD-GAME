@@ -109,7 +109,7 @@
   .ko-game-shell.ko-board-preview
     .ko-game-stage.ko-champion-arena
     .ko-portrait-window {
-    inset: 8px 8px 32px;
+    inset: 0 8px 32px;
   }
   .ko-game-shell.ko-board-preview
     .ko-game-stage.ko-champion-arena

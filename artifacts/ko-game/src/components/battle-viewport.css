@@ -155,8 +155,8 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 /* Small apertures reserve a readable vital plate instead of a 90px chrome stack. */
 @media (max-width:999px) and (orientation:portrait), (max-height:600px) {
   .ko-champion-arena .ko-portrait-arch,
-  .ko-champion-arena .ko-portrait-rim { inset:4px 5px 19px; }
-  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-portrait-window { inset:9px 10px 42px; }
+  .ko-champion-arena .ko-portrait-rim { inset:-4px 5px 19px; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-portrait-window { inset:5px 10px 42px; }
   .ko-champion-arena .ko-portrait-plinth { bottom:15px; height:30px; }
   .ko-champion-arena .ko-portrait-name { bottom:30px; font-size:10px; line-height:12px; }
   .ko-champion-arena .ko-portrait-health { height:32px; min-width:78px; padding:1px 6px; border-radius:6px 6px 12px 12px; }
