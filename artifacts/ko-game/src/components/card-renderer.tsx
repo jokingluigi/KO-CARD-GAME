@@ -346,6 +346,7 @@ export function CardRenderer({
       data-card-definition={cardId}
       onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
       data-card-highlight={highlight}
+      data-card-silenced={isSilenced ? "true" : undefined}
       data-targetable={highlight === "target"}
       style={style}
       ref={containerRef}
@@ -362,7 +363,7 @@ export function CardRenderer({
           displayOverride={cosmetic.display ?? artworkDisplayOverride}
           loading={artworkLoading}
           alt={name || "카드 이미지"}
-          className="absolute inset-0 h-full w-full"
+          className={`absolute inset-0 h-full w-full ${isSilenced ? "ko-card-artwork-muted" : ""}`}
           {...imageDisplaySettings}
           interactive={interactiveArtwork}
           showHint={showArtworkHint}

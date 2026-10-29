@@ -3,10 +3,10 @@
     "width": 390,
     "height": 844,
     "headlessFrameMs": {
-      "samples": 614,
+      "samples": 625,
       "p50": 16.699999999999818,
-      "p95": 33.30000000000018,
-      "maximum": 133.20000000000073
+      "p95": 16.800000000000182,
+      "maximum": 100
     },
     "checks": [
       "engine field-to-hand",
@@ -27,10 +27,10 @@
     "width": 1440,
     "height": 900,
     "headlessFrameMs": {
-      "samples": 710,
+      "samples": 700,
       "p50": 16.699999999999818,
-      "p95": 16.80000000000109,
-      "maximum": 83.40000000000009
+      "p95": 33.29999999999927,
+      "maximum": 133.29999999999927
     },
     "checks": [
       "engine field-to-hand",

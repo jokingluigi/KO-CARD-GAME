@@ -10,7 +10,7 @@ Implemented on `feat/final-sprite-reactions-review`, following baseline `6ca8672
 | 5 Modified numbers | Attack/health/cost number-only motion, not a whole-card bounce. | Stat cue unit tests, actual buff engine flow. |
 | 6 Max HP versus heal | `MAX_HEALTH` has a capacity expansion cue and label; companion HP increases from capacity buffs do not play a heal cue. | Engine BUFF flow + classification tests. |
 | 7 Consumed protection | Protection-break cue needs actual blocked/dodged damage and a depleted dodge/entry-protection state. Passive armor is not consumed. Legacy zero-damage combat events are supported. | Real engine DODGE consumption, HP remains 12; visibility sampled at animation frames. Negative unit cases. |
-| 8 Silence | Dim artwork/rules instead of the complete frame/numbers. Existing status icons remain. | Engine SILENCE and transition tests. |
+| 8 Silence | Brief silence transition plus persistent subdued artwork/rules instead of dimming the complete frame/numbers. Existing status icons remain. | Engine SILENCE, persistent dim after the cue and transition tests. |
 | 9 Transform | Before/after selected-skin artwork wipe. Detect same-instance definition changes for TRANSFORM_SOURCE even without CARD_TRANSFORMED; hide offscreen transformations. | Engine TRANSFORM_SOURCE, privacy unit case. |
 | 10 Return to hand | Exact public field instance arriving in a known hand flies to that hand. | Engine MOVE_TO_HAND; cleanup verified. |
 | 11 Return to deck | Exact field/own-hand instance arriving in a known deck shrinks to the deck using a concealed back. | Engine MOVE_TO_DECK; no card face leak. |
@@ -37,13 +37,13 @@ Implemented on `feat/final-sprite-reactions-review`, following baseline `6ca8672
 - Existing atmosphere regression: turn/draw, summon, gold, lifesteal, counterattack, armor, block, retire, lethal and result at 390/1440 passed. Quest completion is an authoritative-state fixture, not a campaign run.
 - No-scroll/resizing regression at eight viewports passed, including 360×740, 375×812, 390×844, 412×915, tablet, desktop and landscape.
 - Real touch spell-drag regression passed at 360/375/390/412/1440. Field input regression passed at 393×760.
-- Headless RAF sample during recording: mobile p50 16.7ms, p95 33.3ms, maximum 133.2ms; desktop p50 16.7ms, p95 16.8ms, maximum 83.4ms. These include loading/recording and are not physical-device benchmarks or isolated GPU measurements.
+- Headless RAF sample during recording: mobile p50 16.7ms, p95 16.8ms, maximum 100ms; desktop p50 16.7ms, p95 33.3ms, maximum 133.3ms. These include loading/recording and are not physical-device benchmarks or isolated GPU measurements.
 
 ## Review artifacts
 
 [Mobile battle recording](screenshots/20261029-effect-readability/battle-390x844.mp4) is silent, recorded from the actual shared battle component and real local engine results. It is not a live authenticated PvP session. The diagnostic artwork says `QA TEMPORARY / NOT FINAL ART`.
 
-[Baseline state](screenshots/20261029-effect-readability/baseline-390.png) · [AoE](screenshots/20261029-effect-readability/aoe-390.png) · [Capacity](screenshots/20261029-effect-readability/capacity-390.png) · [Hand return](screenshots/20261029-effect-readability/return-hand-390.png) · [Generation](screenshots/20261029-effect-readability/generate-390.png) · [Transformation](screenshots/20261029-effect-readability/transform-390.png) · [Timer](screenshots/20261029-effect-readability/timer-390.png) · [Awakened PC frame](screenshots/20261029-effect-readability/awakened-1440.png)
+[Baseline state](screenshots/20261029-effect-readability/baseline-390.png) · [AoE](screenshots/20261029-effect-readability/aoe-390.png) · [Capacity](screenshots/20261029-effect-readability/capacity-390.png) · [Hand return](screenshots/20261029-effect-readability/return-hand-390.png) · [Generation](screenshots/20261029-effect-readability/generate-390.png) · [Transformation](screenshots/20261029-effect-readability/transform-390.png) · [Silence](screenshots/20261029-effect-readability/silence-390.png) · [Timer](screenshots/20261029-effect-readability/timer-390.png) · [Awakened PC frame](screenshots/20261029-effect-readability/awakened-1440.png)
 
 These are normal-state/effect comparisons, not separately captured pre-change application screenshots. [Measured browser results](screenshots/20261029-effect-readability/results.json).
 

@@ -24,3 +24,6 @@
 @keyframes ko-wave-path{0%{stroke-dashoffset:1;opacity:.1}45%{stroke-dashoffset:0;opacity:.45}100%{stroke-dashoffset:0;opacity:0}}
 @keyframes ko-wave-ring{0%,20%{opacity:0}35%{opacity:.4}100%{opacity:0}}
 [data-card-stat]{display:inline-block;}
+
+.ko-card-artwork-muted{filter:saturate(.28) brightness(.85);}
+[data-card-silenced="true"] [data-card-rules]{opacity:.62;}
