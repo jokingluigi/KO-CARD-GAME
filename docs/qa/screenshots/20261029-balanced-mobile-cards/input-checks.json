@@ -1,0 +1,22 @@
+{
+  "fieldPassed": [
+    "PASS 360x640",
+    "PASS 360x740",
+    "PASS 375x812",
+    "PASS 390x844",
+    "PASS 393x760",
+    "PASS 412x915",
+    "PASS 844x390",
+    "PASS 1440x900"
+  ],
+  "handPassed": [
+    "PASS 360x740",
+    "PASS 375x812",
+    "PASS 390x844",
+    "PASS 412x915",
+    "PASS 1440x900"
+  ],
+  "initialFailure": "390x844 ordinary tap selection timed out after preceding outside drag. Separate final recheck passed after waiting500ms between scenarios for existing450ms compatibility-click suppression. Production input code unchanged.",
+  "physicalDevice": "NOT_RUN",
+  "freshTwoClientPvP": "NOT_RUN"
+}

@@ -265,6 +265,9 @@ try {
     // Ordinary taps remain the same attack-selection path; wait for React's
     // selected-state commit before sending the target touch.
     await load();
+    // The preceding outside-drop deliberately suppresses its compatibility
+    // click for 450ms. This is a separate tap scenario, not that release.
+    await page.waitForTimeout(500);
     const tap = async (node) => {
       const bounds = await node.boundingBox();
       const position = { x: bounds.width * 0.35, y: bounds.height * 0.78 };

@@ -3,18 +3,15 @@
 @media (max-width: 999px) and (orientation: portrait) {
   .ko-game-shell.ko-board-preview,
   .ko-game-shell.ko-board-preview:has(.ko-battle-command button) {
-    /* Keep the taller portrait in the real browser's usable viewport too.
-       Below 716px, reserve 134px for the two field rows instead of letting
-       the portrait consume their remaining space. Selection uses this same
-       budget so showing Cancel cannot move a drag target. */
-    --fit-hud-h: clamp(150px, max(min(208px, calc(50dvh - 150px)), calc(45dvh - 172px)), 232px);
-    /* Keep a compact hand strip; field rows share the remaining height. */
-    --fit-hand-h: clamp(90px, 11dvh, 102px);
+    /* Scale both portrait axes together, preserving the approved 179.4:208
+       frame shape while returning vertical space to the playable cards. */
+    --fit-hud-h: clamp(136px, 22dvh, 190px);
+    --fit-hand-h: clamp(112px, 16dvh, 148px);
     --fit-controls-h: 48px;
     --fit-field-h: calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2 * var(--fit-hud-h) - var(--fit-hand-h) - var(--fit-controls-h) - 28px) / 2);
   }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
-    --actor-width: clamp(150px, 46vw, 196px);
+    --actor-width: calc(var(--fit-hud-h) * 0.8625);
     padding: 2px 8px;
     gap: 2px;
     grid-template-rows: 12px var(--fit-hud-h) minmax(0,1fr) var(--fit-controls-h) minmax(0,1fr) var(--fit-hud-h) var(--fit-hand-h);
@@ -25,7 +22,7 @@
     .ko-game-stage.ko-champion-arena
     :is(.ko-player-info, .ko-opponent-hud) {
     grid-template-columns: minmax(0, 1fr) var(--actor-width) minmax(0, 1fr);
-    grid-template-rows: 18px 44px 44px minmax(0, 1fr);
+    grid-template-rows: 44px 44px 44px minmax(0, 1fr);
     gap: 2px 5px;
   }
   .ko-game-shell.ko-board-preview
@@ -49,6 +46,14 @@
     grid-row: 1;
     min-width: 0;
     font-size: 10px;
+  }
+  /* The emote button owns a full header row; it must not float over gold. */
+  .ko-game-shell.ko-board-preview
+    .ko-game-stage.ko-champion-arena
+    .ko-champion-heading .cosmetic-emote-tools {
+    position: relative;
+    inset: auto;
+    height: 44px;
   }
   .ko-game-shell.ko-board-preview
     .ko-game-stage.ko-champion-arena
@@ -142,11 +147,11 @@
   .ko-game-shell.ko-board-preview
     .ko-game-stage.ko-champion-arena
     .ko-battle-command {
-    top: calc(env(safe-area-inset-top) + 82px);
+    top: calc(env(safe-area-inset-top) + 108px);
     left: 8px;
     right: auto;
     width: calc((100vw - 26px - var(--actor-width)) / 2);
-    height: calc(var(--fit-hud-h) - 66px);
+    height: calc(var(--fit-hud-h) - 92px);
     display: flex;
     flex-direction: column;
     justify-content: center;

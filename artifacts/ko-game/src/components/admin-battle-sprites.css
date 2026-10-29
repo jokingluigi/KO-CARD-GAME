@@ -249,7 +249,7 @@
 .ko-sprite-preview-canvas { position: relative; }
 .ko-sprite-frame-preview { position:absolute; inset:12px; display:grid; place-items:center; }
 .ko-sprite-frame-preview > :is(.ko-player-champion,.ko-opponent-champion) { position:relative; width:280px; height:448px; max-height:100%; max-width:100%; }
-.ko-sprite-frame-preview[data-viewport="MOBILE"] > :is(.ko-player-champion,.ko-opponent-champion) { width:179.4px; height:207.8px; }
+.ko-sprite-frame-preview[data-viewport="MOBILE"] > :is(.ko-player-champion,.ko-opponent-champion) { width:160.149px; height:185.68px; }
 .ko-sprite-editor--workspace .ko-sprite-frame-preview .ko-sprite-preview-figure { position:relative; width:100%; height:100%; max-width:none; aspect-ratio:auto; inset:auto; }
 .ko-sprite-frame-preview[data-viewport="MOBILE"] .ko-portrait-window { inset:0 8px 32px; }
 .ko-sprite-frame-preview[data-viewport="MOBILE"] :is(.ko-portrait-arch,.ko-portrait-rim) { inset:-4px 5px 19px; }
