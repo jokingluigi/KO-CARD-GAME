@@ -244,3 +244,14 @@
     bottom: 115px;
   }
 }
+
+/* Damage belongs to the rim, never to the face or the vital plate. */
+.ko-portrait-wear { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+.ko-portrait-wear path { fill:none; stroke:#080706; stroke-width:2.6; vector-effect:non-scaling-stroke; opacity:0; }
+.ko-portrait-wear[data-wear="1"] .ko-wear-light,
+.ko-portrait-wear[data-wear="2"] :is(.ko-wear-light,.ko-wear-medium),
+.ko-portrait-wear[data-wear="3"] path { opacity:1; }
+/* The defeated portrait does not become a fresh intact portrait after KO. */
+.ko-champion-arena [data-defeated="true"] .ko-portrait-window { animation:ko-defeated-remnant 1ms 1600ms forwards; }
+@keyframes ko-defeated-remnant { to { opacity:.16; filter:grayscale(1); } }
+@media(prefers-reduced-motion:reduce) { .ko-champion-arena [data-defeated="true"] .ko-portrait-window { animation-delay:350ms; } }

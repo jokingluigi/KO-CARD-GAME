@@ -1,3 +1,4 @@
+import './battle-atmosphere.css';
 import {createContext,useContext,useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {prefersReducedMotion} from './presentation-config';
@@ -107,7 +108,7 @@ export function BattleVfxDirector({children}:{children:ReactNode}) {
   if(document.hidden||prefersReducedMotion()||timers.current.has(event.id))return;
   if(timers.current.size>=4){const oldest=timers.current.keys().next().value!;clearTimeout(timers.current.get(oldest));timers.current.delete(oldest);}
   setEffects(current=>[...current.filter(x=>timers.current.has(x.id)),event].slice(-4));
-  timers.current.set(event.id,setTimeout(()=>{timers.current.delete(event.id);setEffects(current=>current.filter(x=>x.id!==event.id));},650));
+  timers.current.set(event.id,setTimeout(()=>{timers.current.delete(event.id);setEffects(current=>current.filter(x=>x.id!==event.id));},950));
  },[]);
  useEffect(()=>{
   const clear=()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();setEffects([]);};
@@ -115,5 +116,5 @@ export function BattleVfxDirector({children}:{children:ReactNode}) {
   window.addEventListener('resize',clear);document.addEventListener('visibilitychange',hidden);window.addEventListener('ko-combat-preferences',clear);
   return()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();window.removeEventListener('resize',clear);document.removeEventListener('visibilitychange',hidden);window.removeEventListener('ko-combat-preferences',clear);};
  },[]);
- return <ContactContext.Provider value={request}>{children}{createPortal(<div className="ko-contact-camera" style={{position:"fixed",inset:0,zIndex:235,pointerEvents:"none"}}>{effects.map(e=><BattleVfx key={e.id} kind="IMPACT" seed={e.id} left={e.left} top={e.top} strength={e.strength} direction={e.direction} duration={640}/>)}</div>,document.body)}</ContactContext.Provider>;
+ return <ContactContext.Provider value={request}>{children}{createPortal(<div className="ko-contact-camera" style={{position:"fixed",inset:0,zIndex:235,pointerEvents:"none"}}>{effects.filter(e=>e.strength>=5).map(e=><img key={"trace:"+e.id} className="ko-impact-trace" src={`${import.meta.env.BASE_URL}vendor/kenney/particle/scratch_01.png`} alt="" style={{left:e.left-37,top:e.top-27,transform:`rotate(${Math.atan2(e.direction.y,e.direction.x)*180/Math.PI}deg)`}}/>)}{effects.map(e=><BattleVfx key={e.id} kind="IMPACT" seed={e.id} left={e.left} top={e.top} strength={e.strength} direction={e.direction} duration={640}/>)}</div>,document.body)}</ContactContext.Provider>;
 }

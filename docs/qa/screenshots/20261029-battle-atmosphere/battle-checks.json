@@ -1,0 +1,28 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "wear": true,
+    "turn": true,
+    "trace": true,
+    "awakening": true,
+    "landing": true,
+    "result": true,
+    "actualEngine": "END_TURN, damage, summon and lethal",
+    "quest": "confirmed event fixture",
+    "physicalDevice": "NOT_RUN"
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "wear": true,
+    "turn": true,
+    "trace": true,
+    "awakening": true,
+    "landing": true,
+    "result": true,
+    "actualEngine": "END_TURN, damage, summon and lethal",
+    "quest": "confirmed event fixture",
+    "physicalDevice": "NOT_RUN"
+  }
+]

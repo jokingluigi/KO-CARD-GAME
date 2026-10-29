@@ -18,6 +18,7 @@ try {
    const geometry=await page.evaluate(()=>{const sheet=document.querySelector('.ko-result-poster'),cta=document.querySelector('[data-testid=button-return-to-main-menu]'),scroll=document.querySelector('.ko-result-scroll'),box=cta.getBoundingClientRect();return {overflow:sheet.scrollWidth>sheet.clientWidth+1||scroll.scrollWidth>scroll.clientWidth+1,cta:{x:box.x,y:box.y,right:box.right,bottom:box.bottom,width:box.width,height:box.height},text:sheet.textContent};});
    assert.equal(geometry.overflow,false);assert.ok(geometry.cta.x>=0&&geometry.cta.y>=0&&geometry.cta.right<=width&&geometry.cta.bottom<=height&&geometry.cta.height>=44);
    assert.ok(!geometry.text.includes('RESULT MUST NOT SPEAK'));
+   await page.getByRole('button',{name:'상세 결과 · 경기 기록 보기',exact:true}).click();
    await page.getByRole('region',{name:'경기 MVP'}).getByText('리버덩크',{exact:true}).waitFor();
    assert.equal(await page.locator('.ko-result-reward strong').textContent(),'+200크레딧');
    await page.screenshot({path:`${out}/${outcome}-${width}.png`});
@@ -32,7 +33,7 @@ try {
    await page.getByTestId('quest-progress-error').getByRole('button').click();await page.getByRole('button',{name:'다시 시도',exact:true}).click();
    const counts=JSON.parse(await page.getByTestId('result-callbacks').textContent());assert.equal(counts.quests,1);assert.equal(counts.rewards,1);await page.getByRole('button',{name:'타워 보상으로'}).waitFor();
    await page.screenshot({path:`${out}/error-retry-${width}.png`});
-   await page.evaluate(()=>window.showResult({outcome:'complete',empty:true}));await page.locator('[data-result=complete]').waitFor();await page.getByText('MVP를 선정할 선수 기록이 없습니다.').waitFor();
+   await page.evaluate(()=>window.showResult({outcome:'complete',empty:true}));await page.locator('[data-result=complete]').waitFor();await page.getByRole('button',{name:'상세 결과 · 경기 기록 보기',exact:true}).click();await page.getByText('MVP를 선정할 선수 기록이 없습니다.').waitFor();
    const root=page.getByTestId('match-result-overlay');await root.focus();await page.keyboard.press('Shift+Tab');assert.equal(await page.getByTestId('button-return-to-main-menu').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Tab');assert.equal(await root.evaluate(e=>e.contains(document.activeElement)),true);
    results.push({pendingNoFakeReward:true,retryCallbacks:true,towerLabel:true,emptyComplete:true,keyboardContained:true});
   }

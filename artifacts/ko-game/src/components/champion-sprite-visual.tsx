@@ -1,3 +1,4 @@
+import './battle-atmosphere.css';
 import {
   useEffect,
   useLayoutEffect,
@@ -368,6 +369,7 @@ export function ChampionSpriteVisual({
       }
     >
       <div ref={ink} className="ko-sprite-ink" aria-hidden="true" />
+      {moving && cue?.kind === "AWAKEN" && image && !reduced && <div key={cue.id} className="ko-sprite-awakening-echo" aria-hidden="true" style={{maskImage:`url("${image}")`,scale:self ? "1 1" : "-1 1"}}/>}
       <div className="ko-sprite-stance">
         <div className="ko-sprite-breath">
           <div className="ko-sprite-low-tremor">

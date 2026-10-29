@@ -486,3 +486,34 @@
 .ko-result-hero:not(:has(.ko-result-portrait)) {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* The finished board remains mounted. The verdict uses the old turn bar;
+   rewards and continuation use the hand strip. Neither commander is replaced. */
+.ko-result-details {
+  grid-column:1 / -1; min-height:44px; width:100%; flex-shrink:0;
+  border-block:1px solid #645233; background:#171719; color:#d9bb7b; font-size:12px;
+}
+.ko-result-details:focus-visible { outline:2px solid #efd79c; outline-offset:-4px; }
+.ko-result-footer { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.ko-result-footer .ko-result-continue { width:100%; justify-self:end; }
+.ko-result-overlay[data-view="battlefield"] { background:#08090b38; place-items:start center; padding:12px; }
+.ko-result-overlay[data-view="battlefield"] :is(.ko-result-poster,.ko-result-scroll) { display:contents; }
+.ko-result-overlay[data-view="battlefield"] .ko-result-hero {
+  position:fixed; left:50%; top:var(--result-bell-center,44dvh);
+  transform:translate(-50%,-50%); width:min(620px,calc(100% - 24px));
+  display:block; border:1px solid #6d5b3c; background:#101113ed; padding:7px 14px;
+}
+.ko-result-overlay[data-view="battlefield"] :is(.ko-result-portrait,.ko-result-corner,.ko-result-content,.ko-result-champion-name,.ko-result-eyebrow) { display:none; }
+.ko-result-overlay[data-view="battlefield"] .ko-result-hero h1 { display:flex; flex-direction:row; align-items:baseline; margin:0; gap:12px; }
+.ko-result-overlay[data-view="battlefield"] .ko-result-english { font-size:36px; }
+.ko-result-overlay[data-view="battlefield"] .ko-result-korean { font-size:22px; margin-top:0; }
+.ko-result-overlay[data-view="battlefield"] .ko-result-reason { margin:0; }
+.ko-result-overlay[data-view="battlefield"] .ko-result-footer {
+  position:fixed; bottom:6px; left:50%; transform:translateX(-50%);
+  width:min(620px,calc(100% - 24px)); padding:6px 10px; gap:4px 12px;
+  background:#101113f5; border:1px solid #6d5b3c;
+}
+.ko-result-overlay[data-view="battlefield"] .ko-result-notices:has([role="alert"]) {
+  position:fixed; top:12px; left:12px; right:12px; background:#211817; border:1px solid #a56f5f;
+}
+@media(prefers-reduced-motion:reduce) { .ko-result-poster { animation:none; } }

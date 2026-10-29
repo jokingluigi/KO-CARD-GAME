@@ -1,3 +1,4 @@
+import {MatchResultOverlay} from "../src/components/match-result-overlay";
 import type {MatchCosmetics} from "@workspace/cosmetics";
 import {audioManager} from '../src/audio/audio-manager';
 import {combatHitSound} from '../src/audio/combat-hit-sound';
@@ -247,6 +248,7 @@ function Scene() {
         }
         onPresentationBusyChange={setBusy}
       />
+      {state.status === "FINISHED" && new URLSearchParams(location.search).has("result") && <MatchResultOverlay state={state} cosmetics={cosmetics} onReturnToMainMenu={()=>setState(boardFixture())} reward={{amount:200,sourceType:"QA"}}/>}
     </>
   );
 }

@@ -34,3 +34,15 @@ geometryTest('wrestler entrance keeps portrait proportions for hidden hand rows 
   geometryAssert.ok(rect.width>=72&&rect.width<=180);
  }
 });
+
+import {summonShadowFrames} from './card-play-animation-utils';
+geometryTest('summon shadow contact shares the landing clock and always clears',()=>{
+ for(const [landing,duration]of [[120,300],[620,940],[1,1],[0,200]]){
+  const frames=summonShadowFrames(landing,duration,false);
+  const offsets=frames.map(f=>Number(f.offset));
+  geometryAssert.ok(offsets.every((n,i)=>n>=0&&n<=1&&(i===0||n>=offsets[i-1])));
+  geometryAssert.equal(frames[0].opacity,0);geometryAssert.equal(frames.at(-1)!.opacity,0);
+  geometryAssert.equal(frames[2].offset,Math.max(.1,Math.min(.85,landing/duration)));
+ }
+ geometryAssert.ok(summonShadowFrames(120,180,true).every(f=>!f.transform));
+});

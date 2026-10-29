@@ -49,6 +49,13 @@ export function MatchResultOverlay({
   questError?: string | null;
   onRetryQuest?: () => void;
 }) {
+  const [details, setDetails] = useState(false);
+  const [bellCenter, setBellCenter] = useState<number>();
+  useEffect(()=>{
+    const measure=()=>{const r=document.querySelector(".ko-game-controls")?.getBoundingClientRect();setBellCenter(r ? r.top+r.height/2 : undefined);};
+    measure();window.addEventListener("resize",measure);return()=>window.removeEventListener("resize",measure);
+  },[state.gameId]);
+  useEffect(()=>setDetails(false),[state.gameId]);
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
   const isDefeat = state.loserId === player?.id;
@@ -164,6 +171,8 @@ export function MatchResultOverlay({
       aria-label="매치 결과"
       data-testid="match-result-overlay"
       className="ko-result-overlay"
+      data-view={details ? "details" : "battlefield"}
+      style={bellCenter === undefined ? undefined : {"--result-bell-center":`${bellCenter}px`} as React.CSSProperties}
       onKeyDown={(event) => {
         if (event.key !== "Tab") return;
         const nodes = Array.from(
@@ -323,6 +332,8 @@ export function MatchResultOverlay({
           </div>
         </div>
         <footer className="ko-result-footer">
+        <button type="button" className="ko-result-details" aria-expanded={details} onClick={()=>setDetails(v=>!v)}>{details ? "전장과 챔피언 보기" : "상세 결과 · 경기 기록 보기"}</button>
+
           <div className="ko-result-reward" data-testid="match-reward" aria-live="polite">
             {reward ? (
               <>

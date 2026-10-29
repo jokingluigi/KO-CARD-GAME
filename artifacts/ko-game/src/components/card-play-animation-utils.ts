@@ -71,3 +71,16 @@ export function wrestlerPlayRect(source: CardAnimationRect): CardAnimationRect {
   return { left: source.left + (source.width - width) / 2,
     top: source.top + (source.height - height) / 2, width, height };
 }
+
+/** Shares the flight clock, so the shadow spreads exactly at landing. */
+export function summonShadowFrames(landing:number,duration:number,reduced:boolean):Keyframe[] {
+  if(reduced)return [{opacity:0},{opacity:.25,offset:.4},{opacity:0}];
+  const contact=Math.max(.1,Math.min(.85,landing/Math.max(1,duration)));
+  return [
+    {opacity:0,transform:'scale(1.25,.7)',offset:0},
+    {opacity:.18,transform:'scale(.65,.8)',offset:contact*.85},
+    {opacity:.4,transform:'scale(1.12,1)',offset:contact},
+    {opacity:.22,transform:'scale(1,1)',offset:Math.min(.98,contact+.1)},
+    {opacity:0,transform:'scale(1,1)',offset:1},
+  ];
+}

@@ -1,3 +1,4 @@
+import {BattleTurnHandoff} from "./battle-turn-handoff";
 import {ChampionPortraitFrame} from "./champion-portrait-frame";
 import {ChampionBattleActor} from "./champion-battle-actor";
 import { legendaryDialogueDuration } from "./wrestler-dialogue-timing";
@@ -1071,6 +1072,7 @@ export function GameStatePreview({
           : 1,
       } as React.CSSProperties}>
 
+         {blackGold && <BattleTurnHandoff state={state}/>}
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
             {/* Opponent Hand: centered like the player's hand */}
@@ -1099,6 +1101,7 @@ export function GameStatePreview({
                 <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                  <div
                     ref={championRef}
+                    data-defeated={state.status === "FINISHED" && state.loserId === opp.id}
                     className={`ko-opponent-champion group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
                       !blackGold && attackImpactTriggered &&
                       attackAnimation?.targetKind === "CHAMPION" &&
@@ -1600,6 +1603,7 @@ export function GameStatePreview({
                 <div className="relative shrink-0">
                   <div
                     ref={playerChampionRef}
+                    data-defeated={state.status === "FINISHED" && state.loserId === me.id}
                     role="button"
                     tabIndex={0}
                     aria-label={effectTargeting ? '내 챔피언 대상' : '내 챔피언 감정표현 열기'}

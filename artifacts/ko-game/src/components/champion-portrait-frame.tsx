@@ -18,6 +18,12 @@ export function ChampionPortraitFrame({
       <div className="ko-portrait-rim" aria-hidden="true">
         <i />
         <b />
+        <svg className="ko-portrait-wear" viewBox="0 0 100 100" preserveAspectRatio="none"
+          data-wear={health <= 0 || (health > 0 && health <= 5) ? 3 : health / Math.max(1,maxHealth) <= .35 ? 2 : health / Math.max(1,maxHealth) <= .65 ? 1 : 0}>
+          <path className="ko-wear-light" d="M2 53L7 56L2 61M94 31L99 35L94 39"/>
+          <path className="ko-wear-medium" d="M22 6L25 10L21 13M98 72L93 76L98 81M4 79L8 84L4 88"/>
+          <path className="ko-wear-critical" d="M60 2L57 7L63 11M10 22L6 28L11 32M77 99L73 94L79 90"/>
+        </svg>
       </div>
       <div className="ko-portrait-plinth" aria-hidden="true" />
       <span className="ko-portrait-name font-display" title={name}>
