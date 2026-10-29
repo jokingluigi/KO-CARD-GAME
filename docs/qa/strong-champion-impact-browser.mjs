@@ -171,6 +171,8 @@ try {
                 : ss.translate.split(" ").map(parseFloat);
             values.push({
               body: Math.hypot(m.m41, m.m42),
+              bodyY: Math.abs(m.m42),
+              cameraY: Math.abs(t[1] || 0),
               breath: bm.m42,
               tremor: tm.m41,
               camera: Math.hypot(t[0], t[1] || 0),
@@ -179,6 +181,8 @@ try {
             else
               resolve({
                 body: Math.max(...values.map((x) => x.body)),
+                bodyY: Math.max(...values.map((x) => x.bodyY)),
+                cameraY: Math.max(...values.map((x) => x.cameraY)),
                 camera: Math.max(...values.map((x) => x.camera)),
                 breathRange:
                   Math.max(...values.map((x) => x.breath)) -
@@ -205,6 +209,12 @@ try {
     assert.ok(low.breathRange > 2, "low breathing visible");
     assert.ok(low.breathRange < breath.breathRange);
     assert.equal(breath.tremorRange, 0);
+    assert.equal(
+      await p
+        .locator(".ko-player-champion .ko-sprite-low-tremor")
+        .evaluate((n) => getComputedStyle(n).animationDuration),
+      "0.52s",
+    );
     assert.ok(low.tremorRange > 2, "low-health shivering visibly active");
     await p.evaluate(() => window.__strongHit(1));
     await p.waitForFunction(
@@ -278,6 +288,10 @@ try {
       } else {
         assert.ok(sample.body > 5);
         assert.ok(sample.camera > 10);
+      }
+      if (amount >= 5) {
+        assert.equal(sample.bodyY, 0);
+        assert.equal(sample.cameraY, 0);
       }
       damage.push({ amount, ...sample });
       if (amount === 8)

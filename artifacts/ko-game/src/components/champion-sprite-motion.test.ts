@@ -313,7 +313,7 @@ test("emote mapping stays in the active skin set and explicit OFF preserves low 
   );
 });
 
-test("gesture stages separate anticipation, lagging tilt, brace, and recovery", () => {
+test("gesture stages separate casting preparation, relief, and horizontal hit recovery", () => {
   const cue = (kind: ChampionMotionCue["kind"]) => ({
     id: kind,
     kind,
@@ -327,7 +327,7 @@ test("gesture stages separate anticipation, lagging tilt, brace, and recovery", 
   const hit = motionFrames(cue("HIT"), true),
     heavy = motionFrames(cue("HEAVY_HIT"), true);
   assert.notDeepEqual(hit, heavy);
-  assert.equal(heavy[3].offset, 0.43);
+  assert.equal(heavy[3].offset, 0.30);
   assert.ok(expressionLead("ABILITY") > expressionLead("SUMMON"));
   assert.equal(expressionLead("HIT"), 0);
 });
@@ -427,9 +427,17 @@ test("centred mobile commanders exert vertically toward the field while hit dire
 });
 
 test('damage-driven torso recoil is monotonic and heavy hits double the previous base force',()=>{
- const peak=(damage:number)=>Math.max(...motionFrames({id:'damage',kind:damage>=5?'HEAVY_HIT':'HIT',event:damage>=5?'HEAVY_HIT':'HIT',damage},true,.8,1,false,{x:0,y:1}).map(f=>Math.abs(Number(String(f.transform).match(/translate\([^,]+,([-.\d]+)px/)! [1]))));
+ const peak=(damage:number)=>Math.max(...motionFrames({id:'damage',kind:damage>=5?'HEAVY_HIT':'HIT',event:damage>=5?'HEAVY_HIT':'HIT',damage},true,.8,1,false,{x:0,y:1}).map(f=>(()=>{const m=String(f.transform).match(/translate\(([-.\d]+)px,([-.\d]+)px/)!;return Math.hypot(Number(m[1]),Number(m[2]));})()));
  const values=[1,2,3,4,5,6,7,8].map(peak);
  for(let i=1;i<values.length;i++)assert.ok(values[i]>=values[i-1]);
  assert.ok(peak(1)>=17);assert.ok(peak(5)>=40);assert.ok(peak(5)>peak(4));
- assert.equal(peak(999),48);
+ assert.equal(peak(999),52);
+});
+
+test('heavy-hit torso alternates horizontally and decays to rest without vertical travel',()=>{
+ const frames=motionFrames({id:'lateral',kind:'HEAVY_HIT',event:'HEAVY_HIT',damage:8},true,.8,1,false,{x:0,y:1});
+ const points=frames.map(f=>{const m=String(f.transform).match(/translate\(([-.\d]+)px,([-.\d]+)px/)!;return [Number(m[1]),Number(m[2])];});
+ for(const [,y]of points)assert.equal(y,0);
+ const moving=points.slice(1,-1);for(let i=1;i<moving.length;i++){assert.ok(moving[i][0]*moving[i-1][0]<0);assert.ok(Math.abs(moving[i][0])<Math.abs(moving[i-1][0]));}
+ assert.deepEqual(points.at(-1),[0,0]);
 });

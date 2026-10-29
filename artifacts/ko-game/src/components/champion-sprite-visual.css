@@ -140,7 +140,7 @@
    Transient reactions temporarily replace it, then current health decides return. */
 .ko-sprite-low-tremor { transform-origin:var(--sprite-pivot,50% 90%); }
 .ko-sprite-visual[data-state="LOW"]:not([data-moving="true"]):not([data-reacting="true"]):not([data-reduced="true"]) .ko-sprite-low-tremor {
-  animation:ko-sprite-low-shiver 400ms linear infinite;
+  animation:ko-sprite-low-shiver 520ms linear infinite;
   animation-delay:var(--sprite-breath-phase);
 }
 @keyframes ko-sprite-low-shiver {

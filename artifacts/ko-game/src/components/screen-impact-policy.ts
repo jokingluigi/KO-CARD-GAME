@@ -67,6 +67,12 @@ export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1},red
  const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.075,.14,.26,.34,.38][rank]!*(reduced?.5:1);
  const length=Math.hypot(direction.x,direction.y)||1,dx=direction.x/length,dy=direction.y/length;
  const a=Math.min(92,profile.amplitude*2.6);
+ if(rank>=3 && profile.bass===null && profile.rarity==='NORMAL'){
+  const side=Math.abs(dx)>.1?Math.sign(dx):(dy>=0?-1:1);
+  const lateral=(offset:number,travel:number,punch:number)=>({offset,translate:`${(side*travel*a).toFixed(3)}px 0.000px`,scale:String(1+zoom*punch),rotate:'0.000deg'});
+  return [lateral(0,0,0),lateral(.04,1,1),lateral(.14,-.8,1),lateral(.26,.62,.85),lateral(.4,-.45,.65),lateral(.54,.29,.45),lateral(.7,-.16,.25),lateral(.86,.07,.08),lateral(1,0,0)];
+ }
+
  const pose=(travel:number,lateral:number,scale:number,angle:number)=>({
   translate:`${((dx*travel-dy*lateral)*a).toFixed(3)}px ${((dy*travel+dx*lateral)*a).toFixed(3)}px`,
   scale:String(1+zoom*scale),rotate:`${(profile.rotation*angle).toFixed(3)}deg`,

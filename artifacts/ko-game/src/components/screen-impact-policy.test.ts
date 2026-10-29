@@ -26,11 +26,19 @@ test('actual damage increases camera force inside tiers; five damage is a strong
   const p=effectiveImpact(damageImpact(damage),{width:390,height:844},'FULL');
   assert.ok(p.amplitude>previous);previous=p.amplitude;
   const frames=combatCameraFrames(p,{x:0,y:1});
-  assert.ok(parseFloat(String(frames[1].translate))===0);
+  if(damage<5)assert.equal(parseFloat(String(frames[1].translate)),0);else assert.equal(Number(String(frames[1].translate).split(' ')[1].replace('px','')),0);
   assert.ok(Math.abs(Number(String(frames[1].translate).split(' ')[1].replace('px','')))<=92);
   assert.equal(frames.at(-1)?.translate,'0.000px 0.000px');
  }
  assert.equal(damageImpact(5).tier,'HEAVY');
  assert.equal(damageImpact(0).amplitude,0);assert.equal(damageImpact(NaN).amplitude,0);
  assert.equal(damageImpact(999).amplitude,42);
+});
+
+test('strong whole-board camera uses only fast alternating horizontal recoil',async()=>{
+ const {combatCameraFrames}=await import('./screen-impact-policy');
+ const frames=combatCameraFrames(damageImpact(8),{x:.5,y:.9});
+ const x=frames.slice(1,-1).map(f=>{const [x,y]=String(f.translate).split(' ').map(parseFloat);assert.equal(y,0);assert.equal(parseFloat(String(f.rotate)),0);return x;});
+ for(let i=1;i<x.length;i++){assert.ok(x[i]*x[i-1]<0);assert.ok(Math.abs(x[i])<Math.abs(x[i-1]));}
+ assert.equal(frames.at(-1)?.scale,'1');assert.equal(frames.at(-1)?.translate,'0.000px 0.000px');
 });

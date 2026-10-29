@@ -196,19 +196,20 @@ export function motionFrames(
         (heavy
           ? 5.4 + Math.max(0, damage - 5) * 0.4
           : 2.2 + (damage - 1) * 0.3);
-    // Translation leads; torso tilt follows. Heavy impact braces before one recovery overshoot.
+    // Strong hits recoil laterally in fast, decaying impacts. Source chooses
+    // the first side, while the portrait keeps its normal vertical placement.
+    const lateral =
+      (Math.abs(axis.x) > 0.1 ? Math.sign(axis.x) : -sign) * force;
     return heavy
       ? [
           key(0),
-          key(0.12, x, y, r * 0.3, 1, cue.selfDamage ? 1.12 : 1.4),
-          key(0.25, x * 0.95, y * 0.95, r, 1, 0.82),
-          key(0.43, x * 0.88, y * 0.88, r * 0.95, 1, 0.94),
-          key(
-            0.76,
-            -x * 0.12 * rebound,
-            -y * 0.12 * rebound,
-            -r * 0.16 * rebound,
-          ),
+          key(0.08, lateral, 0, r * 0.3, 1, cue.selfDamage ? 1.12 : 1.4),
+          key(0.18, -lateral * 0.8 * rebound, 0, -r * 0.24, 1, 0.86),
+          key(0.3, lateral * 0.62, 0, r * 0.19),
+          key(0.43, -lateral * 0.45 * rebound, 0, -r * 0.14),
+          key(0.57, lateral * 0.29, 0, r * 0.09),
+          key(0.71, -lateral * 0.16 * rebound, 0, -r * 0.05),
+          key(0.85, lateral * 0.07, 0, r * 0.02),
           key(1),
         ]
       : [
