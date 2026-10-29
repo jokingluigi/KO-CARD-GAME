@@ -38,3 +38,12 @@ test('selected skin inherits only champion motion defaults while keeping its own
  assert.equal(appearance.config!.awakened!.motion!.preset,'AGILE');
  assert.ok(!championSpriteCandidates(appearance,{awakened:true,low:false,reaction:'HIT'}).some(c=>c.url.includes('base')));
 });
+
+test('quest default and its failure fallback stay within the selected skin',()=>{
+ const keep={...sprite,awakening:'KEEP' as const,frames:{...sprite.frames,awaken:f('skin-a-quest'),hurt:f('skin-a-hit')},reactions:{HIT:'hurt' as const}};
+ const candidates=championSpriteCandidates(resolve(item(keep),true),{awakened:true,low:false,reaction:'HIT'});
+ assert.deepEqual(candidates.map(c=>c.url),['https://example.invalid/skin-a-hit.png','https://example.invalid/skin-a-quest.png','https://example.invalid/skin-a-art.png']);
+ const missing=championSpriteCandidates(resolve(item({...keep,frames:{default:f('own')},reactions:{}}),true),{awakened:true,low:false,reaction:'IDLE'});
+ assert.equal(missing[0].url,'https://example.invalid/own.png');
+ assert.ok(!missing.some(c=>c.url.includes('base')||c.url.includes('quest')));
+});

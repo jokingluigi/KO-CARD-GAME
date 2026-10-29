@@ -297,8 +297,8 @@ const frame = (name: string) => ({
 const frames = Object.fromEntries(
   Object.keys(SPRITE_EXPRESSIONS).map((k) => [k, frame(k)]),
 );
-test("ten slots, fixed damage/HP thresholds, same-set default and healing return are deterministic", () => {
-  assert.equal(Object.keys(SPRITE_EXPRESSIONS).length, 10);
+test("ten combat slots plus optional awakening, fixed damage/HP thresholds, same-set default and healing return are deterministic", () => {
+  assert.equal(Object.keys(SPRITE_EXPRESSIONS).length, 11);
   const config = { version: 1 as const, frames, reactions: {} };
   for (const [hp, expected] of [
     [4, "low"],

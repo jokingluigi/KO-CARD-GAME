@@ -13,7 +13,7 @@ export const SPRITE_EVENTS = [
   "DEFEAT",
   "EMOTE",
 ] as const;
-/** The ten artwork slots; AWAKEN is a transition, never an eleventh expression. */
+/** Ten combat expressions plus the optional quest-completion appearance. */
 export const SPRITE_EXPRESSIONS = {
   default: "기본",
   attack: "공격",
@@ -25,6 +25,7 @@ export const SPRITE_EXPRESSIONS = {
   victory: "승리",
   defeat: "패배",
   relief: "안도",
+  awaken: "각성",
 } as const;
 export const FINAL_SPRITE_EVENTS = [
   "IDLE",
@@ -70,6 +71,7 @@ const eventExpression: Partial<Record<SpriteEvent, string>> = {
   SUMMON: "summon",
   ALLY_RETIRED: "surprised",
   HEAL: "relief",
+  AWAKEN: "awaken",
   VICTORY: "victory",
   DEFEAT: "defeat",
 };
@@ -397,8 +399,17 @@ export function reactSprite(
       now +
       (["VICTORY", "DEFEAT"].includes(event)
         ? Number.MAX_SAFE_INTEGER - now
-        : (config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800)),
+        : event === "AWAKEN" && config?.frames[config.reactions.AWAKEN ?? "awaken"]
+          ? spriteAwakeningDelay(config)
+          : (config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800)),
   };
+}
+
+/** Artwork remains readable even with reduced motion; this never delays rules. */
+export function spriteAwakeningDelay(config?: BattleSprite | null, reduced = false) {
+  return config?.frames[config.reactions.AWAKEN ?? "awaken"]
+    ? Math.max(1000, Math.min(2000, config.timing?.AWAKEN ?? 1500))
+    : reduced ? 70 : 220;
 }
 
 /** Shared by battle and editor. A replacement set never resolves into pre-awakening frames. */
@@ -418,6 +429,15 @@ export function selectSpriteFrame(
       ? config.awakened!
       : config;
   const state = input.outcome ?? (input.low ? "LOW" : "IDLE");
+  const awakenedDefault = input.awakened && set === config
+    ? config.frames[config.reactions.AWAKEN ?? "awaken"]
+    : undefined;
+  const defaultFrame = awakenedDefault ?? set.frames.default;
+  if (!input.outcome && input.reaction === "AWAKEN" && set === config &&
+      !config.disabled?.includes("AWAKEN")) {
+    const transition = config.frames[config.reactions.AWAKEN ?? "awaken"];
+    if (transition) return transition;
+  }
   const persistent =
     set.states?.[state] ??
     (state === "LOW"
@@ -448,7 +468,7 @@ export function selectSpriteFrame(
           eventExpression[input.reaction] ??
           "default")
         : persistent;
-  return set.frames[key] ?? set.frames.default;
+  return key === "default" ? defaultFrame : (set.frames[key] ?? defaultFrame);
 }
 export function spriteFrames(config: BattleSprite) {
   return [
@@ -457,7 +477,7 @@ export function spriteFrames(config: BattleSprite) {
   ];
 }
 
-/** Converts the earlier optional mappings into the final ten editable artwork slots.
+/** Converts the earlier optional mappings into the editable artwork slots.
  * It is a read-time projection; saved legacy manifests are never overwritten implicitly. */
 function cloneFrame(frame: SpriteFrame): SpriteFrame {
   return {
@@ -484,6 +504,7 @@ export function finalSpriteSet(input: BattleSprite): BattleSprite {
     victory: [input.states?.VICTORY!, input.reactions.VICTORY!, "victory"],
     defeat: [input.states?.DEFEAT!, input.reactions.DEFEAT!, "defeat"],
     relief: [input.reactions.HEAL!, "relief"],
+    awaken: [input.reactions.AWAKEN!, "awaken"],
   };
   const frames: Record<string, SpriteFrame> = {};
   for (const [key, choices] of Object.entries(aliases)) {

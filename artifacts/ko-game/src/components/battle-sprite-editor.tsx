@@ -18,6 +18,7 @@ import {
   SPRITE_EXPRESSIONS,
   spriteEventLabels,
   spriteDefaultTiming,
+  spriteAwakeningDelay,
   finalSpriteSet,
   withSpriteFrame,
   selectSpriteFrame,
@@ -104,6 +105,7 @@ export function BattleSpriteEditor({
     extra: Partial<ChampionMotionCue> = {},
   ) {
     setPreviewMode("REACTION");
+    if (event === "AWAKEN") setAwake(false);
     const current =
       awake && root.awakening === "REPLACE" ? root.awakened : root;
     if (
@@ -128,7 +130,7 @@ export function BattleSpriteEditor({
   }
   useEffect(() => {
     if (reaction.cue?.kind !== "AWAKEN") return;
-    const timer = setTimeout(() => setAwake(true), 220);
+    const timer = setTimeout(() => setAwake(true), spriteAwakeningDelay(root));
     return () => clearTimeout(timer);
   }, [reaction.cue?.id]);
   useEffect(() => {
@@ -149,6 +151,9 @@ export function BattleSpriteEditor({
     [side, setSide] = useState<"self" | "opponent">("self"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const editableExpressions = Object.entries(SPRITE_EXPRESSIONS).filter(
+    ([key]) => editing === "NORMAL" || key !== "awaken",
+  );
   const frame = config.frames[expression];
   const put = (frame: SpriteFrame) =>
     onChange(withSpriteFrame(config, expression, frame));
@@ -501,6 +506,7 @@ export function BattleSpriteEditor({
                     victory: "VICTORY",
                     defeat: "DEFEAT",
                     relief: "HEAL",
+                    awaken: "AWAKEN",
                   } as const
                 )[
                   key as Exclude<
@@ -519,6 +525,7 @@ export function BattleSpriteEditor({
                       VICTORY: "VICTORY",
                       DEFEAT: "DEFEAT",
                       HEAL: "HEAL",
+                      AWAKEN: "AWAKEN",
                     } as const
                   )[event],
                   event,
@@ -590,11 +597,11 @@ export function BattleSpriteEditor({
         외형 스킨입니다. 다른 스킨의 표정이나 각성 세트를 가져오지 않습니다.
       </p>
       <p className="text-xs">
-        표정은 10개입니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5.
+        기존 10표정에 선택 등록하는 각성 표정이 추가됩니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5.
         안도(회복)는 실제 체력이 증가했을 때입니다. 공격은 주문·고유능력 사용
         확정에 반응합니다. 놀람은 내 레전더리 선수의 리타이어·파괴·소멸, 상대의
         레전더리·챔피언 토큰 소환, 기본 6코스트 이상 선수 소환·주문 사용, 상대
-        퀘스트 완료에 반응합니다. 각성은 별도 표정이 아닌 세트 전환입니다. 누락
+        퀘스트 완료에 반응합니다. 일반 세트의 각성 표정은 퀘스트 완료 후 기본 표정을 대체합니다. 전용 각성 세트를 사용하면 1~2초 표시 후 해당 세트로 전환합니다. 누락
         표정은 현재 세트의 기본 이미지를 사용합니다.
       </p>
       <div className="ko-sprite-editor-layout">
@@ -645,7 +652,7 @@ export function BattleSpriteEditor({
               onChange={(e) => setExpression(e.target.value)}
               className="ml-2 bg-neutral-900 p-2"
             >
-              {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
+              {editableExpressions.map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
                 </option>
@@ -655,9 +662,9 @@ export function BattleSpriteEditor({
           <div
             className="grid grid-cols-2 gap-2 sm:grid-cols-5"
             role="group"
-            aria-label="등록할 표정 10개"
+            aria-label={editing === "NORMAL" ? "등록할 표정 11개" : "등록할 표정 10개"}
           >
-            {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
+            {editableExpressions.map(([key, label]) => (
               <button
                 type="button"
                 key={key}
@@ -1095,7 +1102,7 @@ export function BattleSpriteEditor({
           <details className="ko-sprite-emote-settings">
             <summary>감정표현과 현재 세트의 표정 연결</summary>
             <p className="text-xs">
-              기존 10표정만 사용합니다. 약 1초 뒤 현재 기본·저체력으로 돌아오며
+              등록한 기존 표정을 사용합니다. 약 1초 뒤 현재 기본·저체력으로 돌아오며
               전투 반응이 우선합니다.
             </p>
             {CHAMPION_EMOTES.map((emote) => (
@@ -1185,11 +1192,11 @@ export function BattleSpriteEditor({
                     })
                   }
                 />
-                {spriteEventLabels[event]} 사용 · 유지(ms)
+                {event === "AWAKEN" ? "각성 표정·전환" : spriteEventLabels[event]} 사용 · 유지(ms)
                 <input
                   type="number"
-                  min={100}
-                  max={3000}
+                  min={event === "AWAKEN" ? 1000 : 100}
+                  max={event === "AWAKEN" ? 2000 : 3000}
                   value={
                     root.timing?.[event] ?? spriteDefaultTiming[event] ?? 800
                   }

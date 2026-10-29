@@ -80,17 +80,16 @@ export function championSpriteCandidates(
   if (skin.config) {
     const frame = selectSpriteFrame(skin.config, state);
     if (frame) candidates.push({ url: frame.url, frame });
-    const set =
-      state.awakened && skin.config.awakening === "REPLACE"
-        ? skin.config.awakened!
-        : skin.config;
+    const defaultFrame = selectSpriteFrame(skin.config, {
+      awakened: state.awakened, low: false, reaction: "IDLE",
+    });
     if (
-      set.frames.default &&
-      !candidates.some((c) => c.url === set.frames.default.url)
+      defaultFrame &&
+      !candidates.some((c) => c.url === defaultFrame.url)
     )
       candidates.push({
-        url: set.frames.default.url,
-        frame: set.frames.default,
+        url: defaultFrame.url,
+        frame: defaultFrame,
       });
   }
   for (const url of skin.illustrations)

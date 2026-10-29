@@ -1,0 +1,22 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "adminSaveReload": "PASS (mock API)",
+    "keep": "PASS",
+    "replaceHoldAndSwap": "PASS",
+    "reconnect": "PASS",
+    "newMatch": "PASS",
+    "fixture": "diagnostic artwork, confirmed event snapshots; not live PvP"
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "adminSaveReload": "PASS (mock API)",
+    "keep": "PASS",
+    "replaceHoldAndSwap": "PASS",
+    "reconnect": "PASS",
+    "newMatch": "PASS",
+    "fixture": "diagnostic artwork, confirmed event snapshots; not live PvP"
+  }
+]

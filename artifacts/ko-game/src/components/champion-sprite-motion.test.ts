@@ -113,7 +113,7 @@ test("effect settings and emote mappings validate without adding an artwork slot
     emotes: { THANKS: "relief", OOPS: null },
   };
   assert.ok(parseBattleSprite(c));
-  assert.equal(Object.keys(SPRITE_EXPRESSIONS).length, 10);
+  assert.equal(Object.keys(SPRITE_EXPRESSIONS).length, 11);
   for (const effects of [
     { accent: "url(evil)" },
     { origin: { self: { x: 101, y: 50 } } },

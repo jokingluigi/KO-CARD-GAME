@@ -3,6 +3,7 @@ import {
   championSpriteSkin,
   championSpriteCandidates,
   spriteFrames,
+  spriteAwakeningDelay,
   reactSprite,
   type SpriteEvent,
   type CosmeticLoadout,
@@ -18,7 +19,6 @@ import {
   useMotionExpression,
 } from "./champion-sprite-visual";
 import {
-  CHAMPION_MOTION,
   type ChampionMotionCue,
 } from "./champion-sprite-motion";
 import { prefersReducedMotion } from "./presentation-config";
@@ -56,6 +56,17 @@ export function ChampionBattleActor({
     game: state.gameId,
     awake: Boolean(player.champion?.questCompleted),
   });
+  const appearance = championSpriteSkin({
+    championId: player.champion?.id ?? "",
+    loadout,
+    base: player.champion?.presentationLines?.BATTLE_SPRITE,
+    normal: player.champion?.imageUrl ?? original,
+    awakenedPortrait: player.champion?.questCompletedPortraitEnabled
+      ? player.champion.questCompletedPortraitUrl
+      : original,
+    awakened: displayAwakened,
+  });
+  const config = appearance.config;
   useEffect(() => {
     const awake = Boolean(player.champion?.questCompleted),
       prior = lastAppearance.current;
@@ -75,21 +86,10 @@ export function ChampionBattleActor({
     }
     const timer = setTimeout(
       () => setDisplayAwakened(awake),
-      prefersReducedMotion() ? 70 : CHAMPION_MOTION.awakeSwapMs,
+      spriteAwakeningDelay(config, prefersReducedMotion()),
     );
     return () => clearTimeout(timer);
   }, [state.gameId, player.champion?.questCompleted]);
-  const appearance = championSpriteSkin({
-    championId: player.champion?.id ?? "",
-    loadout,
-    base: player.champion?.presentationLines?.BATTLE_SPRITE,
-    normal: player.champion?.imageUrl ?? original,
-    awakenedPortrait: player.champion?.questCompletedPortraitEnabled
-      ? player.champion.questCompletedPortraitUrl
-      : original,
-    awakened: displayAwakened,
-  });
-  const config = appearance.config;
   const identity = appearance.id;
   const setIdentity =
     identity +
