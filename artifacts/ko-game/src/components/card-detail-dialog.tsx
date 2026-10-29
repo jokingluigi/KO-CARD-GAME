@@ -1,3 +1,5 @@
+import {RelatedCards} from "./player-tools/related-cards";
+import {WishButton} from "./player-tools/wishlist";
 import {useDetailFlight} from "./physical-feedback";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import { CardRenderer } from "@/components/card-renderer";
@@ -77,6 +79,7 @@ export function CardDetailDialog({
       >
         {card && (
           <>
+            <RelatedCards id={card.id} onSelect={setTagDetailCard}/><WishButton item={{id:card.id,kind:"card",name:card.name,image:card.imageUrl}}/>
             <DialogHeader>
               <DialogTitle className="text-left text-xl font-black">{card.name}</DialogTitle>
               <DialogDescription className="text-left text-xs text-neutral-500">

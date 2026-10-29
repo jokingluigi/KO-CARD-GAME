@@ -631,15 +631,17 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   useEffect(()=>{if(quickMatchId&&gameState.status==='FINISHED')void releaseQuickAI(quickMatchId);},[quickMatchId,gameState.status]);
 
   const [aiCosmetics,setAiCosmetics]=useState<MatchCosmetics|undefined>(undefined);
+  const aiRestartErrorRef=useRef<string|null>(null);
   async function startAiMatch(deckId: string) {
+    aiRestartErrorRef.current=null;
     if (aiMatchStartingRef.current) return;
     const deck = aiDecks?.find((candidate) => candidate.id === deckId);
     const data = aiMatchData;
-    if (!deck?.isValid || !deck.championDefinitionId || !data) return;
+    if (!deck?.isValid || !deck.championDefinitionId || !data) {aiRestartErrorRef.current="이전 덱을 사용할 수 없습니다. 덱을 다시 선택하세요.";return;}
     const matchId = createLocalAIMatchId();
     const aiDeck = selectAIOpponentDeck(availableAIDecks ?? [], matchId);
     if (!aiDeck) {
-      setPlayError('사용 가능한 AI 덱이 없습니다.');
+      aiRestartErrorRef.current='사용 가능한 AI 덱이 없습니다.';setPlayError(aiRestartErrorRef.current);
       return;
     }
     const userChampion = data.champions.find((champion) => champion.id === deck.championDefinitionId);
@@ -676,7 +678,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         champion.id === aiDeck.championDefinitionId,
     );
     if (!authUser || !userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || !aiDeckDefinitionIds.length) {
-      setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
+      aiRestartErrorRef.current='AI 매치를 시작할 수 있는 공개 카드와 챔피언이 부족합니다.';setPlayError(aiRestartErrorRef.current);
       return;
     }
     let nextState = startGame(
@@ -700,7 +702,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       resolvedOpeningDialogue=prepared.intro;
       nextState={...prepared.state,backgroundId:nextState.backgroundId,bgmId:nextState.bgmId};
       setRuntimeCardDefinitions(nextState.cardPool??matchDefinitions);
-    }catch(error){setPlayError(error instanceof Error?error.message:'Could not start AI match');return;}
+    }catch(error){aiRestartErrorRef.current=error instanceof Error?error.message:'경기를 준비하지 못했습니다.';setPlayError(aiRestartErrorRef.current);return;}
     finally{aiMatchStartingRef.current=false;setAiStarting(false);}
     aiMatchQuestContextRef.current = {
       deckId: deck.id,
@@ -1652,7 +1654,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       } : undefined}
     />
      {matchResultVisible && (
-       <MatchResultOverlay cosmetics={isAiMatch ? aiCosmetics : undefined}
+       <MatchResultOverlay deckRecord={aiMatchQuestContextRef.current ? {id:aiMatchQuestContextRef.current.deckId,name:aiDecks?.find(d=>d.id===aiMatchQuestContextRef.current?.deckId)?.name??"AI 대전 덱"}:undefined} onRematch={isAiMatch&&!isTowerSandbox&&!quickMatchId&&aiMatchQuestContextRef.current ? async()=>{await startAiMatch(aiMatchQuestContextRef.current!.deckId);if(aiRestartErrorRef.current)throw Error(aiRestartErrorRef.current);}:undefined} onChooseDeck={isAiMatch&&!isTowerSandbox?()=>window.location.assign(quickMatchId?"/online/quick":"/ai-match"):undefined} cosmetics={isAiMatch ? aiCosmetics : undefined}
          opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
          state={gameState}
          mediaCatalog={mediaCatalog}

@@ -67,7 +67,7 @@ export function DeckShareDialog({ mode, snapshot, initialCode, options, onClose,
         </div>}
         {error && <p role="alert" className="text-red-300">{error}</p>}
         {preview && check && <section className="space-y-4" data-testid="deck-share-preview">
-          <h3 className="text-xl">{preview.name} · {check.total}장</h3>
+          <h3 className="text-xl">{preview.name} · {check.total}장</h3><p>필요한 미보유 수량: {check.rows.reduce((n,r)=>n+Math.max(0,r.count-(r.card?.quantity??0)),0)}장 · 평균 코스트: {(check.rows.reduce((n,r)=>n+(r.card?.cost??0)*r.count,0)/Math.max(1,check.total)).toFixed(1)}</p>
           <div className="flex items-center gap-3">
             {check.champion?.imageUrl && <img alt={check.champion.name} src={check.champion.imageUrl} className="h-28 w-20 object-contain" />}
             <p>{check.champion?.name ?? '사용할 수 없는 챔피언'}</p>

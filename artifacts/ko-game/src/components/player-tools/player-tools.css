@@ -1,0 +1,45 @@
+.ko-player-result-tools {
+  grid-column: 1/-1;
+  grid-row: 3;
+  align-items: center;
+  gap: 6px !important;
+  padding: 6px 0 !important;
+}
+.ko-player-result-tools button,
+.ko-player-result-tools a {
+  min-height: 44px;
+  padding: 8px 10px;
+  flex: 1 1 125px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  background: #181715;
+  color: #e6d3a2;
+  border: 1px solid #645233;
+}
+.ko-result-footer .ko-result-continue {
+  grid-row: 2;
+  grid-column: 2;
+}
+.ko-result-footer .ko-result-reward {
+  grid-row: 2;
+  grid-column: 1;
+}
+.ko-player-notebook {
+  max-width: 1080px;
+  margin: auto;
+  line-height: 1.65;
+}
+.ko-player-notebook h2 {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #5b4d34;
+  color: #ddc58a;
+}
+.ko-player-notebook article {
+  background: #151513;
+  border-radius: 3px;
+}
+.ko-player-notebook button:focus-visible {
+  outline: 2px solid #dbc58b;
+  outline-offset: 2px;
+}

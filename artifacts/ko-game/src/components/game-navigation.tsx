@@ -7,9 +7,10 @@ const destinations = [
   { href: '/online', label: '대전', icon: Swords },
   { href: '/decks', label: '덱 편집', icon: Layers3 },
   { href: '/collection', label: '컬렉션', icon: BookOpen },
+  {href:'/player-notebook',label:'내 기록',icon:BookOpen},
   { href: '/shop', label: '상점', icon: ShoppingBag },
 ];
-const routes = new Set(['/online', '/decks', '/collection', '/shop', '/packs', '/daily-quests', '/attendance', '/cosmetics']);
+const routes = new Set(['/player-notebook','/online', '/decks', '/collection', '/shop', '/packs', '/daily-quests', '/attendance', '/cosmetics']);
 export function GameNavigation() {
   const [location] = useLocation();
   if (!routes.has(location)) return null;

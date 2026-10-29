@@ -1,3 +1,5 @@
+import {SaveBattleImage} from "./player-tools/result-tools";
+import {PublicCards,usePublicCardIds} from "./player-tools/battle-tools";
 import {BattleZoneVisuals} from "./battle-zone-visuals";
 import {BattleResourceFeedback} from "./battle-resource-feedback";
 import {confirmedCounterDamage} from "./attack-animation-utils";
@@ -231,6 +233,8 @@ export function GameStatePreview({
   }),[]);
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
+  const publicCardIds=usePublicCardIds(state);
+  const [handSort,setHandSort]=React.useState("DRAW");
   const [historyOpen, setHistoryOpen] = React.useState(false);
   React.useEffect(() => { setHistoryOpen(false); }, [state.gameId, state.status]);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
@@ -1429,14 +1433,14 @@ export function GameStatePreview({
            {settingsOpen && (
              <>
                <div
-                 className="fixed inset-0 z-[150]"
+                 data-capture-exclude className="fixed inset-0 z-[150]"
                  aria-hidden="true"
                  onClick={closeSettings}
                />
                <div
                  role="dialog"
                  aria-modal="true"
-                 aria-label="게임 설정"
+                 data-capture-exclude aria-label="게임 설정"
                   className="ko-settings-dialog fixed right-2 z-[151] w-56 rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl md:right-40"
                  style={{top:"50%",maxHeight:"calc(100dvh - 24px)",overflowY:"auto",transform:"translateY(-50%)",translate:"none"}}
                  onClick={(event) => event.stopPropagation()}
@@ -1522,7 +1526,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
-                     <ScreenShakeSetting /><CombatSettings />
+                     <div className="flex shrink-0 justify-between gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
@@ -1726,7 +1730,7 @@ export function GameStatePreview({
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
                  ) : (
-                    me.hand.map((card, i) => {
+                    (handSort==="DRAW"?me.hand:[...me.hand].sort((a,b)=>a.currentCost-b.currentCost)).map((card, i) => {
                       const isSelected = selectedCardId === card.instanceId;
                       const payableCost = card.cardType === 'WRESTLER' ? wrestlerPlayCost(state, me.id, card) : card.currentCost;
                       const canAfford = isMyTurn && me.currentGold >= payableCost && (!state.tower || card.cardType !== 'WRESTLER' || canEnterTowerField(state, me.id));

@@ -20,6 +20,7 @@ import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
 
+const PlayerNotebook=lazy(()=>import("@/pages/player-notebook"));
 const Cosmetics = lazy(() => import("@/pages/cosmetics"));
 const Tower = lazy(() => import("@/pages/tower"));
 const Draft = lazy(() => import("@/pages/draft"));
@@ -46,6 +47,7 @@ function Router() {
       <Suspense fallback={<GameLoading />}><Switch>
         <Route path="/admin/:section?" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
+        <Route path="/player-notebook" component={PlayerNotebook}/>
         <Route path="/cosmetics" component={Cosmetics}/>
         <Route path="/tower" component={Tower} />
         <Route path="/draft" component={Draft} />

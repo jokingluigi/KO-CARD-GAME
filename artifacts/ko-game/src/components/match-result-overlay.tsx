@@ -1,3 +1,4 @@
+import {ResultTools,type DeckRecord} from "./player-tools/result-tools";
 import {
   buildMatchRecap,
   type MatchRecap,
@@ -21,7 +22,7 @@ import type { GameMediaCatalog } from "@/game/media";
 import "./cinematic-presentation.css";
 
 export function MatchResultOverlay({
-  state,
+  state, onRematch,onChooseDeck,deckRecord,
   cosmetics: providedCosmetics,
   onReturnToMainMenu,
   reward,
@@ -35,6 +36,7 @@ export function MatchResultOverlay({
   opponentNickname,
   continueLabel = "메인 화면으로",
 }: {
+  onRematch?:()=>void|Promise<void>;onChooseDeck?:()=>void;deckRecord?:DeckRecord;
   continueLabel?: string;
   recap?: MatchRecap | null;
   mediaCatalog?: GameMediaCatalog;
@@ -349,6 +351,7 @@ export function MatchResultOverlay({
               <span>경기 종료 · GG</span>
             )}
           </div>
+<ResultTools state={state} deck={deckRecord} onRematch={onRematch} onChooseDeck={onChooseDeck} disabled={rewardStatus==="pending"||rewardStatus==="error"||Boolean(questError)}/>
           <button
             type="button"
             onClick={onReturnToMainMenu}

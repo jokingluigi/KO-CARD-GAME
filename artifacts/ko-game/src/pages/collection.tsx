@@ -1,3 +1,4 @@
+import {WishlistArrivals} from "@/components/player-tools/wishlist";
 import {MotionNumber} from "@/components/presentation-motion";
 import {useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
@@ -334,6 +335,7 @@ export default function CollectionPage() {
           </button>
         </div>
 
+        <WishlistArrivals kind="card" owned={[...(collection?.cards??[]).filter(c=>c.quantity>0).map(c=>c.id),...(collection?.champions??[]).filter(c=>c.owned).map(c=>c.id)]}/>
         <header className="mb-6 flex items-end justify-between gap-4 border-b border-neutral-800 pb-5">
           <div>
             <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">MY COLLECTION</p>

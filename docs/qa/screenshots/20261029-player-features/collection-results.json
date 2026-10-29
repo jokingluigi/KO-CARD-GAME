@@ -1,0 +1,20 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "wishlist": true,
+    "persistence": true,
+    "relatedCards": true,
+    "skinAwakeningAndSides": true,
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "wishlist": true,
+    "persistence": true,
+    "relatedCards": true,
+    "skinAwakeningAndSides": true,
+    "pageErrors": []
+  }
+]

@@ -247,10 +247,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
 
         <section aria-label="메인 메뉴" className="ko-main-menu__groups">
           {([{ title: "대전", labels: ["온라인 매치", "AI 매치", "타워 모드", "드래프트 모드"] },
-            { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "튜토리얼"] },
+            { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼"] },
             { title: "보상과 상점", labels: ["일일 퀘스트", "출석 보드", "내 팩", "상점"] }]).map(group => <section key={group.title} aria-label={group.title} className="ko-main-menu__group">
           <h2>{group.title}</h2><div className="ko-main-menu__grid">
-          {[...menuItems, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : []), ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].filter(item => group.labels.includes(item.label)).sort((a,b) => group.labels.indexOf(a.label)-group.labels.indexOf(b.label)).map(({ label, description, icon: Icon }, index) => (
+          {[...menuItems, {label:"내 기록",description:"덱별 전적과 수집 목표",icon:BookOpen}, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : []), ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].filter(item => group.labels.includes(item.label)).sort((a,b) => group.labels.indexOf(a.label)-group.labels.indexOf(b.label)).map(({ label, description, icon: Icon }, index) => (
             <button
               key={label}
               data-menu-tier={group.title === "대전" ? "battle" : "utility"}
@@ -260,6 +260,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
               onClick={() => {
                 if (label === '타워 모드') { navigate('/tower'); return; }
                 if (label === '드래프트 모드') { navigate('/draft'); return; }
+                if(label==="내 기록"){navigate("/player-notebook");return;}
                 if (label === "꾸미기") { navigate("/cosmetics"); return; }
                 if (label === "덱 편집") {
                   onDeckEdit?.();

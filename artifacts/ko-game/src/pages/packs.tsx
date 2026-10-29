@@ -1,3 +1,4 @@
+import {changeShelf,readShelf} from "@/components/player-tools/shelf";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Gift } from "lucide-react";
 import { PackOpening } from "@/components/pack-opening";
@@ -26,6 +27,7 @@ export default function PacksPage() {
   const [, navigate] = useLocation();
   const [packs, setPacks] = useState<Pack[]>([]);
   const [selected, setSelected] = useState<Pack | null>(null);
+  const [wishNotice,setWishNotice]=useState("");
   const [rewards, setRewards] = useState<PackReward[]>([]);
   const [openedQuantity, setOpenedQuantity] = useState(0);
   const [openings, setOpenings] = useState<Array<{ rewards: PackReward[] }> | null>(null);
@@ -100,6 +102,10 @@ export default function PacksPage() {
       setOpenings(normalizedOpenings);
       setOpenedQuantity(result.quantity);
       setRewards(normalizedOpenings.flatMap((packOpening) => packOpening.rewards));
+      const confirmed=normalizedOpenings.flatMap(x=>x.rewards),cardIds=confirmed.flatMap(r=>[r.cardDefinitionId,r.championDefinitionId]).filter(Boolean),skinIds=confirmed.flatMap(r=>[r.cosmeticId,r.cosmetic?.id,r.skinDefinitionId?'legacy:'+r.skinDefinitionId:undefined]).filter(Boolean);
+      const achieved=readShelf(userId).wishes.filter(w=>!w.acquired&&(w.kind==='card'?cardIds:skinIds).includes(w.id));
+      if(achieved.length&&changeShelf(userId,s=>({...s,wishes:s.wishes.map(w=>achieved.some(a=>a.id===w.id&&a.kind===w.kind)?{...w,acquired:true}:w)})))setWishNotice('수집 목표 달성: '+achieved.map(w=>w.name).join(', '));
+
       const removed = clearBulkOpenIntention(sessionStorage, userId);
       if (removed) {
         openingIntentionRef.current = null;
@@ -177,6 +183,7 @@ export default function PacksPage() {
 
   return (
     <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
+      {wishNotice&&<p role="status" className="border border-amber-800 p-3 text-amber-200">{wishNotice}</p>}
       <div className="mx-auto max-w-6xl">
         <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-7 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">

@@ -1,0 +1,22 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "sortDoesNotMutateState": true,
+    "noBattleResize": true,
+    "publicCardsDialog": true,
+    "confirmedResultHistory": true,
+    "downloadedImage": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "sortDoesNotMutateState": true,
+    "noBattleResize": true,
+    "publicCardsDialog": true,
+    "confirmedResultHistory": true,
+    "downloadedImage": true,
+    "errors": []
+  }
+]

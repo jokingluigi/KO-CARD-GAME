@@ -1,3 +1,4 @@
+import {rememberMatchDeck} from "@/components/player-tools/shelf";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, DoorOpen, LockKeyhole, UserRound, X } from "lucide-react";
 import { useLocation } from "wouter";
@@ -61,6 +62,7 @@ function RoomMember({
 function FriendlyMatchPage() {
   const [, navigate] = useLocation();
   const { decks, error: decksError } = useOnlineDecks();
+  const selectedDeckMeta=useRef<{id:string;name:string}|null>(null);
   const client = getOnlineLobbyClient();
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [mode, setMode] = useState<FriendlyMode>("choose");
@@ -76,6 +78,7 @@ function FriendlyMatchPage() {
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
   useAvailableDeckSelection(decks, selectedDeckId, setSelectedDeckId);
+  selectedDeckMeta.current=decks?.find(d=>d.id===selectedDeckId)??null;
   useEffect(() => {
     selectedDeckIdRef.current = selectedDeckId;
   }, [selectedDeckId]);
@@ -114,6 +117,7 @@ function FriendlyMatchPage() {
         if (message.message) setError(message.message);
       }
       if (message.type === "MATCH_STARTING") {
+        if(selectedDeckMeta.current)void rememberMatchDeck(message.matchId,{...selectedDeckMeta.current,mode:"FRIENDLY"});
         roomExitRef.current = true;
         pendingRoomActionRef.current = false;
         const opponent = message.opponent?.nickname

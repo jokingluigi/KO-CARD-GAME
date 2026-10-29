@@ -1,3 +1,4 @@
+import {useShelf} from "./player-tools/shelf";
 import { useEffect, useState } from "react";
 import { ArrowRight, Bot, CheckCircle2, Dices, ShieldAlert } from "lucide-react";
 import type { AIDeck } from "@/lib/ai-decks-client";
@@ -13,6 +14,7 @@ type AiMatchSetupProps = {
 };
 
 export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting = false }: AiMatchSetupProps) {
+  const shelf=useShelf();
   const validDecks = decks?.filter((deck) => deck.isValid) ?? [];
   const validAIDecks = aiDecks?.filter((deck) => deck.isValid && deck.enabled) ?? [];
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting 
               <section>
                 <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black tracking-wider text-neutral-300">1. 내 덱</h2><span className="text-xs text-neutral-500">{selectedDeckId ? "선택됨" : "선택 필요"}</span></div>
                 <div className="grid gap-3">
-                   {validDecks.map((deck) => <button key={deck.id} type="button" aria-pressed={selectedDeckId === deck.id} onClick={() => setSelectedDeckId(deck.id)} className={`rounded-xl border p-4 text-left transition ${selectedDeckId === deck.id ? "border-amber-400 bg-amber-950/30" : "border-neutral-800 bg-neutral-950 hover:border-neutral-600"}`}><div className="flex items-start justify-between gap-4"><div><p className="font-black">{deck.name}</p><p className="mt-1 text-xs font-bold text-neutral-500">{deck.cards.length}장 · {deck.champion?.name ?? "챔피언 없음"}</p></div>{selectedDeckId === deck.id && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}</div></button>)}
+                   {validDecks.map((deck) => <button key={deck.id} type="button" aria-pressed={selectedDeckId === deck.id} onClick={() => setSelectedDeckId(deck.id)} className={`rounded-xl border p-4 text-left transition ${selectedDeckId === deck.id ? "border-amber-400 bg-amber-950/30" : "border-neutral-800 bg-neutral-950 hover:border-neutral-600"}`}><div className="flex items-start justify-between gap-4"><div><p className="font-black">{deck.name}</p><p className="text-xs text-amber-200">이 브라우저: {shelf.data.matches.filter(m=>m.deckId===deck.id).length}전 · {shelf.data.matches.filter(m=>m.deckId===deck.id&&m.result==="승리").length}승</p><p className="mt-1 text-xs font-bold text-neutral-500">{deck.cards.length}장 · {deck.champion?.name ?? "챔피언 없음"}</p></div>{selectedDeckId === deck.id && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}</div></button>)}
                 </div>
               </section>
               <section className="rounded-xl border border-neutral-800 bg-neutral-950 p-5">

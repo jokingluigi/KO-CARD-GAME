@@ -1,3 +1,4 @@
+import {rememberMatchDeck} from "@/components/player-tools/shelf";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Radio, WifiOff } from "lucide-react";
 import { useLocation } from "wouter";
@@ -25,12 +26,16 @@ const connectionCopy: Record<OnlineLobbyConnectionState, string> = {
 function QuickMatchPage() {
   const [, navigate] = useLocation();
   const { decks, error: decksError } = useOnlineDecks();
+  const selectedDeckMeta=useRef<{id:string;name:string}|null>(null);
   const client = getOnlineLobbyClient();
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [quickState, setQuickState] = useState<QuickState>("selecting");
-  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
+  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(()=>new URLSearchParams(window.location.search).get("repeat"));
   const [error, setError] = useState<string | null>(decksError);
   const [elapsed, setElapsed] = useState(0);
+  const repeat=new URLSearchParams(window.location.search).get("repeat");
+  const autoQueued=useRef(false);
+  useEffect(()=>{if(repeat&&decks&&!decks.some(d=>d.id===repeat&&d.isValid))setError("이전 덱을 사용할 수 없어요. 다른 덱을 선택해 주세요.");},[decks,repeat]);
   const matchFoundRef = useRef(false);
   const joinRequestedRef = useRef(false);
   const selectedDeckIdRef = useRef<string | null>(null);
@@ -39,6 +44,7 @@ function QuickMatchPage() {
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
   useAvailableDeckSelection(decks, selectedDeckId, setSelectedDeckId);
 
+  selectedDeckMeta.current=decks?.find(d=>d.id===selectedDeckId)??null;
   useEffect(() => {
     selectedDeckIdRef.current = selectedDeckId;
   }, [selectedDeckId]);
@@ -58,6 +64,7 @@ function QuickMatchPage() {
         setError(null);
       }
       if (message.type === "MATCH_FOUND") {
+        if(selectedDeckMeta.current)void rememberMatchDeck(message.matchId,{...selectedDeckMeta.current,mode:"QUICK"});
         matchFoundRef.current = true;
         joinRequestedRef.current = false;
         const opponent = message.opponent?.nickname
@@ -66,6 +73,7 @@ function QuickMatchPage() {
         navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}${opponent}`);
       }
       if (message.type === 'QUICK_AI_MATCH_FOUND') {
+        if(selectedDeckMeta.current)void rememberMatchDeck(message.matchId,{...selectedDeckMeta.current,mode:'QUICK'});
         matchFoundRef.current=true;joinRequestedRef.current=false;
         navigate(`${ROUTES.AI_MATCH}?quickMatch=${encodeURIComponent(message.matchId)}`);
       }
@@ -107,6 +115,7 @@ function QuickMatchPage() {
     client.send({ type: "JOIN_QUICK_QUEUE", deckId: selectedDeckId });
   };
 
+  useEffect(()=>{if(repeat&&selectedDeckId===repeat&&selectedDeck?.isValid&&connection==="open"&&!autoQueued.current){autoQueued.current=true;startSearch();}},[repeat,selectedDeckId,selectedDeck,connection]);
   const cancelSearch = () => {
     joinRequestedRef.current = false;
     client.send({ type: "LEAVE_QUICK_QUEUE" });
