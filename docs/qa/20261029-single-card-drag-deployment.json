@@ -1,0 +1,85 @@
+{
+  "commit": "4ea0ec273574fb4460796bc57ae4cd6319ba3388",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbhncie7bikc73f2t6dg",
+  "status": "live",
+  "liveCommit": "4ea0ec273574fb4460796bc57ae4cd6319ba3388",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-JBUoyerN.js",
+    "/assets/index-Dll_dFdi.css"
+  ],
+  "assets": [
+    {
+      "file": "collection-client-DkYnnBvX.js",
+      "sha256": "9339c766272d70fc88c7e3d650559503bbc813e6347ed237dbbfeb40ee049b82",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-DdkbZsUO.js",
+      "sha256": "5d7c67e1ff07c889a445434c392b9c97cc70be068452d96fc9329fe7c7d23fd3",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-DiQIZvj-.css",
+      "sha256": "592c080f14e56e1f72946da8a266258d47d18eb57884012bf74f3c78734afac7",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-BB7GX7KI.js",
+      "sha256": "2be35eb3fe833ed8a7339c3b9158d7f8fc396ee2531d926df23f1859a7d17221",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DSVkFit7.js",
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-rzQGC1_5.js",
+      "sha256": "fac9f6b906ea4c1d97891927d4160d95b23cf198d81c8c1314763bfe8cb690c7",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-Bit-OUZy.css",
+      "sha256": "f61f3f4bbc40826d623ddaec951ed8e7723e32e6874643173d6bea0372222cce",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-OQc_rEmV.js",
+      "sha256": "b3ac97ac05014dbd60ba29f94ff978eb88cd7c0cae42e9766302da6b62049da0",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-DkoTdO3b.js",
+      "sha256": "3096cea95f76b4650e25b8f4b542a4b80bbceb975bc79bec8c7d709f1cc76ed6",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-BQAfR-Y_.js",
+      "sha256": "af5a98e926541b6f4984f062d1e295fd944bbf87d295114cc64c3b45db5f77c1",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-BY5k9Qg0.js",
+      "sha256": "6847c41479520eacde5066cc7605619f79f36419e171d6f1fb241436794986cc",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-BTCJm6Y-.js",
+      "sha256": "d2512485f0b477bcc74ba0fe170d6f730557abbe5bf323edafa0bdc8a3560ef7",
+      "matchesLocal": true
+    },
+    {
+      "file": "/assets/index-JBUoyerN.js",
+      "sha256": "364a0e8208329c39c8bfff9c584ef1014769d6ddbf7d75881e35169318722de0",
+      "matchesLocal": true
+    },
+    {
+      "file": "/assets/index-Dll_dFdi.css",
+      "sha256": "04eb4d16e9cd2ef2369365eb8ad8b5e3f5c3a68967fca1cd497893011baa7df8",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}

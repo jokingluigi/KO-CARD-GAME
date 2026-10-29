@@ -9,3 +9,5 @@ Checks: frontend typecheck and production build passed. Actual shared battle bro
 [Diagnostic drag screenshot](screenshots/20261029-single-card-drag/drag-390.png). The QA fixture has no final champion artwork; the screenshot is for drag visibility/layout, not final character-art validation. Physical phone and live authenticated PvP were not exercised.
 
 Changed: shared `champion-portrait-frame.tsx`, battle callers in `game-state-preview.tsx`, `battle-card-drag.tsx`, `battle-presentation.css`, and `mobile-spell-drag-browser.mjs`. No combat rule, server or database changes.
+
+Frontend release `4ea0ec2` is live. Root entry and 14 JS/CSS assets match the local build; health check returned 200. [Deployment receipt](20261029-single-card-drag-deployment.json). Main, server and database were not changed.
