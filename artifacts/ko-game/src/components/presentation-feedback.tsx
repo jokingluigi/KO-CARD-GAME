@@ -1,3 +1,4 @@
+import "./effect-readability.css";
 import {audioManager} from '../audio/audio-manager';
 import {useScreenImpact} from './screen-impact';
 import {damageImpact} from './screen-impact-policy';
@@ -25,6 +26,8 @@ const toneClass: Record<PresentationCue["kind"], string> = {
   DODGE: "presentation-feedback--dodge",
   BLOCK: "presentation-feedback--dodge",
   HEAL: "presentation-feedback--heal",
+  MAX_HEALTH:"presentation-feedback--capacity",
+  PROTECTION_BREAK:"presentation-feedback--protection-break",
   BUFF: "presentation-feedback--buff",
   DEBUFF: "presentation-feedback--debuff",
   RETIRE: "presentation-feedback--retire",
@@ -61,11 +64,11 @@ export function PresentationFeedback({
 
   useEffect(() => {
     completedRef.current = false;
-    if(cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
+    if(!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
     if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;
       const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'impact/impact_metal_medium_000.ogg',BLOCK:'impact/impact_metal_medium_000.ogg',DESTROY:'impact/impact_glass_heavy_000.ogg',RETIRE:'impact/impact_soft_heavy_000.ogg',GOLD:'rpg/handle_coins.ogg'};
-      if(sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],40,4);
-      onStartRef.current?.(cue);
+      if(!cue.quiet&&sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],40,4);
+      if(!cue.quiet)onStartRef.current?.(cue);
     }
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
@@ -85,8 +88,8 @@ export function PresentationFeedback({
 
   return (
     <>
-    {(cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage || (['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD'].includes(cue.kind)&&!(cue.kind==='HEAL'&&cue.playerId&&!cue.cardInstanceId))) &&
-      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='ARMOR'?'ARMOR':cue.kind==='BLOCK'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
+    {!cue.quiet && (cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage || (['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD','PROTECTION_BREAK'].includes(cue.kind)&&!(cue.kind==='HEAL'&&cue.playerId&&!cue.cardInstanceId))) &&
+      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='PROTECTION_BREAK'?'ARMOR':cue.kind==='ARMOR'?'ARMOR':cue.kind==='BLOCK'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
         left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
     <div
       aria-hidden="true"
@@ -100,17 +103,18 @@ export function PresentationFeedback({
         onCompleteRef.current();
       }}
     >
-      {cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage&&<i className="presentation-feedback__effect-hit"/>}
-      {cue.kind==='ARMOR'&&<i className="presentation-feedback__shield"/>}
-      {cue.kind==='SILENCE'&&<i className="presentation-feedback__silence-ring"/>}
-      {cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&
+      {!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage&&<i className="presentation-feedback__effect-hit"/>}
+      {!cue.quiet&&cue.kind==='ARMOR'&&<i className="presentation-feedback__shield"/>}
+      {!cue.quiet && cue.kind==='SILENCE'&&<i className="presentation-feedback__silence-ring"/>}
+      {!cue.quiet && cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&
         (Math.abs(cue.sourceLeft - cue.left) + Math.abs(cue.sourceTop - cue.top) > 30) &&
-        <i className="presentation-feedback__transfer" />}
-      {cue.kind === "TRANSFORM" && cue.previousArtwork && cue.nextArtwork &&
+        <img alt="" src={`${import.meta.env.BASE_URL}vendor/kenney/particle/star_01.png`} className="presentation-feedback__transfer"/>}
+      {!cue.quiet && cue.kind === "TRANSFORM" && cue.previousArtwork && cue.nextArtwork &&
         <span className="presentation-feedback__morph" aria-hidden="true">
           <img src={cue.previousArtwork} alt="" className="presentation-feedback__morph-before" />
           <img src={cue.nextArtwork} alt="" className="presentation-feedback__morph-after" />
         </span>}
+      {cue.kind==="MAX_HEALTH"&&!cue.quiet&&<i className="ko-capacity-expand"/>}
       <span className="presentation-feedback__label">{cue.label}</span>
       {cue.kind === "QUEST_PROGRESS" && cue.value ? <small>+{cue.value}</small> : null}
     </div>

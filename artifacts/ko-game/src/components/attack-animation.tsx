@@ -116,6 +116,11 @@ export function AttackAnimation({
           return Math.abs(r.left+r.width/2-(target.left+target.width/2))<r.width/2 && Math.abs(r.top+r.height/2-(target.top+target.height/2))<r.height/2;
         }) : undefined;
     const targetMotion=championNode?.querySelector(".ko-sprite-visual")?undefined:animate(championNode??targetRef.current,targetReactionFrames(dx,dy,animation.damage,timeline,reduced));
+    // Committed attack only: a short visual focus during existing anticipation,
+    // without moving hit areas or adding any timing to the battle.
+    const focusNode=championNode?.querySelector<HTMLElement>('.ko-portrait-window')??targetRef.current;
+    let focus:Animation|undefined;
+    if(!reduced)try{focus=focusNode?.animate([{filter:'brightness(1)',outline:'1px solid transparent'},{filter:'brightness(1.14)',outline:'2px solid #cbb476'},{filter:'brightness(1)',outline:'1px solid transparent'}],{duration:Math.min(160,impactDelay),easing:'ease-out'});}catch{}
     const origin=performance.now();
     let frame=0;
     let movementPlayed=false;
@@ -142,7 +147,7 @@ export function AttackAnimation({
     return () => {
       cancelAnimationFrame(frame);
       if(motion){motion.onfinish=null;motion.cancel();}
-      targetMotion?.cancel();hush?.cancel();
+      targetMotion?.cancel();hush?.cancel();focus?.cancel();
       document.removeEventListener('visibilitychange',hidden);
       window.removeEventListener('resize',complete);
       window.removeEventListener('ko-combat-preferences',complete);

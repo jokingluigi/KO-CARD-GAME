@@ -26,3 +26,12 @@ test('source pulse precedes effect results without moving gameplay events',()=>{
  assert.deepEqual(result.map(c=>c.kind),['EFFECT','DAMAGE','DAMAGE']);
  assert.deepEqual(result.filter(c=>c.kind!=='EFFECT'),cues);
 });
+test('protection breaks only on a blocked result with actual consumed protection',()=>{
+ const before={...card,dodgeAvailable:true,dodgeCharges:1};
+ const after={...before,dodgeAvailable:false,dodgeCharges:0};
+ const event={type:'DAMAGE_DEALT' as const,amount:0,tags:['DODGE'],target:{type:'CARD' as const,cardInstanceId:card.instanceId}};
+ const b=new Map([[card.instanceId,before]]),a=new Map([[card.instanceId,after]]);
+ assert.equal(statusPresentation([event],b,a,'break')[0]?.kind,'PROTECTION_BREAK');
+ assert.deepEqual(statusPresentation([],b,a,'expired'),[]);
+ assert.deepEqual(statusPresentation([event],b,b,'not-consumed'),[]);
+});

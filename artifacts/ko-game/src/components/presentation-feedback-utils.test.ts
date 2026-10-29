@@ -161,3 +161,11 @@ test("온라인 viewer의 턴 시작은 YOUR TURN으로 표시한다", () => {
 
   assert.deepEqual(cues.map((cue) => cue.label), ["YOUR TURN", "TURN START"]);
 });
+
+test('maximum health capacity is distinct from healing and hidden transformations stay private',()=>{
+ const target={type:'CARD' as const,cardInstanceId:'buffed'};
+ const cues=presentationCueDrafts([{type:'STAT_CHANGED',stat:'maxHealth',delta:2,target},{type:'STAT_CHANGED',stat:'currentHealth',delta:2,target}],0);
+ assert.deepEqual(cues.map(c=>c.kind),['MAX_HEALTH','BUFF']);
+ assert.equal(presentationCueDrafts([{type:'STAT_CHANGED',stat:'currentHealth',delta:2,target}],0)[0].kind,'HEAL');
+ assert.equal(visibleStatFeedback({id:'hidden',kind:'TRANSFORM',label:'',duration:100,cardInstanceId:'hidden'},new Set()),false);
+});

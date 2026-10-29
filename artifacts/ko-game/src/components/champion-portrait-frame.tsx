@@ -1,3 +1,4 @@
+import "./effect-readability.css";
 import { MotionNumber } from "./presentation-motion";
 import { displayHealth } from "./match-display-utils";
 import "./champion-portrait-frame.css";
@@ -8,16 +9,19 @@ export function ChampionPortraitFrame({
   health,
   maxHealth,
   emblem,
+  awakened=false,
 }: {
   name: string;
   health: number;
   maxHealth: number;
   emblem?:string|null;
+  awakened?:boolean;
 }) {
   return (
     <>
       <div className="ko-portrait-arch" aria-hidden="true" />
-      <div className="ko-portrait-rim" aria-hidden="true">
+      <div className="ko-portrait-rim" data-awakened={awakened} aria-hidden="true">
+        {awakened&&<span className="ko-awakened-crown"/>}
         <i style={emblem?{backgroundImage:`url("${emblem}")`,backgroundSize:"cover",backgroundPosition:"center"}:undefined}/>
         <b style={emblem?{backgroundImage:`url("${emblem}")`,backgroundSize:"cover",backgroundPosition:"center"}:undefined}/>
         <svg className="ko-portrait-wear" viewBox="0 0 100 100" preserveAspectRatio="none"

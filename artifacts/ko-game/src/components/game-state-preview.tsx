@@ -1,3 +1,4 @@
+import {BattleZoneVisuals} from "./battle-zone-visuals";
 import {BattleResourceFeedback} from "./battle-resource-feedback";
 import {confirmedCounterDamage} from "./attack-animation-utils";
 import {BattleTurnHandoff} from "./battle-turn-handoff";
@@ -350,7 +351,9 @@ export function GameStatePreview({
     if (!questPresentationAllowed) setPresentationQueue(current => current.filter(cue => !['QUEST_COMPLETE', 'QUEST_PROGRESS'].includes(cue.kind)));
   }, [questPresentationAllowed]);
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
-  const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
+  const lastHandPositionsRef = React.useRef(new Map<string, DOMRect>());
+  React.useEffect(()=>{lastHandPositionsRef.current.clear();},[state.gameId]);
+  const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number; maxHealth:number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
   const handlePresentationQueueComplete = React.useCallback(() => {
     setPresentationQueue((current) => current.slice(1));
@@ -360,7 +363,12 @@ export function GameStatePreview({
     const target=cue.cardInstanceId ? boardCardRefs.current.get(cue.cardInstanceId) ?? handCardRefs.current.get(cue.cardInstanceId) : (cue.playerId===state.players[0]?.id || cue.championId===state.players[0]?.champion?.id) ? playerChampionRef.current : championRef.current;
     const spriteTarget=Boolean(target?.querySelector('.ko-sprite-visual'));
     if(cue.kind==='EFFECT'){if(!spriteTarget)motion.react(target,'EFFECT');return;}
-    if(cue.kind==='SILENCE'){if(!spriteTarget)motion.react(target,'SILENCE');return;}
+    if(['BUFF','DEBUFF','MAX_HEALTH','HEAL'].includes(cue.kind)){
+      const stat=cue.stat==='attack'?'attack':cue.stat==='cost'?'cost':'health';
+      const numeric=target?.querySelector<HTMLElement>(`[data-card-stat="${stat}"]`);
+      if(numeric)motion.react(numeric,'EFFECT');
+    }
+    if(cue.kind==='SILENCE'){if(!spriteTarget){motion.react(target?.querySelector<HTMLElement>('img')??target,'SILENCE');motion.react(target?.querySelector<HTMLElement>('[data-card-rules]'),'SILENCE');}return;}
     if(cue.kind==='DAMAGE'&&!cue.combat&&!spriteTarget)motion.react(target,'HIT',Math.min(3,(cue.value??1)/3));
     if(cue.kind!=='DAMAGE'||cue.combat) return;
     const key=`${state.gameId}:${cue.id}`;
@@ -416,15 +424,17 @@ export function GameStatePreview({
   }, []);
 
   React.useEffect(() => {
-    const currentCardStats = new Map<string, { attack: number; health: number }>();
+    const currentCardStats = new Map<string, { attack: number; health: number; maxHealth:number }>();
     for (const player of state.players) {
       for (const card of [...player.hand, ...player.deck, ...player.graveyard, ...player.removedFromGame, ...player.board]) {
         if (card) currentCardStats.set(card.instanceId, {
           attack: card.currentAttack,
           health: card.currentHealth,
+          maxHealth:card.maxHealth,
         });
       }
     }
+    const currentCardSnapshot=currentCards(state);
     const eventLogReset = processedEventCountRef.current !== null &&
       state.events.length < processedEventCountRef.current;
     if (processedEventCountRef.current === null || eventLogReset) {
@@ -433,7 +443,7 @@ export function GameStatePreview({
         state.events.map((event, index) => presentationEventKey(event, index, state.events)),
       );
       previousCardStatsRef.current = currentCardStats;
-      previousCardsRef.current = currentCards(state);
+      previousCardsRef.current = currentCardSnapshot;
       if (eventLogReset) {
         setSpokenLine(null);setWrestlerSpeech([]);
         if(spokenTimerRef.current!==null)window.clearTimeout(spokenTimerRef.current);
@@ -485,9 +495,9 @@ export function GameStatePreview({
           line = championVoiceLine(owner?.champion?.presentationLines, event.tags?.includes('AFTER_QUEST') ?? false, emote) ?? CHAMPION_EMOTE_LABELS[emote];
         }
       }
-      const wrestlerLine = wrestlerEventLine(event, state.cardPool ?? [], previousCardsRef.current, currentCards(state));
+      const wrestlerLine = wrestlerEventLine(event, state.cardPool ?? [], previousCardsRef.current, currentCardSnapshot);
       if (wrestlerLine && event.playerId && event.cardInstanceId && state.status!=='FINISHED') {
-        const instance=currentCards(state).get(event.cardInstanceId)??previousCardsRef.current.get(event.cardInstanceId);
+        const instance=currentCardSnapshot.get(event.cardInstanceId)??previousCardsRef.current.get(event.cardInstanceId);
         const definitionId=event.cardDefinitionId??instance?.definitionId;
         if(definitionId)incomingSpeech.push({id:newEventEntries.find(entry=>entry.event===event)!.key,text:wrestlerLine.text,speaker:wrestlerLine.speaker,playerId:event.playerId,instanceId:event.cardInstanceId,definitionId,phase:event.type as WrestlerSpeech['phase'],ready:event.type!=='ENTER_FIELD'});
       }
@@ -520,7 +530,7 @@ export function GameStatePreview({
     const previousCardStats = previousCardStatsRef.current;
     const previousCards = previousCardsRef.current;
     previousCardStatsRef.current = currentCardStats;
-    previousCardsRef.current = currentCards(state);
+    previousCardsRef.current = currentCardSnapshot;
 
     if (hapticsEnabled && typeof navigator.vibrate === 'function' &&
         window.matchMedia?.('(pointer: coarse)').matches && !prefersReducedMotion()) {
@@ -638,7 +648,7 @@ export function GameStatePreview({
         // Technique is played its public instance is in the graveyard, so use
         // the current snapshot as the presentation source when the previous
         // snapshot could not contain the hidden card identity.
-        const technique = previousCards.get(event.cardInstanceId) ?? currentCards(state).get(event.cardInstanceId);
+        const technique = previousCards.get(event.cardInstanceId) ?? currentCardSnapshot.get(event.cardInstanceId);
         if (technique) {
           const sourceElement = event.playerId === me.id
             ? handCardRefs.current.get(event.cardInstanceId)
@@ -711,18 +721,29 @@ export function GameStatePreview({
       ]);
     }
     const drafts = withEffectSources(presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId));
-    const statusCues = statusPresentation(newEvents, previousCards, currentCards(state), `${state.gameId}:${state.events.length}`);
+    // Some confirmed transformations (TRANSFORM_SOURCE) change the exact
+    // instance's definition without emitting CARD_TRANSFORMED. Preserve identity.
+    for(const [id,after] of currentCardSnapshot){
+      const before=previousCards.get(id);
+      if(before && before.definitionId!==after.definitionId && !drafts.some(c=>c.kind==='TRANSFORM'&&c.cardInstanceId===id))
+        drafts.push({id:`transform:${state.events.length}:${id}:${after.definitionId}`,kind:'TRANSFORM',label:'변신',cardInstanceId:id,duration:400});
+    }
+    const statusCues = statusPresentation(newEvents, previousCards, currentCardSnapshot, `${state.gameId}:${state.events.length}`);
     const cues = mergeStatusPresentation(drafts, statusCues, newEventKeys).map((draft) => {
       const source = draft.sourceCardInstanceId
         ? boardCardRefs.current.get(draft.sourceCardInstanceId) ?? handCardRefs.current.get(draft.sourceCardInstanceId)
         : null;
-      const rect = source?.getBoundingClientRect();
+      const rect = source?.getBoundingClientRect() ?? (draft.sourceCardInstanceId ? lastHandPositionsRef.current.get(draft.sourceCardInstanceId) ?? lastCardPositionsRef.current.get(draft.sourceCardInstanceId) : undefined);
       const before = draft.kind === 'TRANSFORM' && draft.cardInstanceId
         ? previousCards.get(draft.cardInstanceId) : undefined;
       const after = draft.kind === 'TRANSFORM' && draft.cardInstanceId
-        ? currentCards(state).get(draft.cardInstanceId) : undefined;
-      const artwork = (card?: CardInstance) => card &&
-        (state.cardPool?.find((entry) => entry.id === card.definitionId) ?? getCardDefinition(card.definitionId))?.imageUrl;
+        ? currentCardSnapshot.get(draft.cardInstanceId) : undefined;
+      const artwork = (card?: CardInstance) => {
+        if (!card) return undefined;
+        const original=(state.cardPool?.find((entry) => entry.id === card.definitionId) ?? getCardDefinition(card.definitionId))?.imageUrl;
+        const owner=state.players.find(p=>[...p.board,...p.hand,...p.graveyard,...p.removedFromGame].some(c=>c?.instanceId===card.instanceId));
+        return cosmeticImage(owner ? cosmetics[owner.id] : undefined,'CARD_SKIN',card.definitionId,'art',original);
+      };
       return {
         ...draft,
         label: draft.kind === "QUEST_PROGRESS" ? '퀘스트 진행' : draft.label,
@@ -741,17 +762,19 @@ export function GameStatePreview({
     if (!hasDamageEvent && !newEvents.some((event) => event.type === 'STAT_CHANGED')) {
       for (const [cardInstanceId, current] of currentCardStats) {
         const previous = previousCardStats.get(cardInstanceId);
-        if (!previous) continue;
+        if (!previous || previousCards.get(cardInstanceId)?.definitionId!==currentCardSnapshot.get(cardInstanceId)?.definitionId) continue;
         const attackDelta = current.attack - previous.attack;
         const healthDelta = current.health - previous.health;
-        if (attackDelta === 0 && healthDelta === 0) continue;
+        const maxDelta=current.maxHealth-previous.maxHealth;
+        if (attackDelta === 0 && healthDelta === 0 && maxDelta===0) continue;
         const positive = attackDelta > 0 || healthDelta > 0;
-        const kind = positive
+        const kind = maxDelta>0 ? "MAX_HEALTH" as const : positive
           ? healthDelta > 0 && attackDelta <= 0 ? "HEAL" as const : "BUFF" as const
           : "DEBUFF" as const;
         const parts = [
           attackDelta ? `${attackDelta > 0 ? "+" : ""}${attackDelta} ATK` : "",
           healthDelta ? `${healthDelta > 0 ? "+" : ""}${healthDelta} HP` : "",
+          maxDelta ? `${maxDelta>0?"+":""}${maxDelta} MAX HP`:"",
         ].filter(Boolean);
         const draft = {
           id: `stats:${state.events.length}:${cardInstanceId}`,
@@ -891,8 +914,8 @@ export function GameStatePreview({
   }
 
   function setHandCardRef(cardId: string, element: HTMLDivElement | null) {
-    if (element) handCardRefs.current.set(cardId, element);
-    else handCardRefs.current.delete(cardId);
+    if (element) { handCardRefs.current.set(cardId, element); lastHandPositionsRef.current.set(cardId, element.getBoundingClientRect()); }
+    else { const old=handCardRefs.current.get(cardId); if(old?.isConnected)lastHandPositionsRef.current.set(cardId,old.getBoundingClientRect()); handCardRefs.current.delete(cardId); }
   }
 
   function setBoardSlotRef(slot: number, element: HTMLDivElement | null) {
@@ -956,7 +979,9 @@ export function GameStatePreview({
         ...player.removedFromGame,
         ...player.board,
       ]) {
-        if (card) cards.set(card.instanceId, card);
+        // Local engine helpers can mutate card objects before publishing the
+        // next state. Keep primitive visual state independent of those objects.
+        if (card) cards.set(card.instanceId, {...card,keywords:[...card.keywords]});
       }
     }
     return cards;
@@ -1076,6 +1101,7 @@ export function GameStatePreview({
       } as React.CSSProperties}>
 
          {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/></>}
+         <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
             {/* Opponent Hand: centered like the player's hand */}
@@ -1129,7 +1155,7 @@ export function GameStatePreview({
                          handleAttackChampion();
                        }}
                  >
-                   {blackGold && <ChampionPortraitFrame emblem={opponentChampionPortrait} name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
+                   {blackGold && <ChampionPortraitFrame awakened={Boolean(opp.champion?.questCompleted)} emblem={opponentChampionPortrait} name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
                    <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} framed={blackGold} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/></div>
 
                    {opponentChampionProtected && (
@@ -1263,7 +1289,10 @@ export function GameStatePreview({
                  </div>
                </div>
                {showTurnTimer && <div
-                 className={`rounded border px-2 py-1 text-center font-display text-sm font-black md:text-lg ${
+                 data-time-pressure={turnSecondsRemaining<=5?"critical":turnSecondsRemaining<=10?"warning":"normal"}
+                 data-testid="battle-turn-timer"
+                 style={{"--timer-remaining":Math.max(0,Math.min(1,turnSecondsRemaining/10))} as React.CSSProperties}
+                 className={`ko-battle-time rounded border px-2 py-1 text-center font-display text-sm font-black md:text-lg ${
                    turnSecondsRemaining <= 10
                      ? 'border-red-500 bg-red-950/80 text-red-300'
                      : 'border-neutral-700 bg-neutral-900/90 text-primary'
@@ -1622,7 +1651,7 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
-                    {blackGold && <ChampionPortraitFrame emblem={playerChampionPortrait} name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
+                    {blackGold && <ChampionPortraitFrame awakened={Boolean(me.champion?.questCompleted)} emblem={playerChampionPortrait} name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
                     <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} framed={blackGold} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/></div>
 
                    {playerChampionProtected && (
@@ -1800,7 +1829,7 @@ export function GameStatePreview({
         (!attackAnimation || attackImpactTriggered) && (
         presentationQueue[0].kind === "QUEST_COMPLETE"
           ? <QuestPresentation cue={presentationQueue[0]} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={handlePresentationQueueComplete} />
-          : <PresentationFeedback lethal={state.status==='FINISHED' && presentationQueue[0].playerId===state.loserId} cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
+          : <PresentationFeedback key={presentationQueue[0].id} lethal={state.status==='FINISHED' && presentationQueue[0].playerId===state.loserId} cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
     </AltInspectProvider></CinematicProvider></RenderCardCatalog.Provider></BattleCosmeticsContext.Provider>

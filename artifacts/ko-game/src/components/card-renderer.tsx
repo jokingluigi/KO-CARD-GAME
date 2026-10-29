@@ -420,12 +420,12 @@ export function CardRenderer({
               width: `${scaleSize(frameLayout.cost.size, frameScale)}%`,
             }}
           >
-            <MotionNumber className={statClass} value={cost} />
+            <span data-card-stat="cost"><MotionNumber className={statClass} value={cost} /></span>
           </div>
         )}
 
         {showRules && (
-          <div
+          <div data-card-rules
             className={`pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] text-center text-neutral-100 ${fitRules ? "py-0" : "py-[3%]"}`}
             style={{
               left: `${scaleInset(frameLayout.rules.left, frameScale, frameOffsetX)}%`,
@@ -456,7 +456,7 @@ export function CardRenderer({
                 width: `${scaleSize(frameLayout.attack.size, frameScale)}%`,
               }}
             >
-            <MotionNumber className={`${statClass} text-amber-300`} value={attack} />
+            <span data-card-stat="attack"><MotionNumber className={`${statClass} text-amber-300`} value={attack} /></span>
             </div>
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
@@ -466,7 +466,7 @@ export function CardRenderer({
                 width: `${scaleSize(frameLayout.health.size, frameScale)}%`,
               }}
             >
-              <MotionNumber className={`${statClass} text-red-400`} value={health} />
+              <span data-card-stat="health"><MotionNumber className={`${statClass} text-red-400`} value={health} /></span>
             </div>
           </>
         )}

@@ -8,6 +8,8 @@ export type PresentationCueKind =
   | "DAMAGE"
   | "DODGE"
   | "BLOCK"
+  | "MAX_HEALTH"
+  | "PROTECTION_BREAK"
   | "HEAL"
   | "BUFF"
   | "DEBUFF"
@@ -32,6 +34,8 @@ export type PresentationCueDraft = {
   championId?: string;
   sourceCardInstanceId?: string;
   duration: number;
+  stat?: GameEvent["stat"];
+  quiet?: boolean;
   combat?: boolean;
   selfDamage?: boolean;
 };
@@ -43,7 +47,7 @@ export function presentationBlocksActions(cues: PresentationCueDraft[]): boolean
 
 /** Deck buffs still resolve, but offscreen stat popups have no visible target. */
 export function visibleStatFeedback(cue: PresentationCueDraft, visibleCardIds: Set<string>): boolean {
-  return !cue.cardInstanceId || !['BUFF', 'HEAL', 'DEBUFF', 'EFFECT', 'SILENCE', 'ARMOR'].includes(cue.kind) || visibleCardIds.has(cue.cardInstanceId);
+  return !cue.cardInstanceId || !['BUFF', 'HEAL', 'MAX_HEALTH', 'PROTECTION_BREAK', 'DEBUFF', 'EFFECT', 'SILENCE', 'ARMOR', 'TRANSFORM'].includes(cue.kind) || visibleCardIds.has(cue.cardInstanceId);
 }
 
 /** Stable within a match even when the same event payload occurs more than once. */
@@ -125,12 +129,14 @@ export function presentationCueDrafts(
       case "STAT_CHANGED":
         if ((event.delta ?? 0) !== 0) {
           const delta = event.delta ?? 0;
+          const maximumChanged=events.some(other=>other.type==='STAT_CHANGED'&&other.stat==='maxHealth'&&(other.delta??0)>0&&JSON.stringify(targetIds(other))===JSON.stringify(target));
           drafts.push({
             id,
-            kind: delta > 0
-              ? event.stat === "health" || event.stat === "currentHealth" ? "HEAL" : "BUFF"
+            stat:event.stat,
+            kind: event.stat === "maxHealth" && delta > 0 ? "MAX_HEALTH" : delta > 0
+              ? (event.stat === "health" || event.stat === "currentHealth") && !maximumChanged ? "HEAL" : "BUFF"
               : "DEBUFF",
-            label: `${event.stat === "attack" ? "공격력" : event.stat === "cost" ? "비용" : "체력"} ${delta > 0 ? "+" : ""}${delta}`,
+            label: `${event.stat === "attack" ? "공격력" : event.stat === "cost" ? "비용" : event.stat === "maxHealth" ? "최대 체력" : "체력"} ${delta > 0 ? "+" : ""}${delta}`,
             value: delta,
             sourceCardInstanceId: event.source?.type === "CARD" ? event.source.cardInstanceId : undefined,
             ...target,

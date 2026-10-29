@@ -407,6 +407,7 @@ export function BattleSpriteEditor({
           >
             <ChampionPortraitFrame
               name={championName}
+              awakened={awake}
               health={health}
               maxHealth={20}
             />

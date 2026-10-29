@@ -1,0 +1,50 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "headlessFrameMs": {
+      "samples": 614,
+      "p50": 16.699999999999818,
+      "p95": 33.30000000000018,
+      "maximum": 133.20000000000073
+    },
+    "checks": [
+      "engine field-to-hand",
+      "engine hand-to-deck concealed",
+      "engine generation not draw",
+      "engine AoE two actual targets and cleanup",
+      "maximum health capacity",
+      "engine silence",
+      "engine transform",
+      "engine dodge consumed without health damage",
+      "critical timer shape",
+      "awakened frame",
+      "reduced motion",
+      "no page errors"
+    ]
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "headlessFrameMs": {
+      "samples": 710,
+      "p50": 16.699999999999818,
+      "p95": 16.80000000000109,
+      "maximum": 83.40000000000009
+    },
+    "checks": [
+      "engine field-to-hand",
+      "engine hand-to-deck concealed",
+      "engine generation not draw",
+      "engine AoE two actual targets and cleanup",
+      "maximum health capacity",
+      "engine silence",
+      "engine transform",
+      "engine dodge consumed without health damage",
+      "critical timer shape",
+      "awakened frame",
+      "reduced motion",
+      "no page errors"
+    ]
+  }
+]

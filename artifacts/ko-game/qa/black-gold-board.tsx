@@ -30,6 +30,7 @@ function Scene() {
   const [qaIntro,setQaIntro]=useState(()=>new URLSearchParams(location.search).has("intro"));
   const introStart=useRef(Date.now());
   useEffect(()=>{if(!qaIntro)return;const t=setTimeout(()=>setQaIntro(false),4500);return()=>clearTimeout(t);},[qaIntro]);
+  const [qaSeconds,setQaSeconds]=useState(60);
   const [cosmetics,setCosmetics]=useState<MatchCosmetics>({});
   const [state, setState] = useState(boardFixture),
     [selected, setSelected] = useState<string | null>(null),
@@ -58,6 +59,7 @@ function Scene() {
     const load = (e: Event) => {
       const next = (e as CustomEvent).detail;
       setCosmetics(next.cosmetics ?? {});
+      setQaSeconds(next.turnSecondsRemaining ?? 60);
       setRuntimeCardDefinitions(next.definitions ?? definitions);
       setPlay(null);
       setAttacks([]);
@@ -181,7 +183,7 @@ function Scene() {
         selectedCardId={selected}
         selectedAttackerId={attacker}
         playError={error}
-        turnSecondsRemaining={60}
+        turnSecondsRemaining={qaSeconds}
         canEndTurn={
           !busy && state.activePlayerId === "player-1" && !state.targetingState
         }

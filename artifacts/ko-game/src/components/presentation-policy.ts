@@ -16,6 +16,9 @@ export function enqueuePresentation<T extends QueueEntry>(pending:T[],incoming:T
  const ids=new Set(pending.map(c=>c.id));
  const fresh=incoming.filter(c=>{if(ids.has(c.id))return false;ids.add(c.id);return true;});
  // Preserve causal order and every outcome. Accelerate long chains instead of dropping events.
- return [...pending,...fresh].map((c,index)=>['QUEST_COMPLETE','TRANSFORM'].includes(c.kind)?c:{...c,duration:presentationDuration(Math.min(c.duration,400),'NORMAL',index)});
+ const all=[...pending,...fresh];
+ return all.map((c,index)=>['QUEST_COMPLETE','TRANSFORM'].includes(c.kind)?c:{...c,
+  quiet:all.length>8&&index<all.length-5,
+  duration:presentationDuration(Math.min(c.duration,all.length>8&&index<all.length-5?180:400),'NORMAL',index)});
 }
 export function acceptsSound(activePriority:number,expires:number,priority:number,now:number) {return now>=expires||priority>=activePriority;}

@@ -18,6 +18,12 @@ export function statusPresentation(events:GameEvent[],before:Map<string,CardInst
  const result:StatusCue[]=[];
  for(const [id,card] of after) {
   const old=before.get(id);
+  if(old){
+    const blocked=events.some(e=>e.type==='DAMAGE_DEALT'&&e.target?.type==='CARD'&&e.target.cardInstanceId===id&&(e.tags?.some(t=>t==='BLOCKED'||t==='DODGE')||e.reason==='DODGE'||e.amount===0&&['COMBAT','BASIC_ATTACK'].includes(e.reason??'')));
+    const dodgeGone=(old.dodgeCharges??0)>0&&(card.dodgeCharges??0)===0 || old.dodgeAvailable===true&&card.dodgeAvailable===false&&(card.dodgeCharges??0)===0;
+    const entryGone=old.entryDefenseActive===true&&card.entryDefenseActive===false;
+    if(blocked&&(dodgeGone||entryGone))result.push({id:batch+':protection:'+id,kind:'PROTECTION_BREAK',label:'보호 소모',cardInstanceId:id,duration:280});
+  }
   if(old&&!old.isSilenced&&card.isSilenced)result.push({id:batch+':silence:'+id,kind:'SILENCE',label:'침묵',cardInstanceId:id,duration:240});
  }
  for(const [index,event] of events.entries()){
