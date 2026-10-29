@@ -1,0 +1,45 @@
+{
+  "commit": "546d30e18b4849941613cc65c5541bd22de1c251",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbhbbmon74is73ct9i30",
+  "status": "live",
+  "liveCommit": "546d30e18b4849941613cc65c5541bd22de1c251",
+  "assets": [
+    {
+      "file": "admin-battle-sprites-CimhoWdK.css",
+      "sha256": "35858c1ad2aa9effacb68cb57468926914a5b493a33984dca00d131fbe04e5f4",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-Cl2Y-uh2.js",
+      "sha256": "7678269196de9c50578db4c39da7f6d27ce6f2f8af37fc2ca19ceefa82167b9a",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "index-C0R0reeF.css",
+      "sha256": "7f9a8db0584047a986ef5eb4df34d59617ee7861d8ff21f00a7cf14f8b0451bc",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-BNlhw736.js",
+      "sha256": "a27ef226b1bffbe7a158d1740d62bdd17d76bf2ef1ab2d97409efa35eae1c8af",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-DpoZMIch.css",
+      "sha256": "4a647ac10d8f9e5252da7dd8e4dd914ebb3ecad82311287794f474cb4a3cef05",
+      "status": 200,
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200,
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-u6BDpCAt.js",
+    "/assets/index-C0R0reeF.css"
+  ]
+}
