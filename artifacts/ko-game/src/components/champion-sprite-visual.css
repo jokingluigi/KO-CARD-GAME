@@ -49,9 +49,6 @@
 .ko-sprite-visual[data-state="LOW"] .ko-sprite-stance {
   transform: translateY(var(--sprite-low-y)) rotate(var(--sprite-low-tilt));
 }
-.ko-sprite-visual[data-state="LOW"] .ko-sprite-breath {
-  --sprite-breath-y: -0.5px;
-}
 .ko-sprite-visual[data-reduced="true"] .ko-sprite-stance {
   transform: none;
   transition: none;
@@ -93,10 +90,10 @@
 @keyframes ko-sprite-breathe {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(var(--sprite-breath-y));
+    transform: translateY(var(--sprite-breath-y)) scale(var(--sprite-breath-scale, 1));
   }
 }
 @keyframes ko-sprite-flow {

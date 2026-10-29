@@ -30,9 +30,10 @@ export type ChampionMotionCue = {
 };
 /** One presentation clock. Values are never awaited by rules/network/input. */
 export const CHAMPION_MOTION = {
-  breathMs: 5200,
-  lowBreathMs: 7600,
-  breathPx: 1.2,
+  breathMs: 3600,
+  lowBreathMs: 4600,
+  breathPx: 6,
+  lowBreathPx: 4.5,
   turnMs: 320,
   spellMs: 360,
   abilityMs: 520,
@@ -156,6 +157,7 @@ export function motionFrames(
     "VICTORY",
     "EMOTE",
   ].includes(cue.kind);
+  const damagePose = cue.kind === "HIT" || cue.kind === "HEAVY_HIT";
   const pose = (x = 0, y = 0, r = 0, scale = 1, brightness = 1) => {
     // Centred phone commanders exert toward the field vertically; hits retain
     // their real source direction and never inherit this voluntary gesture axis.
@@ -164,7 +166,7 @@ export function motionFrames(
     return {
       transform: reduced
         ? "translate(0px,0px) rotate(0deg) scale(1)"
-        : `translate(${clamp(dx * amount * m.movement, 28)}px,${clamp(dy * amount * m.movement, 26)}px) rotate(${clamp(r * amount * m.rotation, 5)}deg) scale(${1 + clamp((scale - 1) * m.scale * amount, 0.075)})`,
+        : `translate(${clamp(dx * amount * m.movement, damagePose ? 52 : 28)}px,${clamp(dy * amount * m.movement, damagePose ? 48 : 26)}px) rotate(${clamp(r * amount * m.rotation, damagePose ? 10 : 5)}deg) scale(${1 + clamp((scale - 1) * m.scale * amount, 0.075)})`,
       filter: `brightness(${reduced ? Math.min(1.12, brightness) : brightness})`,
     };
   };
@@ -178,11 +180,22 @@ export function motionFrames(
   const rebound = m.rebound;
   if (cue.kind === "HIT" || cue.kind === "HEAVY_HIT") {
     const heavy = cue.kind === "HEAVY_HIT",
-      force = (heavy ? 14 : 6) * (cue.selfDamage ? 0.4 : 1),
+      damage = Number.isFinite(cue.damage)
+        ? Math.max(1, Math.min(20, cue.damage!))
+        : heavy
+          ? 5
+          : 1,
+      force =
+        (heavy ? 28 + Math.max(0, damage - 5) * 3 : 12 + (damage - 1) * 2) *
+        (cue.selfDamage ? 0.4 : 1),
       axis = direction ?? { x: -sign * 0.6, y: sign * 0.8 },
       x = axis.x * force,
       y = axis.y * force,
-      r = -sign * (heavy ? 2.7 : 1.1);
+      r =
+        -sign *
+        (heavy
+          ? 5.4 + Math.max(0, damage - 5) * 0.4
+          : 2.2 + (damage - 1) * 0.3);
     // Translation leads; torso tilt follows. Heavy impact braces before one recovery overshoot.
     return heavy
       ? [

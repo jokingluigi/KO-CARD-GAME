@@ -18,9 +18,13 @@ export function summonImpact(cost:number,rarity:string='NORMAL'):ImpactProfile {
  return {tier,amplitude,duration:Math.max([100,110,150,180,220,280][c-1]!,r==='CHAMPION'?330:r==='LEGENDARY'?300:0),rotation:high?.5:c>=5?.3:0,aftershock:tier==='MASSIVE',wave:Math.min(8,[1.5,1.8,2.4,3,4.3,5.8][c-1]!*multiplier),bass:r==='CHAMPION'?'champion':tier==='MASSIVE'?'massive':tier==='HEAVY'?'heavy':null,rarity:r};
 }
 export function damageImpact(damage:number,lethal=false):ImpactProfile {
- const tier:ImpactTier=damage<=0?'NONE':lethal?'FINISHER':damage>=10?'MASSIVE':damage>=6?'HEAVY':damage>=3?'MEDIUM':'LIGHT';
+ const amount=Number.isFinite(damage)?Math.max(0,damage):0;
+ const tier:ImpactTier=amount<=0?'NONE':lethal?'FINISHER':amount>=10?'MASSIVE':amount>=5?'HEAVY':amount>=3?'MEDIUM':'LIGHT';
  const i=IMPACT_TIERS.indexOf(tier);
- return {tier,amplitude:[0,6,11,19,22,22][i]!,duration:[0,160,230,330,370,410][i]!,rotation:[0,0,0,.3,.5,.7][i]!,aftershock:i>=4,wave:[0,1.5,2,3.5,5,6][i]!,bass:null,rarity:'NORMAL'};
+ // Preserve per-point contrast within each tier; cap extreme damage rather
+ // than allowing an unbounded camera translation.
+ const amplitude=amount<=0?0:lethal?42:Math.min(42,amount<3?6+amount*3:amount<5?4+amount*4:amount<10?11+amount*3:30+amount);
+ return {tier,amplitude,duration:[0,190,260,390,440,480][i]!,rotation:[0,.15,.3,.65,.9,1.1][i]!,aftershock:i>=3,wave:[0,1.5,2,3.5,5,6][i]!,bass:null,rarity:'NORMAL'};
 }
 export function specialImpact(kind:'AWAKENING'|'BOSS'|'HIDDEN_BOSS'):ImpactProfile {
  return {...damageImpact(kind==='AWAKENING'?10:18,kind!=='AWAKENING'),rarity:'CHAMPION',amplitude:kind==='AWAKENING'?15:20};
@@ -28,7 +32,7 @@ export function specialImpact(kind:'AWAKENING'|'BOSS'|'HIDDEN_BOSS'):ImpactProfi
 export function effectiveImpact(profile:ImpactProfile,viewport:{width:number;height:number},mode:ShakeMode,reducedMotion=false){
  const mobile=Math.max(.76,Math.min(1,Math.min(viewport.width,viewport.height)/760));
  const multiplier=reducedMotion||mode==='OFF'?0:mode==='REDUCED'?.5:1;
- return {...profile,amplitude:Math.min(22,profile.amplitude)*mobile*multiplier,rotation:Math.min(.7,profile.rotation)*multiplier};
+ return {...profile,amplitude:Math.min(42,profile.amplitude)*mobile*multiplier,rotation:Math.min(1.1,profile.rotation)*multiplier};
 }
 export function impactFrames(profile:ImpactProfile,direction={x:0,y:1},radial=false):Keyframe[] {
  const length=Math.hypot(direction.x,direction.y)||1,dx=direction.x/length,dy=direction.y/length,a=profile.amplitude,r=profile.rotation;
@@ -62,7 +66,7 @@ export function hasBoardWideImpact(value:unknown,depth=0):boolean {
 export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1},reduced=false):Keyframe[] {
  const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.075,.14,.26,.34,.38][rank]!*(reduced?.5:1);
  const length=Math.hypot(direction.x,direction.y)||1,dx=direction.x/length,dy=direction.y/length;
- const a=Math.min(58,profile.amplitude*2.6);
+ const a=Math.min(92,profile.amplitude*2.6);
  const pose=(travel:number,lateral:number,scale:number,angle:number)=>({
   translate:`${((dx*travel-dy*lateral)*a).toFixed(3)}px ${((dy*travel+dx*lateral)*a).toFixed(3)}px`,
   scale:String(1+zoom*scale),rotate:`${(profile.rotation*angle).toFixed(3)}deg`,

@@ -235,7 +235,6 @@ export function ChampionSpriteVisual({
     if (!preview && !reduced) {
       if (
         (cue.kind === "HIT" || cue.kind === "HEAVY_HIT") &&
-        !cue.selfDamage &&
         !cue.basicAttack
       ) {
         if (decorated)
@@ -249,18 +248,15 @@ export function ChampionSpriteVisual({
               y: self ? 0.8 : -0.8,
             },
           });
-        if (cue.kind === "HEAVY_HIT" && !screen.isActive())
-          screen.request({
-            id: "sprite:" + cue.id,
-            profile: {
-              ...damageImpact(cue.damage ?? 5),
-              amplitude: 3,
-              duration: 130,
-            },
-            x: at.x,
-            y: at.y,
-            direction,
-          });
+        screen.request({
+          id: "sprite:" + cue.id,
+          profile: damageImpact(
+            cue.damage ?? (cue.kind === "HEAVY_HIT" ? 5 : 1),
+          ),
+          x: at.x,
+          y: at.y,
+          direction,
+        });
       }
       const destination = cue.target
         ? target(cue.target.playerId, cue.target.slot)
@@ -340,10 +336,15 @@ export function ChampionSpriteVisual({
           "--sprite-low-breath-ms":
             (CHAMPION_MOTION.lowBreathMs + phase * 0.12) / profile.speed + "ms",
           "--sprite-breath-y":
-            -CHAMPION_MOTION.breathPx *
-              Math.min(1, height / 220) *
+            -(state === "LOW"
+              ? CHAMPION_MOTION.lowBreathPx
+              : CHAMPION_MOTION.breathPx) *
+              Math.max(motionFloor, Math.min(1, height / 220)) *
               Math.min(1, profile.movement) +
             "px",
+          "--sprite-breath-scale":
+            1 +
+            (state === "LOW" ? 0.006 : 0.012) * Math.min(1, profile.movement),
           "--sprite-breath-phase": -phase + "ms",
           "--sprite-low-y":
             Math.min(4, height * 0.014) * profile.movement + "px",

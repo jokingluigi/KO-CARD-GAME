@@ -376,9 +376,9 @@ test("six presets inherit independently, remain bounded, and mechanically remove
         const match = String(f.transform).match(
           /translate\(([-.\d]+)px,([-.\d]+)px\) rotate\(([-.\d]+)deg\) scale\(([-.\d]+)\)/,
         )!;
-        assert.ok(Math.abs(Number(match[1])) <= 28);
-        assert.ok(Math.abs(Number(match[2])) <= 26);
-        assert.ok(Math.abs(Number(match[3])) <= 5);
+        assert.ok(Math.abs(Number(match[1])) <= (["HIT", "HEAVY_HIT"].includes(kind) ? 52 : 28));
+        assert.ok(Math.abs(Number(match[2])) <= (["HIT", "HEAVY_HIT"].includes(kind) ? 48 : 26));
+        assert.ok(Math.abs(Number(match[3])) <= (["HIT", "HEAVY_HIT"].includes(kind) ? 10 : 5));
         assert.ok(Math.abs(Number(match[4]) - 1) <= 0.075001);
       }
       assert.match(
@@ -424,4 +424,12 @@ test("centred mobile commanders exert vertically toward the field while hit dire
       motionFrames(hit, self, 0.8, 1, false, { x: 1, y: 0 }),
     );
   }
+});
+
+test('damage-driven torso recoil is monotonic and heavy hits double the previous base force',()=>{
+ const peak=(damage:number)=>Math.max(...motionFrames({id:'damage',kind:damage>=5?'HEAVY_HIT':'HIT',event:damage>=5?'HEAVY_HIT':'HIT',damage},true,.8,1,false,{x:0,y:1}).map(f=>Math.abs(Number(String(f.transform).match(/translate\([^,]+,([-.\d]+)px/)! [1]))));
+ const values=[1,2,3,4,5,6,7,8].map(peak);
+ for(let i=1;i<values.length;i++)assert.ok(values[i]>=values[i-1]);
+ assert.ok(peak(1)>=17);assert.ok(peak(5)>=40);assert.ok(peak(5)>peak(4));
+ assert.equal(peak(999),48);
 });
