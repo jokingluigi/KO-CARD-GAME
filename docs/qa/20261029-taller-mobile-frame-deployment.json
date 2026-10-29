@@ -1,0 +1,27 @@
+{
+  "commit": "f12ed7308e07c082a163b23e22d8f88feb290788",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbheql5g1s2s739t9hs0",
+  "status": "live",
+  "liveCommit": "f12ed7308e07c082a163b23e22d8f88feb290788",
+  "assets": [
+    {
+      "file": "admin-battle-sprites-BCoWhFVp.css",
+      "sha256": "c6a9ef01780f3afd5522eaf10decb438af1c6e1bde57d9bff8ffe353c00f84e2",
+      "status": 200,
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-BpWcZ3DK.css",
+      "sha256": "4b7b328d22462b0a1ee1b1166c151de74b7fab7a925eb2b5acf209643e3c46ae",
+      "status": 200,
+      "matchesLocal": true
+    }
+  ],
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-BXrq63sW.js",
+    "/assets/index-C0R0reeF.css"
+  ],
+  "healthStatus": 200
+}
