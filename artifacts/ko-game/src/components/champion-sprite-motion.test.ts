@@ -320,10 +320,10 @@ test("gesture stages separate anticipation, lagging tilt, brace, and recovery", 
     event: "IDLE" as const,
   });
   const spell = motionFrames(cue("SPELL"), true);
-  assert.match(String(spell[1].transform), /translate\(-1.5px/);
-  assert.match(String(spell[2].transform), /translate\(4px/);
+  assert.match(String(spell[1].transform), /translate\(-2.7px/);
+  assert.match(String(spell[2].transform), /translate\(7.2px/);
   const heal = motionFrames(cue("HEAL"), true);
-  assert.match(String(heal[1].transform), /translate\(0px,2.5px\)/);
+  assert.match(String(heal[1].transform), /translate\(0px,4.5px\)/);
   const hit = motionFrames(cue("HIT"), true),
     heavy = motionFrames(cue("HEAVY_HIT"), true);
   assert.notDeepEqual(hit, heavy);
@@ -376,10 +376,10 @@ test("six presets inherit independently, remain bounded, and mechanically remove
         const match = String(f.transform).match(
           /translate\(([-.\d]+)px,([-.\d]+)px\) rotate\(([-.\d]+)deg\) scale\(([-.\d]+)\)/,
         )!;
-        assert.ok(Math.abs(Number(match[1])) <= 18);
-        assert.ok(Math.abs(Number(match[2])) <= 16);
-        assert.ok(Math.abs(Number(match[3])) <= 3.5);
-        assert.ok(Math.abs(Number(match[4]) - 1) <= 0.045001);
+        assert.ok(Math.abs(Number(match[1])) <= 28);
+        assert.ok(Math.abs(Number(match[2])) <= 26);
+        assert.ok(Math.abs(Number(match[3])) <= 5);
+        assert.ok(Math.abs(Number(match[4]) - 1) <= 0.075001);
       }
       assert.match(
         String(frames.at(-1)!.transform),

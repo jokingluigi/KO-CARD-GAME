@@ -370,6 +370,7 @@ export function ChampionBattleActor({
                     ? "CONTAIN"
                     : "COVER"
               }
+              maxImageScale={displayFrame ? 3 : 2}
               imageScale={placement?.scale ?? 1}
               imagePositionX={placement?.x ?? 50}
               imagePositionY={placement?.y ?? (displayFrame ? 50 : 0)}

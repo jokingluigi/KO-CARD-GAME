@@ -777,3 +777,198 @@ test("opponent wrestler attack uses that opponent champion, not the viewer champ
   assert.deepEqual(collect(s, result.state, "player-2"), ["ATTACK"]);
   assert.deepEqual(collect(s, result.state), ["HIT"]);
 });
+
+for (const [name, changes] of [
+  ["legendary", { rarity: "LEGENDARY" }],
+  ["champion token", { isChampionToken: true }],
+  ["six cost", { cost: 6 }],
+  ["above six cost", { cost: 8 }],
+] as const)
+  test(`opponent ${name} real field entry surprises only the other champion`, () => {
+    const s = setup();
+    s.activePlayerId = "player-2";
+    const d = { ...normal, ...changes, id: "threat" } as CardDefinition;
+    s.cardPool.push(d);
+    s.players[1].hand = [
+      generateCardInstance(d, { instanceId: "threat-card" }),
+    ];
+    const result = executeAction(s, {
+      type: "PLAY_WRESTLER",
+      playerId: "player-2",
+      cardInstanceId: "threat-card",
+      boardSlot: 0,
+    });
+    assert.equal(result.success, true);
+    assert.deepEqual(collect(s, result.state), ["ALLY_RETIRED"]);
+    assert.deepEqual(collect(s, result.state, "player-2"), ["SUMMON"]);
+    const cursor = spriteEventCursor(s);
+    assert.deepEqual(
+      championSpriteEvents(s, result.state, "player-1", cursor),
+      ["ALLY_RETIRED"],
+    );
+    assert.deepEqual(
+      championSpriteEvents(result.state, result.state, "player-1", cursor),
+      [],
+    );
+    assert.deepEqual(
+      championSpriteEvents(
+        s,
+        result.state,
+        "player-1",
+        spriteEventCursor(result.state),
+      ),
+      [],
+    );
+  });
+
+test("ordinary opponent summons and own threats do not cause surprise", () => {
+  const s = setup();
+  s.players[0].hand = [generateCardInstance(legendary, { instanceId: "own" })];
+  const result = executeAction(s, {
+    type: "PLAY_WRESTLER",
+    playerId: "player-1",
+    cardInstanceId: "own",
+    boardSlot: 0,
+  });
+  assert.equal(result.success, true);
+  assert.deepEqual(collect(s, result.state), ["SUMMON"]);
+  const e = {
+    type: "ENTER_FIELD",
+    playerId: "player-2",
+    cardDefinitionId: normal.id,
+    cardInstanceId: "plain",
+  } as GameEvent;
+  assert.deepEqual(collect(s, append(s, e)), []);
+});
+
+for (const cost of [5, 6, 8])
+  test(`opponent spell printed cost ${cost} requires successful use`, () => {
+    const s = setup();
+    s.activePlayerId = "player-2";
+    const d = {
+      ...normal,
+      id: "costly-spell",
+      cardType: "TECHNIQUE",
+      cost,
+      abilities: [],
+    } as CardDefinition;
+    s.cardPool.push(d);
+    s.players[1].hand = [generateCardInstance(d, { instanceId: "cast" })];
+    // A discount must not change the card's base cost category.
+    s.players[1].hand[0].currentCost = 1;
+    const r = executeAction(s, {
+      type: "PLAY_TECHNIQUE",
+      playerId: "player-2",
+      cardInstanceId: "cast",
+    });
+    assert.equal(r.success, true);
+    assert.deepEqual(collect(s, r.state), cost >= 6 ? ["ALLY_RETIRED"] : []);
+    const fail = executeAction(s, {
+      type: "PLAY_TECHNIQUE",
+      playerId: "player-2",
+      cardInstanceId: "missing",
+    });
+    assert.equal(fail.success, false);
+    assert.deepEqual(collect(s, fail.state), []);
+  });
+
+test("opponent quest completion surprises once; progress, own quest and replay do not", () => {
+  const s = setup();
+  const e = {
+    type: "CHAMPION_QUEST_COMPLETED",
+    playerId: "player-2",
+  } as GameEvent;
+  assert.deepEqual(
+    collect(s, append(s, { ...e, type: "CHAMPION_QUEST_PROGRESS" })),
+    [],
+  );
+  const n = append(s, e, e);
+  assert.deepEqual(collect(s, n), ["ALLY_RETIRED"]);
+  assert.deepEqual(collect(s, append(s, { ...e, playerId: "player-1" })), [
+    "AWAKEN",
+  ]);
+});
+
+test("same effect summons several opponent threats once across multiple updates", () => {
+  const s = setup(),
+    source = generateCardInstance(normal, { instanceId: "effect-source" });
+  const n = applyEffect(s, "player-2", source, {
+    type: "STRUCTURED",
+    action: "SUMMON",
+    target: { zone: "BOARD", owner: "SELF", selection: "ALL", count: 2 },
+    values: { definition: legendary, count: 2 },
+  } as Parameters<typeof applyEffect>[3]);
+  assert.equal(n.events.filter((e) => e.type === "ENTER_FIELD").length, 2);
+  const first = {
+    ...n,
+    events: n.events.slice(
+      0,
+      n.events.findIndex((e) => e.type === "ENTER_FIELD") + 1,
+    ),
+  };
+  const cursor = spriteEventCursor(s);
+  assert.deepEqual(championSpriteEvents(s, first, "player-1", cursor), [
+    "ALLY_RETIRED",
+  ]);
+  assert.deepEqual(championSpriteEvents(first, n, "player-1", cursor), []);
+});
+
+test("sprite scale supports 300 percent without changing card illustration limits", async () => {
+  const { normalizeImageDisplaySettings } = await import("../game/cards/types");
+  assert.equal(normalizeImageDisplaySettings({ imageScale: 3 }).imageScale, 2);
+  assert.equal(
+    normalizeImageDisplaySettings({ imageScale: 3 }, 3).imageScale,
+    3,
+  );
+  assert.equal(
+    normalizeImageDisplaySettings({ imageScale: 0.2 }, 3).imageScale,
+    0.5,
+  );
+  assert.ok(
+    parseBattleSprite({
+      version: 1,
+      frames: {
+        default: {
+          url: "/api/storage/objects/uploads/cosmetics/zoom.png",
+          self: { ...p, scale: 3 },
+          opponent: { ...p, scale: 0.5 },
+        },
+      },
+      reactions: {},
+    }),
+  );
+});
+
+test("opponent cancellable high-cost spell does not surprise before commit or after cancellation", () => {
+  const s = setup();
+  s.cardPool.push({
+    ...normal,
+    id: "pending-threat",
+    cardType: "TECHNIQUE",
+    cost: 6,
+  });
+  const n = append(s, {
+    type: "CARD_PLAYED",
+    playerId: "player-2",
+    cardDefinitionId: "pending-threat",
+    cardInstanceId: "pending",
+    cardType: "TECHNIQUE",
+  });
+  n.targetingState = {
+    active: true,
+    phase: "PRE_COMMIT",
+    playerId: "player-2",
+    sourceInstanceId: "pending",
+    effects: [],
+    playRollback: s,
+  } as NonNullable<GameState["targetingState"]>;
+  const cursor = spriteEventCursor(s);
+  assert.deepEqual(championSpriteEvents(s, n, "player-1", cursor), []);
+  assert.deepEqual(championSpriteEvents(n, s, "player-1", cursor), []);
+  const committed = { ...n, targetingState: undefined };
+  const c = spriteEventCursor(s);
+  assert.deepEqual(championSpriteEvents(s, n, "player-1", c), []);
+  assert.deepEqual(championSpriteEvents(n, committed, "player-1", c), [
+    "ALLY_RETIRED",
+  ]);
+});

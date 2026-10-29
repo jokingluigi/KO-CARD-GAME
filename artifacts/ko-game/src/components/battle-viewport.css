@@ -313,6 +313,6 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
 .ko-game-shell.ko-board-preview .ko-board-slot { touch-action: none; }
 /* Information remains explicit. Its old invisible 44px square covered most of
    a small field card; only the visible corner now intercepts battle input. */
-.ko-game-shell.ko-board-preview .ko-board-inspect-button {
+.ko-game-shell.ko-board-preview :is(.ko-board-inspect-button,.ko-hand-inspect-button) {
   width:24px; height:24px; min-width:24px; min-height:24px;
 }

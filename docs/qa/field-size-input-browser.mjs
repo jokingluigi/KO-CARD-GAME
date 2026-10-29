@@ -127,13 +127,16 @@ try {
       page.locator(".ko-player-board-row .ko-board-slot").first();
     const enemy = () =>
       page.locator(".ko-opponent-board-row .ko-board-slot").first();
+    let sawAttackGhost = false;
     const drag = async (target, cancel = false) => {
       const from = await own().boundingBox();
       const to = await target.boundingBox();
       assert.ok(from && to);
       const start = {
-          x: from.x + from.width * 0.5,
-          y: from.y + from.height * 0.82,
+          x:
+            from.x +
+            (process.env.KO_DRAG_CORNER ? from.width - 12 : from.width * 0.5),
+          y: from.y + (process.env.KO_DRAG_CORNER ? 12 : from.height * 0.82),
         },
         end = { x: to.x + to.width * 0.5, y: to.y + to.height * 0.78 };
       if (touch) {
@@ -153,6 +156,8 @@ try {
           });
           await page.waitForTimeout(20);
         }
+        sawAttackGhost ||=
+          (await page.locator(".ko-attack-drag-ghost").count()) > 0;
         await cdp.send("Input.dispatchTouchEvent", {
           type: cancel ? "touchCancel" : "touchEnd",
           touchPoints: [],
@@ -161,10 +166,17 @@ try {
         await page.mouse.move(start.x, start.y);
         await page.mouse.down();
         await page.mouse.move(end.x, end.y, { steps: 8 });
+        sawAttackGhost ||=
+          (await page.locator(".ko-attack-drag-ghost").count()) > 0;
         if (cancel) await page.keyboard.press("Escape");
         await page.mouse.up();
       }
       await page.waitForTimeout(250);
+      assert.equal(
+        await page.locator(".ko-attack-drag-ghost").count(),
+        0,
+        "drag ghost cleans up after commit/cancel",
+      );
     };
     await load();
     const geometry = await page
@@ -271,15 +283,13 @@ try {
       (await state()).events.filter((e) => e.type === "ATTACK_DECLARED").length,
       1,
     );
+    assert.equal(sawAttackGhost, true, "attack follows pointer visually");
     await load();
     await page
       .locator(".ko-player-board-row [data-touch-inspect-trigger]")
       .first()
       .click();
-    assert.ok(
-      (await page.locator('[aria-label="상세정보"]').count()) > 0,
-      "explicit information still available",
-    );
+    await page.locator('[aria-label="상세정보"]').waitFor();
     await page
       .locator('[aria-label="상세정보 닫기"]')
       .evaluate((e) => e.click());

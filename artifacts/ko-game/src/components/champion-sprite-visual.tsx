@@ -304,7 +304,7 @@ export function ChampionSpriteVisual({
     };
   }, [cue?.id, identity, setIdentity, reduced, revision, motionKey]);
   // Outcome poses also restore on reconnect without replaying an entrance.
-  const settings = normalizeImageDisplaySettings(display);
+  const settings = normalizeImageDisplaySettings(display, 3);
   const persistent =
     state === "VICTORY" || state === "DEFEAT"
       ? motionFrames(

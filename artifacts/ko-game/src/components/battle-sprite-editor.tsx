@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ChampionPortraitFrame } from "./champion-portrait-frame";
 import {
   ChampionSpriteVisual,
   useMotionExpression,
@@ -35,7 +36,9 @@ export function BattleSpriteEditor({
   onBusyChange,
   fallbackImage,
   inheritedMotion,
+  championName = "챔피언 미리보기",
 }: {
+  championName?: string;
   fallbackImage?: string | null;
   inheritedMotion?: SpriteMotionSettings;
   workspace?: boolean;
@@ -86,6 +89,7 @@ export function BattleSpriteEditor({
     [editing],
   );
   const [showOrigin, setShowOrigin] = useState(false);
+  const [frameViewport, setFrameViewport] = useState("MOBILE");
   const [awake, setAwake] = useState(false),
     [health, setHealth] = useState(10);
   const low = health >= 1 && health <= 5;
@@ -326,6 +330,17 @@ export function BattleSpriteEditor({
           </select>
         </div>
       )}
+      <label className="block my-2">
+        액자 미리보기 화면
+        <select
+          aria-label="액자 미리보기 화면"
+          value={frameViewport}
+          onChange={(e) => setFrameViewport(e.target.value)}
+        >
+          <option value="MOBILE">모바일 · 390×844</option>
+          <option value="PC">PC · 1440×900</option>
+        </select>
+      </label>
       <div className="flex flex-wrap gap-3 my-2">
         <label>
           <input
@@ -376,68 +391,92 @@ export function BattleSpriteEditor({
               : "IDLE"
         }
       >
-        {previewURL ? (
-          <ChampionSpriteVisual
-            preview
-            cue={reaction.cue}
-            motion={previewMotion}
-            setIdentity={
-              awake && root.awakening === "REPLACE" ? "awakened" : "normal"
+        <div
+          className="ko-champion-arena ko-sprite-frame-preview"
+          data-viewport={frameViewport}
+        >
+          <div
+            className={
+              side === "self" ? "ko-player-champion" : "ko-opponent-champion"
             }
-            identity={editing}
-            self={side === "self"}
-            state={
-              reaction.event === "VICTORY" || reaction.event === "DEFEAT"
-                ? reaction.event
-                : low
-                  ? "LOW"
-                  : "IDLE"
-            }
-            reacting={reaction.event !== "IDLE"}
-            image={previewURL}
-            display={{
-              imageDisplayMode: previewPlacement.crop ? "COVER" : "CONTAIN",
-              imageScale: previewPlacement.scale,
-              imagePositionX: previewPlacement.x,
-              imagePositionY: previewPlacement.y,
-            }}
-            accent={previewSet.effects?.accent}
-            origin={previewSet.effects?.origin?.[side]}
           >
-            <div
-              className="ko-sprite-preview-figure"
-              style={{ transform: `scaleX(${previewPlacement.flip ? -1 : 1})` }}
-            >
-              <img
-                alt="상태·반응 미리보기"
-                src={previewURL}
-                onError={() =>
-                  setFailedPreview((old) => new Set([...old, previewURL]))
-                }
-                className="h-full w-full"
-                style={{
-                  objectFit: previewPlacement.crop ? "cover" : "contain",
-                  objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
-                  transform: `scale(${normalizeImageDisplaySettings({ imageScale: previewPlacement.scale }).imageScale})`,
-                  transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
-                }}
-              />
+            <ChampionPortraitFrame
+              name={championName}
+              health={health}
+              maxHealth={20}
+            />
+            <div className="ko-portrait-window">
+              {previewURL ? (
+                <ChampionSpriteVisual
+                  preview
+                  cue={reaction.cue}
+                  motion={previewMotion}
+                  setIdentity={
+                    awake && root.awakening === "REPLACE"
+                      ? "awakened"
+                      : "normal"
+                  }
+                  identity={editing}
+                  self={side === "self"}
+                  state={
+                    reaction.event === "VICTORY" || reaction.event === "DEFEAT"
+                      ? reaction.event
+                      : low
+                        ? "LOW"
+                        : "IDLE"
+                  }
+                  reacting={reaction.event !== "IDLE"}
+                  image={previewURL}
+                  display={{
+                    imageDisplayMode: previewPlacement.crop
+                      ? "COVER"
+                      : "CONTAIN",
+                    imageScale: previewPlacement.scale,
+                    imagePositionX: previewPlacement.x,
+                    imagePositionY: previewPlacement.y,
+                  }}
+                  accent={previewSet.effects?.accent}
+                  origin={previewSet.effects?.origin?.[side]}
+                >
+                  <div
+                    className="ko-sprite-preview-figure"
+                    style={{
+                      transform: `scaleX(${previewPlacement.flip ? -1 : 1})`,
+                    }}
+                  >
+                    <img
+                      alt="상태·반응 미리보기"
+                      src={previewURL}
+                      onError={() =>
+                        setFailedPreview((old) => new Set([...old, previewURL]))
+                      }
+                      className="h-full w-full"
+                      style={{
+                        objectFit: previewPlacement.crop ? "cover" : "contain",
+                        objectPosition: `${previewPlacement.x}% ${previewPlacement.y}%`,
+                        transform: `scale(${normalizeImageDisplaySettings({ imageScale: previewPlacement.scale }, 3).imageScale})`,
+                        transformOrigin: `${previewPlacement.x}% ${previewPlacement.y}%`,
+                      }}
+                    />
+                  </div>
+                  {showOrigin && (
+                    <span
+                      className="ko-sprite-origin-marker"
+                      style={{
+                        left: `${previewSet.effects?.origin?.[side]?.x ?? (side === "self" ? 75 : 25)}%`,
+                        top: `${previewSet.effects?.origin?.[side]?.y ?? 58}%`,
+                      }}
+                    >
+                      ＋
+                    </span>
+                  )}
+                </ChampionSpriteVisual>
+              ) : (
+                <p>기본 이미지를 등록하면 여기에 표시됩니다.</p>
+              )}
             </div>
-            {showOrigin && (
-              <span
-                className="ko-sprite-origin-marker"
-                style={{
-                  left: `${previewSet.effects?.origin?.[side]?.x ?? (side === "self" ? 75 : 25)}%`,
-                  top: `${previewSet.effects?.origin?.[side]?.y ?? 58}%`,
-                }}
-              >
-                ＋
-              </span>
-            )}
-          </ChampionSpriteVisual>
-        ) : (
-          <p>기본 이미지를 등록하면 여기에 표시됩니다.</p>
-        )}
+          </div>
+        </div>
       </div>
       <div className="ko-sprite-reaction-buttons">
         {Object.entries(SPRITE_EXPRESSIONS).map(([key, label]) => (
@@ -553,9 +592,10 @@ export function BattleSpriteEditor({
       <p className="text-xs">
         표정은 10개입니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5.
         안도(회복)는 실제 체력이 증가했을 때입니다. 공격은 주문·고유능력 사용
-        확정, 놀람은 내 레전더리 선수의 리타이어·파괴·소멸입니다. 각성은 별도
-        표정이 아닌 세트 전환입니다. 누락 표정은 현재 세트의 기본 이미지를
-        사용합니다.
+        확정에 반응합니다. 놀람은 내 레전더리 선수의 리타이어·파괴·소멸, 상대의
+        레전더리·챔피언 토큰 소환, 기본 6코스트 이상 선수 소환·주문 사용, 상대
+        퀘스트 완료에 반응합니다. 각성은 별도 표정이 아닌 세트 전환입니다. 누락
+        표정은 현재 세트의 기본 이미지를 사용합니다.
       </p>
       <div className="ko-sprite-editor-layout">
         {workspace && reactionPreview}
@@ -681,7 +721,7 @@ export function BattleSpriteEditor({
                     style={{
                       objectFit: frame[side].crop ? "cover" : "contain",
                       objectPosition: `${frame[side].x}% ${frame[side].y}%`,
-                      transform: `scale(${normalizeImageDisplaySettings({ imageScale: frame[side].scale }).imageScale})`,
+                      transform: `scale(${normalizeImageDisplaySettings({ imageScale: frame[side].scale }, 3).imageScale})`,
                       transformOrigin: `${frame[side].x}% ${frame[side].y}%`,
                     }}
                   />
@@ -690,6 +730,113 @@ export function BattleSpriteEditor({
                   중앙 선수 필드
                 </span>
               </div>
+              <fieldset className="space-y-2 border border-amber-600/50 p-3">
+                <legend className="px-1 font-bold">
+                  이미지 크기 · {editing === "AWAKENED" ? "각성" : "일반"} /
+                  현재 표정
+                </legend>
+                <p className="text-xs text-neutral-300">
+                  액자 크기는 유지하고 이미지 자체를 확대·축소합니다. 선택한
+                  스킨·세트·표정·위치에 저장됩니다.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="스프라이트 10% 축소"
+                    className="min-h-11 min-w-11 border border-neutral-600 px-2"
+                    onClick={() =>
+                      put({
+                        ...frame,
+                        [side]: {
+                          ...frame[side],
+                          scale: Math.max(
+                            0.5,
+                            Math.round((frame[side].scale - 0.1) * 100) / 100,
+                          ),
+                        },
+                      })
+                    }
+                  >
+                    −
+                  </button>
+                  <label>
+                    크기 (%){" "}
+                    <input
+                      aria-label="스프라이트 크기 퍼센트"
+                      className="w-20 border border-neutral-600 bg-neutral-950 p-2"
+                      type="number"
+                      min={50}
+                      max={300}
+                      step={5}
+                      key={`${editing}:${expression}:${side}:${frame[side].scale}`}
+                      defaultValue={Math.round(frame[side].scale * 100)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
+                      onBlur={(e) => {
+                        if (
+                          e.target.value !== "" &&
+                          Number.isFinite(e.target.valueAsNumber)
+                        )
+                          put({
+                            ...frame,
+                            [side]: {
+                              ...frame[side],
+                              scale: Math.min(
+                                3,
+                                Math.max(0.5, e.target.valueAsNumber / 100),
+                              ),
+                            },
+                          });
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    aria-label="스프라이트 10% 확대"
+                    className="min-h-11 min-w-11 border border-neutral-600 px-2"
+                    onClick={() =>
+                      put({
+                        ...frame,
+                        [side]: {
+                          ...frame[side],
+                          scale: Math.min(
+                            3,
+                            Math.round((frame[side].scale + 0.1) * 100) / 100,
+                          ),
+                        },
+                      })
+                    }
+                  >
+                    ＋
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-11 border border-neutral-600 px-2"
+                    onClick={() =>
+                      put({ ...frame, [side]: { ...frame[side], scale: 1 } })
+                    }
+                  >
+                    100% 초기화
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-11 border border-neutral-600 px-2"
+                    onClick={() =>
+                      put({
+                        ...frame,
+                        self: { ...frame.self, scale: frame[side].scale },
+                        opponent: {
+                          ...frame.opponent,
+                          scale: frame[side].scale,
+                        },
+                      })
+                    }
+                  >
+                    양쪽 위치에 배율 적용
+                  </button>
+                </div>
+              </fieldset>
               {(["scale", "x", "y"] as const).map((key) => (
                 <label key={key} className="block">
                   {key === "scale"
@@ -701,13 +848,16 @@ export function BattleSpriteEditor({
                     aria-label={"스프라이트 " + key}
                     type="range"
                     min={key === "scale" ? 0.5 : 0}
-                    max={key === "scale" ? 2 : 100}
+                    max={key === "scale" ? 3 : 100}
                     step={key === "scale" ? 0.05 : 1}
                     value={
                       key === "scale"
-                        ? normalizeImageDisplaySettings({
-                            imageScale: frame[side].scale,
-                          }).imageScale
+                        ? normalizeImageDisplaySettings(
+                            {
+                              imageScale: frame[side].scale,
+                            },
+                            3,
+                          ).imageScale
                         : frame[side][key]
                     }
                     onChange={(e) =>
@@ -721,9 +871,12 @@ export function BattleSpriteEditor({
                     }
                   />
                   {key === "scale"
-                    ? normalizeImageDisplaySettings({
-                        imageScale: frame[side].scale,
-                      }).imageScale
+                    ? normalizeImageDisplaySettings(
+                        {
+                          imageScale: frame[side].scale,
+                        },
+                        3,
+                      ).imageScale
                     : frame[side][key]}
                 </label>
               ))}

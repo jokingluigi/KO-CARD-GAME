@@ -18,7 +18,9 @@ export function CardArtwork({
   onPositionChange,
   showHint = false,
   loading = "eager",
+  maxImageScale = 2,
 }: {
+  maxImageScale?: 2 | 3;
   src?: string | null;
   displayOverride?: Partial<ImageDisplaySettings>;
   fallbackSrc?: string | null;
@@ -49,7 +51,7 @@ export function CardArtwork({
     imagePositionX,
     imagePositionY,
     ...(!failed ? displayOverride : {}),
-  });
+  }, maxImageScale);
 
   useEffect(() => {setFailed(false);setFallbackFailed(false);}, [src,fallbackSrc]);
 

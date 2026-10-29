@@ -73,6 +73,7 @@ export const DEFAULT_IMAGE_DISPLAY_SETTINGS: ImageDisplaySettings = {
 
 export function normalizeImageDisplaySettings(
   settings?: Partial<ImageDisplaySettings> | null,
+  maxScale: 2 | 3 = 2,
 ): ImageDisplaySettings {
   const mode = settings?.imageDisplayMode;
   const imageScale = settings?.imageScale;
@@ -83,7 +84,7 @@ export function normalizeImageDisplaySettings(
       mode === 'CONTAIN' || mode === 'CUSTOM' ? mode : DEFAULT_IMAGE_DISPLAY_SETTINGS.imageDisplayMode,
     imageScale:
       typeof imageScale === 'number' && Number.isFinite(imageScale)
-        ? Math.min(2, Math.max(0.5, imageScale))
+        ? Math.min(maxScale, Math.max(0.5, imageScale))
         : DEFAULT_IMAGE_DISPLAY_SETTINGS.imageScale,
     imagePositionX:
       typeof imagePositionX === 'number' && Number.isFinite(imagePositionX)

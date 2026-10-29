@@ -511,3 +511,10 @@
 
 /* External authored contact art replaces the old procedural ring/gradient. */
 .attack-animation--cinematic :is(.attack-animation__impact-flash,.attack-animation__shockwave) { background:none; border:0; box-shadow:none; object-fit:contain; }
+
+/* An information corner remains tappable, but moving off it is still a card gesture. */
+.ko-player-board-row :is(.ko-board-slot-wrapper,.ko-board-inspect-button) { touch-action:none; }
+.ko-player-hand .ko-hand-inspect-button { touch-action:pan-x; }
+.ko-attack-drag-ghost { transform-origin:center; filter:drop-shadow(0 8px 5px #000b); }
+.ko-attack-drag-ghost * { pointer-events:none !important; }
+[data-attack-drag-source="true"] { opacity:.35; }

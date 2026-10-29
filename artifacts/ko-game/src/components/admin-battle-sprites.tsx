@@ -215,6 +215,7 @@ export function AdminBattleSprites() {
             </span>
           </p>
           <BattleSpriteEditor
+            championName={selected.championName}
             fallbackImage={selected?.imageUrl}
             inheritedMotion={
               selected.kind === "skin"

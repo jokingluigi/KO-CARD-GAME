@@ -42,6 +42,7 @@ interface InspectTarget {
 
 interface AltInspectContextValue {
   isAltPressed: boolean;
+  isTouchInspecting: boolean;
   inspect: (target: InspectTarget) => void;
   toggleTouch: (target: InspectTarget) => void;
   clear: () => void;
@@ -120,16 +121,23 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     setTarget(null);
     setIsTouchInspecting(false);
   }, [cancelClear]);
+  useEffect(() => {
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") clear(); };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [clear]);
   const scheduleClear = useCallback(() => {
+    if (isTouchInspecting) return;
     cancelClear();
     clearTimerRef.current = setTimeout(clear, 180);
-  }, [cancelClear, clear]);
+  }, [cancelClear, clear, isTouchInspecting]);
   const inspect = useCallback((nextTarget: InspectTarget) => {
+    if (isTouchInspecting) return;
     cancelClear();
     if (document.querySelector('[data-card-rules-dialog]')) return;
     setTarget(nextTarget);
     setIsTouchInspecting(false);
-  }, [cancelClear]);
+  }, [cancelClear, isTouchInspecting]);
   const toggleTouch = useCallback((nextTarget: InspectTarget) => {
     setTarget((current) => {
       if (current?.anchor === nextTarget.anchor && isTouchInspecting) {
@@ -145,8 +153,8 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     setTagExplorer(tag);
   }, []);
   const value = useMemo(
-    () => ({ isAltPressed, inspect, toggleTouch, clear, scheduleClear, cancelClear, openTagExplorer }),
-    [clear, inspect, isAltPressed, openTagExplorer, toggleTouch, scheduleClear, cancelClear],
+    () => ({ isAltPressed, isTouchInspecting, inspect, toggleTouch, clear, scheduleClear, cancelClear, openTagExplorer }),
+    [clear, inspect, isAltPressed, isTouchInspecting, openTagExplorer, toggleTouch, scheduleClear, cancelClear],
   );
   const isVisible = Boolean(
     target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting)),
@@ -219,7 +227,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           className="ko-touch-inspector pointer-events-auto fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
           onMouseEnter={cancelClear}
-          onMouseLeave={clear}
+          onMouseLeave={isTouchInspecting ? undefined : clear}
           style={{
             left: panelPosition.left,
             top: panelPosition.top,
@@ -230,6 +238,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="ko-touch-inspector-close hidden"
+            style={isTouchInspecting ? { display: "block" } : undefined}
             onClick={clear}
             aria-label="상세정보 닫기"
           >
@@ -317,7 +326,7 @@ export function Inspectable({
       onBlur={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
-        context.clear();
+        if (!context.isTouchInspecting) context.clear();
       }}
       onClickCapture={(event) => {
         const isInfoButton = Boolean((event.target as Element).closest('[data-touch-inspect-trigger]'));

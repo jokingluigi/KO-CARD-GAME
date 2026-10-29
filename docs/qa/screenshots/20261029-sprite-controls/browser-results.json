@@ -1,0 +1,36 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "adminMockSaveReload": true,
+    "scale50to300": true,
+    "battleScale300": true,
+    "opponentAutomaticFlip": true,
+    "opponentThreats": [
+      "legend",
+      "token",
+      "cost",
+      "spell",
+      "quest"
+    ],
+    "ordinarySummonIgnored": true,
+    "physicalDevice": false
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "adminMockSaveReload": true,
+    "scale50to300": true,
+    "battleScale300": true,
+    "opponentAutomaticFlip": true,
+    "opponentThreats": [
+      "legend",
+      "token",
+      "cost",
+      "spell",
+      "quest"
+    ],
+    "ordinarySummonIgnored": true,
+    "physicalDevice": false
+  }
+]

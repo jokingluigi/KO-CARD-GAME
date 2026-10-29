@@ -134,6 +134,64 @@ export function championSpriteEvents(
           e.reason === "BASIC_ATTACK" || Boolean(e.sourceContext?.combatRole),
       });
     }
+    // Opponent threats are public, committed results. The same SURPRISED
+    // expression is reused without adding a slot or changing combat rules.
+    if (e.playerId && e.playerId !== playerId) {
+      const opponentCards = [...previous.players, ...state.players]
+        .filter((p) => p.id === e.playerId)
+        .flatMap((p) => [
+          ...p.board,
+          ...p.hand,
+          ...p.graveyard,
+          ...p.removedFromGame,
+        ]);
+      const card = opponentCards.find(
+        (c) => c?.instanceId === e.cardInstanceId,
+      );
+      const definition = [
+        ...(state.cardPool ?? []),
+        ...(state.minionACardPool ?? []),
+      ].find((d) => d.id === (e.cardDefinitionId ?? card?.definitionId));
+      const type = e.cardType ?? card?.cardType ?? definition?.cardType;
+      // Classification uses printed/base cost, independent of discounts.
+      const costly = Number(definition?.cost ?? card?.baseCost ?? -1) >= 6;
+      const summon =
+        e.type === "ENTER_FIELD" &&
+        type === "WRESTLER" &&
+        (definition?.rarity === "LEGENDARY" ||
+          card?.isChampionToken ||
+          definition?.isChampionToken ||
+          costly);
+      const spell = e.type === "CARD_PLAYED" && type === "TECHNIQUE" && costly;
+      if (summon || spell || e.type === "CHAMPION_QUEST_COMPLETED") {
+        const priorExit = state.events
+          .slice(0, i)
+          .findLastIndex(
+            (x) =>
+              x.cardInstanceId === e.cardInstanceId &&
+              [
+                "CARD_RETIRED",
+                "CARD_DESTROYED",
+                "CARD_VANISHED",
+                "CARD_REMOVED",
+              ].includes(x.type),
+          );
+        const resolution =
+          e.presentationResolutionId ??
+          e.sourceContext?.causationId ??
+          e.sourceContext?.rootSourceEventId;
+        const identity = summon
+          ? `entry:${e.cardInstanceId ?? i}:${priorExit}`
+          : spell
+            ? `cast:${i}`
+            : `quest:${e.playerId}`;
+        const key = `opponent:${e.playerId}:${resolution ?? identity}`;
+        if (!cursor.surprises.has(key)) {
+          cursor.surprises.add(key);
+          if (!reactions.includes("ALLY_RETIRED")) emit("ALLY_RETIRED");
+        }
+      }
+    }
     if (e.playerId !== playerId) continue;
     if (e.type === "TURN_STARTED")
       cues?.push({
