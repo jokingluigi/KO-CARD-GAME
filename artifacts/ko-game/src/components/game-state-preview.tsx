@@ -1526,7 +1526,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
-                     <div className="flex shrink-0 justify-between gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
+                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
