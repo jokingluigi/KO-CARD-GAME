@@ -86,7 +86,7 @@ export function PresentationFeedback({
   return (
     <>
     {(cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage || (['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD'].includes(cue.kind)&&!(cue.kind==='HEAL'&&cue.playerId&&!cue.cardInstanceId))) &&
-      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='BLOCK'||cue.kind==='ARMOR'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
+      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='ARMOR'?'ARMOR':cue.kind==='BLOCK'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
         left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
     <div
       aria-hidden="true"

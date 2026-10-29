@@ -6,6 +6,7 @@ import {vfxBudget,vfxParticles,type BattleVfxKind} from './battle-vfx-model';
 const assets:Record<BattleVfxKind,string[]>={
  IMPACT:['effekseer:HitEffect01_Yellow.png','effekseer:Smoke.png','dirt_01.png'],
  BLOCK:['circle_03.png','spark_01.png'],
+ ARMOR:['spark_04.png','spark_01.png'],
  HEAL:['magic_03.png','star_01.png'],
  MAGIC:['magic_01.png','smoke_07.png'],
  GOLD:['star_01.png','light_01.png'],

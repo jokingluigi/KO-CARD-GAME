@@ -26,6 +26,7 @@ export type AttackAnimationState = {
   currentAttack: number;
   impactLevel: AttackImpactLevel;
   damage: number;
+  counterDamage?: number;
   damageImpactLevel: AttackDamageImpactLevel;
   soundKey: string;
   finishingBlow?: boolean;
@@ -69,4 +70,13 @@ export function attackAnimationDuration(currentAttack: number) {
 
 export function attackSoundPitch(currentAttack: number) {
   return currentAttack >= 8 ? 1.06 : currentAttack >= 6 ? 1.03 : 1;
+}
+
+/** Only the confirmed defender damage belonging to this declaration. */
+export function confirmedCounterDamage(events:import('@/game/events/types').GameEvent[],start:number,attackerId:string):number {
+ if(start<0)return 0;let amount=0;
+ for(const e of events.slice(start+1)){
+  if(e.type==='ATTACK_DECLARED')break;
+  if(e.type==='DAMAGE_DEALT'&&e.sourceContext?.combatRole==='DEFENDER'&&e.target?.type==='CARD'&&e.target.cardInstanceId===attackerId)amount+=Math.max(0,e.amount??0);
+ }return amount;
 }

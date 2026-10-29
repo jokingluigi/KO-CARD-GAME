@@ -1,3 +1,5 @@
+import {MatchIntroOverlay} from "../src/components/online-match-intro";
+import {confirmedCounterDamage} from "../src/components/attack-animation-utils";
 import {MatchResultOverlay} from "../src/components/match-result-overlay";
 import type {MatchCosmetics} from "@workspace/cosmetics";
 import {audioManager} from '../src/audio/audio-manager';
@@ -25,6 +27,9 @@ if (!import.meta.env.DEV) throw Error("Development preview only");
 setRuntimeCardDefinitions(definitions);
 const noop = () => {};
 function Scene() {
+  const [qaIntro,setQaIntro]=useState(()=>new URLSearchParams(location.search).has("intro"));
+  const introStart=useRef(Date.now());
+  useEffect(()=>{if(!qaIntro)return;const t=setTimeout(()=>setQaIntro(false),4500);return()=>clearTimeout(t);},[qaIntro]);
   const [cosmetics,setCosmetics]=useState<MatchCosmetics>({});
   const [state, setState] = useState(boardFixture),
     [selected, setSelected] = useState<string | null>(null),
@@ -105,6 +110,8 @@ function Scene() {
           geometry,
           currentAttack: unit.currentAttack,
           damage,
+          finishingBlow:r.state.status==="FINISHED"&&r.state.loserId==="player-2"&&damage>0,
+          counterDamage:confirmedCounterDamage(r.state.events,r.state.events.findIndex((e,i)=>i>=state.events.length&&e.type==="ATTACK_DECLARED"),unit.instanceId),
           impactLevel: attackImpactLevel(unit.currentAttack),
           damageImpactLevel: attackDamageImpactLevel(damage),
           soundKey: "preview-" + (++attackSequence.current) + ":" + r.state.events.length,
@@ -163,7 +170,9 @@ function Scene() {
       <output data-testid="preview-busy" className="sr-only">
         {String(busy)}
       </output>
+      {qaIntro&&<MatchIntroOverlay self={{displayName:"나",championName:"검증 아군",portraitUrl:"/api/storage/objects/uploads/cosmetics/intro-qa.png",dialogueLine:"기존 컴포넌트 전환 검증"}} opponent={{displayName:"상대",championName:"검증 상대",portraitUrl:"/api/storage/objects/uploads/cosmetics/intro-qa.png",dialogueLine:"QA 임시 이미지"}} firstSpeaker="self" startedAt={introStart.current} gameplayStartsAt={introStart.current+4500} onSkipRequest={()=>setQaIntro(false)}/> }
       <GameStatePreview
+        introActive={qaIntro}
         boardTheme={theme ? "BLACK_GOLD" : "CLASSIC"}
         state={state}
         mediaCatalog={emptyGameMediaCatalog}

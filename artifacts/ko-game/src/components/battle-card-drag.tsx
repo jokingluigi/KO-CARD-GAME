@@ -200,6 +200,8 @@ export function BattleCardDrag(props: Props) {
       const tilt = prefersReducedMotion()
         ? 0
         : Math.max(-5, Math.min(5, (e.clientX - g.lastX) * 0.24));
+      const lift = Math.min(24,Math.abs(dy)*.08);
+      g.ghost!.style.boxShadow = `0 ${8+lift}px ${6+lift*.4}px #0008`;
       g.lastX = e.clientX;
       const x = Math.max(
           0,

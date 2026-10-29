@@ -1,3 +1,4 @@
+import {confirmedCounterDamage} from "@/components/attack-animation-utils";
 import { questMusic } from '@/components/quest-media';
 import {prepareIntroPortraits} from '@/game/match-assets';
 import {optionalCosmetics} from '@/lib/cosmetics-client';
@@ -1175,6 +1176,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
           attacker,
           target: target ?? null,
           targetKind: "CARD",
+          counterDamage:confirmedCounterDamage(result.state.events,attackEventIndex,selectedAttackerId),
           geometry,
           currentAttack,
           impactLevel: attackImpactLevel(currentAttack),

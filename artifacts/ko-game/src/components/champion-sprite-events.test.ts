@@ -711,7 +711,8 @@ for (const targetKind of ["WRESTLER", "PLAYER"] as const)
       ["ATTACK"],
     );
     assert.equal(cues[0].kind, "WRESTLER_ATTACK");
-    assert.equal(cues[0].target, undefined);
+    assert.deepEqual(cues[0].target,targetKind === "PLAYER" ? {playerId:"player-2"} : {playerId:"player-2",slot:defender.boardSlot});
+    assert.equal(cues[0].support,true,"gaze direction must not duplicate attack VFX");
     assert.deepEqual(
       collect(s, result.state, "player-2"),
       targetKind === "PLAYER" ? ["HIT"] : [],

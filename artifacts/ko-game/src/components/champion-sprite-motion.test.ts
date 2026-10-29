@@ -441,3 +441,10 @@ test('heavy-hit torso alternates horizontally and decays to rest without vertica
  const moving=points.slice(1,-1);for(let i=1;i<moving.length;i++){assert.ok(moving[i][0]*moving[i-1][0]<0);assert.ok(Math.abs(moving[i][0])<Math.abs(moving[i-1][0]));}
  assert.deepEqual(points.at(-1),[0,0]);
 });
+
+test('existing emote expressions get distinct gestures and all recover',()=>{
+ const types=['HELLO','THANKS','WELL_PLAYED','SORRY','OOPS','THREATEN'];
+ const motions=types.map(emote=>motionFrames({id:emote,kind:'EMOTE',event:'EMOTE',emote},true));
+ assert.notDeepEqual(motions[0],motions[1]);assert.notDeepEqual(motions[0],motions[3]);assert.notDeepEqual(motions[3],motions[5]);
+ for(const frames of motions)assert.equal(frames.at(-1)!.transform,motionFrames({id:'idle',kind:'TURN',event:'IDLE'},true)[0].transform);
+});

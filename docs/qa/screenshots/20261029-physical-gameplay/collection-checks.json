@@ -1,0 +1,26 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "skinSlider": true,
+    "filterReflow": true,
+    "detailOpenClose": true,
+    "quantityCraft": true,
+    "seal": true,
+    "revealSkip": true,
+    "close": true,
+    "serverWrites": "mock only"
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "skinSlider": true,
+    "filterReflow": true,
+    "detailOpenClose": true,
+    "quantityCraft": true,
+    "seal": true,
+    "revealSkip": true,
+    "close": true,
+    "serverWrites": "mock only"
+  }
+]

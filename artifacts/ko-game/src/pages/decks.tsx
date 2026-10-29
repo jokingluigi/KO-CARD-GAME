@@ -1,3 +1,4 @@
+import {flyBetween,useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Check, CirclePlus, Hammer, Minus, Plus, RefreshCw, Search, Shield, Star, Trash2 } from "lucide-react";
@@ -102,7 +103,7 @@ function DeckCardVisual({
 }) {
   const countView = getDeckCardCountView(card, selectedCount);
   return (
-    <article className="ko-decks__collection-card" aria-disabled={disabled && !unowned} data-unowned={unowned || undefined} data-testid={`card-collection-${card.id}`}>
+    <article data-motion-key={card.id} className="ko-decks__collection-card" aria-disabled={disabled && !unowned} data-unowned={unowned || undefined} data-testid={`card-collection-${card.id}`}>
       <Inspectable
         showOnHover
         content={
@@ -495,6 +496,9 @@ export default function Decks() {
     setErrorMessage("");
   }
 
+  const catalogRoot=useRef<HTMLElement>(null);
+  useGridReflow(catalogRoot,filteredCards.map(c=>c.id).join());
+
   function addCard(card: DeckCard) {
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
@@ -504,6 +508,7 @@ export default function Decks() {
       else if (ownershipReason) setErrorMessage(ownershipReason);
       return;
     }
+    flyBetween(document.querySelector(`[data-testid="card-collection-${CSS.escape(card.id)}"] .ko-card-depth`),document.querySelector('[data-testid="list-selected-cards"], [data-testid="empty-selected-cards"]'));
     setCardIds((current) => [...current, card.id]);
     setStatusMessage(`${card.name} 카드를 한 장 추가했습니다.`);
   }
@@ -583,6 +588,7 @@ export default function Decks() {
   }
 
   function removeCard(id: string) {
+    flyBetween(document.querySelector(`[data-testid="row-selected-card-${CSS.escape(id)}"]`),document.querySelector(`[data-testid="card-collection-${CSS.escape(id)}"]`),true);
     setCardIds((current) => {
       const index = current.indexOf(id);
       if (index < 0) return current;
@@ -685,7 +691,7 @@ export default function Decks() {
 
   return (
     <AltInspectProvider>
-      <main className="ko-decks">
+      <main ref={catalogRoot} className="ko-decks">
       <div className="ko-decks__grain" aria-hidden="true" />
       <div className="ko-decks__wrap">
         <header className="ko-decks__topline">

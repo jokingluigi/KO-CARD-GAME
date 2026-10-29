@@ -161,8 +161,8 @@ export function motionFrames(
   const pose = (x = 0, y = 0, r = 0, scale = 1, brightness = 1) => {
     // Centred phone commanders exert toward the field vertically; hits retain
     // their real source direction and never inherit this voluntary gesture axis.
-    const dx = centered && forwardGesture ? 0 : x;
-    const dy = centered && forwardGesture ? y - x : y;
+    const dx = centered && forwardGesture ? (direction ? Math.abs(x)*direction.x : 0) : x;
+    const dy = centered && forwardGesture ? (direction ? y+Math.abs(x)*direction.y : y-x) : y;
     return {
       transform: reduced
         ? "translate(0px,0px) rotate(0deg) scale(1)"
@@ -293,6 +293,13 @@ export function motionFrames(
       key(0.36, 0, -2, 0, 1.035, 0.8),
       key(1),
     ];
+  if (cue.kind === "EMOTE") {
+    if(cue.emote === "SORRY" || cue.emote === "OOPS")return [key(0),key(.3,-sign*1,3,-sign*.8,.993),key(.65,0,2,-sign*.3),key(1)];
+    if(cue.emote === "THREATEN")return [key(0),key(.2,-sign,0),key(.5,sign*4,-1,sign*.7,1.02),key(.75,sign*3,-1),key(1)];
+    if(cue.emote === "THANKS")return [key(0),key(.35,sign,2,sign*.45),key(.7,0,1),key(1)];
+    if(cue.emote === "WELL_PLAYED")return [key(0),key(.4,sign*2,-2,0,1.015),key(.7,sign,-1),key(1)];
+    return [key(0),key(.3,sign*2,-1,sign*.5),key(.65,sign,0,-sign*.15),key(1)];
+  }
   if (cue.kind === "TURN") return [key(0), key(0.32, 0, 0, 0, 1, 1.17), key(1)];
   return [key(0), key(0.38, sign, 0, sign * 0.2, 1.005, 1.05), key(1)];
 }

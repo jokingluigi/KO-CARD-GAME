@@ -171,6 +171,10 @@ export function ChampionSpriteVisual({
       c && length > 1
         ? { x: (at.x - c.x) / length, y: (at.y - c.y) / length }
         : undefined;
+    const aim=cue.target ? target(cue.target.playerId,cue.target.slot) : null;
+    const aimed=aim ? center(aim) : null;
+    const aimLength=aimed?Math.hypot(aimed.x-at.x,aimed.y-at.y):0;
+    const gestureDirection=aimed&&aimLength>1?{x:(aimed.x-at.x)/aimLength,y:(aimed.y-at.y)/aimLength}:direction;
     const preferences = readCombatPreferences(),
       intensity = impactMultiplier(preferences.intensity),
       decorated = preferences.quality !== "LOW",
@@ -200,7 +204,7 @@ export function ChampionSpriteVisual({
       Math.max(minimum, Math.min(1, rect.height / 220)),
       intensity,
       reduced,
-      direction,
+      gestureDirection,
       motion,
       vertical,
     );
@@ -225,7 +229,8 @@ export function ChampionSpriteVisual({
       animate(ink.current, [
         { opacity: 0, transform: "scale(.85)" },
         { opacity: reduced ? 0.15 : 0.45, transform: "scale(1)", offset: 0.3 },
-        { opacity: 0, transform: "scale(1.08)" },
+        { opacity:.09, transform:"scale(1.04)", offset:.72 },
+        { opacity: 0, transform: "scale(1.08)", offset:1 },
       ]);
     if (cue.kind === "HEAL")
       animate(sheen.current, [

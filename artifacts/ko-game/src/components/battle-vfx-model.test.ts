@@ -67,3 +67,11 @@ for (const [width, height] of [
     assert.ok(geometry.left + source.width * geometry.scale <= width - 19);
     assert.ok(geometry.top + source.height * geometry.scale <= height);
   });
+
+test('raw attack changes preparation weight without changing confirmed contact or recovery',()=>{
+ const timeline=combatTimeline(10,1);
+ const weak=attackFrames(0,-200,timeline,false,1),heavy=attackFrames(0,-200,timeline,false,10);
+ assert.notEqual(weak[2].transform,heavy[2].transform);
+ assert.equal(weak[3].offset,heavy[3].offset);assert.equal(weak.at(-1)!.transform,heavy.at(-1)!.transform);
+ assert.equal(attackBurstKind({damage:0}),'BLOCK');
+});

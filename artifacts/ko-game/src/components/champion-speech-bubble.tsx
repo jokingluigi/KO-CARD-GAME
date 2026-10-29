@@ -113,6 +113,12 @@ export function ChampionSpeechBubble({
       outline.style.width = rect.width + "px";
       outline.style.height = rect.height + "px";
       outline.style.visibility = "visible";
+      const startY=top < rect.top ? 0 : rect.height;
+      const deltaX=innerWidth/2-(rect.left+rect.width/2);
+      const deltaY=(top < rect.top ? top+height : top)-(rect.top+startY);
+      outline.style.setProperty('--tether-top',startY+'px');
+      outline.style.setProperty('--tether-length',Math.hypot(deltaX,deltaY)+'px');
+      outline.style.setProperty('--tether-angle',Math.atan2(deltaY,deltaX)+'rad');
     };
     let animationFrame = 0;
     const follow = () => {

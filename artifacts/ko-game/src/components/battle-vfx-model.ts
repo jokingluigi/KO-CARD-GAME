@@ -3,7 +3,7 @@ import { readCombatPreferences } from './combat-preferences';
 import { combatImpactProfile } from './combat-impact-profile';
 
 export type BattleVfxKind =
-  "IMPACT" | "BLOCK" | "HEAL" | "MAGIC" | "GOLD" | "DESTROY" | "RETIRE";
+  "IMPACT" | "BLOCK" | "ARMOR" | "HEAL" | "MAGIC" | "GOLD" | "DESTROY" | "RETIRE";
 
 /** Presentation time only; these values never control a combat result. */
 export function combatTimeline(
@@ -22,6 +22,7 @@ export function attackFrames(
   dy: number,
   timeline: ReturnType<typeof combatTimeline>,
   reduced = false,
+  attack = 3,
 ): Keyframe[] {
   if (reduced)
     return [
@@ -29,9 +30,10 @@ export function attackFrames(
       { opacity: 1, transform: "scale(1)" },
       { opacity: 0, transform: "scale(1)" },
     ];
-  const tilt = Math.max(-8, Math.min(8, dx / 70));
+  const weight=Math.min(1.5,.65+Math.max(0,attack)*.07);
+  const tilt = Math.max(-8, Math.min(8, dx / 70 || (dy<0?-2:2))) * Math.min(1.2,weight);
   const distance = Math.hypot(dx, dy) || 1;
-  const pullback = Math.min(20, distance * .06);
+  const pullback = Math.min(24, distance * .06 * weight);
   const pose = (x: number, y: number, scale: number, angle = 0) =>
     `translate3d(${x}px,${y}px,0) scale(${scale}) rotate(${angle}deg)`;
   return [
@@ -39,7 +41,7 @@ export function attackFrames(
     { offset: 0.1, opacity: 1, transform: pose(0, 0, 1.03) },
     {
       offset: (timeline.duration >= 700 ? 200 : 100) / timeline.duration,
-      transform: pose(-dx / distance * pullback, -dy / distance * pullback, 1.08, -tilt),
+      transform: pose(-dx / distance * pullback, -dy / distance * pullback, 1.03+.035*weight, -tilt),
       easing: "cubic-bezier(.7,0,.95,.65)",
     },
     {

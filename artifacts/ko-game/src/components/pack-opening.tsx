@@ -1,3 +1,6 @@
+import {flyBetween} from "./physical-feedback";
+import {prefersReducedMotion} from "./presentation-config";
+import "./physical-card.css";
 import { CosmeticPreview } from "./cosmetic-preview";
 import { useEffect, useRef, useState } from "react";
 import { Check, Gift, RotateCcw, Sparkles } from "lucide-react";
@@ -40,6 +43,12 @@ function playRevealMusic(reward: PackReward) {
 }
 
 export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, notice, preview = false, onClose, onRepeat, onRegenerate }: PackOpeningProps) {
+  const [opened,setOpened]=useState(preview || packCount>1);
+  const [sealVisible,setSealVisible]=useState(!preview && packCount===1);
+  const vault=useRef<HTMLSpanElement>(null);
+  const openingRoot=useRef<HTMLElement>(null);
+  useEffect(()=>{if(!opened)return;const timer=setTimeout(()=>setSealVisible(false),prefersReducedMotion()?0:350);return()=>clearTimeout(timer);},[opened]);
+  const closeWithCollection=()=>{if(!preview)Array.from(openingRoot.current?.querySelectorAll("[data-pack-revealed=true] .ko-card-depth")??[]).slice(0,6).forEach(n=>flyBetween(n,vault.current));onClose();};
   const [revealed, setRevealed] = useState<number[]>([]);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [specialQueue, setSpecialQueue] = useState<number[]>([]);
@@ -54,6 +63,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
     if (lastRewardsRef.current !== rewards) {
       lastRewardsRef.current = rewards;
       audioManager.stopPackRevealMusic();
+      setOpened(preview || packCount>1);setSealVisible(!preview && packCount===1);
       setRevealed([]);
       setDetailsExpanded(false);
       setSpecialQueue([]);
@@ -100,6 +110,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
 
   const allRevealed = revealed.length >= rewards.length;
   const revealAll = () => {
+    setOpened(true);
     // Do not queue a series of entrance scenes when the player skips ahead.
     announcedIndexesRef.current = new Set(rewards.map((_, index) => index));
     setSpecialQueue([]);
@@ -108,7 +119,8 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
   };
 
   return (
-    <section className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/95 px-5 py-8 backdrop-blur-sm">
+    <section ref={openingRoot} className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/95 px-5 py-8 backdrop-blur-sm">
+      {sealVisible&&<button type="button" className="ko-pack-seal" data-open={opened} disabled={opened} onClick={()=>setOpened(true)} data-testid="button-unseal-pack"><span>{packName}</span><strong>KO</strong><span>봉인 열기 · 획득 보상 공개</span></button>}
       <div className="mx-auto max-w-5xl" role="dialog" aria-modal="true" aria-labelledby="pack-opening-title">
         <div className="text-center">
           <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">{preview ? "PACK PREVIEW" : "PACK OPENING"}</p>
@@ -156,7 +168,8 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
             </div>}
           </section>
         )}
-        {(!isBulkResult || detailsExpanded) && <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <span ref={vault} className="ko-pack-vault">{preview ? "테스트 보상" : "획득 보상 · 컬렉션 보관"}</span>
+        {opened && (!isBulkResult || detailsExpanded) && <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {rewards.map((reward, index) => {
             const isRevealed = revealed.includes(index);
             const card = reward.card;
@@ -168,6 +181,8 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                 type="button"
                 key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? reward.cosmeticId ?? index}-${index}`}
                 onClick={() => setRevealed(current => current.includes(index) ? current : [...current, index])}
+                data-pack-revealed={isRevealed}
+                data-reveal-tier={reward.rewardType=== "LEGENDARY_CARD" || reward.rewardType === "CHAMPION_UNLOCK" ? "major" : reward.rewardType === "EPIC_CARD" ? "epic" : "normal"}
                 data-testid={`button-reveal-reward-${index}`}
                 className={`min-w-0 text-left transition-transform ${!isRevealed ? "hover:-translate-y-1" : ""}`}
                 aria-label={isRevealed ? rewardTitle(reward) : "보상 공개"}
@@ -234,7 +249,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
           {!isBulkResult && !allRevealed && <button type="button" data-testid="button-reveal-all" onClick={revealAll} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">연출 건너뛰고 모두 공개</button>}
           {!isBulkResult && allRevealed && onRegenerate && <button type="button" onClick={onRegenerate} className="flex items-center gap-2 rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300"><RotateCcw className="h-4 w-4" /> 결과 다시 생성</button>}
           {!isBulkResult && allRevealed && onRepeat && <button type="button" onClick={onRepeat} className="flex items-center gap-2 rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200"><RotateCcw className="h-4 w-4" /> 같은 팩 다시 테스트</button>}
-          {(isBulkResult || allRevealed) && <button type="button" data-testid="button-close-pack-opening" onClick={onClose} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}
+          {(isBulkResult || allRevealed) && <button type="button" data-testid="button-close-pack-opening" onClick={closeWithCollection} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}
         </div>
       </div>
       {specialReward && (

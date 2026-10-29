@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import {useDetailFlight} from "./physical-feedback";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardRulesText } from "@/components/card-rules-text";
 import { FullCardArtwork } from "@/components/full-card-artwork";
@@ -48,6 +49,8 @@ export function CardDetailDialog({
   quantityText?: string;
   children?: ReactNode;
 }) {
+  const detailRoot=useRef<HTMLDivElement>(null);
+  useDetailFlight(detailRoot,open,card?.id);
   const [tagExplorer, setTagExplorer] = useState<string | null>(null);
   const [tagDetailCard, setTagDetailCard] = useState<CardDetailRecord | null>(null);
 
@@ -67,6 +70,7 @@ export function CardDetailDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
+        ref={detailRoot}
         overlayClassName="!z-[220]"
         overlayProps={{ onClick: (event) => { event.stopPropagation(); handleOpenChange(false); } }}
         className="!z-[230] max-h-[90dvh] max-w-[min(620px,calc(100vw-24px))] overflow-y-auto border-neutral-800 bg-neutral-950 text-white"

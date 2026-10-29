@@ -1,5 +1,7 @@
+import {MotionNumber} from "@/components/presentation-motion";
+import {useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type KeyboardEvent } from "react";
 import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, Star, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
@@ -37,6 +39,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
 
   return (
     <article
+      data-motion-key={card.id}
       role="button"
       tabIndex={0}
       onClick={onOpen}
@@ -68,7 +71,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
           className="w-full"
         />
         <span className="absolute right-1 top-1 z-30 rounded-full border border-amber-300/50 bg-black/80 px-2 py-1 text-xs font-black text-amber-200">
-            {unlimited ? "∞" : showCraftable && card.quantity === 0 ? "제작 가능" : `×${card.quantity}`}
+            {unlimited ? "∞" : showCraftable && card.quantity === 0 ? "제작 가능" : <MotionNumber value={card.quantity} format={n=>`×${n}`}/>}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2">
@@ -289,6 +292,9 @@ export default function CollectionPage() {
     }
   }
 
+  const gridRoot=useRef<HTMLElement>(null);
+  useGridReflow(gridRoot,`${tab}:${filteredCards.map(c=>c.id).join()}:${filteredCraftableCards.map(c=>c.id).join()}`);
+
   if (loadState === "loading") {
     return <CollectionLoading />;
   }
@@ -317,7 +323,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <main className="ko-experience-page ko-collection ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main ref={gridRoot} className="ko-experience-page ko-collection ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
@@ -372,11 +378,11 @@ export default function CollectionPage() {
           <>
             <section aria-label="카드 검색 및 필터" className="mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
-                <label className="relative block">
+                <div className="relative block">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                   <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" aria-label="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-neutral-950 py-2.5 pl-9 pr-9 text-sm text-white outline-none transition focus:border-amber-400" />
-                  {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>}
-                </label>
+                  {search && <button type="button" aria-label="검색어 지우기" style={{translate:"none",transform:"none"}} onClick={() => setSearch("")} className="absolute right-1 top-0 z-10 flex h-11 w-11 items-center justify-center text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>}
+                </div>
                 <FilterSelect label="카드 종류" value={cardType} onChange={(value) => setCardType(value as CardTypeFilter)} options={[["ALL", "전체 종류"], ["WRESTLER", "선수"], ["TECHNIQUE", "기술"]]} />
 
                 <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "비용"], ["NAME", "이름"], ["RARITY", "희귀도"]]} />

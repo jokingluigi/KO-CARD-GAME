@@ -40,3 +40,10 @@ test("screen shake 단계는 실제 피해량을 여섯 구간으로 나눈다",
   assert.equal(attackDamageImpactLevel(8), "VERY_HEAVY");
   assert.equal(attackDamageImpactLevel(20), "VERY_HEAVY");
 });
+
+import {confirmedCounterDamage} from './attack-animation-utils';
+test('counter feedback uses only confirmed defender damage before the next attack',()=>{
+ const hit=(amount:number,role='DEFENDER')=>({type:'DAMAGE_DEALT' as const,target:{type:'CARD' as const,cardInstanceId:'a'},amount,sourceContext:{sourcePlayerId:'b',sourceActionType:'ATTACK',combatRole:role as 'DEFENDER'|'ATTACKER'}});
+ const events=[{type:'ATTACK_DECLARED' as const},hit(2),hit(0),hit(9,'ATTACKER'),{type:'ATTACK_DECLARED' as const},hit(8)];
+ assert.equal(confirmedCounterDamage(events,0,'a'),2);assert.equal(confirmedCounterDamage(events,0,'other'),0);assert.equal(confirmedCounterDamage(events,-1,'a'),0);
+});

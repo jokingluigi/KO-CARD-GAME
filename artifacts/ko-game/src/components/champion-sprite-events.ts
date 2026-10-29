@@ -260,7 +260,10 @@ export function championSpriteEvents(
         e.sourceSnapshot?.cardType ??
         cards.find((c) => c.instanceId === sourceId)?.cardType;
       if (type === "WRESTLER")
-        emit("ATTACK", { kind: "WRESTLER_ATTACK", support: true });
+        emit("ATTACK", { kind: "WRESTLER_ATTACK", support: true,
+          target:e.target?.type === "PLAYER" ? {playerId:e.target.playerId}
+            :e.target?.type === "CARD" ? (()=>{const id=e.target!.type==='CARD'?e.target!.cardInstanceId:'';const owner=state.players.find(p=>p.board.some(c=>c?.instanceId===id))??previous.players.find(p=>p.board.some(c=>c?.instanceId===id));const slot=e.targetSnapshot?.boardSlot??owner?.board.find(c=>c?.instanceId===id)?.boardSlot;return owner&&slot!==undefined&&slot!==null?{playerId:owner.id,slot}:undefined;})():undefined,
+        });
     }
     if (e.type === "CHAMPION_QUEST_COMPLETED") emit("AWAKEN");
     if (e.type === "ENTER_FIELD") {

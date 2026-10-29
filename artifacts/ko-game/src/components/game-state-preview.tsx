@@ -1,3 +1,5 @@
+import {BattleResourceFeedback} from "./battle-resource-feedback";
+import {confirmedCounterDamage} from "./attack-animation-utils";
 import {BattleTurnHandoff} from "./battle-turn-handoff";
 import {ChampionPortraitFrame} from "./champion-portrait-frame";
 import {ChampionBattleActor} from "./champion-battle-actor";
@@ -570,6 +572,7 @@ export function GameStatePreview({
             attacker,
             target,
             targetKind: targetId ? "CARD" : "CHAMPION",
+            counterDamage:confirmedCounterDamage(newEvents,eventIndex,event.cardInstanceId),
             geometry: { source, target: targetRect },
             currentAttack,
             impactLevel: attackImpactLevel(currentAttack),
@@ -1072,7 +1075,7 @@ export function GameStatePreview({
           : 1,
       } as React.CSSProperties}>
 
-         {blackGold && <BattleTurnHandoff state={state}/>}
+         {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/></>}
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
             {/* Opponent Hand: centered like the player's hand */}
@@ -1126,7 +1129,7 @@ export function GameStatePreview({
                          handleAttackChampion();
                        }}
                  >
-                   {blackGold && <ChampionPortraitFrame name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
+                   {blackGold && <ChampionPortraitFrame emblem={opponentChampionPortrait} name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
                    <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} framed={blackGold} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/></div>
 
                    {opponentChampionProtected && (
@@ -1619,7 +1622,7 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
-                    {blackGold && <ChampionPortraitFrame name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
+                    {blackGold && <ChampionPortraitFrame emblem={playerChampionPortrait} name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
                     <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} framed={blackGold} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/></div>
 
                    {playerChampionProtected && (
@@ -2011,6 +2014,7 @@ function BoardSlot({
     <Inspectable content={<CardInspectContent cosmeticOwnerId={cosmeticOwnerId} card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
        <div
          ref={slotRef}
+         data-card-instance-id={card?.instanceId}
          title={attackSelectionActive && !attackReady ? attackReason : undefined}
          className={`relative${animating ? " invisible" : ""}`}
        >
@@ -2107,7 +2111,7 @@ function ZoneStack({
 }) {
   return (
     <div className={`ko-zone-stack flex shrink-0 flex-col gap-2 md:gap-3 ${className}`}>
-      <div ref={deckRef} aria-label={`덱 ${deckCount}장`} className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
+      <div ref={deckRef} data-empty={deckCount===0} data-deck-count={deckCount} aria-label={`덱 ${deckCount}장`} style={{boxShadow:deckCount>0?`${Math.min(4,Math.ceil(deckCount/8))}px ${Math.min(4,Math.ceil(deckCount/8))}px 0 #796c4b`:"none"}} className="ko-deck-stack relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
         <CosmeticBack loadout={cosmeticLoadout}/><span className="ko-deck-label hidden">덱</span>
         <div className="absolute inset-1 border border-neutral-700/60" />
         <div className="h-4 w-4 rotate-45 border border-neutral-700/60 md:h-6 md:w-6" />

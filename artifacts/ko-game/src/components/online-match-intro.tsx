@@ -1,6 +1,7 @@
+import {prefersReducedMotion} from "./presentation-config";
 import type {CosmeticDisplaySettings} from "@workspace/cosmetics";
 import { cachedPortrait, loadPortrait } from '../game/portrait-loading';
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, useRef, useLayoutEffect, type CSSProperties } from "react";
 
 import styles from "./online-match-intro.module.css";
 
@@ -125,6 +126,20 @@ export function MatchIntroOverlay({
   matchLabel = "ONLINE MATCH",
 }: MatchIntroOverlayProps) {
   const [now, setNow] = useState(() => Date.now());
+  const introRoot=useRef<HTMLDivElement>(null);
+  useLayoutEffect(()=>()=>{
+    if(prefersReducedMotion() || Date.now()-startedAt<800)return;
+    for(const side of ['self','opponent'] as Speaker[]){
+      const source=introRoot.current?.querySelector<HTMLElement>(`[data-testid="portrait-${side}"]`);
+      const target=document.querySelector(side==='self'?'.ko-player-champion .ko-portrait-window':'.ko-opponent-champion .ko-portrait-window');if(!source||!target)continue;
+      const a=source.getBoundingClientRect(),r=target.getBoundingClientRect();if(!r.width||!a.width)continue;
+      const g=source.cloneNode(true) as HTMLElement;
+      g.removeAttribute('data-testid');g.inert=true;g.setAttribute('aria-hidden','true');g.dataset.introHandoff=side;
+      Object.assign(g.style,{position:'fixed',left:a.x+'px',top:a.y+'px',width:a.width+'px',height:a.height+'px',margin:'0',zIndex:'215',pointerEvents:'none',transformOrigin:'0 0',animation:'none',visibility:'visible',display:'block',transform:'none'});
+      document.body.appendChild(g);const ratio=Math.min(r.width/a.width,r.height/a.height);
+      try{g.animate([{translate:'0px 0px',scale:'1',opacity:1},{translate:`${r.x+(r.width-a.width*ratio)/2-a.x}px ${r.y+(r.height-a.height*ratio)/2-a.y}px`,scale:String(ratio),opacity:0}],{duration:280,easing:'cubic-bezier(.2,.7,.3,1)'}).finished.catch(()=>{}).finally(()=>g.remove());}catch{g.remove();}
+    }
+  },[startedAt]);
 
   useEffect(() => {
     const updateClock = () => setNow(Date.now());
@@ -170,6 +185,7 @@ export function MatchIntroOverlay({
 
   return (
     <div
+      ref={introRoot}
       className={styles.overlay}
       style={sceneStyle}
       role="dialog"

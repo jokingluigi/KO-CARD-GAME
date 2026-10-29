@@ -75,11 +75,13 @@ export function AttackAnimation({
     setImpacted(false);
     setReleased(false);
     let releasedOnce=false;
+    let hush:Animation|undefined;
     if (animation.finishingBlow) audioManager.duckForPresentation(.4, 500);
     const impact = () => {
       if (impactedRef.current) return;
       impactedRef.current = true;
       setImpacted(true);
+      if(animation.finishingBlow&&!reduced)try{hush=document.querySelector(".ko-cinematic-background")?.animate([{filter:"brightness(.6)"},{filter:"brightness(1)"}],{duration:220,easing:"ease-out"});}catch{}
       if(animation.damage>0)contactVfxRef.current?.({id:animation.soundKey,left:contactX,top:contactY,strength:animation.damage,direction:{x:dx,y:dy}});
       if(phaseRef.current)phaseRef.current.dataset.attackPhase='HITSTOP';
       if(hapticsRef.current && animation.damage>0 && !reduced && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') {
@@ -106,7 +108,7 @@ export function AttackAnimation({
     };
     const animate=(node:HTMLElement|null,frames:Keyframe[])=>{try{return node?.animate?.(frames,{duration,fill:'both',easing:'linear'});}catch{return undefined;}};
     const element=attackerRef.current;
-    const motion=animate(element,attackFrames(dx,dy,timeline,reduced));
+    const motion=animate(element,attackFrames(dx,dy,timeline,reduced,animation.currentAttack));
     // A champion hit moves the actual portrait, not an empty circular proxy.
     const championNode=animation.targetKind==='CHAMPION'
       ? Array.from(document.querySelectorAll<HTMLElement>('.ko-player-champion,.ko-opponent-champion')).find(node=>{
@@ -140,7 +142,7 @@ export function AttackAnimation({
     return () => {
       cancelAnimationFrame(frame);
       if(motion){motion.onfinish=null;motion.cancel();}
-      targetMotion?.cancel();
+      targetMotion?.cancel();hush?.cancel();
       document.removeEventListener('visibilitychange',hidden);
       window.removeEventListener('resize',complete);
       window.removeEventListener('ko-combat-preferences',complete);
@@ -203,6 +205,8 @@ export function AttackAnimation({
           className="h-full w-full"
         />
       </div>
+      {impacted && animation.target && animation.damage>Math.max(0,animation.target.currentHealth) && <span className="ko-overkill-note" style={{left:contactX,top:contactY-40}}>초과 피해 포함</span>}
+      {released && (animation.counterDamage??0)>0 && <span className="ko-counter-contact" style={{left:contactX,top:contactY+24}}>반격</span>}
       {impacted && <>
 
 

@@ -1,3 +1,5 @@
+import {rememberCardOrigin} from "./physical-feedback";
+import "./physical-card.css";
 import {useCosmeticImage} from './cosmetic-battle';
 import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { getCardDefinitions } from '../game/cards/test-cards';
@@ -341,6 +343,8 @@ export function CardRenderer({
     <div
       className={`ko-card-depth relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
+      data-card-definition={cardId}
+      onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
       data-card-highlight={highlight}
       data-targetable={highlight === "target"}
       style={style}

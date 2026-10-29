@@ -1,3 +1,4 @@
+import {confirmedCounterDamage} from "@/components/attack-animation-utils";
 import { prepareIntroPortraits } from '@/game/match-assets';
 import { questMusic as selectQuestMusic } from '@/components/quest-media';
 import {cosmeticImage,cosmeticImageSettings,type MatchCosmetics,type ImageEmoteEvent} from '@workspace/cosmetics';
@@ -612,6 +613,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     setAttackImpactTriggered(false);
     setAttackAnimation({
       ...pending,
+      counterDamage:confirmedCounterDamage(next.events,eventIndex,pending.attacker.instanceId),
       currentAttack: event.sourceSnapshot?.currentAttack ?? pending.attacker.currentAttack,
       impactLevel: attackImpactLevel(event.sourceSnapshot?.currentAttack ?? pending.attacker.currentAttack),
       damage,
