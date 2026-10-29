@@ -1,0 +1,20 @@
+{
+  "passed": [
+    "PASS 360x640",
+    "PASS 360x740",
+    "PASS 375x812",
+    "PASS 390x844",
+    "PASS 393x760",
+    "PASS 393x760",
+    "PASS 412x915",
+    "PASS 844x390",
+    "PASS 1440x900"
+  ],
+  "initialFailures": [
+    "First full run fixed-coordinate tap timed out at390x844",
+    "Repeat fixed-coordinate tap timed out at412x915"
+  ],
+  "qaCorrection": "Use a proportional effect-text tap position, matching earlier selection assertion. Separate final412,844,1440 runs passed.",
+  "realPhone": "NOT_RUN",
+  "freshTwoClientPvP": "NOT_RUN"
+}

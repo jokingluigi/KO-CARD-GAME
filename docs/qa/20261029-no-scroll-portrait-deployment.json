@@ -1,0 +1,20 @@
+{
+  "commit": "d4fc6184ed4bdf1ea68b126eacb2af486e48b2a4",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbhf521srm7s73fmdu50",
+  "status": "live",
+  "liveCommit": "d4fc6184ed4bdf1ea68b126eacb2af486e48b2a4",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-DumDjZ45.js",
+    "/assets/index-C0R0reeF.css"
+  ],
+  "assets": [
+    {
+      "file": "match-result-overlay-BZ4l3j-Z.css",
+      "sha256": "72256d86e4960f4ba926fbae6be7593d910e1e874326afac852def38ab444593",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}
