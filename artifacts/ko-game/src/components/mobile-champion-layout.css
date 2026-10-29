@@ -3,12 +3,17 @@
 @media (max-width: 999px) and (orientation: portrait) {
   .ko-game-shell.ko-board-preview,
   .ko-game-shell.ko-board-preview:has(.ko-battle-command button) {
-    --fit-hud-h: clamp(136px, 20dvh, 164px);
+    --fit-hud-h: clamp(150px, calc(45dvh - 172px), 232px);
     /* Prioritise four full-width field targets over the hand reading strip. */
-    --fit-hand-h: clamp(92px, 15dvh, 136px);
+    --fit-hand-h: clamp(90px, 11dvh, 102px);
+    --fit-controls-h: 48px;
+    --fit-field-h: calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2 * var(--fit-hud-h) - var(--fit-hand-h) - var(--fit-controls-h) - 28px) / 2);
   }
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
     --actor-width: clamp(150px, 46vw, 196px);
+    padding: 2px 8px;
+    gap: 2px;
+    grid-template-rows: 12px var(--fit-hud-h) minmax(0,1fr) var(--fit-controls-h) minmax(0,1fr) var(--fit-hud-h) var(--fit-hand-h);
     --sprite-battle-axis: vertical;
     --sprite-motion-floor: 0.8;
   }
@@ -80,7 +85,8 @@
     :is(.ko-player-quest, .ko-opponent-quest) {
     grid-column: 3;
     grid-row: 4;
-    align-self: stretch;
+    align-self: end;
+    max-height: 56px;
     min-width: 0;
   }
   .ko-game-shell.ko-board-preview
@@ -132,11 +138,11 @@
   .ko-game-shell.ko-board-preview
     .ko-game-stage.ko-champion-arena
     .ko-battle-command {
-    top: calc(env(safe-area-inset-top) + 88px);
+    top: calc(env(safe-area-inset-top) + 82px);
     left: 8px;
     right: auto;
     width: calc((100vw - 26px - var(--actor-width)) / 2);
-    height: calc(var(--fit-hud-h) - 64px);
+    height: calc(var(--fit-hud-h) - 66px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -168,4 +174,10 @@
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena {
     --sprite-motion-floor: 0.7;
   }
+}
+
+@media (max-width:999px) and (orientation:portrait) {
+ .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-game-controls { padding:2px; }
+ .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-hand { height:12px; }
+ .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-opponent-hand > div { max-height:12px; }
 }
