@@ -40,3 +40,7 @@ Physical phones, native OS share sheets, real two-client PvP rematches/reconnect
 ## Files
 
 New `components/player-tools/*` and `pages/player-notebook.tsx`; integrates with `App.tsx`, navigation/main menu, AI setup/Home, quick/friendly/online match pages, common battle/result/detail/share dialogs, cosmetics, collection, pack details and opening. Dependency/lockfile and MIT notice included. QA runners and explicit safe screenshots accompany this report. Game engine and server files are untouched.
+
+## Deployment verification
+
+Frontend feature-branch commit `badd93e5bf0f8a2e2abf5156df2170c4f860f1d0` is live on the existing site. Render deployment `dep-dbhteqek1f9s73e6b4a0` reports that exact commit; the normal root serves the expected entry and 17 checked JS/CSS assets match the local production build by SHA-256. The frontend API health route returned HTTP 200. This verifies delivery, not authenticated live multiplayer/reward behavior. No main merge or production database mutation was performed. See [deployment receipt](20261029-player-features-deployment.json).
