@@ -60,3 +60,7 @@ Unverified: authenticated two-client PvP, reconnect over a real network, full AI
 - `presentation-feedback.tsx`, `presentation-feedback-utils.ts` and test, `presentation-event-feedback.ts` and test, `presentation-policy.ts`.
 - `champion-portrait-frame.tsx`, `battle-sprite-editor.tsx`.
 - QA harness `artifacts/ko-game/qa/black-gold-board.tsx`, runner `docs/qa/effect-readability-browser.mjs`, this report and explicit safe review artifacts.
+
+## Deployment
+
+Frontend-only release `904bb64` is live. Root HTML entry matches the local build; 12 related JS/CSS assets passed SHA-256 comparison and `/api/healthz` returned 200. [Deployment receipt](20261029-effect-readability-deployment.json). Main was not merged; API, DB and maintenance settings were not changed.

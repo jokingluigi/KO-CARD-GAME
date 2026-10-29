@@ -1,0 +1,78 @@
+{
+  "commit": "904bb64a99eac9ad6b833583fd00a4276cda6f63",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbhn19ou01pc73bo5pbg",
+  "status": "live",
+  "liveCommit": "904bb64a99eac9ad6b833583fd00a4276cda6f63",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-BWQRpIR8.js",
+    "/assets/index-D8l_EMDw.css"
+  ],
+  "entryUrl": "https://ko-card-game-vr69.onrender.com/?release=904bb64",
+  "assets": [
+    {
+      "file": "collection-client-DkYnnBvX.js",
+      "sha256": "9339c766272d70fc88c7e3d650559503bbc813e6347ed237dbbfeb40ee049b82",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-DHHeXQd7.js",
+      "sha256": "c1a6274732ea3ca3ba2dd58086e5b9794f026e5bf40bc47059c07e60a5b9ff00",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-CA-D5S2O.js",
+      "sha256": "1fc7beb4b1e1eb06688304c77b7129360708c8f577edc9d3be7154331e9fb708",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-CwYOdwla.js",
+      "sha256": "1830e43ed40d615ca62196f5549bda1824dc0625c3dfd811771b67f77b92a4a5",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-C3sS3hAy.js",
+      "sha256": "f5eceaf59cef11b2b5fd54933a07e857caa44b85edb6f6215cc9844c3fe41799",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-DiQIZvj-.css",
+      "sha256": "592c080f14e56e1f72946da8a266258d47d18eb57884012bf74f3c78734afac7",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DSVkFit7.js",
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-Bit-OUZy.css",
+      "sha256": "f61f3f4bbc40826d623ddaec951ed8e7723e32e6874643173d6bea0372222cce",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-C0U-4LuK.js",
+      "sha256": "28a97cab4e81425cdf5a7bcafc950ad469a5357263ef19de3aa4e95f5447cf10",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-B56xPprI.js",
+      "sha256": "b1ae457067616c4bf9e73c733cab105ea7fd8f5c582166c070f18b5270a30c5e",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-DvbEPcv4.js",
+      "sha256": "1a2d887818c2a769b35570dc8dab601ebc7427fc7d2bc1f96a0ace18f22dec56",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-B0aD8FS6.js",
+      "sha256": "d22f8361acf7c8c2c7d53aae1f1e9cf01bc9c243eaaf948e20f450b32706ced8",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200,
+  "rootEntryVerified": true,
+  "verifiedAt": "2026-10-29T16:15:26.003532+00:00"
+}
