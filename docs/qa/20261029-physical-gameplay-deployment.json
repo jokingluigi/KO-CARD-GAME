@@ -1,0 +1,75 @@
+{
+  "commit": "c9037a26ab72d32b2be3d22351141dbc2f3276f6",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbhlp6mc6qcc73foock0",
+  "status": "live",
+  "liveCommit": "c9037a26ab72d32b2be3d22351141dbc2f3276f6",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-5N6VIjiy.js",
+    "/assets/index-D8l_EMDw.css"
+  ],
+  "assets": [
+    {
+      "file": "collection-client-DkYnnBvX.js",
+      "sha256": "9339c766272d70fc88c7e3d650559503bbc813e6347ed237dbbfeb40ee049b82",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-BVXrvQSo.js",
+      "sha256": "4624717ff72022d7622d51b17dd864d671f03e24db1233dd3ae346cb94154c5d",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-IsvimS0K.js",
+      "sha256": "b74a3f109eb320479ba7a4b7d8fea2711e36f34f5199493bbb4c6e5df9f826ee",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-DilAXIZb.js",
+      "sha256": "5b5a85bf7c95c09e08d59b923c6de272cadbf48cc7358faadb24da7f507105e7",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-DiQIZvj-.css",
+      "sha256": "592c080f14e56e1f72946da8a266258d47d18eb57884012bf74f3c78734afac7",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-BvimxpK1.js",
+      "sha256": "6d9830f0d4ef9cb214983b04ed0a1e86be2628d80d360422f6605a6e497d13dd",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DSVkFit7.js",
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-BM1r3QDj.js",
+      "sha256": "70609c6177e364734ec6f765469f89d950fefd1e27c1f7347e818512002e9d5c",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-Bit-OUZy.css",
+      "sha256": "f61f3f4bbc40826d623ddaec951ed8e7723e32e6874643173d6bea0372222cce",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-D7k7IvQW.js",
+      "sha256": "ffb8d0cc0c22c3b788a26a74024d3c43393888b3a31914dfcd7ccfb1b793971b",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-gGST_6EX.js",
+      "sha256": "8bade01ca437301c9287ddf60cebdac0962acde830cf256de4eb7efc5a8c287e",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-bszBIz3y.js",
+      "sha256": "d2b44658d774ef2d705168d3f20e8f3f67acf9787f7fe39f9502a354fd50af37",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}
