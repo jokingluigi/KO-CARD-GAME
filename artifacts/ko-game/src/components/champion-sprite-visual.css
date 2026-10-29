@@ -1,6 +1,7 @@
 .ko-sprite-visual,
 .ko-sprite-stance,
 .ko-sprite-breath,
+.ko-sprite-low-tremor,
 .ko-sprite-pose {
   position: relative;
   width: 100%;
@@ -134,3 +135,21 @@
 .ko-sprite-visual[data-moving="true"] .ko-sprite-pose {
   will-change: transform, filter;
 }
+
+/* Fatigued shivering belongs to the body, never to the HUD or camera.
+   Transient reactions temporarily replace it, then current health decides return. */
+.ko-sprite-low-tremor { transform-origin:var(--sprite-pivot,50% 90%); }
+.ko-sprite-visual[data-state="LOW"]:not([data-moving="true"]):not([data-reacting="true"]):not([data-reduced="true"]) .ko-sprite-low-tremor {
+  animation:ko-sprite-low-shiver 400ms linear infinite;
+  animation-delay:var(--sprite-breath-phase);
+}
+@keyframes ko-sprite-low-shiver {
+  0%,100% { transform:translate(0,0) rotate(0deg); }
+  12% { transform:translate(calc(var(--sprite-tremor-x) * -1),calc(var(--sprite-tremor-x) * .2)) rotate(calc(var(--sprite-tremor-angle) * -1)); }
+  26% { transform:translate(var(--sprite-tremor-x),calc(var(--sprite-tremor-x) * -.16)) rotate(calc(var(--sprite-tremor-angle) * .83)); }
+  40% { transform:translate(calc(var(--sprite-tremor-x) * -.7),calc(var(--sprite-tremor-x) * .12)) rotate(calc(var(--sprite-tremor-angle) * -.66)); }
+  54% { transform:translate(calc(var(--sprite-tremor-x) * .85),calc(var(--sprite-tremor-x) * -.2)) rotate(var(--sprite-tremor-angle)); }
+  68% { transform:translate(calc(var(--sprite-tremor-x) * -1),calc(var(--sprite-tremor-x) * .12)) rotate(calc(var(--sprite-tremor-angle) * -.83)); }
+  82% { transform:translate(calc(var(--sprite-tremor-x) * .65),calc(var(--sprite-tremor-x) * -.08)) rotate(calc(var(--sprite-tremor-angle) * .66)); }
+}
+@media (prefers-reduced-motion:reduce) { .ko-sprite-low-tremor { animation:none !important; } }

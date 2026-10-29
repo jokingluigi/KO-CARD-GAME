@@ -5,13 +5,15 @@
     "breath": {
       "body": 0,
       "camera": 0,
-      "breathRange": 4.7999795088,
+      "breathRange": 4.79994164981,
+      "tremorRange": 0,
       "frames": 300
     },
     "low": {
       "body": 0,
       "camera": 0,
-      "breathRange": 3.59998593346,
+      "breathRange": 3.5998971069000003,
+      "tremorRange": 4.59277,
       "frames": 330
     },
     "damage": [
@@ -19,62 +21,71 @@
         "amount": 0,
         "body": 0,
         "camera": 0,
-        "breathRange": 2.5619705,
+        "breathRange": 2.9307200000000004,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 1,
-        "body": 16.4277,
+        "body": 16.4269,
         "camera": 17.784,
-        "breathRange": 0.65032,
+        "breathRange": 0.69109,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 2,
-        "body": 19.1581,
+        "body": 19.1571,
         "camera": 23.712,
-        "breathRange": 0.34640000000000004,
+        "breathRange": 0.6789999999999998,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 4,
-        "body": 24.6325,
+        "body": 24.6319,
         "camera": 39.52,
-        "breathRange": 0.44112300000000004,
+        "breathRange": 0.6780599999999994,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 5,
-        "body": 40.1211,
+        "body": 40.1238,
         "camera": 51.376,
-        "breathRange": 0.03844800000000004,
+        "breathRange": 0.05903999999999954,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 8,
         "body": 48,
         "camera": 69.16,
-        "breathRange": 0.06132000000000004,
+        "breathRange": 0.10290599999999994,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 12,
         "body": 48,
         "camera": 82.992,
-        "breathRange": 0.06732999999999967,
+        "breathRange": 0.014289999999999914,
+        "tremorRange": 0,
         "frames": 48
       }
     ],
     "off": {
       "body": 48,
       "camera": 0,
-      "breathRange": 0.07385999999999981,
+      "breathRange": 0.03012250000000001,
+      "tremorRange": 0,
       "frames": 48
     },
     "reduced": {
       "body": 0,
       "camera": 0,
       "breathRange": 0,
+      "tremorRange": 0,
       "frames": 48
     },
     "physicalDevice": false
@@ -85,13 +96,15 @@
     "breath": {
       "body": 0,
       "camera": 0,
-      "breathRange": 5.9999751195,
+      "breathRange": 5.99995635349,
+      "tremorRange": 0,
       "frames": 300
     },
     "low": {
       "body": 0,
       "camera": 0,
-      "breathRange": 4.4999172198,
+      "breathRange": 4.49998764826,
+      "tremorRange": 6.533329999999999,
       "frames": 330
     },
     "damage": [
@@ -99,62 +112,71 @@
         "amount": 0,
         "body": 0,
         "camera": 0,
-        "breathRange": 3.7486060000000005,
+        "breathRange": 3.9535299999999998,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 1,
-        "body": 20.528170369326634,
+        "body": 20.516840637739527,
         "camera": 23.39974232764113,
-        "breathRange": 0.7539800000000003,
+        "breathRange": 0.1116471388,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 2,
-        "body": 23.962051925578077,
+        "body": 23.9375588225366,
         "camera": 31.199722963513633,
-        "breathRange": 1.5826699999999998,
+        "breathRange": 0.0674564093,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 4,
-        "body": 30.758067389062333,
+        "body": 30.778479306133697,
         "camera": 52.00012499984977,
-        "breathRange": 0.2923111,
+        "breathRange": 0.10309999999999953,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 5,
-        "body": 50.15018884690266,
+        "body": 50.151816531507606,
         "camera": 67.59988669369201,
-        "breathRange": 0.25939000000000023,
+        "breathRange": 0.14610999999999996,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 8,
-        "body": 53.56282332448506,
+        "body": 53.51672832386151,
         "camera": 90.99962902122184,
-        "breathRange": 0.00805246,
+        "breathRange": 0.18445,
+        "tremorRange": 0,
         "frames": 48
       },
       {
         "amount": 12,
-        "body": 54.632253412796366,
+        "body": 54.63228407901321,
         "camera": 91.99982892375398,
-        "breathRange": 0.10772199999999998,
+        "breathRange": 0.1394700000000002,
+        "tremorRange": 0,
         "frames": 48
       }
     ],
     "off": {
-      "body": 53.56265546964601,
+      "body": 53.56279934469445,
       "camera": 0,
-      "breathRange": 0.17241000000000017,
+      "breathRange": 0.1740400000000002,
+      "tremorRange": 0,
       "frames": 48
     },
     "reduced": {
       "body": 0,
       "camera": 0,
       "breathRange": 0,
+      "tremorRange": 0,
       "frames": 48
     },
     "physicalDevice": false

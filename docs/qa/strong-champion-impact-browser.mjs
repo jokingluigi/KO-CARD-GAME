@@ -148,6 +148,13 @@ try {
               breath = document.querySelector(
                 ".ko-player-champion .ko-sprite-breath",
               ),
+              tremor = document.querySelector(
+                ".ko-player-champion .ko-sprite-low-tremor",
+              ),
+              ts = getComputedStyle(tremor),
+              tm = new DOMMatrix(
+                ts.transform === "none" ? undefined : ts.transform,
+              ),
               stage = document.querySelector(".ko-game-stage"),
               ps = getComputedStyle(pose),
               bs = getComputedStyle(breath),
@@ -165,6 +172,7 @@ try {
             values.push({
               body: Math.hypot(m.m41, m.m42),
               breath: bm.m42,
+              tremor: tm.m41,
               camera: Math.hypot(t[0], t[1] || 0),
             });
             if (++count < frames) requestAnimationFrame(loop);
@@ -175,6 +183,9 @@ try {
                 breathRange:
                   Math.max(...values.map((x) => x.breath)) -
                   Math.min(...values.map((x) => x.breath)),
+                tremorRange:
+                  Math.max(...values.map((x) => x.tremor)) -
+                  Math.min(...values.map((x) => x.tremor)),
                 frames: count,
               });
           };
@@ -193,6 +204,64 @@ try {
     const low = await p.evaluate(() => window.__strongSample(330));
     assert.ok(low.breathRange > 2, "low breathing visible");
     assert.ok(low.breathRange < breath.breathRange);
+    assert.equal(breath.tremorRange, 0);
+    assert.ok(low.tremorRange > 2, "low-health shivering visibly active");
+    await p.evaluate(() => window.__strongHit(1));
+    await p.waitForFunction(
+      () =>
+        document
+          .querySelector(".ko-player-champion .ko-battle-actor")
+          ?.getAttribute("data-reaction") === "HIT",
+    );
+    assert.equal(
+      await p
+        .locator(".ko-player-champion .ko-sprite-low-tremor")
+        .evaluate((n) => getComputedStyle(n).animationName),
+      "none",
+    );
+    await p.waitForFunction(
+      () =>
+        document
+          .querySelector(".ko-player-champion .ko-battle-actor")
+          ?.getAttribute("data-reaction") === "IDLE",
+    );
+    assert.equal(
+      await p
+        .locator(".ko-player-champion .ko-sprite-low-tremor")
+        .evaluate((n) => getComputedStyle(n).animationName),
+      "ko-sprite-low-shiver",
+    );
+    await p.evaluate(async () => {
+      const { healNewCardAware } =
+        await import("/src/game/engine/new-card-rules.ts");
+      window.__strongState = healNewCardAware(
+        window.__strongState,
+        "player-1",
+        2,
+      );
+      window.dispatchEvent(
+        new CustomEvent("ko-qa-load-state", {
+          detail: {
+            state: window.__strongState,
+            definitions: window.__strongState.cardPool,
+            cosmetics: window.__strongCosmetics,
+          },
+        }),
+      );
+    });
+    await p.waitForFunction(
+      () =>
+        document
+          .querySelector(".ko-player-champion .ko-battle-actor")
+          ?.getAttribute("data-sprite-state") === "IDLE",
+    );
+    assert.equal(
+      await p
+        .locator(".ko-player-champion .ko-sprite-low-tremor")
+        .evaluate((n) => getComputedStyle(n).animationName),
+      "none",
+    );
+
     const damage = [];
     for (const amount of [0, 1, 2, 4, 5, 8, 12]) {
       await load();
@@ -238,6 +307,9 @@ try {
     const reduced = await p.evaluate(() => window.__strongSample(48, 8));
     assert.equal(reduced.camera, 0);
     assert.equal(reduced.body, 0);
+    await load(5);
+    const reducedLow = await p.evaluate(() => window.__strongSample(30));
+    assert.equal(reducedLow.tremorRange, 0);
     assert.deepEqual(errors, []);
     results.push({
       width,

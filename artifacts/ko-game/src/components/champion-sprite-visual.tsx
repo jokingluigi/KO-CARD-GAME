@@ -346,6 +346,11 @@ export function ChampionSpriteVisual({
             1 +
             (state === "LOW" ? 0.006 : 0.012) * Math.min(1, profile.movement),
           "--sprite-breath-phase": -phase + "ms",
+          "--sprite-tremor-x":
+            Math.min(3.8, Math.max(2.4, height * 0.018) * profile.movement) +
+            "px",
+          "--sprite-tremor-angle":
+            Math.min(0.6, 0.45 * profile.rotation) + "deg",
           "--sprite-low-y":
             Math.min(4, height * 0.014) * profile.movement + "px",
           "--sprite-low-tilt": (self ? -0.25 : 0.25) * profile.rotation + "deg",
@@ -365,35 +370,37 @@ export function ChampionSpriteVisual({
       <div ref={ink} className="ko-sprite-ink" aria-hidden="true" />
       <div className="ko-sprite-stance">
         <div className="ko-sprite-breath">
-          <div ref={body} className="ko-sprite-pose">
-            {children}
-            {image && cue?.kind === "HEAL" && (
-              <div ref={sheen} className="ko-sprite-sheen" aria-hidden="true">
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    transform: `scaleX(${self ? 1 : -1})`,
-                  }}
-                >
-                  <img
-                    src={image}
-                    alt=""
+          <div className="ko-sprite-low-tremor">
+            <div ref={body} className="ko-sprite-pose">
+              {children}
+              {image && cue?.kind === "HEAL" && (
+                <div ref={sheen} className="ko-sprite-sheen" aria-hidden="true">
+                  <div
                     style={{
                       width: "100%",
                       height: "100%",
-                      objectFit:
-                        settings.imageDisplayMode === "CONTAIN"
-                          ? "contain"
-                          : "cover",
-                      objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
-                      transform: `scale(${settings.imageScale})`,
-                      transformOrigin: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
+                      transform: `scaleX(${self ? 1 : -1})`,
                     }}
-                  />
+                  >
+                    <img
+                      src={image}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit:
+                          settings.imageDisplayMode === "CONTAIN"
+                            ? "contain"
+                            : "cover",
+                        objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
+                        transform: `scale(${settings.imageScale})`,
+                        transformOrigin: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
