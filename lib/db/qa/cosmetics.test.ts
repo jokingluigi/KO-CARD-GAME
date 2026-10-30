@@ -823,7 +823,7 @@ test("champion skin token set: validated linkage, existing owner, actual single/
   assert.equal(cosmeticImage(await loadCosmetics("player-a"), "CARD_SKIN", "set-token", "art", "base"), "base");
   await database.update(schema.championsTable).set({ championTokenDefinitionId: "set-token" }).where(eq(schema.championsTable.id, "cosmetic-hero"));
   const packId = "set-pack";
-  await database.insert(schema.packDefinitionsTable).values({ id: packId, name: "세트 팩", status: "PUBLISHED", cardsPerPack: 1, normalRate: 0, legendaryRate: 0, championRate: 100, championPool: ["cosmetic-hero"], skinChance: 100, skinPool: [item.id] });
+  await database.insert(schema.packDefinitionsTable).values({ id: packId, name: "세트 팩", status: "PUBLISHED", cardsPerPack: 1, normalRate: 0, legendaryRate: 0, championRate: 0, championPool: ["cosmetic-hero"], skinChance: 100, skinPool: [item.id] });
   await database.insert(schema.userPackInventoryTable).values({ userId: "player-b", packDefinitionId: packId, quantity: 3 });
   const details = await api("/packs/" + packId + "/details", "player-b");
   assert.equal(details.status, 200, JSON.stringify(details.body));
@@ -1224,4 +1224,4 @@ test("image emote throttling has no per-turn quota and replaces the previous ima
 await import("../../../artifacts/api-server/src/routes/packs.test");
 
 // Shared only by isolated database regression suites, never application code.
-export {database,pg,api,cards,deck,registered,uploaded};
+export {database,pg,api,cards,deck,registered,uploaded,origin,cookies};

@@ -1,0 +1,40 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "adminSkinSelectionPersisted": true,
+    "noOverflow": true
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "adminSkinSelectionPersisted": true,
+    "noOverflow": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "adminSkinSelectionPersisted": true,
+    "noOverflow": true
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "adminSkinSelectionPersisted": true,
+    "noOverflow": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "adminSkinSelectionPersisted": true,
+    "noOverflow": true
+  },
+  {
+    "sixCategoryAdminSave": true,
+    "emoteDetailsAndActualGrant": true
+  },
+  {
+    "actualAIIntroAndHUDSkin": true,
+    "actualOpponentLegacyCardSkin": true
+  }
+]

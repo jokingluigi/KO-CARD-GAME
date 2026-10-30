@@ -1,3 +1,5 @@
+import {legacySkinId,syncLegacySkin} from "../lib/legacy-skin-cosmetics";
+import {cosmeticsWriteLock} from "../lib/cosmetics";
 import {
   aiCosmeticsAvailable,
   aiSkinCatalog,
@@ -10,6 +12,7 @@ import {
   aiDeckCosmeticsTable,
   cardsTable,
   championsTable,
+  cosmeticItemsTable,
   db,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -155,7 +158,7 @@ async function skinInput(
   if (!(await aiCosmeticsAvailable())) {
     if (body.cosmeticIds.length === 0) return undefined;
     throw Object.assign(
-      new Error("AI 스킨 저장 준비가 필요합니다. 관리자에게 문의해 주세요."),
+      new Error("AI 스킨 저장 테이블이 없습니다. 서버에 0055_ai_deck_cosmetics 마이그레이션을 적용해야 합니다."),
       { status: 503 },
     );
   }
@@ -174,6 +177,12 @@ async function saveSkins(
   ids: string[] | undefined,
 ) {
   if (ids === undefined) return;
+  await tx.execute(cosmeticsWriteLock);
+  for(const id of ids){const legacy=legacySkinId(id);if(legacy)await syncLegacySkin(legacy,tx);}
+  const [deck]=await tx.select().from(aiDecksTable).where(eq(aiDecksTable.id,deckId)).limit(1);
+  const items=ids.length?await tx.select().from(cosmeticItemsTable).where(inArray(cosmeticItemsTable.id,ids)):[];
+  const error=aiSkinSelectionError(ids,items as import('@workspace/cosmetics').CosmeticItem[],deck?.championDefinitionId??null,deck?.cardDefinitionIds??[]);
+  if(error)throw Object.assign(new Error(error),{status:422});
   await tx
     .delete(aiDeckCosmeticsTable)
     .where(eq(aiDeckCosmeticsTable.deckId, deckId));

@@ -1,6 +1,7 @@
+import {legacySkinItem,legacySkinId} from "./legacy-skin-cosmetics";
 import {parseBattleSprite} from "@workspace/cosmetics";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { db, aiDeckCosmeticsTable, cosmeticItemsTable } from "@workspace/db";
+import { db, aiDeckCosmeticsTable, cosmeticItemsTable,cardSkinDefinitionsTable,cardsTable } from "@workspace/db";
 import {
   emptyCosmetics,
   skinKey,
@@ -100,13 +101,10 @@ export async function readAIDeckCosmetics(deckIds: string[]) {
   return result;
 }
 export async function aiSkinCatalog() {
-  return (await db
-    .select()
-    .from(cosmeticItemsTable)
-    .where(
-      and(
-        eq(cosmeticItemsTable.isActive, true),
-        inArray(cosmeticItemsTable.type, ["CHAMPION_SKIN", "CARD_SKIN"]),
-      ),
-    )) as CosmeticItem[];
+ const [items,legacy]=await Promise.all([
+  db.select().from(cosmeticItemsTable).where(and(eq(cosmeticItemsTable.isActive,true),inArray(cosmeticItemsTable.type,['CHAMPION_SKIN','CARD_SKIN']))),
+  db.select({skin:cardSkinDefinitionsTable}).from(cardSkinDefinitionsTable).innerJoin(cardsTable,eq(cardsTable.id,cardSkinDefinitionsTable.cardDefinitionId)).where(and(eq(cardSkinDefinitionsTable.status,'PUBLISHED'),eq(cardsTable.status,'PUBLISHED'),eq(cardsTable.isToken,false),eq(cardsTable.isChampionToken,false)))
+ ]);
+ // The legacy source is authoritative. A stale/inactive bridge must not hide or revive it.
+ return [...items.filter(item=>!legacySkinId(item.id)),...legacy.map(({skin})=>legacySkinItem(skin))] as CosmeticItem[];
 }

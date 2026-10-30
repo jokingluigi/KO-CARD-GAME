@@ -1,3 +1,4 @@
+import {packRateTotal,validPackRates} from "@workspace/cosmetics";
 import {changeShelf,readShelf} from "@/components/player-tools/shelf";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Gift } from "lucide-react";
@@ -148,6 +149,7 @@ export default function PacksPage() {
 
   async function handleOpen(pack: Pack) {
     const quantity = selectedQuantity(pack);
+    if(!validPackRates(pack)){setMessage("팩 확률 설정을 확인 중입니다. 팩은 소모되지 않았습니다.");return;}
     if (openingRef.current || openingIntentionRef.current || pendingRecovery || !userId || !isValidBulkOpenQuantity(quantity) || quantity > pack.quantity) return;
     let intention: BulkOpenIntention;
     try {
@@ -212,8 +214,8 @@ export default function PacksPage() {
               <div className="flex min-h-36 items-center justify-center bg-gradient-to-br from-amber-950/50 to-neutral-950 p-5">
                 {pack.imageUrl ? <img src={pack.imageUrl} alt="" className="max-h-32 rounded object-contain" /> : <Gift className="h-16 w-16 text-amber-400/80" />}
               </div>
-               <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-black">{pack.name}</h2><p className="mt-1 text-sm text-neutral-500">{pack.description || "KO 카드팩"}</p></div><span data-testid={`text-pack-quantity-${pack.id}`} className="rounded bg-amber-400 px-2 py-1 text-sm font-black text-black">×{pack.quantity}</span></div><p className="mt-4 text-xs text-neutral-400">{pack.cardsPerPack}장 · 일반 {pack.normalRate}% · 에픽 {pack.epicRate ?? 0}% · 레전더리 {pack.legendaryRate}% · 챔피언 {pack.championRate}% · 스킨 확률 {pack.skinChance}%</p><button type="button" data-testid={`button-pack-details-${pack.id}`} disabled={opening || !!pendingRecovery} onClick={() => setSelected(pack)} className="mt-4 w-full rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-200 hover:border-amber-500 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50">구성품 및 확률 보기</button>
-                  <fieldset className="mt-4" disabled={opening || !!pendingRecovery || !userId || pack.quantity < 1} aria-label={`${pack.name} 개봉 수량`}>
+               <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-black">{pack.name}</h2><p className="mt-1 text-sm text-neutral-500">{pack.description || "KO 카드팩"}</p></div><span data-testid={`text-pack-quantity-${pack.id}`} className="rounded bg-amber-400 px-2 py-1 text-sm font-black text-black">×{pack.quantity}</span></div><p className="mt-4 text-xs text-neutral-400">{pack.cardsPerPack}개 보상 · 일반 {pack.normalRate}% · 에픽 {pack.epicRate ?? 0}% · 레전더리 {pack.legendaryRate}% · 챔피언 {pack.championRate}% · 스킨 {pack.skinChance}% · 이모티콘 {pack.emoteRate??0}% (합계 {packRateTotal(pack)}%, 슬롯당 확률)</p><button type="button" data-testid={`button-pack-details-${pack.id}`} disabled={opening || !!pendingRecovery} onClick={() => setSelected(pack)} className="mt-4 w-full rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-200 hover:border-amber-500 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50">구성품 및 확률 보기</button>
+                  {!validPackRates(pack)&&<p className="mt-2 text-xs text-amber-200" role="status">확률 설정 확인이 필요해 개봉할 수 없습니다. 보유 팩은 유지됩니다.</p>}<fieldset className="mt-4" disabled={!validPackRates(pack)||opening || !!pendingRecovery || !userId || pack.quantity < 1} aria-label={`${pack.name} 개봉 수량`}>
                    <legend className="mb-2 text-xs font-bold text-neutral-400">개봉 수량</legend>
                    <div className={`grid gap-2 ${pack.quantity > MAX_BULK_PACK_OPEN_QUANTITY ? "grid-cols-4 sm:grid-cols-5" : "grid-cols-4"}`}>
                      {[1, 5, 10].map((quantity) => {
@@ -225,7 +227,7 @@ export default function PacksPage() {
                    </div>
                  </fieldset>
                  {pack.quantity > MAX_BULK_PACK_OPEN_QUANTITY && <p data-testid={`text-max-bulk-quantity-${pack.id}`} className="mt-3 rounded border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-xs leading-relaxed text-amber-200" role="status">한 번에 최대 {MAX_BULK_PACK_OPEN_QUANTITY}개까지 안전하게 개봉할 수 있습니다. 100개를 초과하는 ALL 개봉은 지원되지 않습니다. 필요한 수량만 선택해 별도 배치로 개봉하세요.</p>}
-                  <button type="button" data-testid={`button-open-pack-${pack.id}`} disabled={opening || !!pendingRecovery || !userId || pack.quantity < 1 || chosenQuantity > pack.quantity || chosenQuantity > MAX_BULK_PACK_OPEN_QUANTITY} onClick={() => void handleOpen(pack)} className="mt-3 w-full rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">{opening && selected?.id === pack.id ? "개봉 중..." : pack.quantity > 0 ? `${chosenQuantity}개 개봉` : "보유 없음"}</button></div>
+                  <button type="button" data-testid={`button-open-pack-${pack.id}`} disabled={!validPackRates(pack)||opening || !!pendingRecovery || !userId || pack.quantity < 1 || chosenQuantity > pack.quantity || chosenQuantity > MAX_BULK_PACK_OPEN_QUANTITY} onClick={() => void handleOpen(pack)} className="mt-3 w-full rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">{opening && selected?.id === pack.id ? "개봉 중..." : pack.quantity > 0 ? `${chosenQuantity}개 개봉` : "보유 없음"}</button></div>
             </article>
              );
            })}

@@ -1,3 +1,4 @@
+import {cosmeticAssetDisplay} from "@workspace/cosmetics";
 import {flyBetween} from "./physical-feedback";
 import {prefersReducedMotion} from "./presentation-config";
 import "./physical-card.css";
@@ -22,6 +23,7 @@ type PackOpeningProps = {
 };
 
 function rewardTitle(reward: PackReward): string {
+  if(reward.rewardType==="IMAGE_EMOTE")return `${reward.cosmetic?.name??"이모티콘"} · 이모티콘`;
   if (reward.rewardType === "CHAMPION_SKIN") return `${reward.cosmetic?.name ?? "챔피언 스킨"} · 세트`;
   if (reward.rewardType === "CHAMPION_UNLOCK") return reward.champion?.name ?? "챔피언";
   if (reward.rewardType === "SKIN") return `${reward.card?.name ?? "카드"} · ${reward.skin?.name ?? "스킨"}`;
@@ -137,9 +139,9 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
             <h3 className="text-lg font-black text-amber-200">획득 보상</h3>
             {rewards.some(reward => reward.originalGranted) && <p className="mt-2 text-sm text-emerald-300">미보유 원본 카드 {rewards.filter(reward => reward.rewardType === "SKIN" && reward.originalGranted).length}장 지급 · 챔피언 {rewards.filter(reward => reward.rewardType === "CHAMPION_SKIN" && reward.originalGranted).length}명 해금</p>}
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-              {(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN", "CHAMPION_SKIN"] as const).map((type) => {
+              {(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN", "CHAMPION_SKIN", "IMAGE_EMOTE"] as const).map((type) => {
                 const count = rewards.filter((reward) => reward.rewardType === type).length;
-                const label = type === "NORMAL_CARD" ? "일반 카드" : type === "EPIC_CARD" ? "에픽" : type === "LEGENDARY_CARD" ? "레전더리" : type === "CHAMPION_UNLOCK" ? "챔피언" : type === "CHAMPION_SKIN" ? "챔피언 스킨 세트" : "스킨";
+                const label = type === "IMAGE_EMOTE" ? "이모티콘" : type === "NORMAL_CARD" ? "일반 카드" : type === "EPIC_CARD" ? "에픽" : type === "LEGENDARY_CARD" ? "레전더리" : type === "CHAMPION_UNLOCK" ? "챔피언" : type === "CHAMPION_SKIN" ? "챔피언 스킨 세트" : "스킨";
                 return <span key={type} className="rounded bg-neutral-900 px-3 py-2 text-neutral-200">{label} {count}</span>;
               })}
             </div>
@@ -198,6 +200,8 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                 } bg-neutral-900 ${isRevealed ? "animate-[card-flip_350ms_ease-out]" : ""}`}>
                   {!isRevealed ? (
                     <div className="text-center"><Sparkles className="mx-auto h-8 w-8 text-amber-400" /><p className="mt-3 text-xs font-black text-neutral-400">REVEAL</p></div>
+                  ) : reward.rewardType === "IMAGE_EMOTE" && reward.cosmetic ? (
+                    <div className="flex h-full w-full min-h-0 flex-col gap-2 p-3"><CardArtwork src={reward.cosmetic.imageAssets.art} alt={reward.cosmetic.name} displayOverride={cosmeticAssetDisplay(reward.cosmetic.imageAssets,"art")} imageDisplayMode="CONTAIN" className="min-h-0 flex-1"/><p className="shrink-0 text-center text-xs text-amber-200">이모티콘 획득</p></div>
                   ) : reward.rewardType === "CHAMPION_SKIN" && reward.cosmetic ? (
                     <div className="h-full w-full overflow-y-auto p-2"><CosmeticPreview item={reward.cosmetic} champions={champion ? [champion] : []} compact /><p className="text-center text-xs text-amber-200">챔피언 스킨 세트 획득</p></div>
                   ) : reward.rewardType === "CHAMPION_UNLOCK" ? (

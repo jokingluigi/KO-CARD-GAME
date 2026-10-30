@@ -15,6 +15,8 @@ export const packDefinitionsTable = pgTable("pack_definitions", {
   epicCardPool: text("epic_card_pool").array().notNull().default(sql`ARRAY[]::text[]`),
   legendaryRate: integer("legendary_rate").notNull().default(7),
   championRate: integer("champion_rate").notNull().default(3),
+  emoteRate: integer("emote_rate").notNull().default(0),
+  emotePool: text("emote_pool").array().notNull().default(sql`ARRAY[]::text[]`),
   skinChance: integer("skin_chance").notNull().default(0),
   normalCardPool: text("normal_card_pool").array().notNull().default(sql`ARRAY[]::text[]`),
   legendaryCardPool: text("legendary_card_pool").array().notNull().default(sql`ARRAY[]::text[]`),

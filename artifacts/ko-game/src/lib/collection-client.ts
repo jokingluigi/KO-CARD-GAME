@@ -76,7 +76,7 @@ export type ChampionPrismSetting = {
 };
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
-  normalRate: number; epicRate: number; legendaryRate: number; championRate: number; skinChance: number;
+  normalRate: number; epicRate: number; legendaryRate: number; championRate: number; skinChance: number; emoteRate?:number;
   imageUrl: string | null; quantity: number;
 };
 export type PackDetailCard = Pick<CollectionCard, "id" | "name" | "cardType" | "cost" | "attack" | "health" | "text" | "rarity" | "imageUrl" | "imageDisplayMode" | "imageScale" | "imagePositionX" | "imagePositionY"> & {
@@ -106,6 +106,7 @@ export type PackDetails = {
   legendaryCards: PackDetailCard[];
   champions: PackDetailChampion[];
   skins: PackDetailSkin[];
+  emotes?:{cosmetic:CosmeticItem;individualProbability:number}[];
 };
 export const fetchPackDetails = (id: string) => request<{ pack: Pack; details: PackDetails }>(
   `/packs/${encodeURIComponent(id)}/details`,
@@ -154,7 +155,7 @@ export const disenchantCard = (cardDefinitionId: string, quantity = 1, keepPlaya
 });
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {
-  rewardType: "NORMAL_CARD" | "EPIC_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN" | "CHAMPION_SKIN";
+  rewardType: "NORMAL_CARD" | "EPIC_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN" | "CHAMPION_SKIN" | "IMAGE_EMOTE";
   originalGranted?: boolean;
   cosmeticId?: string;
   cosmetic?: CosmeticItem;
@@ -262,7 +263,7 @@ export function getBulkOpenIntention(
 export function aggregatePackRewards(rewards: PackReward[]): AggregatedPackReward[] {
   const aggregated = new Map<string, AggregatedPackReward>();
   for (const [index, reward] of rewards.entries()) {
-    const definitionId = reward.rewardType === "CHAMPION_SKIN" ? reward.cosmeticId ?? `${reward.rewardType}-${index}` : reward.rewardType === "SKIN"
+    const definitionId = (reward.rewardType === "CHAMPION_SKIN"||reward.rewardType === "IMAGE_EMOTE") ? reward.cosmeticId ?? `${reward.rewardType}-${index}` : reward.rewardType === "SKIN"
       ? reward.skinDefinitionId ?? reward.skin?.id ?? `${reward.rewardType}-${index}`
       : reward.rewardType === "CHAMPION_UNLOCK"
         ? reward.championDefinitionId ?? reward.champion?.id ?? `${reward.rewardType}-${index}`

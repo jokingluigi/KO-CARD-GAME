@@ -1,3 +1,4 @@
+import {validPackRates} from "@workspace/cosmetics";
 import { grantSkinOriginal } from "../lib/skin-original-grant";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -140,7 +141,7 @@ export async function openPackRequest(
         .where(and(eq(packDefinitionsTable.id, packId), eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
         .limit(1);
       if (!pack) throw new Error("공개된 팩을 찾을 수 없습니다.");
-      if (pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate !== 100) {
+      if (!validPackRates(pack)) {
         throw new Error("팩 확률 설정이 올바르지 않습니다.");
       }
       const [spent] = await tx.update(userPackInventoryTable).set({
@@ -226,6 +227,9 @@ export async function openPackRequest(
               });
               reward.championPrismReward = setting.duplicateReward;
             }
+          } else if (reward.rewardType === "IMAGE_EMOTE") {
+            const inserted=await tx.insert(userCosmeticsTable).values({userId:request.authUser!.id,cosmeticId:reward.cosmeticId,acquisitionSource:"PACK"}).onConflictDoNothing().returning({id:userCosmeticsTable.cosmeticId});
+            reward.alreadyOwned=inserted.length===0;
           } else if (reward.rewardType === "CHAMPION_SKIN") {
             const inserted = await tx.insert(userCosmeticsTable).values({ userId: request.authUser!.id, cosmeticId: reward.cosmeticId, acquisitionSource: "PACK" })
               .onConflictDoNothing().returning({ id: userCosmeticsTable.cosmeticId });

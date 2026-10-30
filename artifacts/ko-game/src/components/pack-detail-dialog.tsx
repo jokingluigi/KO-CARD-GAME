@@ -108,7 +108,7 @@ export function PackDetailDialog({
             </div>
             <p className="mt-3 text-sm leading-6 text-neutral-400">{pack.description || "KO 카드팩"}</p>
             <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded border border-neutral-800 bg-black/30 p-2"><dt className="text-neutral-500">팩 구성</dt><dd className="mt-1 font-black">{pack.cardsPerPack}장</dd></div>
+              <div className="rounded border border-neutral-800 bg-black/30 p-2"><dt className="text-neutral-500">팩 구성</dt><dd className="mt-1 font-black">{pack.cardsPerPack}개 보상</dd></div>
               {price !== undefined && <div className="rounded border border-neutral-800 bg-black/30 p-2"><dt className="text-neutral-500">판매 가격</dt><dd className="mt-1 font-black">{price.toLocaleString()}</dd></div>}
               {packQuantity !== undefined && <div className="rounded border border-neutral-800 bg-black/30 p-2"><dt className="text-neutral-500">상품 수량</dt><dd className="mt-1 font-black">{packQuantity}팩</dd></div>}
             </dl>
@@ -134,6 +134,7 @@ export function PackDetailDialog({
             )}
             {details && (
               <>
+                <p className="text-xs text-neutral-400">각 슬롯에서 여섯 종류 중 하나를 추첨합니다. 아래 확률의 전체 합계는 100%이며 스킨·이모티콘도 보상 한 칸을 차지합니다.</p>
                 <Section title="포함 카드" probability={pack.normalRate}>
                   <ContentRow items={details.normalCards} empty="일반 카드가 없습니다." />
                 </Section>
@@ -153,6 +154,9 @@ export function PackDetailDialog({
                       ))}
                     </div>
                   ) : <p className="text-sm text-neutral-500">챔피언이 없습니다.</p>}
+                </Section>
+                <Section title="이모티콘" probability={pack.emoteRate??0}>
+                  {(details.emotes??[]).length?<div className="flex gap-4 overflow-x-auto pb-2">{details.emotes!.map(({cosmetic,individualProbability})=><div key={cosmetic.id} className="w-36 shrink-0"><CosmeticPreview item={cosmetic} compact/><p className="text-center text-xs">{cosmetic.name}</p><p className="text-center text-xs text-amber-300">{percent(individualProbability)}</p></div>)}</div>:<p className="text-sm text-neutral-500">등록된 이모티콘 보상이 없습니다.</p>}
                 </Section>
                 <Section title="팩 전용 스킨" probability={pack.skinChance}>
                   <p className="mb-3 text-xs text-neutral-400">스킨 당첨 시 미보유 원본 카드 또는 챔피언도 함께 획득합니다.</p>

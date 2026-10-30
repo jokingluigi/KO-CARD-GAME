@@ -1,3 +1,5 @@
+import {validPackRates} from "@workspace/cosmetics";
+import {packEmotePool} from "./pack-emote-pool";
 import { championSkinArtwork } from "@workspace/cosmetics";
 import { championSkinPool } from "./champion-skin-pool";
 import { and, eq, inArray } from "drizzle-orm";
@@ -9,7 +11,8 @@ import {
   type PackDefinitionRecord,
 } from "@workspace/db";
 
-type PackDetailExecutor = typeof db;
+type PackDetailExecutor = Pick<typeof db,"select">;
+export type PackDetailInput=Pick<PackDefinitionRecord,"normalRate"|"epicRate"|"legendaryRate"|"championRate"|"skinChance"|"emoteRate"|"normalCardPool"|"epicCardPool"|"legendaryCardPool"|"championPool"|"skinPool"|"emotePool">;
 
 function cardView(card: typeof cardsTable.$inferSelect) {
   return {
@@ -30,10 +33,10 @@ function cardView(card: typeof cardsTable.$inferSelect) {
 }
 
 export async function getPackDetails(
-  pack: PackDefinitionRecord,
+  pack: PackDetailInput,
   executor: PackDetailExecutor = db,
 ) {
-  const [normalCards, epicCards, legendaryCards, champions, skins, championSkins] = await Promise.all([
+  const [normalCards, epicCards, legendaryCards, champions, skins, championSkins, emotes] = await Promise.all([
     pack.normalCardPool.length
       ? executor.select().from(cardsTable).where(and(
         inArray(cardsTable.id, pack.normalCardPool),
@@ -82,6 +85,7 @@ export async function getPackDetails(
         ))
       : [],
     championSkinPool(pack.skinPool, executor),
+    packEmotePool(pack.emotePool??[],executor),
   ]);
 
   const skinCount = skins.length + championSkins.length;
@@ -90,14 +94,16 @@ export async function getPackDetails(
     pack.epicRate > 0 && epicCards.length === 0 ? "에픽 카드 풀이 비어 있습니다." : null,
     pack.legendaryRate > 0 && legendaryCards.length === 0 ? "레전더리 카드 풀이 비어 있습니다." : null,
     pack.championRate > 0 && champions.length === 0 ? "Champion 풀이 비어 있습니다." : null,
+    pack.emoteRate>0&&!emotes.length ? "이모티콘 풀이 비어 있습니다." : null,
     pack.skinChance > 0 && skinCount === 0 ? "스킨 풀이 비어 있습니다." : null,
   ].filter((reason): reason is string => Boolean(reason));
 
   return {
-    valid: invalidReasons.length === 0 && pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate === 100,
-    invalidReasons: pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate !== 100
-      ? ["카드 보상 확률 합계가 100%가 아닙니다.", ...invalidReasons]
+    valid: invalidReasons.length === 0 && validPackRates(pack),
+    invalidReasons: !validPackRates(pack)
+      ? ["스킨·이모티콘을 포함한 전체 확률 합계가 100%가 아닙니다.", ...invalidReasons]
       : invalidReasons,
+    emotes:emotes.map(cosmetic=>({cosmetic,individualProbability:emotes.length?pack.emoteRate/emotes.length:0})),
     normalCards: normalCards.map((card) => ({
       ...cardView(card),
       individualProbability: normalCards.length ? pack.normalRate / normalCards.length : 0,

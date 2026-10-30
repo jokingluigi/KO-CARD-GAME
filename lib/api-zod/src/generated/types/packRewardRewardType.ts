@@ -16,4 +16,5 @@ export const PackRewardRewardType = {
   CHAMPION_UNLOCK: 'CHAMPION_UNLOCK',
   SKIN: 'SKIN',
   CHAMPION_SKIN: 'CHAMPION_SKIN',
+  IMAGE_EMOTE: 'IMAGE_EMOTE',
 } as const;

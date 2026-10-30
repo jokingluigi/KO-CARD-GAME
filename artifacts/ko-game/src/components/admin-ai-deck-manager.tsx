@@ -249,7 +249,7 @@ return (
           </div>
 <fieldset className="space-y-3 rounded border border-neutral-700 p-3" disabled={busy||options?.aiCosmeticsAvailable!==true}>
   <legend className="px-2 text-sm font-black text-amber-200">AI 스킨</legend>
-  {options?.aiCosmeticsAvailable!==true&&<p className="text-xs text-amber-200">스킨 저장 준비가 필요합니다. 기존 AI 덱은 그대로 사용할 수 있습니다.</p>}
+  {options?.aiCosmeticsAvailable!==true&&<p className="text-xs text-amber-200">AI 스킨 저장 테이블이 아직 없습니다. 서버 DB 업데이트(0055)가 필요합니다. 설정을 저장한 뒤 새 대전에서 적용됩니다.</p>}
   {[...(draft.championDefinitionId?[{id:draft.championDefinitionId,name:options?.champions.find(c=>c.id===draft.championDefinitionId)?.name??'챔피언',type:'CHAMPION_SKIN'}]:[]),...Array.from(new Set(draft.cardDefinitionIds)).map(id=>({id,name:options?.cards.find(c=>c.id===id)?.name??id,type:'CARD_SKIN'}))].map(target=>{
     const items=(options?.cosmetics??[]).filter(item=>item.type===target.type&&item.targetId===target.id);
     const selected=items.find(item=>draft.cosmeticIds.includes(item.id));

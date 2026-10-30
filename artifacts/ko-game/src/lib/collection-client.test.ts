@@ -95,3 +95,7 @@ test("bulk results aggregate duplicate card rewards without merging different re
     { key: "SKIN:skin-b", quantity: 1 },
   ]);
 });
+test('bulk emote summaries group by cosmetic ID without mixing skins or other emotes',()=>{
+ const rewards:PackReward[]=[{rewardType:'IMAGE_EMOTE',cosmeticId:'a'},{rewardType:'IMAGE_EMOTE',cosmeticId:'b'},{rewardType:'IMAGE_EMOTE',cosmeticId:'a'},{rewardType:'CHAMPION_SKIN',cosmeticId:'a'}];
+ assert.deepEqual(aggregatePackRewards(rewards).map(({key,quantity})=>({key,quantity})),[{key:'IMAGE_EMOTE:a',quantity:2},{key:'IMAGE_EMOTE:b',quantity:1},{key:'CHAMPION_SKIN:a',quantity:1}]);
+});

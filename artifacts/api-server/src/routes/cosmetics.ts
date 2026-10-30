@@ -424,14 +424,14 @@ router.delete("/admin/cosmetics/items/:id", async (req, res) => {
       .from(packDefinitionsTable)
       .where(
         and(
-          sql`${id} = ANY(${packDefinitionsTable.skinPool})`,
+          sql`(${id} = ANY(${packDefinitionsTable.skinPool}) OR ${id} = ANY(${packDefinitionsTable.emotePool}))`,
           sql`${packDefinitionsTable.deletedAt} IS NULL`,
         ),
       );
     if (packs.length)
       throw new CosmeticError(
         409,
-        `다음 팩의 스킨 풀에서 먼저 제거해 주세요: ${packs.map((pack) => pack.name).join(", ")}`,
+        `다음 팩의 스킨·이모티콘 풀에서 먼저 제거해 주세요: ${packs.map((pack) => pack.name).join(", ")}`,
       );
     await tx.delete(equips).where(eq(equips.cosmeticId, id));
     await tx.delete(owned).where(eq(owned.cosmeticId, id));

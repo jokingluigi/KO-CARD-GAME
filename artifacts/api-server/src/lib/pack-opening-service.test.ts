@@ -91,3 +91,8 @@ test("legacy single-open claims replay unchanged and conflict with bulk requests
   assert.deepEqual(decodeClaimForRequest(rewards, "single", 1), { kind: "single", rewards });
   assert.deepEqual(decodeClaimForRequest(rewards, "bulk", 1), { kind: "conflict" });
 });
+test('bulk emote claims replay the recorded cosmetic once and reject malformed stored rewards',()=>{
+ const reward={rewardType:'IMAGE_EMOTE',cosmeticId:'emote-a',cosmetic:{id:'emote-a'},alreadyOwned:false};
+ const encoded=encodeBulkClaim([{rewards:[reward]}],1);assert.deepEqual(decodeClaimForRequest(encoded,'bulk',1),{kind:'bulk',quantity:1,openings:[{rewards:[reward]}]});
+ assert.deepEqual(decodeClaimForRequest(encodeBulkClaim([{rewards:[{...reward,cosmeticId:''}]}],1),'bulk',1),{kind:'conflict'});
+});

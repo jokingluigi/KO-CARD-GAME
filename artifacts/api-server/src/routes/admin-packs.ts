@@ -1,3 +1,5 @@
+import {getPackDetails} from "../lib/pack-details";
+import {packEmotePool} from "../lib/pack-emote-pool";
 import { cosmeticsWriteLock } from "../lib/cosmetics";
 import { AdminDeletionError } from "../lib/admin-content-deletion";
 import { championSkinArtwork } from "@workspace/cosmetics";
@@ -33,6 +35,8 @@ type PackInput = {
   legendaryRate: number;
   championRate: number;
   skinChance: number;
+  emoteRate:number;
+  emotePool:string[];
   normalCardPool: string[];
   legendaryCardPool: string[];
   championPool: string[];
@@ -61,7 +65,7 @@ function parseInput(value: unknown): PackInput | null {
   const text = (key: string) => typeof input[key] === "string" ? (input[key] as string).trim() : "";
   const integer = (key: string, fallback: number) => {
     const candidate = input[key];
-    return typeof candidate === "number" && Number.isInteger(candidate) ? candidate : fallback;
+    return candidate===undefined?fallback:typeof candidate === "number" && Number.isInteger(candidate) ? candidate : -1;
   };
   const ids = (key: string) => Array.isArray(input[key])
     ? [...new Set(input[key].filter((id): id is string => typeof id === "string" && Boolean(id.trim())).map((id) => id.trim()))]
@@ -85,6 +89,8 @@ function parseInput(value: unknown): PackInput | null {
     legendaryRate: integer("legendaryRate", 7),
     championRate: integer("championRate", 3),
     skinChance: integer("skinChance", 0),
+    emoteRate:integer("emoteRate",0),
+    emotePool:ids("emotePool"),
     normalCardPool: ids("normalCardPool"),
     legendaryCardPool: ids("legendaryCardPool"),
     championPool: ids("championPool"),
@@ -92,14 +98,14 @@ function parseInput(value: unknown): PackInput | null {
   };
   if (!name || name.length > 120 || inputData.cardsPerPack < 1 || inputData.cardsPerPack > 100 ||
       inputData.starterRewardQuantity < 0 || inputData.starterRewardQuantity > 999 ||
-      [inputData.normalRate, inputData.epicRate, inputData.legendaryRate, inputData.championRate, inputData.skinChance].some((rate) => rate < 0 || rate > 100)) {
+      [inputData.normalRate, inputData.epicRate, inputData.legendaryRate, inputData.championRate, inputData.skinChance,inputData.emoteRate].some((rate) => rate < 0 || rate > 100)) {
     return null;
   }
   return inputData;
 }
 
 type CatalogTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-async function withSkinPool<T>(ids: string[], write: (tx: CatalogTransaction) => Promise<T>): Promise<T> {
+async function withSkinPool<T>(ids: string[], emoteIds:string[], write: (tx: CatalogTransaction) => Promise<T>): Promise<T> {
   return db.transaction(async tx => {
     await tx.execute(cosmeticsWriteLock);
     if (ids.length) {
@@ -110,48 +116,15 @@ async function withSkinPool<T>(ids: string[], write: (tx: CatalogTransaction) =>
       const existing = new Set([...cards, ...cosmetics].map(row => row.id));
       if (ids.some(id => !existing.has(id))) throw new AdminDeletionError(422, "삭제되었거나 존재하지 않는 스킨이 포함되어 있습니다. 스킨 풀을 다시 선택해 주세요.");
     }
+    if(emoteIds.length){const emotes=await packEmotePool(emoteIds,tx);if(emotes.length!==emoteIds.length)throw new AdminDeletionError(422,"삭제되었거나 비활성화된 이모티콘이 포함되어 있습니다. 이모티콘 풀을 다시 선택해 주세요.");}
     return write(tx);
   });
 }
-async function validationErrors(pack: PackInput | typeof packDefinitionsTable.$inferSelect): Promise<string[]> {
-  const errors: string[] = [];
-  if (!pack.name.trim()) errors.push("팩 이름을 입력해 주세요.");
-  if (pack.cardsPerPack < 1) errors.push("cardsPerPack은 1 이상이어야 합니다.");
-  if (pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate !== 100) errors.push("등급별 확률 합계는 100%여야 합니다.");
-  if (pack.skinChance < 0 || pack.skinChance > 100) errors.push("Skin Chance는 0~100%여야 합니다.");
-  const [normal, epic, legendary, champions] = await Promise.all([
-    pack.normalCardPool.length ? db.select({ id: cardsTable.id }).from(cardsTable).where(and(
-      inArray(cardsTable.id, pack.normalCardPool), eq(cardsTable.status, "PUBLISHED"),
-      eq(cardsTable.rarity, "NORMAL"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
-    )) : [],
-    pack.epicCardPool.length ? db.select({ id: cardsTable.id }).from(cardsTable).where(and(
-      inArray(cardsTable.id, pack.epicCardPool), eq(cardsTable.status, "PUBLISHED"),
-      eq(cardsTable.rarity, "EPIC"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
-    )) : [],
-    pack.legendaryCardPool.length ? db.select({ id: cardsTable.id }).from(cardsTable).where(and(
-      inArray(cardsTable.id, pack.legendaryCardPool), eq(cardsTable.status, "PUBLISHED"),
-      eq(cardsTable.rarity, "LEGENDARY"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
-    )) : [],
-    pack.championPool.length ? db.select({ id: championsTable.id }).from(championsTable).where(and(
-      inArray(championsTable.id, pack.championPool), eq(championsTable.status, "PUBLISHED"),
-    )) : [],
-  ]);
-  const skins = pack.skinPool.length ? await db.select({ id: cardSkinDefinitionsTable.id }).from(cardSkinDefinitionsTable)
-    .innerJoin(cardsTable, eq(cardsTable.id, cardSkinDefinitionsTable.cardDefinitionId))
-    .where(and(
-      inArray(cardSkinDefinitionsTable.id, pack.skinPool),
-      eq(cardSkinDefinitionsTable.status, "PUBLISHED"),
-      eq(cardsTable.status, "PUBLISHED"),
-      eq(cardsTable.isToken, false),
-      eq(cardsTable.isChampionToken, false),
-    )) : [];
-  const championSkins = await championSkinPool(pack.skinPool);
-  if (pack.normalRate > 0 && normal.length === 0) errors.push("NORMAL 확률이 0보다 크면 공개된 NORMAL Pool이 필요합니다.");
-  if (pack.epicRate > 0 && epic.length === 0) errors.push("EPIC 확률이 0보다 크면 공개된 EPIC Pool이 필요합니다.");
-  if (pack.legendaryRate > 0 && legendary.length === 0) errors.push("LEGENDARY 확률이 0보다 크면 공개된 LEGENDARY Pool이 필요합니다.");
-  if (pack.championRate > 0 && champions.length === 0) errors.push("CHAMPION 확률이 0보다 크면 공개된 Champion Pool이 필요합니다.");
-  if (pack.skinChance > 0 && skins.length + championSkins.length === 0) errors.push("Skin Chance가 0보다 크면 공개된 Skin Pool이 필요합니다.");
-  return errors;
+async function validationErrors(pack:PackInput|typeof packDefinitionsTable.$inferSelect,executor:Pick<typeof db,'select'>=db):Promise<string[]>{
+ const errors:string[]=[];
+ if(!pack.name.trim())errors.push('팩 이름을 입력해 주세요.');
+ if(pack.cardsPerPack<1)errors.push('팩당 보상 수는 1 이상이어야 합니다.');
+ return [...errors,...(await getPackDetails(pack,executor)).invalidReasons];
 }
 
 router.get("/", async (request, response): Promise<void> => {
@@ -191,7 +164,7 @@ router.get("/options", async (request, response): Promise<void> => {
     role: usersTable.role,
   }).from(usersTable).orderBy(asc(usersTable.nickname));
   const championSkins = await championSkinPool();
-  response.json({ cards, champions, skins: [...skins, ...championSkins.map(({cosmetic, champion}) => ({ id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, cardDefinitionId: champion.id, cardName: champion.name, imageUrl: championSkinArtwork(cosmetic.imageAssets) ?? null }))], users });
+  response.json({ cards, champions, skins: [...skins, ...championSkins.map(({cosmetic, champion}) => ({ id: cosmetic.id, name: `${cosmetic.name} · 챔피언 스킨 세트`, cardDefinitionId: champion.id, cardName: champion.name, imageUrl: championSkinArtwork(cosmetic.imageAssets) ?? null }))], emotes:await packEmotePool(), users });
 });
 
 router.post("/:id/grant", async (request, response): Promise<void> => {
@@ -230,7 +203,7 @@ router.post("/", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseInput(request.body);
   if (!input) { response.status(400).json({ message: "팩 입력값을 확인해 주세요." }); return; }
-  const [pack] = await withSkinPool(input.skinPool, tx => tx.insert(packDefinitionsTable).values({ id: randomUUID(), ...input, status: "DRAFT", version: 1 }).returning());
+  const [pack] = await withSkinPool(input.skinPool, input.emotePool, tx => tx.insert(packDefinitionsTable).values({ id: randomUUID(), ...input, status: "DRAFT", version: 1 }).returning());
   response.status(201).json({ pack, validationErrors: await validationErrors(pack!) });
 });
 
@@ -238,9 +211,12 @@ router.patch("/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseInput(request.body);
   if (!input) { response.status(400).json({ message: "팩 입력값을 확인해 주세요." }); return; }
-  const [pack] = await withSkinPool(input.skinPool, tx => tx.update(packDefinitionsTable).set({
-    ...input, version: sql`${packDefinitionsTable.version} + 1`, updatedAt: new Date(),
-  }).where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`)).returning());
+  const [pack] = await withSkinPool(input.skinPool,input.emotePool,async tx=>{
+    const [current]=await tx.select().from(packDefinitionsTable).where(and(eq(packDefinitionsTable.id,request.params.id),sql`${packDefinitionsTable.deletedAt} IS NULL`)).for('update').limit(1);
+    if(!current)throw new AdminDeletionError(404,'팩을 찾을 수 없습니다.');
+    if(current.status==='PUBLISHED'){const errors=await validationErrors(input,tx);if(errors.length)throw new AdminDeletionError(422,errors.join(' '));}
+    return tx.update(packDefinitionsTable).set({...input,version:sql`${packDefinitionsTable.version}+1`,updatedAt:new Date()}).where(eq(packDefinitionsTable.id,current.id)).returning();
+  });
   if (!pack) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
   response.json({ pack, validationErrors: await validationErrors(pack) });
 });
@@ -250,7 +226,7 @@ router.post("/:id/duplicate", async (request, response): Promise<void> => {
   const [source] = await db.select().from(packDefinitionsTable).where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`)).limit(1);
   if (!source) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
   const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, deletedAt: _deletedAt, ...copy } = source;
-  const [pack] = await withSkinPool(source.skinPool, tx => tx.insert(packDefinitionsTable).values({
+  const [pack] = await withSkinPool(source.skinPool, source.emotePool, tx => tx.insert(packDefinitionsTable).values({
     ...copy,
     id: randomUUID(),
     name: `${source.name} Copy`,
@@ -267,12 +243,12 @@ router.post("/:id/status", async (request, response): Promise<void> => {
   if (!STATUSES.includes(status as typeof STATUSES[number])) { response.status(400).json({ message: "팩 상태를 확인해 주세요." }); return; }
   const [existing] = await db.select().from(packDefinitionsTable).where(eq(packDefinitionsTable.id, request.params.id)).limit(1);
   if (!existing) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
-  if (status === "PUBLISHED") {
-    const errors = await validationErrors(existing);
-    if (errors.length) { response.status(422).json({ message: errors.join(" "), errors }); return; }
-  }
-  const [pack] = await withSkinPool(existing.skinPool, tx => tx.update(packDefinitionsTable).set({ status: status as string, version: sql`${packDefinitionsTable.version} + 1`, updatedAt: new Date() })
-    .where(eq(packDefinitionsTable.id, request.params.id)).returning());
+  const [pack]=await withSkinPool(existing.skinPool,existing.emotePool,async tx=>{
+    const [current]=await tx.select().from(packDefinitionsTable).where(and(eq(packDefinitionsTable.id,request.params.id),sql`${packDefinitionsTable.deletedAt} IS NULL`)).for('update').limit(1);
+    if(!current)throw new AdminDeletionError(404,'팩을 찾을 수 없습니다.');
+    if(status==='PUBLISHED'){const errors=await validationErrors(current,tx);if(errors.length)throw new AdminDeletionError(422,errors.join(' '));}
+    return tx.update(packDefinitionsTable).set({status:status as string,version:sql`${packDefinitionsTable.version}+1`,updatedAt:new Date()}).where(eq(packDefinitionsTable.id,current.id)).returning();
+  });
   response.json({ pack });
 });
 
@@ -314,6 +290,10 @@ router.post("/:id/preview/forced", async (request, response): Promise<void> => {
       )).limit(1);
       if (!champion) { response.status(422).json({ message: "강제 지정 Champion이 현재 팩 Pool에 없습니다." }); return; }
       rewards.push({ rewardType: type, championDefinitionId: champion.id, champion });
+    } else if(type==="IMAGE_EMOTE"){
+      const [cosmetic]=await packEmotePool(pack.emotePool.filter(candidate=>candidate===id));
+      if(!cosmetic){response.status(422).json({message:"강제 지정 이모티콘이 현재 팩 풀에 없습니다."});return;}
+      rewards.push({rewardType:"IMAGE_EMOTE",cosmeticId:cosmetic.id,cosmetic});
     } else if (type === "SKIN") {
       const [championSkin] = await championSkinPool(pack.skinPool.filter(candidate => candidate === id));
       if (championSkin) { rewards.push({ rewardType: "CHAMPION_SKIN", cosmeticId: championSkin.cosmetic.id, ...championSkin }); continue; }

@@ -1,3 +1,5 @@
+import {packCategory,validPackRates} from "@workspace/cosmetics";
+import {packEmotePool} from "../lib/pack-emote-pool";
 import { ensureAdminSkins } from "../lib/admin-skin-access";
 import { championSkinPool } from "../lib/champion-skin-pool";
 import { randomInt } from "node:crypto";
@@ -137,12 +139,13 @@ type Reward =
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean; championPrismReward?: number }
   | { rewardType: "CHAMPION_SKIN"; originalGranted?: boolean; cosmeticId: string; cosmetic: typeof import("@workspace/db").cosmeticItemsTable.$inferSelect; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean }
+  | { rewardType: "IMAGE_EMOTE"; cosmeticId:string; cosmetic: typeof import("@workspace/db").cosmeticItemsTable.$inferSelect; alreadyOwned?:boolean }
   | { rewardType: "SKIN"; originalGranted?: boolean; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
 
 type QueryExecutor = { select: typeof db.select };
 
 async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor: QueryExecutor = db): Promise<Reward[]> {
-  const [normalCards, epicCards, legendaryCards, champions, skins, championSkins] = await Promise.all([
+  const [normalCards, epicCards, legendaryCards, champions, skins, championSkins, emotes] = await Promise.all([
     pack.normalCardPool.length ? executor.select().from(cardsTable).where(and(
       inArray(cardsTable.id, pack.normalCardPool),
       eq(cardsTable.status, "PUBLISHED"),
@@ -181,6 +184,7 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
         eq(cardsTable.isChampionToken, false),
       )) : [],
     championSkinPool(pack.skinPool, executor),
+    packEmotePool(pack.emotePool??[],executor),
   ]);
   if (pack.normalRate > 0 && normalCards.length === 0) throw new Error("NORMAL 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.epicRate > 0 && epicCards.length === 0) throw new Error("EPIC 카드 풀이 비어 있어 팩을 열 수 없습니다.");
@@ -188,10 +192,13 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
   if (pack.championRate > 0 && champions.length === 0) throw new Error("Champion 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.skinChance > 0 && skins.length + championSkins.length === 0) throw new Error("Skin 풀이 비어 있어 팩을 열 수 없습니다.");
 
+  if(!validPackRates(pack))throw new Error("스킨·이모티콘을 포함한 전체 확률 합계는 100%여야 합니다.");
+  if(pack.emoteRate>0&&!emotes.length)throw new Error("이모티콘 풀이 비어 있어 팩을 열 수 없습니다.");
   const rewards: Reward[] = [];
   for (let slot = 0; slot < pack.cardsPerPack; slot += 1) {
-    const roll = randomInt(0, 100);
-    if (pack.skinChance > 0 && randomInt(0, 100) < pack.skinChance) {
+    const category=packCategory(pack,randomInt(0,100));
+    if(category==="IMAGE_EMOTE"){const cosmetic=emotes[randomInt(0,emotes.length)]!;rewards.push({rewardType:"IMAGE_EMOTE",cosmeticId:cosmetic.id,cosmetic});continue;}
+    if (category === "SKIN") {
       const pick = randomInt(0, skins.length + championSkins.length);
       if (pick >= skins.length) {
         const item = championSkins[pick - skins.length]!;
@@ -202,13 +209,6 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
       if (skin) rewards.push({ rewardType: "SKIN", skinDefinitionId: skin.skin.id, skin: skin.skin, card: skin.card });
       continue;
     }
-    const category = roll < pack.normalRate
-      ? "NORMAL_CARD"
-      : roll < pack.normalRate + pack.epicRate
-        ? "EPIC_CARD"
-        : roll < pack.normalRate + pack.epicRate + pack.legendaryRate
-        ? "LEGENDARY_CARD"
-        : "CHAMPION_UNLOCK";
     if (category === "NORMAL_CARD") {
       const card = normalCards[randomInt(0, normalCards.length)];
       if (card) rewards.push({ rewardType: category, cardDefinitionId: card.id, card });
