@@ -1,3 +1,5 @@
+import {prefersReducedMotion} from "@/components/presentation-config";
+import "@/components/player-ux/player-ux.css";
 import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
 import {useDeckRecovery} from "@/components/player-ux/use-deck-recovery";
 import {sameDraft} from "@/components/player-ux/policy";
@@ -508,6 +510,9 @@ export default function Decks() {
   const catalogRoot=useRef<HTMLElement>(null);
   useGridReflow(catalogRoot,filteredCards.map(c=>c.id).join());
 
+  const [changedCard,setChangedCard]=useState<{id:string;kind:"add"|"remove"}|null>(null);
+  useEffect(()=>{if(!changedCard)return;const timer=setTimeout(()=>setChangedCard(null),650);return()=>clearTimeout(timer);},[changedCard]);
+
   function addCard(card: DeckCard) {
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
@@ -518,6 +523,7 @@ export default function Decks() {
       return;
     }
     flyBetween(document.querySelector(`[data-testid="card-collection-${CSS.escape(card.id)}"] .ko-card-depth`),document.querySelector('[data-testid="list-selected-cards"], [data-testid="empty-selected-cards"]'));
+    setChangedCard({id:card.id,kind:"add"});
     setCardIds((current) => [...current, card.id]);
     setStatusMessage(`${card.name} 카드를 한 장 추가했습니다.`);
   }
@@ -597,6 +603,8 @@ export default function Decks() {
   }
 
   function removeCard(id: string) {
+    if(!cardIds.includes(id))return;
+    setChangedCard({id,kind:"remove"});
     flyBetween(document.querySelector(`[data-testid="row-selected-card-${CSS.escape(id)}"]`),document.querySelector(`[data-testid="card-collection-${CSS.escape(id)}"]`),true);
     setCardIds((current) => {
       const index = current.indexOf(id);
@@ -987,6 +995,8 @@ export default function Decks() {
                       data-testid={`row-selected-card-${id}`}
                       data-invalid={problematicCardIds.has(id) ? "true" : undefined}
                       data-rarity={card?.rarity}
+                      data-edit-cue={changedCard?.id===id?changedCard.kind:undefined}
+                      style={prefersReducedMotion()?{animation:"none"}:undefined}
                     >
                       <Inspectable
                         className="flex min-w-0 flex-1"
@@ -1058,7 +1068,7 @@ export default function Decks() {
               }}>덱 공유</button>
             </div>
             <div className="ko-decks__editor-actions">
-              <button type="button" className="ko-decks__primary-action" data-testid="button-save-deck" disabled={isMutating} onClick={handleSave}>
+              <button type="button" className="ko-decks__primary-action" data-testid="button-save-deck" aria-busy={isMutating} disabled={isMutating} onClick={handleSave}>
                 <Check className="h-4 w-4" aria-hidden="true" />
                 {isMutating ? "처리 중..." : "전략 저장"}
               </button>

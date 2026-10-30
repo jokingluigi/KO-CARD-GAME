@@ -1,0 +1,22 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "explicitRecovery": true,
+    "noImplicitServerSave": true,
+    "leaveGuard": true,
+    "accountIsolation": true,
+    "saveClearsDraft": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "explicitRecovery": true,
+    "noImplicitServerSave": true,
+    "leaveGuard": true,
+    "accountIsolation": true,
+    "saveClearsDraft": true,
+    "errors": []
+  }
+]

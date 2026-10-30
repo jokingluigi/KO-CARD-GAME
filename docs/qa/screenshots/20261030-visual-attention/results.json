@@ -1,0 +1,79 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "selectionContrast": true,
+    "realEnginePlay": true,
+    "goldPulse": true,
+    "aimContact": true,
+    "settled": true,
+    "noScroll": true,
+    "errors": []
+  }
+]

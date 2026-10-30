@@ -12,3 +12,16 @@
 .ko-result-reward[data-reward-state=confirmed]{border-left:3px solid #c9ab6d}
 .ko-result-reward[data-reward-state=pending]{color:#b8b3a8}
 .ko-result-reward[data-reward-state=error]{border-left:3px solid #c86655}
+/* Availability remains readable; selection owns the strongest contrast. */
+.ko-hand-card--unavailable {opacity:.68;filter:saturate(.55)}
+.ko-hand-card--available:not(.ko-hand-card--selected) [data-card-stat="cost"] {color:#f6dc9d;text-shadow:0 1px 2px #000}
+.ko-game-stage[data-hand-selection=true] .ko-hand-card:not(.ko-hand-card--selected) {opacity:.62}
+.ko-game-stage[data-hand-selection=true] .ko-hand-card--selected {filter:none;opacity:1;outline:2px solid #f2d795;outline-offset:2px}
+.ko-game-stage[data-targeting=true] .ko-hand-card--unavailable {opacity:.4}
+.ko-hand-card:focus-visible {outline:2px solid #f2d795;outline-offset:2px}
+/* Changes stay in their own row: no list resizing or extra badges. */
+.ko-decks__compact-row[data-edit-cue=add] {animation:ko-edit-add .65s ease-out}
+.ko-decks__compact-row[data-edit-cue=remove] {animation:ko-edit-remove .65s ease-out}
+@keyframes ko-edit-add {from{background-color:#5a4828;box-shadow:inset 3px 0 #e8c777}to{background-color:transparent;box-shadow:inset 0 0 transparent}}
+@keyframes ko-edit-remove {from{background-color:#4b3028;box-shadow:inset 3px 0 #d58f79}to{background-color:transparent;box-shadow:inset 0 0 transparent}}
+@media(prefers-reduced-motion:reduce){.ko-decks__compact-row[data-edit-cue]{animation:none;outline:1px solid #c9ab6d}.ko-hand-card{transition:none}}

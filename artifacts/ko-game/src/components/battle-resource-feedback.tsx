@@ -1,3 +1,4 @@
+import {paidCardId} from "./player-ux/attention-policy";
 import {useEffect,useRef,useState,type CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
 import type {GameState} from '@/game';
@@ -20,9 +21,10 @@ export function BattleResourceFeedback({state}:{state:GameState}){
   const events=state.events.slice(old.events.length),next:Flight[]=[];
   for(const [i,e]of events.entries()){
    if(e.type==='GOLD_CHANGED'&&e.playerId&&(e.amount??0)!==0){
+    if((e.amount??0)<0&&!['CARD_COST','CHAMPION_ABILITY_COST'].includes(e.reason??''))continue;
     const gold=root.querySelector(`.ko-${side(e.playerId)}-stats`),goldAt=center(gold);if(!goldAt)continue;
-    const played=events.find(p=>p.type==='CARD_PLAYED'&&p.playerId===e.playerId&&(!e.presentationResolutionId||!p.presentationResolutionId||e.presentationResolutionId===p.presentationResolutionId));
-    const destination=played?.cardInstanceId?card(played.cardInstanceId):portrait(e.playerId);
+    const sourceId=paidCardId(e,events);
+    const destination=e.reason==='CARD_COST'?(sourceId?card(sourceId):null):portrait(e.playerId);
     const to=(e.amount??0)<0?center(destination):goldAt;
     const from=(e.amount??0)<0?goldAt:{x:goldAt.x,y:goldAt.y+20};
     const owner=state.players.find(p=>p.id===e.playerId),prior=old.players.find(p=>p.id===e.playerId),bounds=gold?.getBoundingClientRect();

@@ -3,7 +3,7 @@ import {prefersReducedMotion} from './presentation-config';
 export function flyBetween(from:Element|null|undefined,to:Element|null|undefined,reverse=false) {
  if(!from||!to||prefersReducedMotion())return;
  const a=from.getBoundingClientRect(),b=to.getBoundingClientRect();if(!a.width||!b.width)return;
- const ghost=from.cloneNode(true) as HTMLElement;ghost.removeAttribute('id');ghost.inert=true;ghost.setAttribute('aria-hidden','true');
+ const ghost=from.cloneNode(true) as HTMLElement;ghost.removeAttribute('id');ghost.removeAttribute('data-testid');ghost.querySelectorAll('[id],[data-testid]').forEach(n=>{n.removeAttribute('id');n.removeAttribute('data-testid');});ghost.inert=true;ghost.setAttribute('aria-hidden','true');
  Object.assign(ghost.style,{position:'fixed',left:`${a.left}px`,top:`${a.top}px`,width:`${a.width}px`,height:`${a.height}px`,zIndex:'290',margin:'0',pointerEvents:'none',transformOrigin:'center',overflow:'hidden'});
  document.body.appendChild(ghost);
  const expiry=setTimeout(()=>ghost.remove(),400);
@@ -38,4 +38,13 @@ export function useDetailFlight(root:RefObject<HTMLElement|null>,open:boolean,id
   start();
   return()=>{cancelAnimationFrame(frame);animation?.cancel();if(node&&from.node.isConnected)flyBetween(node,from.node);};
  },[open,id,root]);
+}
+
+/** Reorientation uses the same retained catalog node, never resets filters or scroll. */
+export function returnToCatalogCard(node:HTMLElement|null) {
+ if(!node?.isConnected)return;
+ node.focus({preventScroll:true});
+ const rect=node.getBoundingClientRect();
+ if(rect.top<0||rect.bottom>window.innerHeight)node.scrollIntoView({block:'nearest',behavior:'instant'});
+ try{node.animate([{outline:'2px solid #e8c777',outlineOffset:'3px'},{outline:'2px solid transparent',outlineOffset:'3px'}],{duration:prefersReducedMotion()?180:650});}catch{}
 }

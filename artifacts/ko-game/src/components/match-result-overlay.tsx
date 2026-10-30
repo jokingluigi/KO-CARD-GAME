@@ -1,3 +1,4 @@
+import {prefersReducedMotion} from "./presentation-config";
 import {ResultTools,type DeckRecord} from "./player-tools/result-tools";
 import {
   buildMatchRecap,
@@ -173,6 +174,7 @@ export function MatchResultOverlay({
       aria-label="매치 결과"
       data-testid="match-result-overlay"
       className="ko-result-overlay"
+      data-motion={prefersReducedMotion()?"reduced":"full"}
       data-view={details ? "details" : "battlefield"}
       style={bellCenter === undefined ? undefined : {"--result-bell-center":`${bellCenter}px`} as React.CSSProperties}
       onKeyDown={(event) => {

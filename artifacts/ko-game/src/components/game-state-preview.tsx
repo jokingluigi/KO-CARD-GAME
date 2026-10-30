@@ -1,3 +1,4 @@
+import {BattleAttention} from "./player-ux/battle-attention";
 import {HandReader,BattleHelp} from "./player-ux/battle-reading";
 import {handUnavailableReason} from "./player-ux/policy";
 import {readCombatPreferences} from "./combat-preferences";
@@ -856,6 +857,7 @@ export function GameStatePreview({
     isCurrentPlayer(state, me.id) && !effectTargeting
   );
   const legalActions = getLegalActions(state, me.id);
+  const playableHandIds = new Set(legalActions.flatMap(action => action.type === "PLAY_WRESTLER" || action.type === "PLAY_TECHNIQUE" ? [action.cardInstanceId] : []));
   const remainingActions = legalActions.filter((action) => ['ATTACK', 'USE_ACTIVE', 'USE_CHAMPION_ABILITY'].includes(action.type));
   const selectedAttacker = selectedAttackerId
     ? me.board.find((card) => card?.instanceId === selectedAttackerId)
@@ -1108,13 +1110,13 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
+      <div data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,
       } as React.CSSProperties}>
 
-         {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/></>}
+         {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/><BattleAttention state={state}/></>}
          <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -1186,7 +1188,7 @@ export function GameStatePreview({
                   )}
                 </div>
                 <div className="ko-opponent-stats flex w-[76px] shrink-0 flex-col items-start gap-1">
-                  <div className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
+                  <div data-resource="gold" className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
                       <span key={opp.currentGold} className="presentation-stat-change">{opp.currentGold}</span> / {opponentMaxGold}
@@ -1681,7 +1683,7 @@ export function GameStatePreview({
                 </div>
 
                 <div className="ko-player-stats flex min-w-0 flex-col gap-1">
-                <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
+                <div data-resource="gold" className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
                   <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
                       <span key={me.currentGold} className="presentation-stat-change">{me.currentGold}</span> / {myMaxGold}
@@ -1698,7 +1700,7 @@ export function GameStatePreview({
 
                {me.champion?.quest && (
                  <Inspectable className="ko-player-quest" content={<ChampionQuestInspectContent champion={me.champion} />}>
-                  <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
+                  <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
                      <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,me.champion.questProgress/Math.max(1,me.champion.quest.requiredProgress)))})`}} /></span>
                      <AwakeningStatus champion={me.champion} />
@@ -1744,7 +1746,7 @@ export function GameStatePreview({
                     (handSort==="DRAW"?me.hand:[...me.hand].sort((a,b)=>a.currentCost-b.currentCost)).map((card, i) => {
                       const isSelected = selectedCardId === card.instanceId;
                       const payableCost = card.cardType === 'WRESTLER' ? wrestlerPlayCost(state, me.id, card) : card.currentCost;
-                      const canAfford = isMyTurn && me.currentGold >= payableCost && (!state.tower || card.cardType !== 'WRESTLER' || canEnterTowerField(state, me.id));
+                      const canAfford = isMyTurn && playableHandIds.has(card.instanceId);
                      const density =
                        me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
                      return (
@@ -1894,9 +1896,9 @@ function HandCard({
   } else if (targetable) {
     containerClass += "cursor-crosshair";
   } else if (targetingActive) {
-    containerClass += "opacity-40 grayscale cursor-not-allowed";
+    containerClass += "ko-hand-card--unavailable cursor-not-allowed";
   } else if (!canAfford) {
-    containerClass += "opacity-40 grayscale cursor-not-allowed";
+    containerClass += "ko-hand-card--unavailable cursor-not-allowed";
   } else {
     containerClass += "hover:-translate-y-4 hover:scale-[1.04] cursor-pointer";
   }
@@ -1914,7 +1916,7 @@ function HandCard({
       imageUrl={def?.imageUrl}
       rarity={def?.rarity}
       size="hand"
-       className={`ko-hand-card ${isSelected ? "ko-hand-card--selected " : ""}${containerClass}`}
+       className={`ko-hand-card ${canAfford && !targetingActive ? "ko-hand-card--available " : ""}${isSelected ? "ko-hand-card--selected " : ""}${containerClass}`}
       imageDisplaySettings={def}
        runtimeKeywords={getActiveCardKeywords(card)}
           keywordConfig={{ ...def?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}

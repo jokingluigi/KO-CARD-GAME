@@ -1,3 +1,4 @@
+import {returnToCatalogCard} from "@/components/physical-feedback";
 import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
 import {WishlistArrivals} from "@/components/player-tools/wishlist";
 import {MotionNumber} from "@/components/presentation-motion";
@@ -423,7 +424,7 @@ export default function CollectionPage() {
       <CardDetailDialog
         card={selectedCard}
         open={Boolean(selectedCard)}
-        onOpenChange={(open) => { if (!open) setSelectedCard(null); }}
+        onOpenChange={(open) => { if (!open) { const id=selectedCard?.id; setSelectedCard(null); if(id) requestAnimationFrame(()=>returnToCatalogCard(document.querySelector(`[data-motion-key="${CSS.escape(id)}"]`))); } }}
         quantityText={`보유 수량 ${collection?.isTestAccount ? "∞" : `×${selectedCard?.quantity ?? 0}`}`}
       >
         {selectedCard && (

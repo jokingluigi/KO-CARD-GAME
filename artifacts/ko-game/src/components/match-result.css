@@ -517,3 +517,13 @@
   position:fixed; top:12px; left:12px; right:12px; background:#211817; border:1px solid #a56f5f;
 }
 @media(prefers-reduced-motion:reduce) { .ko-result-poster { animation:none; } }
+/* Verdict → actual reward → next action. No lock, countdown or extra KO wait. */
+.ko-result-hero {animation:ko-result-verdict-reveal .2s ease-out both}
+.ko-result-reward[data-reward-state=confirmed] {animation:ko-result-earned .36s ease-out .1s both}
+.ko-result-footer .ko-result-continue {animation:ko-result-actions-reveal .26s ease-out .18s both}
+@keyframes ko-result-verdict-reveal {from{opacity:.45;clip-path:inset(0 8%)}to{opacity:1;clip-path:inset(0)}}
+@keyframes ko-result-earned {from{background-color:#65512d;color:#fff2c9}to{background-color:transparent}}
+@keyframes ko-result-actions-reveal {from{opacity:.65}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.ko-result-hero,.ko-result-reward[data-reward-state=confirmed],.ko-result-footer .ko-result-continue{animation:none}}
+
+.ko-result-overlay[data-motion=reduced] :is(.ko-result-hero,.ko-result-reward,.ko-result-continue){animation:none}
