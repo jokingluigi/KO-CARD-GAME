@@ -1,0 +1,130 @@
+{
+  "commit": "4d9c55b7187bb351f5f0450813d99c2c5688df21",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbi8r1lg1s2s73eaqodg",
+  "status": "live",
+  "liveCommit": "4d9c55b7187bb351f5f0450813d99c2c5688df21",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-ssUjYruW.js",
+    "/assets/index-DJSrWq8e.css"
+  ],
+  "assets": [
+    {
+      "file": "configured-effects-DtmfD1xC.js",
+      "sha256": "527bf89b9e9c8199947cbeb3407ac8732072ba2726ee09e28c9d1b6ab625c851",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-BuHPU4vu.css",
+      "sha256": "a0fd7d1885b86dfd4991d46bafb760cbdc7aa466ab3690c6f46b9a2552c139f1",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-CpGJkwGy.js",
+      "sha256": "b5fe36795338e6f876784ab0d0c7e2771ad3386bf6d65a88091960c9eebe3119",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-0pJihu0A.js",
+      "sha256": "97fa86bbc480ce38cbf9a34870953eb917a6a1c23215a12e44056320dc3a8183",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-client-DkYnnBvX.js",
+      "sha256": "9339c766272d70fc88c7e3d650559503bbc813e6347ed237dbbfeb40ee049b82",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-Bdcme11o.js",
+      "sha256": "a1e518db65796a590145190470ff388ea8fe3f2dc204493326afb00bd75613c2",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-B_l8lL3X.js",
+      "sha256": "ffc1129c8010a75aaaa339cdce214b6a3b13a42892dc7cbcc61cf2a78bc4a969",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-ssUjYruW.js",
+      "sha256": "23ca1593e677dec6412d13abde425be8f5542f7eb107b07cce493e8b2649f0ae",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-xjmFu7VO.js",
+      "sha256": "3a7ea5ab464f2c855cafd4fc4024812b0b58e70192cfbcde626e129d851a02bb",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-CsiJNqmL.js",
+      "sha256": "9ae977cd69f350d1a9d5e8dde0091dd8f05cbcc67902c2c47f25841f7e3954c5",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-notebook-BsPAy_73.js",
+      "sha256": "fc23bf01463d250d01633fc7d404d44af69af8989fbf94f9405417d6a25d1781",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-BUAmiLrS.css",
+      "sha256": "0b476854ccec7ea740289f013553fec790bb0dd14ef3b65dacec8343c7272350",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DSVkFit7.js",
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-BfY9L3tR.js",
+      "sha256": "28237bc24f649b69856491a8111ccdef8d42bfc657849db5599ee27e20df0cba",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-CY1E48Nt.css",
+      "sha256": "0244a4b43eca153edc024da3034189df580e1fee4c93c47de5ea849c065b6ba2",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-DVBLSLqW.js",
+      "sha256": "52256422e2ac6a9e7ae946bd4c03135201f10c1904c5772fabae02ad313d83ab",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-nOKyi26b.css",
+      "sha256": "e39dbd5f5fe6db96f15defa7e498611da008ec56cdd146a674f63ba18314194f",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-DtdUbDt4.js",
+      "sha256": "d447e9aa5177302e9cbcb0153bec2221b10f04457d5d43d9197a5069fe0eb665",
+      "matchesLocal": true
+    },
+    {
+      "file": "alt-inspector-utils-CR6pgjAA.js",
+      "sha256": "a80c72b0028984332ac0baa6ee9d555edf8f96a9c5cd4e507dbfd9ef38fe1ef9",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-Bx6uAzXT.js",
+      "sha256": "47283da8661d983c2c578357b88023e8a76837090e615fba97324997e6149a07",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-Cdwa6toj.js",
+      "sha256": "cc56a1dedb7ebf3197c8cbaff2adb709c5de268d4ad1d445d8612c8e7a7ddc7d",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-tools-Bp4OhXvy.css",
+      "sha256": "1ecc848a1438dc4978d8a6646a601a7275510ae91ca51beead3a58e4640363f8",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-DJSrWq8e.css",
+      "sha256": "58260499facc110fd8f6f8d77ddfa354d6ce342a122b31ff0c877c806b21a1b5",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}

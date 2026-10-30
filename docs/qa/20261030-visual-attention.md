@@ -35,7 +35,7 @@
 ## 실제 검증
 
 - TypeScript·프로덕션 빌드 성공.
-- 단위/회귀 **118개 통과**: 확정 소비와 턴 초기화 구분, 모호한 다중 출처, 퀘스트 실제 증가, 재대전/종료/재접속 재생 방지, 기존 VFX·스프라이트 사건/우선순위/움직임/스킨·각성·카메라·설정.
+- 단위/회귀 **118개 통과**: 확정 소비와 턴 초기화 구분, 모호한 다중 출처, 퀘스트 실제 증가, 재대전/종료 및 동일 스냅샷의 중복 재생 방지, 기존 VFX·스프라이트 사건/우선순위/움직임/스킨·각성·카메라·설정.
 - 신규 `visual-attention-browser.mjs`: **360×740, 375×812, 390×844, 412×915, 740×360, 768×1024, 1440×900**. 실제 공통 대전 화면과 로컬 엔진에서 손패 선택 → 슬롯 소환 → 실제 골드 소비 → HUD 피드백 → 공격 대상 조준선 → 취소. 상태/좌표/애니메이션 정리/스크롤 없음/페이지 오류 없음 검사.
 - 기존 `battle-viewport-input-browser.mjs`: 390×844/740×360/1440×900 터치 소환·주문 드래그·취소·대상 선택·회전 상태 유지 통과.
 - 기존 `psychology-ux-browser.mjs`: 같은 3크기에서 부족 골드 설명·설정·손패 읽기·선택 취소·실제 공격 및 로그 상세 통과.
@@ -59,3 +59,7 @@
 ## 수정 파일
 
 `components/{attack-aim,battle-resource-feedback,battle-turn-handoff,game-state-preview,match-result-overlay,match-result.css,physical-feedback}`; `components/player-ux/{attention-policy,attention-policy.test,battle-attention,player-ux.css}`; `pages/{decks,collection}`; `docs/qa/visual-attention{,-deck,-collection}-browser.mjs` 및 이 보고서와 지정된 검증 이미지/영상. 파일 확장자는 TS/TSX/CSS에 맞게 유지했다.
+
+## 배포 확인
+
+이전에 승인된 자동 배포 방침에 따라 프런트엔드만 배포했다. Render `dep-dbi8r1lg1s2s73eaqodg`는 소스 `4d9c55b7187bb351f5f0450813d99c2c5688df21`로 live이고, 일반 운영 루트의 엔트리 및 주요 JS/CSS 23개 SHA-256이 로컬 프로덕션 빌드와 일치한다. health HTTP 200. 서버 배포·운영 데이터 변경·main 병합 없음. 이는 배포 파일 확인이며 운영 계정의 실제 대전 검증은 아니다. [확인 기록](20261030-visual-attention-deployment.json).
