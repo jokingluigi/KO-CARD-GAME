@@ -82,3 +82,7 @@
 ## 변경 파일
 
 신규 `components/player-ux/{policy,policy.test,battle-reading,browsing-state,use-deck-recovery,player-ux.css}`; 신규 `lib/{sprite-save-policy,cosmetics-request.test}`. 통합 파일: `game-state-preview`, `action-history`/utils, `combat-preferences`/settings, `screen-impact`/policy, `cinematic-layer`, `attack-animation`, `battle-vfx`, `battle-turn-handoff`, `champion-sprite-visual`, `champion-portrait-frame`, `card-artwork`, `match-result-overlay`, `pages/{decks,collection,online-match,player-notebook}`, `admin-battle-sprites` 및 CSS, `battle-sprite-editor`, `lib/cosmetics-client`. QA 스크립트 3개와 기존 화면 맞춤 검사 수정. 서버·DB·게임 엔진 파일 변경 없음.
+
+## 배포 확인
+
+프런트엔드 소스 커밋 `82e000f38be25b05569f6a661ec803eef2060fc9`가 운영 프런트엔드에 반영됐다. Render 배포 `dep-dbi4r08m7kps73bt5cbg`의 live 커밋과 일치하며, 일반 루트가 새 엔트리를 제공하고 주요 JS/CSS 21개의 SHA-256이 로컬 프로덕션 빌드와 일치한다. 프런트엔드 API health HTTP 200. 이는 배포 파일 확인이며 실제 운영 계정의 이미지 업로드나 PvP/보상 검증을 뜻하지 않는다. [확인 기록](20261030-psychology-ux-deployment.json). 서버 배포·Production DB 변경·main 병합 없음.

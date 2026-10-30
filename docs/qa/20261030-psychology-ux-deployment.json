@@ -1,0 +1,120 @@
+{
+  "commit": "82e000f38be25b05569f6a661ec803eef2060fc9",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbi4r08m7kps73bt5cbg",
+  "status": "live",
+  "liveCommit": "82e000f38be25b05569f6a661ec803eef2060fc9",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-C_rA0GRu.js",
+    "/assets/index-DJSrWq8e.css"
+  ],
+  "assets": [
+    {
+      "file": "champion-battle-actor-BuHPU4vu.css",
+      "sha256": "a0fd7d1885b86dfd4991d46bafb760cbdc7aa466ab3690c6f46b9a2552c139f1",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-DLGtlGL9.js",
+      "sha256": "b9a9a8cc13e5e8b45511ad79a4819a93d63d5ee19b666b1515c142ead8adaef5",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-BKEiElro.css",
+      "sha256": "12d3558af35cfdbf602c9e9af1e1027c401bc521c7c92fcec2a69d9e54457559",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-0pJihu0A.js",
+      "sha256": "97fa86bbc480ce38cbf9a34870953eb917a6a1c23215a12e44056320dc3a8183",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-C_rA0GRu.js",
+      "sha256": "bc0823ae14e60319e022ef33c13db26b5bbea9a9e7a3ef4bcad9a49906f1401d",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-client-DkYnnBvX.js",
+      "sha256": "9339c766272d70fc88c7e3d650559503bbc813e6347ed237dbbfeb40ee049b82",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-B_1fgTPX.js",
+      "sha256": "4d5b08b1dc00d691b9a6a78a9febc6aebdf32b6e704ce3dc0dc8ded2153f5d7e",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-DnVB_-G1.js",
+      "sha256": "7659fe85a87b8fcedbaa0d83a43ce94d11ec1f6021cf0a75f02b05b8b3b21812",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-BUAmiLrS.css",
+      "sha256": "0b476854ccec7ea740289f013553fec790bb0dd14ef3b65dacec8343c7272350",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-DoxuFnRZ.css",
+      "sha256": "05619524845856f5e5d360ebf413d14ffd6556e93a12cf19cb080ea0d624527d",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-notebook-BGaKZSTb.js",
+      "sha256": "515d84914b0e6abedc5e8c4e5af1a8408882be3442752ba336bb0539519a49af",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-4rH-vEBZ.js",
+      "sha256": "152ac7160f3fe3aa17b340d791f381e12f3b3bfeb63de5b3af381942077086f8",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-UETm4nS5.js",
+      "sha256": "d700f9319aad2fded9e9a0c21a6bd124e52b7ed5a5cc9b50e2b34791061858d7",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DSVkFit7.js",
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-DlSAH4ql.js",
+      "sha256": "e678ba0de670282b0ca88a94d0412770264ff6dfb4e158f75e0c3299f5af4c45",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-DoHsw-9p.js",
+      "sha256": "f8866f0b03ddcea456acb84ae2041d1b29591585cce34a265952e1aa3e6f14dd",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-CK_fsVpm.js",
+      "sha256": "69b8120a1e2b5fc276c3f7323a683a74d7c910b2421e644842010fc9f2b2ca98",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-CSzebUrU.js",
+      "sha256": "6158f919a340f68ea9f66b6675aeb268a36ed309fa4fc62d692d7faa9c431c3e",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-tools-Bp4OhXvy.css",
+      "sha256": "1ecc848a1438dc4978d8a6646a601a7275510ae91ca51beead3a58e4640363f8",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-DJSrWq8e.css",
+      "sha256": "58260499facc110fd8f6f8d77ddfa354d6ce342a122b31ff0c877c806b21a1b5",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks--A3R3PEy.js",
+      "sha256": "ec80560e34910a723577d1ba120914c515285bbf8321b3a96714562e6a3843b6",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}
