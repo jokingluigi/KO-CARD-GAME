@@ -64,4 +64,17 @@ test('restart never recreates deleted catalog IDs or rewrites administrator-crea
   }
  } finally { await pg.close(); }
 });
+test('authorized AI/pack rollout upgrades the previous schema before serving and preserves odds, inventory and settings',async()=>{
+ const pg=new PGlite();try{
+  for(const ddl of await generateMigration(generateDrizzleJson({}),generateDrizzleJson(schema)))await pg.exec(ddl);
+  await pg.exec("DROP TABLE ai_deck_cosmetics; ALTER TABLE pack_definitions DROP COLUMN emote_rate; ALTER TABLE pack_definitions DROP COLUMN emote_pool; INSERT INTO users(id,email,nickname,password_hash) VALUES ('rollout-user','rollout@qa.invalid','QA','local'); INSERT INTO ai_decks(id,name) VALUES ('rollout-deck','Existing'); INSERT INTO pack_definitions(id,name,normal_rate,skin_chance) VALUES ('rollout-pack','Keep original odds',90,10); INSERT INTO user_pack_inventory(user_id,pack_definition_id,quantity) VALUES ('rollout-user','rollout-pack',7);");
+  const before=(await pg.query('SELECT id,normal_rate,epic_rate,legendary_rate,champion_rate,skin_chance FROM pack_definitions')).rows;
+  await ensureTowerStorage(drizzle(pg));await ensureTowerStorage(drizzle(pg));
+  assert.deepEqual((await pg.query('SELECT id,normal_rate,epic_rate,legendary_rate,champion_rate,skin_chance FROM pack_definitions')).rows,before);
+  assert.deepEqual((await pg.query('SELECT emote_rate,emote_pool FROM pack_definitions')).rows,[{emote_rate:0,emote_pool:[]}]);
+  assert.equal((await pg.query('SELECT quantity FROM user_pack_inventory')).rows[0].quantity,7);
+  assert.equal((await pg.query("SELECT relrowsecurity FROM pg_class WHERE oid='ai_deck_cosmetics'::regclass")).rows[0].relrowsecurity,true);
+  assert.equal((await pg.query('SELECT name FROM ai_decks')).rows[0].name,'Existing');
+ }finally{await pg.close();}
+});
 test.after(async () => { await pool.end(); });

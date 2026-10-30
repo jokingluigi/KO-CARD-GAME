@@ -1,0 +1,66 @@
+{
+  "aiCosmeticsAvailable": false,
+  "maintenanceEnabled": false,
+  "packs": [
+    {
+      "id": "72194985-eef3-4ad9-90f8-eb0aa981c7f4",
+      "name": "노멀팩",
+      "status": "PUBLISHED",
+      "normalRate": 81,
+      "epicRate": 10,
+      "legendaryRate": 5,
+      "championRate": 3,
+      "skinChance": 1,
+      "emoteRate": null,
+      "totalAfterChange": 100
+    },
+    {
+      "id": "87dfa3f6-4837-4704-a676-69c14f86b598",
+      "name": "시즌 3 노멀팩",
+      "status": "PUBLISHED",
+      "normalRate": 82,
+      "epicRate": 10,
+      "legendaryRate": 5,
+      "championRate": 3,
+      "skinChance": 0,
+      "emoteRate": null,
+      "totalAfterChange": 100
+    },
+    {
+      "id": "48e5df50-16ea-4cdb-8d5f-15c29098e892",
+      "name": "자해는 나빠요 팩",
+      "status": "PUBLISHED",
+      "normalRate": 82,
+      "epicRate": 10,
+      "legendaryRate": 5,
+      "championRate": 3,
+      "skinChance": 0,
+      "emoteRate": null,
+      "totalAfterChange": 100
+    },
+    {
+      "id": "0e4d7337-1621-4a82-a0a4-b5628b1c7bb8",
+      "name": "확정 레전더리팩",
+      "status": "PUBLISHED",
+      "normalRate": 0,
+      "epicRate": 0,
+      "legendaryRate": 100,
+      "championRate": 0,
+      "skinChance": 0,
+      "emoteRate": null,
+      "totalAfterChange": 100
+    },
+    {
+      "id": "bfded9b4-7c9b-4622-923b-e9983c5c2da7",
+      "name": "확정 챔피언팩",
+      "status": "PUBLISHED",
+      "normalRate": 0,
+      "epicRate": 0,
+      "legendaryRate": 0,
+      "championRate": 100,
+      "skinChance": 0,
+      "emoteRate": null,
+      "totalAfterChange": 100
+    }
+  ]
+}
