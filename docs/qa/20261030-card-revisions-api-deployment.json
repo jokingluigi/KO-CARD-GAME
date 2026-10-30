@@ -1,0 +1,9 @@
+{
+  "commit": "4b12316aa6d7eb7cdb4b4b8bb9e8a1a1300fa502",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbi89a7lk1mc73fipofg",
+  "status": "live",
+  "liveCommit": "4b12316aa6d7eb7cdb4b4b8bb9e8a1a1300fa502",
+  "healthStatus": 200,
+  "maintenanceEnabled": true
+}

@@ -1,0 +1,130 @@
+{
+  "commit": "4b12316aa6d7eb7cdb4b4b8bb9e8a1a1300fa502",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbi8a16tlv9c73951ko0",
+  "status": "live",
+  "liveCommit": "4b12316aa6d7eb7cdb4b4b8bb9e8a1a1300fa502",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-DI6itedO.js",
+    "/assets/index-DJSrWq8e.css"
+  ],
+  "assets": [
+    {
+      "file": "admin-battle-sprites-CeqXymM1.js",
+      "sha256": "035f3faf1ca6eeb2053056cae74eaab675f5108a19f97674ca7f5fe6d13e30f0",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-DOaizmBe.js",
+      "sha256": "aef8b7970c600e2188e840c844a7dd467ea424def16dfb62bc404a63acc822ae",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-BuHPU4vu.css",
+      "sha256": "a0fd7d1885b86dfd4991d46bafb760cbdc7aa466ab3690c6f46b9a2552c139f1",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-BKEiElro.css",
+      "sha256": "12d3558af35cfdbf602c9e9af1e1027c401bc521c7c92fcec2a69d9e54457559",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-CZoEKsUY.js",
+      "sha256": "4259237e0742d17cffde1f17ff0f126fee66c34193dfe105aecf6452ee8da228",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-0pJihu0A.js",
+      "sha256": "97fa86bbc480ce38cbf9a34870953eb917a6a1c23215a12e44056320dc3a8183",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-client-DkYnnBvX.js",
+      "sha256": "9339c766272d70fc88c7e3d650559503bbc813e6347ed237dbbfeb40ee049b82",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-notebook-Cf0VBRqL.js",
+      "sha256": "8e065b394a7935261f47c45ad0fa544bdc305fc3e4d57dc0cf31db3efdc7f874",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-CRlORtH9.js",
+      "sha256": "07d2592e6525d4ee117919bee108a3a8b40ebb5054aea0f105ceea9ab0aa8ea8",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-BUAmiLrS.css",
+      "sha256": "0b476854ccec7ea740289f013553fec790bb0dd14ef3b65dacec8343c7272350",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-DoxuFnRZ.css",
+      "sha256": "05619524845856f5e5d360ebf413d14ffd6556e93a12cf19cb080ea0d624527d",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DSVkFit7.js",
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-quaZ1YGt.js",
+      "sha256": "fd222fcacf9f44950fe905fb93fa04562c113ebc57c392edb71b8ba2083318a0",
+      "matchesLocal": true
+    },
+    {
+      "file": "alt-inspector-utils-CJaFZJ6C.js",
+      "sha256": "5ddcf3315f20610e97e030a25c618cce1f20801e19af55c85b87e357856d3de6",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-BEg5cZ_3.js",
+      "sha256": "8397e56ce5af25bbae647446591829c709544803a5d04e90c8ef3ef2efb4e942",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-BBvqZnU8.js",
+      "sha256": "ed451b990c3c1bf846d15a023dca37614acce5514c78c63562a0d39639a6d47b",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-DI6itedO.js",
+      "sha256": "b513ea1315af795fc2947e0cbf4f1844875bd260c6e825a74dba3c9466786b90",
+      "matchesLocal": true
+    },
+    {
+      "file": "configured-effects-BiVryd5H.js",
+      "sha256": "67fdb5d9de6d9971a0bb903d9b8ac4bb1f9e3661135877100f6d5b14e525b1cc",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-tools-Bp4OhXvy.css",
+      "sha256": "1ecc848a1438dc4978d8a6646a601a7275510ae91ca51beead3a58e4640363f8",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-DJSrWq8e.css",
+      "sha256": "58260499facc110fd8f6f8d77ddfa354d6ce342a122b31ff0c877c806b21a1b5",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-D4WsRKQH.js",
+      "sha256": "0443f905ab61bc00db10719e69a40162ea11fe2d9ac195df221cdbbcc022a423",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-TV12M-F8.js",
+      "sha256": "3898c0801744a732721428d2338c945674529162339f1d0852b596505bb8355a",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-D8DNFFNV.js",
+      "sha256": "65b054bd862ab2891cfd97499f7596d9a8a8639415bb5eb2c854489d9131c2c9",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200
+}
