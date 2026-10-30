@@ -1,0 +1,14 @@
+/* Information first: selected targets carry the contrast, decoration stays quiet. */
+.ko-game-stage[data-targeting=true] .ko-board-slot.opacity-40 { filter:grayscale(.8); }
+.ko-hand-card--selected { outline:2px solid #e8c777; outline-offset:2px; }
+.ko-hand-reader button:focus-visible,.ko-player-notebook a:focus-visible { outline:2px solid #e8c777;outline-offset:3px; }
+.ko-portrait-health-track {position:absolute;inset:auto 10% 0;height:3px;background:#272321;overflow:hidden;pointer-events:none}
+.ko-portrait-health-track i,.ko-portrait-health-track b {position:absolute;inset:0 auto 0 0;display:block}
+.ko-portrait-health-track i{background:#e8b88c;transition:width .55s ease-out .12s}
+.ko-portrait-health-track b{background:#b99857}
+.ko-portrait-health[data-low=true] .ko-portrait-health-track b{background:#cf5c4e}
+.ko-screen-impact__ink,.ko-screen-impact__edge {filter:opacity(var(--impact-flash,1))}
+@media(prefers-reduced-motion:reduce){.ko-portrait-health-track i{transition:none}}
+.ko-result-reward[data-reward-state=confirmed]{border-left:3px solid #c9ab6d}
+.ko-result-reward[data-reward-state=pending]{color:#b8b3a8}
+.ko-result-reward[data-reward-state=error]{border-left:3px solid #c86655}

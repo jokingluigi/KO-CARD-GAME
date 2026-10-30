@@ -268,3 +268,10 @@
 .ko-sprite-frame-preview[data-viewport="PC"] .ko-portrait-health { min-width:124px; height:58px; }
 .ko-sprite-frame-preview[data-viewport="PC"] .ko-portrait-health__value { font-size:32px; line-height:34px; }
 .ko-sprite-frame-preview[data-viewport="PC"] .ko-portrait-health__value small { font-size:14px; }
+/* Selection, secondary actions, save: keep readable targets on a narrow screen. */
+@media(max-width:600px){
+ .ko-sprite-workspace-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:10px}
+ .ko-sprite-workspace-toolbar label{min-width:0}
+ .ko-sprite-workspace-toolbar>button{width:100%;min-width:0;word-break:keep-all}
+ .ko-sprite-workspace-toolbar>.ko-sprite-save{grid-column:1/-1}
+}

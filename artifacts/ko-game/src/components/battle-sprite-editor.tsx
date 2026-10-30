@@ -150,7 +150,8 @@ export function BattleSpriteEditor({
   const [expression, setExpression] = useState("default"),
     [side, setSide] = useState<"self" | "opponent">("self"),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [uploadPhase,setUploadPhase]=useState("");
   const editableExpressions = Object.entries(SPRITE_EXPRESSIONS).filter(
     ([key]) => editing === "NORMAL" || key !== "awaken",
   );
@@ -161,6 +162,7 @@ export function BattleSpriteEditor({
     setBusy(true);
     onBusyChange?.(true);
     setError("");
+    setUploadPhase("업로드 주소 확인 중…");
     try {
       if (
         !["image/png", "image/webp"].includes(file.type) ||
@@ -177,14 +179,16 @@ export function BattleSpriteEditor({
           size: file.size,
           contentType: file.type,
         }),
-      });
+      }, {timeoutMs:60000,label:"스프라이트 업로드 준비"});
+      setUploadPhase("이미지 파일 전송 중…");
       const uploaded = await fetch(request.uploadURL, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(120000),
       });
       if (!uploaded.ok) throw Error("업로드 실패");
+      setUploadPhase("업로드 완료 · 이미지 검증 중…");
       const image = await cosmeticsRequest<{ imageUrl: string }>(
         "/admin/cosmetics/uploads/complete",
         {
@@ -194,6 +198,7 @@ export function BattleSpriteEditor({
             contentType: file.type,
           }),
         },
+        {timeoutMs:60000,label:"스프라이트 이미지 검증"},
       );
       put({
         url: image.imageUrl,
@@ -209,9 +214,10 @@ export function BattleSpriteEditor({
         },
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "등록 실패");
+      setError(e instanceof Error&&["TimeoutError","AbortError"].includes(e.name)?"이미지 전송 응답이 지연됐어요. 기존 표정은 유지됩니다. 연결을 확인하고 이미지를 다시 선택해 주세요.":e instanceof Error ? e.message : "등록 실패");
     } finally {
       setBusy(false);
+      setUploadPhase("");
       onBusyChange?.(false);
     }
   }
@@ -694,7 +700,8 @@ export function BattleSpriteEditor({
               e.currentTarget.value = "";
             }}
           />
-          {error && <p role="alert">{error}</p>}
+          {busy&&<p role="status" aria-live="polite">{uploadPhase} 느린 연결에서는 잠시 걸릴 수 있어요.</p>}
+      {error && <p role="alert">{error}</p>}
           {frame && (
             <>
               <label>

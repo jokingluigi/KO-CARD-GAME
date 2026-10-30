@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import type { BattleSprite } from "@workspace/cosmetics";
-import { cosmeticsRequest } from "@/lib/cosmetics-client";
+import { sameSavedSprite } from "@/lib/sprite-save-policy";
+import {
+  CosmeticsTimeoutError,
+  cosmeticsRequest,
+} from "@/lib/cosmetics-client";
 import { BattleSpriteEditor } from "./battle-sprite-editor";
 import { useAdminMutableDraft } from "./admin-editor-sections";
 import "./admin-battle-sprites.css";
@@ -23,6 +27,8 @@ export function AdminBattleSprites() {
     [value, setValue] = useState<BattleSprite | null>(null),
     [loading, setLoading] = useState(true),
     [saving, setSaving] = useState(false),
+    [savePhase, setSavePhase] = useState(""),
+    [uncertain, setUncertain] = useState(false),
     [uploading, setUploading] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
@@ -35,6 +41,8 @@ export function AdminBattleSprites() {
     try {
       const result = await cosmeticsRequest<{ targets: Target[] }>(
         "/admin/battle-sprites",
+        undefined,
+        { timeoutMs: 60000, label: "스프라이트 목록" },
       );
       const params = new URLSearchParams(location.search);
       const target =
@@ -72,15 +80,67 @@ export function AdminBattleSprites() {
     setValue(target.config);
     setMessage("");
     setError("");
+    setUncertain(false);
     const url = new URL(location.href);
     url.searchParams.set("target", target.key);
     history.replaceState(history.state, "", url);
   }
+  function acceptSaved(
+    target: Target,
+    result: { config: BattleSprite | null; revision: string },
+  ) {
+    setTargets((rows) =>
+      rows.map((t) => (t.key === target.key ? { ...t, ...result } : t)),
+    );
+    setValue(result.config);
+    draft.markSaved();
+    setUncertain(false);
+    setError("");
+    setMessage("스프라이트 설정을 저장했습니다.");
+  }
+  async function confirmSaved(target: Target, expected: BattleSprite | null) {
+    const result = await cosmeticsRequest<{ targets: Target[] }>(
+      "/admin/battle-sprites",
+      undefined,
+      { timeoutMs: 60000, label: "스프라이트 저장 여부 확인" },
+    );
+    const found = result.targets.find((t) => t.key === target.key);
+    if (found && sameSavedSprite(found.config, expected)) {
+      acceptSaved(target, found);
+      return true;
+    }
+    return false;
+  }
+  async function checkUncertain() {
+    if (!selected || saving || uploading) return;
+    setSaving(true);
+    setSavePhase("서버에 저장됐는지 확인 중…");
+    try {
+      if (!(await confirmSaved(selected, value)))
+        setError(
+          "아직 서버에서 동일한 설정을 확인하지 못했어요. 현재 편집은 유지했습니다.",
+        );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "저장 여부 확인 실패");
+    } finally {
+      setSaving(false);
+      setSavePhase("");
+    }
+  }
   async function save() {
     if (!selected || uploading || saving) return;
     setSaving(true);
+    setUncertain(false);
     setError("");
     setMessage("");
+    setSavePhase("스프라이트 설정 저장 응답 확인 중…");
+    const waiting = setTimeout(
+      () =>
+        setSavePhase(
+          "이미지 검증이 오래 걸리고 있어요. 중복 저장하지 않고 응답을 기다리고 있습니다…",
+        ),
+      8000,
+    );
     try {
       const result = await cosmeticsRequest<{
         config: BattleSprite | null;
@@ -91,22 +151,40 @@ export function AdminBattleSprites() {
           method: "PATCH",
           body: JSON.stringify({ sprite: value, revision: selected.revision }),
         },
+        { timeoutMs: 120000, label: "스프라이트 설정 저장" },
       );
-      setTargets((rows) =>
-        rows.map((t) => (t.key === selected.key ? { ...t, ...result } : t)),
-      );
-      setValue(result.config);
-      draft.markSaved();
-      setMessage("스프라이트 설정을 저장했습니다.");
+      acceptSaved(selected, result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장에 실패했습니다.");
+      if (e instanceof CosmeticsTimeoutError || e instanceof TypeError) {
+        clearTimeout(waiting);
+        setUncertain(true);
+        setSavePhase("응답이 끊겨 실제 저장 여부를 확인 중…");
+        try {
+          if (await confirmSaved(selected, value)) return;
+        } catch {
+          /* Keep the draft and offer a read-only check, not another mutation. */
+        }
+      }
+      setError(
+        e instanceof TypeError
+          ? "연결이 끊겨 저장 여부를 확정하지 못했어요. 편집 내용은 유지했습니다. 저장 여부 다시 확인을 눌러주세요."
+          : e instanceof Error
+            ? e.message
+            : "저장에 실패했습니다.",
+      );
     } finally {
+      clearTimeout(waiting);
       setSaving(false);
+      setSavePhase("");
     }
   }
   const champions = targets.filter((t) => t.kind === "default");
   return (
-    <section className="ko-sprite-workspace" aria-label="대전 스프라이트 관리">
+    <section
+      className="ko-sprite-workspace"
+      aria-label="대전 스프라이트 관리"
+      aria-busy={saving || uploading}
+    >
       <header>
         <div>
           <p className="text-xs text-neutral-400">CHAMPION SPRITE STUDIO</p>
@@ -184,6 +262,20 @@ export function AdminBattleSprites() {
               : "스프라이트 저장"}
         </button>
       </div>
+      {saving && (
+        <p role="status" aria-live="polite">
+          {savePhase}
+        </p>
+      )}
+      {uncertain && !saving && (
+        <button
+          type="button"
+          className="min-h-11 border border-amber-700 px-3"
+          onClick={() => void checkUncertain()}
+        >
+          저장 여부 다시 확인
+        </button>
+      )}
       {error && (
         <p role="alert" className="border border-red-800 p-3 text-red-300">
           {error}
@@ -214,29 +306,31 @@ export function AdminBattleSprites() {
               사용합니다.
             </span>
           </p>
-          <BattleSpriteEditor
-            championName={selected.championName}
-            fallbackImage={selected?.imageUrl}
-            inheritedMotion={
-              selected.kind === "skin"
-                ? targets.find(
-                    (t) =>
-                      t.kind === "default" &&
-                      t.championId === selected.championId,
-                  )?.config?.motion
-                : undefined
-            }
-            key={selected.key}
-            value={value}
-            workspace
-            onBusyChange={setUploading}
-            onChange={(next) => {
-              if (activeKey.current === selected.key) {
-                setValue(next);
-                setMessage("");
+          <fieldset disabled={saving} className="min-w-0">
+            <BattleSpriteEditor
+              championName={selected.championName}
+              fallbackImage={selected?.imageUrl}
+              inheritedMotion={
+                selected.kind === "skin"
+                  ? targets.find(
+                      (t) =>
+                        t.kind === "default" &&
+                        t.championId === selected.championId,
+                    )?.config?.motion
+                  : undefined
               }
-            }}
-          />
+              key={selected.key}
+              value={value}
+              workspace
+              onBusyChange={setUploading}
+              onChange={(next) => {
+                if (activeKey.current === selected.key) {
+                  setValue(next);
+                  setMessage("");
+                }
+              }}
+            />
+          </fieldset>
         </>
       )}
     </section>

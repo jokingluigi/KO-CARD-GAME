@@ -2,12 +2,20 @@ export type CombatPreferences = {
   quality: "LOW" | "MEDIUM" | "HIGH";
   intensity: "STANDARD" | "STRONG" | "EXTREME";
   reducedMotion: boolean;
+  zoom: number;
+  flash: number;
+  spriteMotion: number;
+  confirmEndTurn: boolean;
 };
 export const COMBAT_PREFERENCES_KEY = "ko-combat-presentation-v1";
 export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
   quality: "HIGH",
   intensity: "STRONG",
   reducedMotion: false,
+  zoom: 1,
+  flash: 1,
+  spriteMotion: 1,
+  confirmEndTurn: true,
 };
 export function parseCombatPreferences(
   value: string | null,
@@ -22,10 +30,19 @@ export function parseCombatPreferences(
         ? p.intensity
         : "STRONG",
       reducedMotion: p.reducedMotion === true,
+      zoom: bounded(p.zoom),
+      flash: bounded(p.flash),
+      spriteMotion: bounded(p.spriteMotion),
+      confirmEndTurn: p.confirmEndTurn !== false,
     };
   } catch {
     return { ...DEFAULT_COMBAT_PREFERENCES };
   }
+}
+function bounded(v: unknown) {
+  return typeof v === "number" && Number.isFinite(v)
+    ? Math.max(0, Math.min(1, v))
+    : 1;
 }
 let session: CombatPreferences | undefined;
 export function readCombatPreferences(): CombatPreferences {

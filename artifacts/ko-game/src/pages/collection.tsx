@@ -1,3 +1,4 @@
+import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
 import {WishlistArrivals} from "@/components/player-tools/wishlist";
 import {MotionNumber} from "@/components/presentation-motion";
 import {useGridReflow} from "@/components/physical-feedback";
@@ -125,12 +126,12 @@ function ChampionCollectionItem({ champion, onOpen }: { champion: CollectionCham
 export default function CollectionPage() {
   const [, navigate] = useLocation();
   const [collection, setCollection] = useState<Collection | null>(null);
-  const [tab, setTab] = useState<CollectionTab>("cards");
-  const [search, setSearch] = useState("");
-  const [cardType, setCardType] = useState<CardTypeFilter>("ALL");
-  const [catalogFilters, setCatalogFilters] = useState(EMPTY_CATALOG_FILTERS);
+  const [tab, setTab] = useBrowsingState<CollectionTab>("collection:tab","cards",v=>typeof v==='string'&&["cards","crafting","champions"].includes(v));
+  const [search, setSearch] = useBrowsingState("collection:search","",v=>typeof v==='string'&&v.length<300);
+  const [cardType, setCardType] = useBrowsingState<CardTypeFilter>("collection:cardType","ALL",v=>typeof v==='string'&&["ALL","WRESTLER","TECHNIQUE"].includes(v));
+  const [catalogFilters, setCatalogFilters] = useBrowsingState("collection:filters",EMPTY_CATALOG_FILTERS,validCatalogView);
   const catalogCards = useMemo(() => [...new Map([...(collection?.craftableCards ?? []), ...(collection?.cards ?? [])].map(card => [card.id, card])).values()], [collection]);
-  const [sort, setSort] = useState<CardSort>("COST");
+  const [sort, setSort] = useBrowsingState<CardSort>("collection:sort","COST",v=>typeof v==='string'&&["COST","NAME","RARITY"].includes(v));
   const [favorites, setFavorites] = useState<string[]>(() => {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
     catch { return []; }

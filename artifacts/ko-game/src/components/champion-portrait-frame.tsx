@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from "react";
+import { prefersReducedMotion } from "./presentation-config";
+import "./player-ux/player-ux.css";
 import "./effect-readability.css";
 import { MotionNumber } from "./presentation-motion";
 import { displayHealth } from "./match-display-utils";
@@ -8,25 +11,50 @@ export function ChampionPortraitFrame({
   name,
   health,
   maxHealth,
-  awakened=false,
+  awakened = false,
 }: {
   name: string;
   health: number;
   maxHealth: number;
-  awakened?:boolean;
+  awakened?: boolean;
 }) {
   return (
     <>
       <div className="ko-portrait-arch" aria-hidden="true" />
-      <div className="ko-portrait-rim" data-awakened={awakened} aria-hidden="true">
-        {awakened&&<span className="ko-awakened-crown"/>}
-        <i/>
-        <b/>
-        <svg className="ko-portrait-wear" viewBox="0 0 100 100" preserveAspectRatio="none"
-          data-wear={health <= 0 || (health > 0 && health <= 5) ? 3 : health / Math.max(1,maxHealth) <= .35 ? 2 : health / Math.max(1,maxHealth) <= .65 ? 1 : 0}>
-          <path className="ko-wear-light" d="M2 53L7 56L2 61M94 31L99 35L94 39"/>
-          <path className="ko-wear-medium" d="M22 6L25 10L21 13M98 72L93 76L98 81M4 79L8 84L4 88"/>
-          <path className="ko-wear-critical" d="M60 2L57 7L63 11M10 22L6 28L11 32M77 99L73 94L79 90"/>
+      <div
+        className="ko-portrait-rim"
+        data-awakened={awakened}
+        aria-hidden="true"
+      >
+        {awakened && <span className="ko-awakened-crown" />}
+        <i />
+        <b />
+        <svg
+          className="ko-portrait-wear"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          data-wear={
+            health <= 0 || (health > 0 && health <= 5)
+              ? 3
+              : health / Math.max(1, maxHealth) <= 0.35
+                ? 2
+                : health / Math.max(1, maxHealth) <= 0.65
+                  ? 1
+                  : 0
+          }
+        >
+          <path
+            className="ko-wear-light"
+            d="M2 53L7 56L2 61M94 31L99 35L94 39"
+          />
+          <path
+            className="ko-wear-medium"
+            d="M22 6L25 10L21 13M98 72L93 76L98 81M4 79L8 84L4 88"
+          />
+          <path
+            className="ko-wear-critical"
+            d="M60 2L57 7L63 11M10 22L6 28L11 32M77 99L73 94L79 90"
+          />
         </svg>
       </div>
       <div className="ko-portrait-plinth" aria-hidden="true" />
@@ -38,6 +66,7 @@ export function ChampionPortraitFrame({
         data-low={health > 0 && health <= 5}
         aria-label={`${name} 체력 ${displayHealth(health)} / ${maxHealth}`}
       >
+        <HealthTrack health={health} maxHealth={maxHealth} />
         <span className="ko-portrait-health__label">체력</span>
         <span className="ko-portrait-health__value font-display">
           <MotionNumber value={health} format={displayHealth} />
@@ -45,5 +74,38 @@ export function ChampionPortraitFrame({
         </span>
       </div>
     </>
+  );
+}
+
+function HealthTrack({
+  health,
+  maxHealth,
+}: {
+  health: number;
+  maxHealth: number;
+}) {
+  const ratio = Math.max(0, Math.min(1, health / Math.max(1, maxHealth))),
+    [trail, setTrail] = useState(ratio),
+    prior = useRef({ ratio, maxHealth });
+  useEffect(() => {
+    const old = prior.current;
+    prior.current = { ratio, maxHealth };
+    if (
+      old.maxHealth !== maxHealth ||
+      ratio >= old.ratio ||
+      prefersReducedMotion()
+    ) {
+      setTrail(ratio);
+      return;
+    }
+    setTrail(old.ratio);
+    const t = setTimeout(() => setTrail(ratio), 100);
+    return () => clearTimeout(t);
+  }, [ratio, maxHealth]);
+  return (
+    <span className="ko-portrait-health-track" aria-hidden="true">
+      <i style={{ width: trail * 100 + "%" }} />
+      <b style={{ width: ratio * 100 + "%" }} />
+    </span>
   );
 }

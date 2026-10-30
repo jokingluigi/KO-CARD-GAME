@@ -35,6 +35,7 @@ export function CardArtwork({
   showHint?: boolean;
   loading?: "eager" | "lazy";
 }) {
+  const [loaded,setLoaded]=useState(false);
   const [failed, setFailed] = useState(false);
   const [fallbackFailed,setFallbackFailed]=useState(false);
   const displaySrc=failed ? (fallbackSrc!==src?fallbackSrc:undefined) : src;
@@ -94,6 +95,7 @@ export function CardArtwork({
     dragRef.current = null;
   }
 
+  useEffect(()=>{setLoaded(false);},[displaySrc]);
   const imageStyle = {
     objectFit: settings.imageDisplayMode === "CONTAIN" ? "contain" : "cover",
     objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
@@ -127,7 +129,10 @@ export function CardArtwork({
       onPointerCancel={handlePointerEnd}
       style={interactive ? { touchAction: "none" } : undefined}
     >
+      {!loaded&&<span aria-hidden="true" className="pointer-events-none absolute inset-0 border border-neutral-800 bg-neutral-950/40"/>}
       <img
+        data-art-loading={!loaded}
+        onLoad={()=>setLoaded(true)}
         src={displaySrc}
         loading={loading}
         decoding="async"

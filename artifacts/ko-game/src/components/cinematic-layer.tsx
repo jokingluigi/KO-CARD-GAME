@@ -1,3 +1,4 @@
+import {readCombatPreferences} from "./combat-preferences";
 import {useCosmeticImage} from "./cosmetic-battle";
 import {CardArtwork} from "./card-artwork";
 import {questPortrait} from "./quest-media";
@@ -48,14 +49,15 @@ export function CinematicProvider({children,speed='NORMAL',allowQuestCompletion=
   if(!event)return;
   const motions:Animation[]=[];
   if(!prefersReducedMotion()&&!screen.api.isActive()){
-   const level=cameraLevel(event),x=Math.max(-6,Math.min(6,((event.focus?.x??innerWidth/2)/innerWidth-.5)*level*3));
-   const y=Math.max(-4,Math.min(4,((event.focus?.y??innerHeight/2)/innerHeight-.5)*level*2));
+   const preferences=readCombatPreferences(),shake=screen.api.mode==='OFF'?0:screen.api.mode==='REDUCED'?.5:1,zoom=preferences.zoom;
+   const level=cameraLevel(event),x=shake*Math.max(-6,Math.min(6,((event.focus?.x??innerWidth/2)/innerWidth-.5)*level*3));
+   const y=shake*Math.max(-4,Math.min(4,((event.focus?.y??innerHeight/2)/innerHeight-.5)*level*2));
    const boards=Array.from(container.current?.querySelectorAll('.ko-opponent-board-row,.ko-player-board-row')??[]);
    const background=container.current?.querySelector('.ko-cinematic-background');
    // Individual transform properties leave existing impact recoil transforms intact.
    for(const [node,depth] of [...boards.map(node=>[node,1] as const),[background,.35] as const]){
     if(node instanceof HTMLElement&&typeof node.animate==='function'){
-     try { motions.push(node.animate([{translate:'0px 0px',scale:'1'},{translate:`${x*depth}px ${y*depth}px`,scale:String(1+level*.003*depth),offset:.25},{translate:`${-x*.3*depth}px ${-y*.3*depth}px`,scale:String(1+level*.002*depth),offset:.55},{translate:'0px 0px',scale:'1'}],{duration:event.duration,easing:'cubic-bezier(.16,1,.3,1)'})); } catch { /* Unsupported animation APIs never stop a battle. */ }
+     try { motions.push(node.animate([{translate:'0px 0px',scale:'1'},{translate:`${x*depth}px ${y*depth}px`,scale:String(1+level*.003*depth*zoom),offset:.25},{translate:`${-x*.3*depth}px ${-y*.3*depth}px`,scale:String(1+level*.002*depth*zoom),offset:.55},{translate:'0px 0px',scale:'1'}],{duration:event.duration,easing:'cubic-bezier(.16,1,.3,1)'})); } catch { /* Unsupported animation APIs never stop a battle. */ }
     }
    }
   }

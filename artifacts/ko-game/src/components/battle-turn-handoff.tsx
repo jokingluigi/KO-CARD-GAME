@@ -15,7 +15,7 @@ export function BattleTurnHandoff({state}:{state:GameState}) {
     if(prior.turn===state.turn && prior.active===state.activePlayerId)return;
     const stage=host.current?.closest('.ko-game-stage');
     const side=state.activePlayerId===state.players[0].id?'player':'opponent';
-    const nodes=[stage?.querySelector(`.ko-${side}-board-row`),stage?.querySelector(`.ko-${side}-stats`)];
+    const nodes=[stage?.querySelector(`.ko-${side}-board-row`),stage?.querySelector(`.ko-${side}-stats`),...(side==='player'?[stage?.querySelector('.ko-player-hand')]:[])];
     setCue({id:`${state.gameId}:${state.turn}:${state.activePlayerId}`,boxes:nodes.flatMap(n=>{
       if(!n)return [];const r=n.getBoundingClientRect();return [{left:r.left,top:r.top,width:r.width,height:r.height}];
     })});
@@ -24,5 +24,5 @@ export function BattleTurnHandoff({state}:{state:GameState}) {
     window.addEventListener('resize',clear);document.addEventListener('visibilitychange',clear);
     return()=>{clearTimeout(timer);window.removeEventListener('resize',clear);document.removeEventListener('visibilitychange',clear);};
   },[state.gameId,state.turn,state.activePlayerId,state.status]);
-  return <><span ref={host} hidden/>{cue&&createPortal(<div className="ko-turn-handoff" aria-hidden="true" key={cue.id}>{cue.boxes.map((box,i)=><i key={i} style={box}/>)}</div>,document.body)}</>;
+  return <><span ref={host} hidden/>{cue&&createPortal(<div className="ko-turn-handoff" aria-hidden="true" key={cue.id}>{cue.boxes.map((box,i)=><i key={i} style={{...box,animationDelay:`${i*60}ms`}}/>)}</div>,document.body)}</>;
 }

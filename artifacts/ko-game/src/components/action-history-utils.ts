@@ -62,7 +62,7 @@ export function eventTitle(state: GameState, event: GameEvent, viewerPlayerId = 
     case 'ENTER_FIELD':
       return `${cardName(state, event.cardInstanceId)} 소환`;
     case 'CARD_GENERATED':
-      return `${cardName(state, event.cardInstanceId)} 생성`;
+      return event.playerId===viewerPlayerId?`${cardName(state, event.cardInstanceId)} 생성`:'카드 생성';
     case 'CARD_TRANSFORMED': {
       const next = state.cardPool?.find((definition) => definition.id === event.reason) ?? getCardDefinition(event.reason ?? '');
       const previousId = event.tags?.find((tag) => tag.startsWith('FROM:'))?.slice(5);

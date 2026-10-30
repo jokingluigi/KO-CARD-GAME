@@ -1,3 +1,4 @@
+import {Link} from "wouter";
 import "@/components/player-tools/player-tools.css";
 import { useShelf } from "@/components/player-tools/shelf";
 export default function PlayerNotebook() {
@@ -36,6 +37,7 @@ export default function PlayerNotebook() {
             최근 상대:{" "}
             {[...new Set(ms.map((m) => m.opponent))].slice(0, 5).join(", ")}
           </p>
+          <nav aria-label={`${ms[0].deckName??'덱'} 다음 행동`} className="mt-3 flex flex-wrap gap-3"><Link className="min-h-11 border border-amber-800 px-3 py-2" href={`/decks?edit=${encodeURIComponent(ms[0].deckId!)}`}>사용 덱 확인·편집</Link>{ms[0].mode==='QUICK'&&<Link className="min-h-11 border border-amber-800 px-3 py-2" href={`/online/quick?repeat=${encodeURIComponent(ms[0].deckId!)}`}>같은 덱으로 빠른 대전</Link>}<Link className="min-h-11 px-3 py-2" href="/">다음 대전 선택</Link></nav>
         </article>
       ))}
       <h2 className="mt-6 text-xl">최근 경기</h2>

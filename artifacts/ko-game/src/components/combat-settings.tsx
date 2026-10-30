@@ -12,7 +12,7 @@ export function CombatSettings() {
     saveCombatPreferences(next);
   };
   const style =
-    "min-h-10 border border-neutral-700 bg-neutral-950 px-2 text-white";
+    "min-h-11 border border-neutral-700 bg-neutral-950 px-2 text-white";
   return (
     <fieldset className="space-y-2 border-t border-neutral-700 pt-3 text-xs">
       <legend className="font-bold text-amber-200">전투 연출</legend>
@@ -48,7 +48,39 @@ export function CombatSettings() {
           <option value="EXTREME">극대화</option>
         </select>
       </label>
-      <label className="flex min-h-10 items-center gap-2">
+      {(
+        [
+          ["zoom", "카메라 줌"],
+          ["flash", "타격 플래시"],
+          ["spriteMotion", "초상화 움직임"],
+        ] as const
+      ).map(([key, label]) => (
+        <label
+          key={key}
+          className="flex min-h-11 items-center justify-between gap-2"
+        >
+          {label}
+          <select
+            aria-label={label}
+            className={style}
+            value={value[key]}
+            onChange={(e) => update({ [key]: Number(e.target.value) })}
+          >
+            <option value="0">끄기</option>
+            <option value="0.4">약하게</option>
+            <option value="1">전체</option>
+          </select>
+        </label>
+      ))}
+      <label className="flex min-h-11 items-center gap-2">
+        <input
+          type="checkbox"
+          checked={value.confirmEndTurn}
+          onChange={(e) => update({ confirmEndTurn: e.target.checked })}
+        />
+        남은 공격·능력이 있을 때 턴 종료 확인
+      </label>
+      <label className="flex min-h-11 items-center gap-2">
         <input
           type="checkbox"
           checked={value.reducedMotion}

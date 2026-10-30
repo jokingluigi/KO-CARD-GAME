@@ -1,0 +1,34 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "delayMs": 9200,
+    "uploadAndSaveBeyondEightSeconds": true,
+    "reloadPersisted": true,
+    "lostResponseReadback": true,
+    "noDuplicatePatch": true,
+    "calls": {
+      "upload": 1,
+      "complete": 1,
+      "put": 1,
+      "save": 2
+    },
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "delayMs": 0,
+    "uploadAndSaveBeyondEightSeconds": true,
+    "reloadPersisted": true,
+    "lostResponseReadback": true,
+    "noDuplicatePatch": true,
+    "calls": {
+      "upload": 1,
+      "complete": 1,
+      "put": 1,
+      "save": 2
+    },
+    "errors": []
+  }
+]

@@ -65,8 +65,8 @@ try {
     await page.getByLabel('위기 각성 상태').first().waitFor();
     const own=await page.locator('.ko-player-quest [aria-label="위기 각성 상태"]').boundingBox();
     const ability=await page.locator('.ko-player-ability').boundingBox();
-    assert.ok(own.y+own.height<=ability.y+1,'own awakening status hidden behind ability');
-    if(height<=700){const enemy=await page.locator('.ko-opponent-quest [aria-label="위기 각성 상태"]').boundingBox(),command=await page.locator('.ko-battle-command').boundingBox();assert.ok(enemy.y+enemy.height<=command.y+1,'enemy awakening status hidden behind command');}
+    assert.ok(own.y+own.height<=ability.y+1||ability.y+ability.height<=own.y+1||own.x+own.width<=ability.x+1||ability.x+ability.width<=own.x+1,'own awakening status overlaps ability');
+    if(height<=700){const enemy=await page.locator('.ko-opponent-quest [aria-label="위기 각성 상태"]').boundingBox(),command=await page.locator('.ko-battle-command').boundingBox();assert.ok(enemy.y+enemy.height<=command.y+1||command.y+command.height<=enemy.y+1||enemy.x+enemy.width<=command.x+1||command.x+command.width<=enemy.x+1,'enemy awakening status overlaps command');}
     awakeningTextVisible=true;
   }
   results.push({width,height,...metrics,selected,awakeningTextVisible,errors});

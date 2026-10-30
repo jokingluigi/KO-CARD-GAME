@@ -1,4 +1,5 @@
 import './battle-atmosphere.css';
+import {readCombatPreferences} from './combat-preferences';
 import {createContext,useContext,useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {prefersReducedMotion} from './presentation-config';
@@ -64,7 +65,7 @@ export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,di
    };
    if(kind==='IMPACT') {
     // A short bright contact, then an expanding, settling cloud of authored smoke art.
-    stamp(images[0],size/2,size/2,(100+60*t)*force,axis,Math.max(0,1-t/.2));
+    stamp(images[0],size/2,size/2,(100+60*t)*force,axis,Math.max(0,1-t/.2)*readCombatPreferences().flash);
     const clouds=particles.slice(0,Math.min(strength>=6?5:3,particles.length));
     for(const [i,p] of clouds.entries()) {
      const a=p.angle,reach=(12+40*t)*force;

@@ -37,16 +37,17 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
    if(!node?.animate)return;try{motions.current.push(node.animate(frames,{duration,easing:'linear'}));}catch{/* Always fall back to the finite overlay. */}
   };
   if(stage){stage.dataset.screenImpactTier=profile.tier;stage.dataset.screenImpactAmplitude=String(profile.amplitude);stage.dataset.screenImpactStarted=String(performance.now());}
-  if(profile.amplitude>0){
+  const zoom=reduced?0:readCombatPreferences().zoom;
+  if(profile.amplitude>0||zoom>0){
    cancelCamera();
    const cameraNodes=[stage,...Array.from(document.querySelectorAll<HTMLElement>('.attack-animation,.ko-contact-camera'))].filter((node):node is HTMLElement=>Boolean(node));
    for(const node of cameraNodes){
     const rect=node.getBoundingClientRect();
-    const frames=combatCameraFrames(profile,event.direction,modeRef.current==='REDUCED').map(frame=>({...frame,transformOrigin:`${event.x-rect.left}px ${event.y-rect.top}px`}));
+    const frames=combatCameraFrames(profile,event.direction,modeRef.current==='REDUCED',zoom).map(frame=>({...frame,transformOrigin:`${event.x-rect.left}px ${event.y-rect.top}px`}));
     animate(node,frames,profile.duration);
    }
    animate(background,impactFrames({...profile,amplitude:profile.amplitude*.3,rotation:profile.rotation*.25},event.direction,event.radial),profile.duration);
-   if(event.nearby){
+   if(event.nearby&&profile.amplitude>0){
     const cards=container.current?.querySelectorAll<HTMLElement>('.ko-board-slot-wrapper [data-rarity]')??[];
     for(const card of Array.from(cards).slice(0,12)){
      const rect=card.getBoundingClientRect(),dx=rect.left+rect.width/2-event.x,dy=rect.top+rect.height/2-event.y,distance=Math.hypot(dx,dy);
@@ -77,7 +78,7 @@ export function ScreenShakeSetting(){
 }
 export function ScreenImpactScene({impact}:{impact:ScreenImpact}){
  const {profile}=impact,heavy=impactRank(profile)>=3;
- const style={'--impact-x':impact.x+'px','--impact-y':impact.y+'px','--impact-duration':profile.duration+'ms','--impact-wave':Math.min(900,Math.max(90,profile.wave*90))+'px','--impact-accent':profile.rarity==='CHAMPION'?'#cc5746':profile.rarity==='LEGENDARY'?'#f4c97d':profile.rarity==='EPIC'?'#b0a0d5':'#d9b78c'} as CSSProperties;
+ const style={'--impact-x':impact.x+'px','--impact-y':impact.y+'px','--impact-duration':profile.duration+'ms','--impact-wave':Math.min(900,Math.max(90,profile.wave*90))+'px','--impact-flash':readCombatPreferences().flash,'--impact-accent':profile.rarity==='CHAMPION'?'#cc5746':profile.rarity==='LEGENDARY'?'#f4c97d':profile.rarity==='EPIC'?'#b0a0d5':'#d9b78c'} as CSSProperties;
  return <div className={`ko-screen-impact ko-screen-impact--${profile.rarity.toLowerCase()} ${heavy?'ko-screen-impact--heavy':''}`} data-screen-impact={profile.tier} data-shake-mode={profile.amplitude===0?'OFF':'ON'} aria-hidden="true" style={style}>
  <div className="ko-screen-impact__wave"/>
  {profile.aftershock&&<div className="ko-screen-impact__wave ko-screen-impact__wave--after"/>}

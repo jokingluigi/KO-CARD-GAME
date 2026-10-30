@@ -920,9 +920,9 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           매치 시작을 기다리는 중… 서버 시각에 맞춰 곧 게임이 시작됩니다.
         </div>
       )}
-      <div className="pointer-events-none fixed left-1/2 top-2 z-[220] flex -translate-x-1/2 items-center gap-3 rounded-full border border-neutral-700 bg-black/80 px-4 py-2 text-[10px] font-black tracking-[0.16em] text-neutral-300 shadow-lg">
+      <div className="pointer-events-none fixed left-1/2 top-2 z-[220] flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap justify-center items-center gap-x-3 gap-y-1 rounded-sm border border-neutral-700 bg-black/80 px-4 py-2 text-[10px] font-black tracking-[0.16em] text-neutral-300 shadow-lg">
         <span className={isConnected ? "text-emerald-400" : "text-red-300"} data-testid="status-online-match-connection">
-          {sessionReplaced ? "SESSION REPLACED" : isConnected ? "SERVER CONNECTED" : "RECONNECTING"}
+          {sessionReplaced ? "다른 기기에서 접속됨" : !isConnected ? "재연결·서버 상태 확인 중" : pendingAction ? "입력 전송·서버 확인 중" : state.activePlayerId!==me.id ? "상대 행동 대기" : "연결됨 · 내 행동 가능"}
         </span>
         <span data-testid="text-online-match-version">v{version ?? "-"}</span>
         <span>{seat ?? "SEAT UNKNOWN"}</span>

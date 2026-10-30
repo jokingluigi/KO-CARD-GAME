@@ -218,7 +218,7 @@ export function AttackAnimation({
         {impacted && (!contactVfx || animation.damage<=0) && <BattleVfx kind={attackBurstKind(animation)} left={contactX} top={contactY} direction={{x:dx,y:dy}}
           strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-timeline.impact)} />}
         {impacted && animation.damage>=3 && <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/circle_03.png"} alt="" className="attack-animation__shockwave" />}
-        <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/spark_01.png"} alt="" className="attack-animation__impact-flash" />
+        <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/spark_01.png"} alt="" className="attack-animation__impact-flash" style={{visibility:readCombatPreferences().flash===0?"hidden":undefined,filter:`opacity(${readCombatPreferences().flash})`}} />
       </>}
     </div>, document.body
   );

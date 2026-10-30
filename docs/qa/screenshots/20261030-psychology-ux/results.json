@@ -1,0 +1,38 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "unavailableReason": true,
+    "readOnlyHandReader": true,
+    "independentSettings": true,
+    "selectionCancelBeforeEnd": true,
+    "escapeCancel": true,
+    "actualAttackAndLogDetail": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "unavailableReason": true,
+    "readOnlyHandReader": true,
+    "independentSettings": true,
+    "selectionCancelBeforeEnd": true,
+    "escapeCancel": true,
+    "actualAttackAndLogDetail": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "unavailableReason": true,
+    "readOnlyHandReader": true,
+    "independentSettings": true,
+    "selectionCancelBeforeEnd": true,
+    "escapeCancel": true,
+    "actualAttackAndLogDetail": true,
+    "noScroll": true,
+    "errors": []
+  }
+]

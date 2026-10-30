@@ -63,8 +63,8 @@ export function hasBoardWideImpact(value:unknown,depth=0):boolean {
 }
 
 /** A contact punch-in followed by a directional kick and rapidly decaying recoil. */
-export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1},reduced=false):Keyframe[] {
- const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.075,.14,.26,.34,.38][rank]!*(reduced?.5:1);
+export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1},reduced=false,zoomOverride?:number):Keyframe[] {
+ const rank=impactRank(profile),zoom=(zoomOverride===undefined&&profile.amplitude<=0?0:[0,.075,.14,.26,.34,.38][rank]!*(reduced?.5:1))*(zoomOverride??1);
  const length=Math.hypot(direction.x,direction.y)||1,dx=direction.x/length,dy=direction.y/length;
  const a=Math.min(92,profile.amplitude*2.6);
  if(rank>=3 && profile.bass===null && profile.rarity==='NORMAL'){

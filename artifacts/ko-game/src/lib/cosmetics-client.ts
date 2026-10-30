@@ -26,23 +26,53 @@ export type CosmeticInventory = {
   cards?: CosmeticCardPreview[];
   champions?: CosmeticChampionPreview[];
 };
+export class CosmeticsTimeoutError extends Error {
+  constructor(label: string) {
+    super(
+      `${label} 응답 확인이 늦어지고 있어요. 입력 내용은 유지됩니다. 잠시 후 다시 확인해 주세요.`,
+    );
+    this.name = "CosmeticsTimeoutError";
+  }
+}
 export async function cosmeticsRequest<T>(
   path: string,
   init?: RequestInit,
+  options: { timeoutMs?: number; label?: string } = {},
 ): Promise<T> {
-  const response = await fetch(
-    `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api${path}`,
-    {
-      ...init,
-      credentials: "include",
-      headers: { "Content-Type": "application/json", ...init?.headers },
-      signal: init?.signal ?? AbortSignal.timeout(8000),
-    },
-  );
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(body.message ?? "꾸미기 정보를 불러오지 못했습니다.");
-  return body;
+  const controller = new AbortController();
+  let timedOut = false;
+  const abort = () => controller.abort(init?.signal?.reason);
+  if (init?.signal?.aborted) abort();
+  else init?.signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, options.timeoutMs ?? 8000);
+  try {
+    const response = await fetch(
+      `${(import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "")}/api${path}`,
+      {
+        ...init,
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...init?.headers },
+        signal: controller.signal,
+      },
+    );
+    const body = await response.json().catch((error) => {
+      if (controller.signal.aborted) throw error;
+      return {};
+    });
+    if (!response.ok)
+      throw new Error(body.message ?? "꾸미기 요청을 처리하지 못했습니다.");
+    return body;
+  } catch (error) {
+    if (timedOut)
+      throw new CosmeticsTimeoutError(options.label ?? "꾸미기 요청");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    init?.signal?.removeEventListener("abort", abort);
+  }
 }
 export const fetchCosmetics = () =>
   cosmeticsRequest<CosmeticInventory>("/cosmetics");

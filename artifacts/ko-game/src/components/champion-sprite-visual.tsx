@@ -93,6 +93,7 @@ export function ChampionSpriteVisual({
   }, []);
   const motionKey = JSON.stringify(motion ?? {});
   const profile = resolveMotion(motion);
+  const motionAmount=readCombatPreferences().spriteMotion;
   const phase =
     Array.from(identity).reduce(
       (n, c) => (n * 31 + c.charCodeAt(0)) >>> 0,
@@ -202,7 +203,7 @@ export function ChampionSpriteVisual({
       cue,
       self,
       Math.max(minimum, Math.min(1, rect.height / 220)),
-      intensity,
+      intensity * readCombatPreferences().spriteMotion,
       reduced,
       gestureDirection,
       motion,
@@ -313,7 +314,7 @@ export function ChampionSpriteVisual({
           { id: "persistent", kind: state, event: state },
           self,
           Math.max(motionFloor, Math.min(1, height / 220)),
-          impactMultiplier(readCombatPreferences().intensity),
+          impactMultiplier(readCombatPreferences().intensity) * motionAmount,
           reduced,
           undefined,
           motion,
@@ -346,20 +347,20 @@ export function ChampionSpriteVisual({
               ? CHAMPION_MOTION.lowBreathPx
               : CHAMPION_MOTION.breathPx) *
               Math.max(motionFloor, Math.min(1, height / 220)) *
-              Math.min(1, profile.movement) +
+              Math.min(1, profile.movement) * motionAmount +
             "px",
           "--sprite-breath-scale":
             1 +
-            (state === "LOW" ? 0.006 : 0.012) * Math.min(1, profile.movement),
+            (state === "LOW" ? 0.006 : 0.012) * Math.min(1, profile.movement) * motionAmount,
           "--sprite-breath-phase": -phase + "ms",
           "--sprite-tremor-x":
-            Math.min(3.8, Math.max(2.4, height * 0.018) * profile.movement) +
+            Math.min(3.8, Math.max(2.4, height * 0.018) * profile.movement * motionAmount) +
             "px",
           "--sprite-tremor-angle":
-            Math.min(0.6, 0.45 * profile.rotation) + "deg",
+            Math.min(0.6, 0.45 * profile.rotation * motionAmount) + "deg",
           "--sprite-low-y":
             Math.min(4, height * 0.014) * profile.movement + "px",
-          "--sprite-low-tilt": (self ? -0.25 : 0.25) * profile.rotation + "deg",
+          "--sprite-low-tilt": (self ? -0.25 : 0.25) * profile.rotation * motionAmount + "deg",
           "--sprite-pivot": `${profile.pivotX}% ${profile.pivotY}%`,
           "--sprite-result-transform": persistent?.transform ?? "none",
           "--sprite-result-filter": persistent?.filter ?? "none",

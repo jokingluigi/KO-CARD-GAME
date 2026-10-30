@@ -1,3 +1,7 @@
+import {HandReader,BattleHelp} from "./player-ux/battle-reading";
+import {handUnavailableReason} from "./player-ux/policy";
+import {readCombatPreferences} from "./combat-preferences";
+import "./player-ux/player-ux.css";
 import {SaveBattleImage} from "./player-tools/result-tools";
 import {PublicCards,usePublicCardIds} from "./player-tools/battle-tools";
 import {BattleZoneVisuals} from "./battle-zone-visuals";
@@ -234,6 +238,7 @@ export function GameStatePreview({
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
   const publicCardIds=usePublicCardIds(state);
+  const [controlsSeen,setControlsSeen]=React.useState(()=>{try{return localStorage.getItem('ko-controls-hint-v1')==='done';}catch{return false;}});
   const [handSort,setHandSort]=React.useState("DRAW");
   const [historyOpen, setHistoryOpen] = React.useState(false);
   React.useEffect(() => { setHistoryOpen(false); }, [state.gameId, state.status]);
@@ -261,6 +266,8 @@ export function GameStatePreview({
   });
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const [attackHint, setAttackHint] = React.useState<string | null>(null);
+  React.useEffect(()=>{if(!attackHint)return;const timer=setTimeout(()=>setAttackHint(null),4000);return()=>clearTimeout(timer);},[attackHint]);
+  React.useEffect(()=>{setAttackHint(null);},[state.gameId,state.turn]);
   const [confirmEndTurn, setConfirmEndTurn] = React.useState(false);
   const [hapticsEnabled, setHapticsEnabled] = React.useState(() => {
     try { return window.localStorage.getItem('ko-match-haptics') !== 'off'; } catch { return true; }
@@ -271,14 +278,17 @@ export function GameStatePreview({
       if (tutorialStep !== null) setTutorialStep(null);
       else if (openGraveyardPlayerId) setOpenGraveyardPlayerId(null);
       else if (settingsOpen) { setSettingsOpen(false); setSurrenderConfirming(false); }
-      else if (state.targetingState?.active) onCancelEffectTargeting();
+      else if (state.targetingState?.active) {if(!state.targetingState.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState.cancelable))onCancelEffectTargeting();}
       else if (selectedCardId) onSelectCard(selectedCardId);
       else if (selectedAttackerId) onSelectAttacker(selectedAttackerId);
     };
     const settings = () => { setSettingsOpen((open) => !open); setSurrenderConfirming(false); };
+    const key=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!(e.target as Element)?.closest?.('[role=dialog]')){cancel();}};
+    window.addEventListener('keydown',key);
     window.addEventListener('ko-gamepad-cancel', cancel);
     window.addEventListener('ko-gamepad-settings', settings);
     return () => {
+      window.removeEventListener('keydown',key);
       window.removeEventListener('ko-gamepad-cancel', cancel);
       window.removeEventListener('ko-gamepad-settings', settings);
     };
@@ -1098,7 +1108,7 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
+      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,
@@ -1311,7 +1321,8 @@ export function GameStatePreview({
               type="button"
               disabled={!canEndTurn}
               onClick={() => {
-                if (remainingActions.length && turnSecondsRemaining > 10 && !confirmEndTurn) {
+                if(selectedCardId||selectedAttackerId){if(selectedCardId)onSelectCard(selectedCardId);if(selectedAttackerId)onSelectAttacker(selectedAttackerId);setAttackHint('선택을 해제했어요. 턴을 끝내려면 다시 눌러주세요.');return;}
+                if (readCombatPreferences().confirmEndTurn && remainingActions.length && turnSecondsRemaining > 10 && !confirmEndTurn) {
                   setConfirmEndTurn(true);
                   return;
                 }
@@ -1348,16 +1359,16 @@ export function GameStatePreview({
                 {playError || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
-                    : `강조된 대상을 선택하세요 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1}`
+                    : `강조된 대상 ${state.targetingState?.minTargets ?? 1}개 선택 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1} · ${validEffectTargetIds.size}개 선택 가능`
                   : !isMyTurn ? '상대가 행동하고 있어요.'
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
-                  : '손패를 내거나 필드의 선수로 공격하세요.')}
+                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : '손패를 내거나 필드의 선수로 공격하세요.')}
               </p>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
                 : effectTargeting ? !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
                 : selectedCardId ? <button type="button" onClick={() => onSelectCard(selectedCardId)}>선택 취소</button>
-                : selectedAttackerId ? <button type="button" onClick={() => onSelectAttacker(selectedAttackerId)}>선택 취소</button> : null}
+                : selectedAttackerId ? <button type="button" onClick={() => onSelectAttacker(selectedAttackerId)}>선택 취소</button> : !controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
             </div>}
           </aside>
              {/* My Board + Zones */}
@@ -1526,7 +1537,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
-                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
+                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><HandReader state={state} definition={getCardDefinition}/><BattleHelp/><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
@@ -1710,8 +1721,8 @@ export function GameStatePreview({
                    }
                  >
                    <button
-                     disabled={!canUseChampion}
-                     onClick={onUseChampionAbility}
+                     aria-disabled={!canUseChampion}
+                     onClick={()=>{if(canUseChampion)onUseChampionAbility();else setAttackHint(championUnavailableReason);}}
                      className={`ko-champion-ability w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
                        canUseChampion
                        ? me.champion?.questCompleted ? 'cursor-pointer border-amber-400 bg-amber-900/70 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:bg-amber-800' : 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
@@ -1745,7 +1756,7 @@ export function GameStatePreview({
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                          onClick={() => onSelectCard(card.instanceId)}
+                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){setAttackHint(reason);return;}setAttackHint(null);onSelectCard(card.instanceId);}}
                            onUseTechnique={() => handleUseTechnique(card.instanceId)}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}

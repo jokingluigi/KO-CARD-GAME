@@ -336,7 +336,7 @@ export function MatchResultOverlay({
         <footer className="ko-result-footer">
         <button type="button" className="ko-result-details" aria-expanded={details} onClick={()=>setDetails(v=>!v)}>{details ? "전장과 챔피언 보기" : "상세 결과 · 경기 기록 보기"}</button>
 
-          <div className="ko-result-reward" data-testid="match-reward" aria-live="polite">
+          <div className="ko-result-reward" data-reward-state={reward?"confirmed":rewardStatus??"none"} data-testid="match-reward" aria-live="polite">
             {reward ? (
               <>
                 <span>경기 보상 · 지급 완료</span>
@@ -348,7 +348,7 @@ export function MatchResultOverlay({
             ) : rewardStatus === "pending" ? (
               <p role="status">경기 결과와 크레딧 지급을 확인하는 중입니다…</p>
             ) : (
-              <span>경기 종료 · GG</span>
+              <span>{rewardStatus==="error"?"보상 확인 실패 · 위에서 다시 확인하세요":"경기 종료 · GG"}</span>
             )}
           </div>
 <ResultTools state={state} deck={deckRecord} onRematch={onRematch} onChooseDeck={onChooseDeck} disabled={rewardStatus==="pending"||rewardStatus==="error"||Boolean(questError)}/>

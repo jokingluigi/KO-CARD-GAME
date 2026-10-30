@@ -1,3 +1,6 @@
+import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
+import {useDeckRecovery} from "@/components/player-ux/use-deck-recovery";
+import {sameDraft} from "@/components/player-ux/policy";
 import {flyBetween,useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -240,10 +243,10 @@ export default function Decks() {
   const [deckName, setDeckName] = useState(EMPTY_DECK_NAME);
   const [championId, setChampionId] = useState<string | null>(null);
   const [cardIds, setCardIds] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useBrowsingState("decks:search","",v=>typeof v==='string'&&v.length<300);
   const [filter, setFilter] = useState<CardFilter>("ALL");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [catalogFilters, setCatalogFilters] = useState(EMPTY_CATALOG_FILTERS);
+  const [catalogFilters, setCatalogFilters] = useBrowsingState("decks:filters",EMPTY_CATALOG_FILTERS,validCatalogView);
   const [favorites] = useState<string[]>(() => {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
     catch { return []; }
@@ -328,7 +331,8 @@ export default function Decks() {
         if (cancelled) return;
         setOptions(nextOptions);
         setDecks(nextDecks);
-        const initial = nextDecks.find((deck) => deck.isSelected) ?? nextDecks[0];
+        const requested=new URLSearchParams(window.location.search).get('edit');
+        const initial = nextDecks.find(deck=>deck.id===requested) ?? nextDecks.find((deck) => deck.isSelected) ?? nextDecks[0];
         if (initial) {
           openDeck(initial);
         } else {
@@ -353,6 +357,11 @@ export default function Decks() {
   }, [authStatus]);
 
   const editingDeck = decks.find((deck) => deck.id === editingId) ?? null;
+  const currentDraft={editingId,name:deckName,championId,cards:cardIds};
+  const baseline={editingId:editingDeck?.id??null,name:editingDeck?.name??EMPTY_DECK_NAME,championId:editingDeck?.championDefinitionId??null,cards:editingDeck?.cardDefinitionIds??[]};
+  const dirty=!sameDraft(currentDraft,baseline);
+  const recovery=useDeckRecovery(authUser?.id,authStatus==='authenticated'&&!isLoading,currentDraft,dirty);
+  const changeEditor=(action:()=>void)=>{if(!dirty||window.confirm('저장하지 않은 변경이 있어요. 다른 덱으로 이동할까요?'))action();};
   const cardById = useMemo(() => {
     const map = new Map<string, DeckCard>();
     editingDeck?.cards.forEach((card) => map.set(card.id, card));
@@ -615,6 +624,7 @@ export default function Decks() {
       });
       if (!result.deck) throw new Error("서버가 저장된 덱을 반환하지 않았습니다.");
       setDecks((current) => replaceDeck(current, result.deck!));
+      recovery.discard();
       openDeck(result.deck);
       setStatusMessage("전략을 저장했습니다.");
     } catch (error: unknown) {
@@ -735,6 +745,8 @@ export default function Decks() {
           </div>
         )}
 
+        {recovery.recovery&&<section className="my-3 border border-amber-700 p-3 text-sm" role="status"><p>이 계정의 저장하지 않은 덱 편집이 있어요: {recovery.recovery.name}</p><button className="min-h-11 px-3 underline" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);setEditorCollapsed(false);recovery.acknowledge();}}>임시 편집 복구</button><button className="min-h-11 px-3" onClick={recovery.discard}>임시 편집 삭제</button></section>}
+        {dirty&&<p className="my-2 text-sm text-amber-200" role="status">저장하지 않은 변경 · {recovery.error?'임시 보관 실패 — 나가기 전에 저장하세요.':recovery.stored?'이 브라우저에 임시 보관됨':'임시 보관 준비 중'}</p>}
         <nav className="ko-workspace-nav" aria-label="덱 편집 작업 이동">
           <a href="#deck-list">내 덱</a><a href="#deck-library">카드 찾기</a><a href="#deck-workspace" onClick={() => setEditorCollapsed(false)}>현재 덱 · {cardIds.length}/25</a>
         </nav>
@@ -743,7 +755,7 @@ export default function Decks() {
             <button type="button" className="ko-decks__secondary-action min-h-11 mb-3 w-full" data-testid="button-import-deck" disabled={isLoading} onClick={() => { setImportCode(''); setShareMode('import'); }}>덱 가져오기</button>
             <div className="flex items-center justify-between gap-2">
               <p className="ko-decks__section-label">내 덱</p>
-              <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={createDraft}>
+              <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={()=>changeEditor(createDraft)}>
                 <CirclePlus className="h-3.5 w-3.5" aria-hidden="true" />
                 새 덱
               </button>
@@ -762,7 +774,7 @@ export default function Decks() {
                     type="button"
                     className={`ko-decks__deck-item ${editingId === deck.id ? "ko-decks__deck-item--active" : ""}`}
                     data-testid={`button-open-deck-${deck.id}`}
-                    onClick={() => openDeck(deck)}
+                    onClick={() => changeEditor(()=>openDeck(deck))}
                   >
                     <span className="min-w-0">
                       <span className="ko-decks__deck-item-name block">{deck.name}</span>
@@ -946,7 +958,7 @@ export default function Decks() {
                     <p className="font-black">이 덱은 현재 사용할 수 없습니다.</p>
                     {validationReasons.map((reason, index) => (
                       <p key={`${reason.reasonCode}-${index}`} data-testid={`deck-validation-${reason.reasonCode}`}>
-                         {formatDeckValidationReason(reason, cardNames)}
+                         {formatDeckValidationReason(reason, cardNames)} <button type="button" className="min-h-11 px-2 underline" onClick={()=>{setEditorCollapsed(false);const id=reason.cardDefinitionIds?.[0];if(reason.reasonCode==='CHAMPION_REQUIRED'){setChampionPickerOpen(true);return;}const node=id?document.querySelector<HTMLElement>(`[data-testid="row-selected-card-${CSS.escape(id)}"]`):document.getElementById(reason.reasonCode==='CHAMPION_REQUIRED'?'button-select-champion':'deck-library');const target=node??document.getElementById('deck-library');target?.scrollIntoView({block:'center',behavior:'smooth'});if(target){target.tabIndex=-1;target.focus({preventScroll:true});}}}>확인할 위치로</button>
                       </p>
                     ))}
                   </div>
