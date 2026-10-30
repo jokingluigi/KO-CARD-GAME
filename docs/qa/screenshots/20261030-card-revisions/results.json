@@ -1,0 +1,32 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualHandPlay": true,
+    "masterChoiceAndBuff": true,
+    "annihilationSilence": true,
+    "fireworksTwoDamage": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "actualHandPlay": true,
+    "masterChoiceAndBuff": true,
+    "annihilationSilence": true,
+    "fireworksTwoDamage": true,
+    "noScroll": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualHandPlay": true,
+    "masterChoiceAndBuff": true,
+    "annihilationSilence": true,
+    "fireworksTwoDamage": true,
+    "noScroll": true,
+    "errors": []
+  }
+]

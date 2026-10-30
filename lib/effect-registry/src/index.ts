@@ -111,6 +111,8 @@ export type ScriptFilter = {
   definitionRef?: CardDefinitionReference;
 };
 export type ScriptTarget = {
+  /** Explicit opt-in for a choice that may include its source. Default remains excluded. */
+  allowSource?: boolean;
   zone?: TargetZone;
   zones?: TargetZone[];
   owner?: TargetOwner;
@@ -316,7 +318,7 @@ export type MechanicCompilerProviderOutput =
   | { status: "READY"; effectId: "SCRIPT_V1"; scripts: EffectScript[]; keywords?: Keyword[] }
   | { status: "NEEDS_CLARIFICATION"; questions: string[] };
 
-const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
+const SCRIPT_TARGET_KEYS = new Set(["allowSource","zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
 const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minBaseCost", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeChampionRarity", "excludeSource", "isVanilla", "keyword", "tagsAny", "tagsAll", "tagsNone", "definitionRef"]);
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId", "offset", "left", "right"]);
 const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
@@ -338,6 +340,7 @@ function hasOnlyKeys(value: Record<string, unknown>, allowed: Set<string>): bool
 
 function validScriptTarget(value: unknown): value is ScriptTarget {
   if (!isRecord(value) || !hasOnlyKeys(value, SCRIPT_TARGET_KEYS)) return false;
+  if (value.allowSource !== undefined && typeof value.allowSource !== "boolean") return false;
   if (value.zone !== undefined && !TARGET_ZONES.includes(value.zone as TargetZone)) return false;
   if (value.zones !== undefined && (!Array.isArray(value.zones) || value.zones.length < 1 ||
     value.zones.length > TARGET_ZONES.length || !value.zones.every((zone) => TARGET_ZONES.includes(zone as TargetZone)))) return false;

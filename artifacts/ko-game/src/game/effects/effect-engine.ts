@@ -442,7 +442,7 @@ function applyScriptSteps(
         const validTargetIds = scriptTargetCards(next, playerId, sourceCard, {
           ...step.target,
           selection: 'ALL',
-        }, registers).filter((card) => !isEntryDefenseTargetProtected(next, card) && (scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE'))).map((card) => card.instanceId).filter((id) => id !== sourceCard.instanceId);
+        }, registers).filter((card) => !isEntryDefenseTargetProtected(next, card) && (scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE'))).map((card) => card.instanceId).filter((id) => step.target.allowSource === true || id !== sourceCard.instanceId);
         const minimum = step.target.count ?? 1;
         if (validTargetIds.length < minimum) continue;
         const registerObject = Object.fromEntries(registers.entries());

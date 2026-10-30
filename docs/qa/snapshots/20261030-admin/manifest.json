@@ -1,0 +1,14 @@
+{
+  "verifiedAt": "2026-10-30T11:45:13.450000+00:00",
+  "source": "authenticated administrator GET; no card/champion writes",
+  "files": {
+    "cards": {
+      "sha256": "267d152eb0ae4dfeb92f9d263e449b409db157d1dc7e4d7924681e0ef9efa9cf",
+      "count": 163
+    },
+    "champions": {
+      "sha256": "e7a349541ef4c3cdf49429c3caf0ac3d9e3b0cce888c1f3994d286f4be34f06a",
+      "count": 11
+    }
+  }
+}
