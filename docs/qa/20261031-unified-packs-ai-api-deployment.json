@@ -1,0 +1,58 @@
+{
+  "commit": "6eda3ddc289f38b5f13f29d884158c6cecc1282c",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbii27nb9u1s73c7i390",
+  "status": "live",
+  "liveCommit": "6eda3ddc289f38b5f13f29d884158c6cecc1282c",
+  "healthStatus": 200,
+  "aiCosmeticsAvailable": true,
+  "aiSkinOptions": {
+    "CHAMPION_SKIN": 1,
+    "CARD_SKIN": 6
+  },
+  "legacyCardSkinOptions": 6,
+  "packs": [
+    {
+      "id": "72194985-eef3-4ad9-90f8-eb0aa981c7f4",
+      "name": "노멀팩",
+      "ratesUnchanged": true,
+      "emoteDefaultsApplied": true,
+      "detailsValid": true,
+      "individualProbabilitiesMatch": true
+    },
+    {
+      "id": "87dfa3f6-4837-4704-a676-69c14f86b598",
+      "name": "시즌 3 노멀팩",
+      "ratesUnchanged": true,
+      "emoteDefaultsApplied": true,
+      "detailsValid": true,
+      "individualProbabilitiesMatch": true
+    },
+    {
+      "id": "48e5df50-16ea-4cdb-8d5f-15c29098e892",
+      "name": "자해는 나빠요 팩",
+      "ratesUnchanged": true,
+      "emoteDefaultsApplied": true,
+      "detailsValid": true,
+      "individualProbabilitiesMatch": true
+    },
+    {
+      "id": "0e4d7337-1621-4a82-a0a4-b5628b1c7bb8",
+      "name": "확정 레전더리팩",
+      "ratesUnchanged": true,
+      "emoteDefaultsApplied": true,
+      "detailsValid": true,
+      "individualProbabilitiesMatch": true
+    },
+    {
+      "id": "bfded9b4-7c9b-4622-923b-e9983c5c2da7",
+      "name": "확정 챔피언팩",
+      "ratesUnchanged": true,
+      "emoteDefaultsApplied": true,
+      "detailsValid": true,
+      "individualProbabilitiesMatch": true
+    }
+  ],
+  "maintenanceEnabled": false,
+  "noPackOpened": true
+}
