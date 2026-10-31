@@ -19,3 +19,7 @@ A local engine sequence using the current publicly fetched Zombie record confirm
 Common battle UI regression at 360×740, 390×844, 740×360 and 1440×900 passed: actual champion ability buffs all three zombies; effect target focus/input/cancel/rotation and spell resolution still work. This uses the real common UI/local engine with mocked API/media; it does not represent live PvP or physical-device testing. [Results](20261031-zombie-turn-cap/ui-regression.json).
 
 Frontend/API typechecks and production builds passed. Production catalog was read only to inspect current wording; no database/schema/card/account/reward data changes. No main merge. Historical instances already granted extra stats before deployment are not retroactively reduced.
+
+## Release verification
+
+Source `f500db52b8905f0bc39d2648f466c088f5c7ea4f` deployed to API, then frontend. Both Render deployments are live at that commit; health returned 200 on both. All 110 frontend JavaScript/CSS files match local build SHA-256 hashes. Maintenance remained disabled as before. Immediate frontend verification briefly saw the preceding release HTML during rollout; the subsequent complete check matched the new entry and every asset. No production gameplay or player data writes were used for release verification.
