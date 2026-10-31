@@ -1,3 +1,5 @@
+> Superseded on 2026-10-31: Zombie retirement growth is now capped twice across both action turns of one displayed match turn, independent of exact wording. See [current implementation](../20261031-zombie-turn-cap.md). The historical test results below describe the earlier rule.
+
 # Balance patch — 2026-10-24
 
 Branch based on main `ce1c65c`. Authenticated read-only administrator snapshot: 163 cards, 11 champions. Stable IDs are used throughout; no catalog reset or seeded replacement records.

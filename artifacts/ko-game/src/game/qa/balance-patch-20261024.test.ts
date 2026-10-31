@@ -148,13 +148,13 @@ function retireAlly(s:GameState,owner:'SELF'|'ENEMY'='SELF',kind:'RETIRE'|'DESTR
  return effect(s,{type:'STRUCTURED',action:kind,target:{zone:'BOARD',owner,selection:'PLAYER_CHOICE',count:1}},[id]);
 }
 function zombieState(){const s=setup('챔피언 라 칼라베라');s.players[0].board[0]={...generateCardInstance(card('좀비'),{instanceId:'zombie'}),boardSlot:0};return s;}
-test('Zombie grows at most twice per turn, resets on opponent turn and again on own turn',()=>{
+test('Zombie grows at most twice across both action turns and resets on the next displayed turn',()=>{
  let s=zombieState();
  for(let i=0;i<4;i++)s=retireAlly(s);
  assert.equal(s.players[0].board[0]!.currentAttack,3);assert.equal(s.players[0].board[0]!.maxHealth,3);
  s=action(s,{type:'END_TURN',playerId:'player-1'});for(let i=0;i<3;i++)s=retireAlly(s);
- assert.equal(s.players[0].board[0]!.currentAttack,5);
- s=action(s,{type:'END_TURN',playerId:'player-2'});s=retireAlly(s);assert.equal(s.players[0].board[0]!.currentAttack,6);
+ assert.equal(s.players[0].board[0]!.currentAttack,3);
+ s=action(s,{type:'END_TURN',playerId:'player-2'});s=retireAlly(s);assert.equal(s.players[0].board[0]!.currentAttack,4);
 });
 test('Zombie cap survives serialization and duplicated retirement listener dispatch',()=>{
  let s=zombieState();const victim={...generateCardInstance(unit,{instanceId:'victim'}),boardSlot:3 as const};s.players[0].board[3]=victim;

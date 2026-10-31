@@ -6,12 +6,8 @@ export function isZombieToken(state: GameState, card: CardInstance): boolean {
   return card.isToken && (card.definitionId === 'ko-fallback-zombie-token' ||
     [...(state.cardPool ?? []), ...(state.minionACardPool ?? [])].some(d => d.id === card.definitionId && d.name.trim() === '좀비'));
 }
-/** Only the reviewed limited wording opts in; frozen older catalogs remain valid. */
-export function zombieRetirementGrowthLimit(state: GameState, card: CardInstance): number | undefined {
- const definition=[...(state.cardPool ?? []),...(state.minionACardPool ?? []),fallbackZombieToken].find(d=>d.id===card.definitionId);
- const text=card.grantedText?.rulesText ?? definition?.rulesText;
- return text?.replace(/\s+/gu,'')===ZOMBIE_RULES.replace(/\s+/gu,'') ? 2 : undefined;
-}
+/** Retirement growth is a rule, independent of display text or granted text. */
+export const ZOMBIE_RETIREMENT_GROWTH_LIMIT = 2;
 export function normalizeZombieDefinition(definition: CardDefinition): CardDefinition {
   return definition.isToken && definition.name.trim() === '좀비'
     ? { ...definition, cost: 1, attack: 1, health: 1, abilities: [], keywords: [] }

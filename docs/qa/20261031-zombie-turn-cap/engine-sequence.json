@@ -1,0 +1,91 @@
+[
+  {
+    "label": "start",
+    "actionTurn": 3,
+    "displayTurn": 2,
+    "stats": [
+      1,
+      1
+    ]
+  },
+  {
+    "label": "own retirement 1",
+    "actionTurn": 3,
+    "displayTurn": 2,
+    "stats": [
+      2,
+      2
+    ],
+    "count": 1
+  },
+  {
+    "label": "own retirement 2",
+    "actionTurn": 3,
+    "displayTurn": 2,
+    "stats": [
+      3,
+      3
+    ],
+    "count": 2
+  },
+  {
+    "label": "own retirement 3",
+    "actionTurn": 3,
+    "displayTurn": 2,
+    "stats": [
+      3,
+      3
+    ],
+    "count": 2
+  },
+  {
+    "label": "opponent-turn allied retirement 1",
+    "actionTurn": 4,
+    "displayTurn": 2,
+    "stats": [
+      3,
+      3
+    ],
+    "count": 2
+  },
+  {
+    "label": "opponent-turn allied retirement 2",
+    "actionTurn": 4,
+    "displayTurn": 2,
+    "stats": [
+      3,
+      3
+    ],
+    "count": 2
+  },
+  {
+    "label": "opponent-turn allied retirement 3",
+    "actionTurn": 4,
+    "displayTurn": 2,
+    "stats": [
+      3,
+      3
+    ],
+    "count": 2
+  },
+  {
+    "label": "next displayed turn retirement",
+    "actionTurn": 5,
+    "displayTurn": 3,
+    "stats": [
+      4,
+      4
+    ],
+    "count": 1
+  },
+  {
+    "label": "separate champion summon absorption",
+    "actionTurn": 5,
+    "displayTurn": 3,
+    "stats": [
+      5,
+      5
+    ],
+    "count": 1
+  }
+]

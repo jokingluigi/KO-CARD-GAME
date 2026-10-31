@@ -314,3 +314,128 @@ test("enemy retire and allied destruction/vanish/return do not count as allied r
   });
   assert.deepEqual(stats(n), Array(3).fill([1, 1, 1]));
 });
+
+function endActionTurn(s: GameState) {
+  const r = executeAction(s, { type: "END_TURN", playerId: s.activePlayerId! });
+  assert.ok(r.success, r.message);
+  return r.state;
+}
+for (const owner of [0, 1])
+  test(`displayed turn shares two growth uses across own/opponent actions for owner ${owner}`, () => {
+    let s = setup(3, owner);
+    s = retire(s, owner);
+    assert.deepEqual(stats(s, owner), Array(3).fill([2, 2, 2]));
+    s = endActionTurn(s);
+    s = JSON.parse(JSON.stringify(s));
+    s = retire(s, owner);
+    assert.deepEqual(stats(s, owner), Array(3).fill([3, 3, 3]));
+    s = retire(retire(s, owner), owner);
+    assert.deepEqual(stats(s, owner), Array(3).fill([3, 3, 3]));
+    assert.equal(s.zombieGrowthThisTurn?.matchTurn, 2);
+    s = endActionTurn(s);
+    s = retire(s, owner);
+    assert.deepEqual(stats(s, owner), Array(3).fill([4, 4, 4]));
+    assert.equal(s.zombieGrowthThisTurn?.matchTurn, 3);
+  });
+test("spending both uses in the first action turn leaves none in the second, then refreshes exactly twice next displayed turn", () => {
+  let s = retire(retire(setup(3)));
+  s = endActionTurn(s);
+  s = retire(retire(retire(s)));
+  assert.deepEqual(stats(s), Array(3).fill([3, 3, 3]));
+  s = endActionTurn(s);
+  s = retire(retire(retire(s)));
+  assert.deepEqual(stats(s), Array(3).fill([5, 5, 5]));
+  s = endActionTurn(s);
+  s = retire(s);
+  assert.deepEqual(stats(s), Array(3).fill([5, 5, 5]));
+});
+test("legacy action-turn counter survives the half-turn transition without granting extra uses", () => {
+  let s = setup(3);
+  s.zombieGrowthThisTurn = { turn: 3, counts: { "z-0": 2, "z-1": 1 } };
+  s = endActionTurn(s);
+  s = retire(s);
+  assert.deepEqual(stats(s), [
+    [1, 1, 1],
+    [2, 2, 2],
+    [2, 2, 2],
+  ]);
+  assert.equal(s.zombieGrowthThisTurn?.matchTurn, 2);
+  s = endActionTurn(s);
+  s = retire(s);
+  assert.deepEqual(stats(s), [
+    [2, 2, 2],
+    [3, 3, 3],
+    [3, 3, 3],
+  ]);
+});
+test("both players have independent counters inside the same displayed turn", () => {
+  let s = setup(2);
+  s = retire(retire(s, 0), 0);
+  s = endActionTurn(s);
+  s = retire(retire(retire(s, 1), 1), 1);
+  assert.deepEqual(stats(s, 0), [
+    [3, 3, 3],
+    [3, 3, 3],
+  ]);
+  assert.deepEqual(stats(s, 1), [[3, 3, 3]]);
+  s = retire(s, 0);
+  assert.deepEqual(stats(s, 0), [
+    [3, 3, 3],
+    [3, 3, 3],
+  ]);
+});
+test("champion summon absorption after a half-turn switch still buffs all capped zombies without refreshing retirement uses", () => {
+  let s = setup(3);
+  s = retire(retire(s));
+  s = endActionTurn(s);
+  s.players[1].championAbilityUsedThisTurn = false;
+  const source = generateCardInstance(unit, {
+    instanceId: "external-summoner",
+  });
+  s = applyEffect(s, s.players[0].id, source, {
+    type: "STRUCTURED",
+    action: "SUMMON",
+    values: { definitionRef: { id: zombie.id }, count: 1 },
+  });
+  assert.deepEqual(stats(s), Array(3).fill([4, 4, 4]));
+  s = retire(s);
+  assert.deepEqual(stats(s), Array(3).fill([4, 4, 4]));
+  assert.deepEqual(s.zombieGrowthThisTurn?.counts, {
+    "z-0": 2,
+    "z-1": 2,
+    "z-2": 2,
+  });
+});
+
+test("display wording and granted text cannot disable the zombie retirement cap", () => {
+  for (const mode of [
+    "old-description",
+    "punctuation-change",
+    "granted-text",
+  ] as const) {
+    let s = setup(3);
+    if (mode === "granted-text")
+      s.players[0].board[0]!.grantedText = {
+        donorDefinitionId: zombie.id,
+        keywords: [],
+        abilities: [],
+        rulesText: zombie.rulesText + " 추가 문구",
+      };
+    else
+      s.cardPool = s.cardPool?.map((d) =>
+        d.id === zombie.id
+          ? {
+              ...d,
+              rulesText:
+                mode === "old-description"
+                  ? d.rulesText.replace(/\(한턴.*$/u, "")
+                  : d.rulesText + "!",
+            }
+          : d,
+      );
+    s = retire(retire(retire(s)));
+    s = endActionTurn(s);
+    s = retire(s);
+    assert.deepEqual(stats(s), Array(3).fill([3, 3, 3]), mode);
+  }
+});
