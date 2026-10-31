@@ -1,3 +1,4 @@
+import {TargetSelectionFocus} from "./player-ux/target-selection-focus";
 import {BattleAttention} from "./player-ux/battle-attention";
 import {HandReader,BattleHelp} from "./player-ux/battle-reading";
 import {handUnavailableReason} from "./player-ux/policy";
@@ -1110,13 +1111,14 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
+      <div data-effect-targeting={Boolean(effectTargeting&&state.targetingState?.playerId===me.id)} data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,
       } as React.CSSProperties}>
 
          {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/><BattleAttention state={state}/></>}
+         <TargetSelectionFocus active={Boolean(effectTargeting&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
          <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -1357,7 +1359,7 @@ export function GameStatePreview({
                 </div>
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
-              {(!legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
+              {(!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
                 {playError || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'

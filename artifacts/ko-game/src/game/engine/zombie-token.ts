@@ -17,16 +17,20 @@ export function normalizeZombieDefinition(definition: CardDefinition): CardDefin
     ? { ...definition, cost: 1, attack: 1, health: 1, abilities: [], keywords: [] }
     : definition;
 }
+/** All matching field instances; hand-played zombies remain independent units. */
+export function existingZombies(state: GameState, playerId: string): CardInstance[] {
+  return state.players.find(p => p.id === playerId)?.board.filter((c): c is CardInstance => Boolean(c && isZombieToken(state, c))) ?? [];
+}
 export function existingZombie(state: GameState, playerId: string): CardInstance | undefined {
-  return state.players.find(p => p.id === playerId)?.board.find((c): c is CardInstance => Boolean(c && isZombieToken(state, c)));
+  return existingZombies(state, playerId)[0];
 }
 export function mergeZombie(state: GameState, playerId: string, incoming: CardInstance): GameState | undefined {
   if (!isZombieToken(state, incoming)) return undefined;
-  const existing = existingZombie(state, playerId);
-  if (!existing || existing.instanceId === incoming.instanceId) return undefined;
+  const recipients = new Set(existingZombies(state, playerId).filter(c=>c.instanceId!==incoming.instanceId).map(c=>c.instanceId));
+  if (!recipients.size) return undefined;
   return { ...state, players: state.players.map(p => p.id !== playerId ? p : {
     ...p, hand: p.hand.filter(c => c.instanceId !== incoming.instanceId),
-    board: p.board.map(c => c?.instanceId !== existing.instanceId ? c : {
+    board: p.board.map(c => !c || !recipients.has(c.instanceId) ? c : {
       ...c, currentAttack: c.currentAttack + incoming.currentAttack,
       currentHealth: c.currentHealth + incoming.currentHealth, maxHealth: c.maxHealth + incoming.currentHealth,
     }) as typeof p.board,

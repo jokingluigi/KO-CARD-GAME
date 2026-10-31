@@ -9,7 +9,7 @@ import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
-import { existingZombie, isZombieToken, zombieRetirementGrowthLimit, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
+import { existingZombies, isZombieToken, zombieRetirementGrowthLimit, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense, isEntryDefenseTargetProtected } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
@@ -2176,7 +2176,7 @@ function applyEffectInternal(
       const slot = towerOpenSlot(state, destinationPlayerId!);
       if (!owner || !handCard) return state;
       const merged = mergeZombie(state, destinationPlayerId!, handCard);
-      if (merged) return merged;
+      if (merged) return setLastTargetIds(merged,existingZombies(merged,destinationPlayerId!).map(card=>card.instanceId));
       if (slot < 0) return state;
       const withoutHand = {
         ...state,
@@ -2271,7 +2271,7 @@ function applyEffectInternal(
         const merged = mergeZombie(summonState, playerId, generated.card);
         if (merged) {
           summonState = merged;
-          summonedIds.push(existingZombie(merged, playerId)!.instanceId);
+          summonedIds.push(...existingZombies(merged,playerId).map(card=>card.instanceId));
           continue;
         }
         const slot = effect.values?.summonBoardSlot !== undefined ? (currentOwner?.board[effect.values.summonBoardSlot]===null ? effect.values.summonBoardSlot : -1) : towerOpenSlot(summonState, playerId);
@@ -2287,7 +2287,7 @@ function applyEffectInternal(
              ? 'CHAMPION_DEPLOY' : 'SUMMON');
          summonedIds.push(generated.card.instanceId);
       }
-       return setLastTargetIds(summonState, summonedIds);
+       return setLastTargetIds(summonState, [...new Set(summonedIds)]);
     }
     if (effect.action === 'SWITCH_EFFECT_BRANCH') {
       const branch = sourceCard.boardSlot !== null && sourceCard.boardSlot <= 1

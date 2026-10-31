@@ -25,3 +25,7 @@
 @keyframes ko-edit-add {from{background-color:#5a4828;box-shadow:inset 3px 0 #e8c777}to{background-color:transparent;box-shadow:inset 0 0 transparent}}
 @keyframes ko-edit-remove {from{background-color:#4b3028;box-shadow:inset 3px 0 #d58f79}to{background-color:transparent;box-shadow:inset 0 0 transparent}}
 @media(prefers-reduced-motion:reduce){.ko-decks__compact-row[data-edit-cue]{animation:none;outline:1px solid #c9ab6d}.ko-hand-card{transition:none}}
+/* One dimming layer owns contrast in effect selection; eligible cards stay original. */
+.ko-effect-target-focus {position:fixed;inset:0;width:100%;height:100%;z-index:190;pointer-events:none}
+.ko-game-stage[data-effect-targeting=true] .ko-hand-cards .ko-hand-card {opacity:1;filter:none}
+.ko-game-stage[data-effect-targeting=true] .ko-board-slot.opacity-40 {opacity:1;filter:none}
