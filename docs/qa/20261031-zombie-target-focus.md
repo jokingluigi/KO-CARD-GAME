@@ -30,3 +30,7 @@ Figure/ground contrast and visual hierarchy reduce scanning effort during a forc
 - Runner: `node docs/qa/zombie-target-focus-browser.mjs` with Vite on port 5186.
 
 Images use development fixtures and mocked media, so missing artwork is a fixture limitation. These are executions of the actual common battle UI and local engine, not live PvP sessions. Physical Android/iOS, two-client PvP, live tower/AI matchmaking, hand/champion/graveyard target choices and human usability evaluation were not separately exercised in this change. No production account/card/deck data or database schema changes are required. No main merge.
+
+## Release verification
+
+Source commit `93ce8df8f271ccc99a8b351f0ac302411c909eb8` deployed to API, then frontend. Both Render deployments are live at that commit; both health checks returned 200. All 109 frontend JavaScript/CSS files match local build SHA-256 hashes. Maintenance remained disabled as before. Deployment receipts are recorded beside this report. Production gameplay was not exercised by this release verification.
