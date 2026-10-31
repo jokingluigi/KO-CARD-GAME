@@ -21,8 +21,6 @@ import {
   surrender,
   playWrestlerFromHand,
   startGame,
-  selectEffectTarget,
-  cancelEffectTargeting,
   type BoardSlot,
   type AttackTarget,
   type GameState,
@@ -1165,7 +1163,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         event.type === "ATTACK_DECLARED" &&
         event.cardInstanceId === selectedAttackerId,
     );
-    const currentAttack = attacker?.currentAttack ?? 0;
+    if(attackEventIndex<0){setGameState(result.state);setSelectedAttackerId(null);setPlayError(null);return;}
+    const sourceSnapshot=result.state.events[attackEventIndex]?.sourceSnapshot;
+    const currentAttack = sourceSnapshot?.currentAttack ?? attacker?.currentAttack ?? 0;
+    const animationAttacker=attacker?{...attacker,currentAttack,currentHealth:sourceSnapshot?.currentHealth??attacker.currentHealth}:undefined;
     const damage = actualAttackDamage(
       gameState,
       result.state,
@@ -1173,9 +1174,9 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       selectedAttackerId,
       attackTarget,
     );
-    const animation: AttackAnimationState | null = attacker && geometry
+    const animation: AttackAnimationState | null = animationAttacker && geometry
       ? {
-          attacker,
+          attacker:animationAttacker,
           target: target ?? null,
           targetKind: "CARD",
           counterDamage:confirmedCounterDamage(result.state.events,attackEventIndex,selectedAttackerId),
@@ -1221,9 +1222,11 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       setPlayError(null);
       return;
     }
-    const next = before.targetingState?.phase === 'PRE_COMMIT'
-      ? executeAction(before, { type: 'CONFIRM_PRECOMMIT_TARGET', playerId: before.players[0].id, targetId }).state
-      : processChampionQuestEvents(before, selectEffectTarget(before, targetId));
+    const selected=executeAction(before,before.targetingState?.phase==='PRE_COMMIT'
+      ?{type:'CONFIRM_PRECOMMIT_TARGET',playerId:before.players[0].id,targetId}
+      :{type:'SELECT_EFFECT_TARGET',playerId:before.players[0].id,targetId});
+    if(!selected.success){setPlayError(selected.message);return;}
+    const next=selected.state;
     if (next === before) {
       setPlayError('선택할 수 없는 대상입니다.');
       return;
@@ -1245,7 +1248,9 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       setPlayError(null);
       return;
     }
-    const next = cancelEffectTargeting(gameState);
+    const cancelled=executeAction(gameState,{type:"CANCEL_EFFECT_TARGET",playerId:gameState.players[0].id});
+    if(!cancelled.success){setPlayError(cancelled.message);return;}
+    const next = cancelled.state;
     if (next === gameState) return;
     setGameState(next);
     setPlayError(null);
@@ -1292,7 +1297,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         event.type === "ATTACK_DECLARED" &&
         event.cardInstanceId === selectedAttackerId,
     );
-    const currentAttack = attacker?.currentAttack ?? 0;
+    if(attackEventIndex<0){setGameState(result.state);setSelectedAttackerId(null);setPlayError(null);return;}
+    const sourceSnapshot=result.state.events[attackEventIndex]?.sourceSnapshot;
+    const currentAttack = sourceSnapshot?.currentAttack ?? attacker?.currentAttack ?? 0;
+    const animationAttacker=attacker?{...attacker,currentAttack,currentHealth:sourceSnapshot?.currentHealth??attacker.currentHealth}:undefined;
     const damage = actualAttackDamage(
       gameState,
       result.state,
@@ -1300,9 +1308,9 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       selectedAttackerId,
       attackTarget,
     );
-    const animation: AttackAnimationState | null = attacker && geometry
+    const animation: AttackAnimationState | null = animationAttacker && geometry
       ? {
-          attacker,
+          attacker:animationAttacker,
           target: null,
           targetKind: "CHAMPION",
           geometry,

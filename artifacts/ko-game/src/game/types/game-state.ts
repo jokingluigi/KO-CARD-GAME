@@ -1,3 +1,4 @@
+import type {AttackTarget} from "../engine/combat";
 import type { CardInstance } from '../cards/types';
 import type { CardDefinition } from '../cards/types';
 import type { ChampionState } from '../champions/types';
@@ -118,6 +119,8 @@ export interface GameState {
   preventedRetireTargetIds?: string[];
   consumedRuleKeys?: string[];
   /** Effect resolution is deliberately part of game state, not UI state. */
+  /** Accepted attack resumes after a pre-attack combo choice, including reconnect. */
+  pendingComboAttack?: {gameId:string;turn:number;playerId:string;attackerInstanceId:string;target:AttackTarget};
   targetingState?: {
     /** Display-only identity of this serialized effect processing unit. */
     presentationResolutionId?: string;

@@ -2,7 +2,7 @@ import {resolveConfiguredTowerEffects} from '../tower/configured-effects';
 import { hasCommittedFusion } from '../engine/fusion';
 import { isMinionAAbility } from '../champions/minion-a';
 import type { AttackTarget } from '../engine/combat';
-import { attack } from '../engine/combat';
+import { attack,resumePendingComboAttack } from '../engine/combat';
 import { canUseActiveAbility, useActiveAbility } from '../engine/card-status';
 import { canUseChampionAbility, useChampionAbility } from '../engine/champion-system';
 import { playTechniqueFromHand } from '../engine/play-technique';
@@ -209,4 +209,4 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
   }
 }
 
-export function executeAction(state:GameState,action:GameAction):ActionResult{const result=executeActionInternal(state,action);return result.success?{...result,state:resolveConfiguredTowerEffects(state,result.state)}:result;}
+export function executeAction(state:GameState,action:GameAction):ActionResult{const initial=executeActionInternal(state,action);const result=initial.success&&initial.state.pendingComboAttack&&!initial.state.targetingState?.active?resumePendingComboAttack(initial.state):initial;return result.success?{...result,state:resolveConfiguredTowerEffects(state,result.state)}:result;}

@@ -4114,7 +4114,7 @@ export function resolveBoardListeners(
   if (!player) return state;
   return player.board.filter((card): card is CardInstance => Boolean(card))
     .filter((card) => card.instanceId !== options.attackerInstanceId)
-    .reduce((next, card) => resolveTriggeredAbilities(next, playerId, card, trigger, options), state);
+    .reduce((next, card) => {const live=next.players.find(player=>player.id===playerId)?.board.find(candidate=>candidate?.instanceId===card.instanceId);return live&&live.currentHealth>0&&next.status==='IN_PROGRESS'?resolveTriggeredAbilities(next,playerId,live,trigger,options):next;}, state);
 }
 
 /** Replacement before any retirement path; no RETIRE event or graveyard insertion. */

@@ -188,11 +188,16 @@ function resolveSelfAttackTrigger(
     : state;
 }
 
-export function attack(
+export function attack(state:GameState,attackingPlayerId:string,attackerInstanceId:CardInstanceId,target:AttackTarget):ActionResult {
+  return attackInternal(state,attackingPlayerId,attackerInstanceId,target,false);
+}
+
+function attackInternal(
   state: GameState,
   attackingPlayerId: string,
   attackerInstanceId: CardInstanceId,
   target: AttackTarget,
+  comboAlreadyResolved = false,
 ): ActionResult {
   const actionStartState = state;
   if (state.targetingState?.active) {
@@ -238,7 +243,7 @@ export function attack(
       '공격할 수 없는 선수입니다.',
     );
   }
-  const { card: attacker } = attackerEntry;
+  let { card: attacker } = attackerEntry;
   if (towerAttackBlocked(state, attackingPlayerId, attackerInstanceId)) return actionFailure(state, 'SUMMONED_THIS_TURN', '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.');
 
   if (hasKeyword(attacker, "CANNOT_ATTACK")) return actionFailure(state, "CARD_CANNOT_ATTACK", "공격불가 키워드를 가진 선수는 공격을 선언할 수 없습니다.");
@@ -249,7 +254,7 @@ export function attack(
   const canAttackOnEntry =
     hasKeyword(attacker, 'RUSH') ||
     (hasKeyword(attacker, 'SURPRISE') && target.type === 'WRESTLER');
-  if (attacker.enteredThisTurn && !canAttackOnEntry) {
+  if (!comboAlreadyResolved && attacker.enteredThisTurn && !canAttackOnEntry) {
     return actionFailure(
       state,
       'SUMMONED_THIS_TURN',
@@ -259,7 +264,7 @@ export function attack(
 
   const maximumAttacks = hasKeyword(attacker, 'MULTI_STRIKE') ? 2 : 1;
   const usingExtraWrestlerAttack=attacker.attacksUsedThisTurn>=maximumAttacks;
-  if (usingExtraWrestlerAttack && !((attacker.extraWrestlerAttacksThisTurn??0)>0 && target.type==='WRESTLER')) {
+  if (!comboAlreadyResolved && usingExtraWrestlerAttack && !((attacker.extraWrestlerAttacksThisTurn??0)>0 && target.type==='WRESTLER')) {
     return actionFailure(
       state,
       'ATTACK_ALREADY_USED',
@@ -268,7 +273,7 @@ export function attack(
   }
 
   const attackUse=(card:CardInstance)=>({attacksUsedThisTurn:card.attacksUsedThisTurn+(usingExtraWrestlerAttack?0:1),extraWrestlerAttacksThisTurn:Math.max(0,(card.extraWrestlerAttacksThisTurn??0)-(usingExtraWrestlerAttack?1:0))});
-  const defendingPlayer = state.players.find(
+  let defendingPlayer = state.players.find(
     (player) => player.id === target.playerId,
   );
   if (target.type === 'WRESTLER') {
@@ -281,7 +286,7 @@ export function attack(
         card !== null && hasKeyword(card, 'TAUNT') && !(hasEntryDefense(card, state.turn)),
     ) ?? [];
   if (
-    tauntCards.length > 0 &&
+    !comboAlreadyResolved && tauntCards.length > 0 &&
     !(target.type === 'PLAYER' && attacker.ignoreTauntToChampion && !attacker.isSilenced && !attacker.isAbilityDisabled) &&
     (target.type !== 'WRESTLER' ||
       !tauntCards.some(
@@ -295,23 +300,29 @@ export function attack(
     );
   }
 
-  if (target.type === 'PLAYER') {
-    if (defendingPlayer?.board.some(Boolean) && !attacker.isAbilityDisabled && getActiveCardAbilities(attacker).some(ability => 'cannotAttackChampionWhileEnemyBoardOccupied' in ability && ability.cannotAttackChampionWhileEnemyBoardOccupied)) return actionFailure(state, 'INVALID_ATTACK_TARGET', '상대 필드에 선수가 있는 동안에는 챔피언을 공격할 수 없습니다.');
-    if (!defendingPlayer) {
-      return actionFailure(
-        state,
-        'INVALID_ATTACK_TARGET',
-        '해당 대상을 공격할 수 없습니다.',
-      );
-    }
-    if (isChampionProtectedByToken(state, target.playerId)) {
-      return actionFailure(
-        state,
-        'INVALID_ATTACK_TARGET',
-        '챔피언 토큰이 활성화된 동안 챔피언 본체를 공격할 수 없습니다.',
-      );
-    }
+  if (!defendingPlayer || (target.type==='WRESTLER' && !findBoardCard(state,target.playerId,target.cardInstanceId))) {
+    return actionFailure(state,'INVALID_ATTACK_TARGET','해당 대상을 공격할 수 없습니다.');
+  }
+  if(target.type==='PLAYER'&&!comboAlreadyResolved){
+    if(defendingPlayer.board.some(Boolean)&&!attacker.isAbilityDisabled&&getActiveCardAbilities(attacker).some(ability=>'cannotAttackChampionWhileEnemyBoardOccupied' in ability&&ability.cannotAttackChampionWhileEnemyBoardOccupied))return actionFailure(state,'INVALID_ATTACK_TARGET','상대 필드에 선수가 있는 동안에는 챔피언을 공격할 수 없습니다.');
+    if(isChampionProtectedByToken(state,target.playerId))return actionFailure(state,'INVALID_ATTACK_TARGET','챔피언 토큰이 활성화된 동안 챔피언 본체를 공격할 수 없습니다.');
+  }
+  if(!comboAlreadyResolved){
+    // Reserve exactly one accepted attack before automatic combo effects. A
+    // removed target or a serialized effect choice cannot provide free repeats.
+    state={...state,players:state.players.map(player=>player.id!==attackingPlayerId?player:{...player,board:player.board.map(card=>card?.instanceId===attackerInstanceId?{...card,...attackUse(card)}:card) as typeof player.board})};
+    state=resolveBoardListeners(state,attackingPlayerId,'OTHER_ALLY_ATTACK',{attackerInstanceId});
+    if(state.status!=='IN_PROGRESS')return actionSuccess(processChampionQuestEvents(actionStartState,state));
+    if(state.targetingState?.active)return actionSuccess(processChampionQuestEvents(actionStartState,{...state,pendingComboAttack:{gameId:state.gameId,turn:state.turn,playerId:attackingPlayerId,attackerInstanceId,target}}));
+  }
+  const currentAttacker=findBoardCard(state,attackingPlayerId,attackerInstanceId)?.card;
+  if(state.status!=='IN_PROGRESS'||!currentAttacker||currentAttacker.currentHealth<=0||currentAttacker.isStunned||hasKeyword(currentAttacker,'CANNOT_ATTACK')||
+    (target.type==='WRESTLER'&&!findBoardCard(state,target.playerId,target.cardInstanceId))||
+    (target.type==='PLAYER'&&isChampionProtectedByToken(state,target.playerId)))return actionSuccess(processChampionQuestEvents(actionStartState,state));
+  attacker=currentAttacker;
+  defendingPlayer=state.players.find(player=>player.id===target.playerId)!;
 
+  if (target.type === 'PLAYER') {
     const directChampion = findDirectDeployedChampion(
       state,
       target.playerId,
@@ -342,7 +353,7 @@ export function attack(
       : defendingPlayer.health - attackerDamage;
     const attackedState: GameState = healLifesteal({
       ...preDamageState,
-      players: state.players.map((player) => {
+      players: preDamageState.players.map((player) => {
         if (player.id === attackingPlayerId) {
           return {
             ...player,
@@ -350,7 +361,7 @@ export function attack(
               card?.instanceId === attackerInstanceId
                 ? {
                     ...card,
-                    ...attackUse(card),
+
                   }
                 : card,
             ) as typeof player.board,
@@ -433,9 +444,7 @@ export function attack(
     const selfAttackResolved = resolveSelfAttackTrigger(
       checkpointAwakening(state, recordedAttack), attackingPlayerId, attackerInstanceId,
     );
-    const listenersResolved = resolveBoardListeners(
-      selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
-    );
+    const listenersResolved = selfAttackResolved;
     const damageListenersResolved = awakeningPrevented ? listenersResolved : resolveRegisteredRuleListeners(
       { ...listenersResolved, preventedDamageTargetIds: undefined },
       'DAMAGE_TAKEN',
@@ -484,10 +493,8 @@ export function attack(
       values: { amount: 1 + attacker.awakening!.awakeningPower } }, [target.cardInstanceId]);
     state = resolveStateBasedDeaths(state);
     if (state.status === 'FINISHED' || !findBoardCard(state, target.playerId, target.cardInstanceId) || !findBoardCard(state, attackingPlayerId, attackerInstanceId)) {
-      state = { ...state, players: state.players.map(p => p.id !== attackingPlayerId ? p : { ...p,
-        board: p.board.map(c => c?.instanceId === attackerInstanceId ? { ...c, ...attackUse(c) } : c) as typeof p.board }) };
       const selfAttack = resolveSelfAttackTrigger(state, attackingPlayerId, attackerInstanceId);
-      return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(resolveBoardListeners(selfAttack, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId }))));
+      return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(selfAttack)));
     }
   }
   const defenderEntry = findBoardCard(
@@ -578,7 +585,7 @@ export function attack(
         if (card?.instanceId === attackerInstanceId) {
           return {
             ...(preventedDefenderDamage ? card : receiveDamage(card, defenderDamage)),
-            ...attackUse(card),
+
           };
         }
 
@@ -690,14 +697,7 @@ export function attack(
   const selfAttackResolved = resolveSelfAttackTrigger(
     attackSurvivedResolved, attackingPlayerId, attackerInstanceId, reactionAttribution(attackingPlayerId, attackerPrepared),
   );
-  const listenersResolved = resolveBoardListeners(
-    selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', {
-      attackerInstanceId,
-      // Combo effects can settle lethal combat damage before the final death pass.
-      // Keep its original cause so retirement rewards belong to the actual attacker.
-      sourceContext: attackerAttribution,
-    },
-  );
+  const listenersResolved = selfAttackResolved;
   const damageListenersResolved = resolveRegisteredRuleListeners(
     { ...listenersResolved, preventedDamageTargetIds: undefined },
     'DAMAGE_TAKEN',
@@ -711,4 +711,15 @@ export function attack(
     damageEventStartIndex,
   );
   return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(resolved)));
+}
+
+export function resumePendingComboAttack(state:GameState):ActionResult {
+ const pending=state.pendingComboAttack;
+ if(!pending||state.targetingState?.active)return actionSuccess(state);
+ const next={...state,pendingComboAttack:undefined};
+ const attacker=findBoardCard(next,pending.playerId,pending.attackerInstanceId)?.card;
+ if(next.gameId!==pending.gameId||next.turn!==pending.turn||next.activePlayerId!==pending.playerId||next.status!=='IN_PROGRESS'||!attacker||attacker.currentHealth<=0||attacker.isStunned||hasKeyword(attacker,'CANNOT_ATTACK')||
+   (pending.target.type==='WRESTLER'&&(!findBoardCard(next,pending.target.playerId,pending.target.cardInstanceId)||hasEntryDefense(findBoardCard(next,pending.target.playerId,pending.target.cardInstanceId)!.card,next.turn)))||
+   (pending.target.type==='PLAYER'&&isChampionProtectedByToken(next,pending.target.playerId)))return actionSuccess(next);
+ return attackInternal(next,pending.playerId,pending.attackerInstanceId,pending.target,true);
 }

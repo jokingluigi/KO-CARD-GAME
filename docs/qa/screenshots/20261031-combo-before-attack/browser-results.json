@@ -1,0 +1,74 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "unit",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "champion",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "health",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "mode": "unit",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "mode": "champion",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "mode": "health",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "unit",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "champion",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "health",
+    "preDamageCombo": true,
+    "oneAttackUse": true,
+    "noScroll": true
+  }
+]
