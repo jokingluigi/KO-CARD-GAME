@@ -23,3 +23,7 @@ No card catalog text/stats, champion ability rules, accounts, inventories, rewar
 - [Next-turn used button screenshot](20261031-active-once/used-next-turn-390.png), [browser results](20261031-active-once/results.json).
 
 Physical devices, two-account live PvP, tower/AI matchmaking and production gameplay were not separately exercised. Existing matches with no recorded historical marker cannot reconstruct uses from older turns before this change; newly completed activations retain the lifetime record.
+
+## Deployment verification
+
+API, then frontend, deployed source `a55a6a2d22af84a06e46817fbb6d25eddac44bdf`. Both deployments are live at that commit and health endpoints returned 200. All 109 frontend JavaScript/CSS files match local build SHA-256 hashes. The first immediate frontend check still received the preceding release HTML during rollout; a later check confirmed the new entry and every asset. Maintenance remained disabled, matching preflight. No live gameplay was exercised by these deployment checks.
