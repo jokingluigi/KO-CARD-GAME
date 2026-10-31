@@ -19,3 +19,7 @@ All 12 after cases passed: no horizontal document overflow; no nested home conte
 - [After mobile](20261031-home-scroll/after-mobile.png)
 - [Before metrics](20261031-home-scroll/before.json), [after metrics](20261031-home-scroll/after.json), [illustrated metrics](20261031-home-scroll/after-illustrated.json).
 - Runner: `node docs/qa/home-scroll-browser.mjs`, Vite port 5186; `ILLUSTRATED=1` tests a registered-background-shaped fixture. No game/user data or API implementation changed. No main merge.
+
+## Release
+
+Frontend-only deployment is live at source commit `e292b07f97cbc7a7162d2cc4bccacbe6966e0ddb`; all 109 JavaScript/CSS artifacts match the local production build SHA-256 hashes and the site's health endpoint returned 200. No backend redeploy was necessary for this CSS-only change. Receipt: [frontend deployment](20261031-home-scroll-front-deployment.json).
