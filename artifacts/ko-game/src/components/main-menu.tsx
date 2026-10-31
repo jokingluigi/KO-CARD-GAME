@@ -1,4 +1,5 @@
-import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX } from "lucide-react";
+import "./main-menu-viewport.css";
+import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { changeNickname, type AuthUser } from "@/lib/auth-client";
@@ -9,6 +10,7 @@ import { BGM_MUTE_STORAGE_KEY, BGM_VOLUME_STORAGE_KEY, readStoredBgmMute, readSt
 import { SfxVolumeControl } from "./sfx-volume-control";
 import { MatchTutorial } from "./match-tutorial";
 import { InstallAppButton } from "./install-app-button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -148,12 +150,15 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
 
   return (
     <main className={`ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
-      <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="absolute right-28 top-4 z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+      <div className="ko-main-menu__toolbar">
+      <InstallAppButton />
+      <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="relative z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
         {bgmMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         {bgmMuted ? "음소거" : "배경음"}
       </button>
       <button type="button" onClick={() => setSoundSettingsOpen((open) => !open)} aria-expanded={soundSettingsOpen}
-        className="absolute right-4 top-4 z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">음량 설정</button>
+        className="relative z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">음량 설정</button>
+      </div>
       {soundSettingsOpen && <div className="absolute right-4 top-16 z-20 w-44 rounded border border-amber-500/50 bg-neutral-950/95 p-3 shadow-xl">
         <label className="block text-xs font-bold text-neutral-300">
           <span className="flex justify-between"><span>배경음 볼륨</span><span>{bgmVolume}%</span></span>
@@ -176,17 +181,16 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
       <div aria-hidden="true" className="ko-main-menu__shade pointer-events-none absolute inset-0 z-[1]" />
       <div className="ko-main-menu__content relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
         <header className="ko-main-menu__header text-center">
-          <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
-          <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p>
-          <InstallAppButton />
+          <div className="ko-main-menu__brand"><h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
+          <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p></div>
           {user && onLogout && (
             <div className="ko-main-menu__user">
               <span>{user.nickname}</span>
-              <button type="button" className="rounded border border-neutral-600 px-2 py-1 text-xs text-neutral-200" onClick={() => {
+              <button type="button" aria-label="닉네임 변경" className="ko-main-menu__nickname-edit rounded border border-neutral-600 px-2 py-1 text-xs text-neutral-200" onClick={() => {
                 setNicknameDraft(user.nickname);
                 setNicknameError("");
                 setEditingNickname((open) => !open);
-              }}>닉네임 변경</button>
+              }}><Pencil aria-hidden="true" className="h-4 w-4" /><span>닉네임 변경</span></button>
               {user.isTestAccount && (
                 <span className="rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-[10px] font-black tracking-wider text-amber-200">
                   TEST ACCOUNT · 전체 카드/Champion · 재화 무제한
@@ -196,11 +200,11 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
               <span className="text-violet-300">프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span>
               <button type="button" onClick={onLogout} aria-label="로그아웃">
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-                로그아웃
+                <span>로그아웃</span>
               </button>
             </div>
           )}
-          {user && editingNickname && <form className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-2" onSubmit={async (event) => {
+          <Dialog open={Boolean(user && editingNickname)} onOpenChange={setEditingNickname}><DialogContent className="border-neutral-700 bg-neutral-950 text-white"><DialogHeader><DialogTitle>닉네임 변경</DialogTitle><DialogDescription>새 닉네임은 2~16자로 입력해 주세요.</DialogDescription></DialogHeader><form className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-2" onSubmit={async (event) => {
             event.preventDefault();
             if (nicknameSaving) return;
             const nickname = nicknameDraft.trim();
@@ -225,25 +229,25 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
             <button disabled={nicknameSaving} type="submit" className="rounded bg-amber-400 px-3 py-2 text-xs font-bold text-black disabled:opacity-50">{nicknameSaving ? "저장 중" : "저장"}</button>
             <button type="button" onClick={() => setEditingNickname(false)} className="rounded border border-neutral-600 px-3 py-2 text-xs">취소</button>
             {nicknameError && <p role="alert" className="w-full text-sm text-red-300">{nicknameError}</p>}
-          </form>}
+          </form></DialogContent></Dialog>
         </header>
 
         {mainContent.notices.length > 0 && (
-          <section className="mb-6 rounded-lg border border-amber-700/60 bg-black/55 p-4 shadow-xl" aria-label="공지">
-            <button type="button" aria-expanded={announcementsOpen} onClick={() => setAnnouncementsOpen((open) => !open)} className="flex w-full items-center justify-between gap-3 text-left">
-              <h2 className="text-xs font-black tracking-[0.2em] text-amber-300">공지 · {mainContent.notices.length}건</h2>
-              <span className="text-[10px] font-bold text-neutral-300">{announcementsOpen ? '접기 ▲' : '펼치기 ▼'}</span>
+          <section className="ko-main-menu__announcements" aria-label="공지">
+            <button type="button" aria-haspopup="dialog" aria-expanded={announcementsOpen} onClick={() => setAnnouncementsOpen(true)}>
+              <span>공지 · {mainContent.notices.length}건</span><span>전체 보기 ▸</span>
             </button>
-            {announcementsOpen && <div className="mt-3 space-y-3">
-              {mainContent.notices.map((item) => (
-                <article key={item.id} className="border-l-2 border-amber-400/70 pl-3">
-                  <h3 className="text-sm font-black text-white">{item.title}</h3>
-                  <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-neutral-300">{item.body}</p>
-                </article>
-              ))}
-            </div>}
           </section>
         )}
+        <Dialog open={announcementsOpen} onOpenChange={setAnnouncementsOpen}>
+          <DialogContent className="max-h-[85dvh] overflow-y-auto border-neutral-700 bg-neutral-950 text-white">
+            <DialogHeader><DialogTitle>공지</DialogTitle><DialogDescription>게임 소식과 안내를 확인하세요.</DialogDescription></DialogHeader>
+            {mainContent.notices.map(item => <article key={item.id} className="border-l-2 border-amber-400/70 pl-3">
+              <h3 className="text-sm font-black">{item.title}</h3>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-300">{item.body}</p>
+            </article>)}
+          </DialogContent>
+        </Dialog>
 
         <section aria-label="메인 메뉴" className="ko-main-menu__groups">
           {([{ title: "대전", labels: ["온라인 매치", "AI 매치", "타워 모드", "드래프트 모드"] },
@@ -255,6 +259,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
               key={label}
               data-menu-tier={group.title === "대전" ? "battle" : "utility"}
               data-menu-index={index+1}
+              title={description}
+              aria-description={description}
               type="button"
               data-testid={`button-main-menu-${label === "온라인 매치" ? "online" : label === "AI 매치" ? "ai" : label}`}
               onClick={() => {

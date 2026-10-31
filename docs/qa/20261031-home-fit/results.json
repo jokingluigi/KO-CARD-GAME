@@ -1,0 +1,230 @@
+[
+  {
+    "width": 320,
+    "height": 568,
+    "metrics": {
+      "width": 320,
+      "height": 568,
+      "viewportHeight": 568
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 360,
+    "height": 568,
+    "metrics": {
+      "width": 360,
+      "height": 568,
+      "viewportHeight": 568
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 360,
+    "height": 640,
+    "metrics": {
+      "width": 360,
+      "height": 640,
+      "viewportHeight": 640
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 360,
+    "height": 740,
+    "metrics": {
+      "width": 360,
+      "height": 740,
+      "viewportHeight": 740
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "metrics": {
+      "width": 375,
+      "height": 812,
+      "viewportHeight": 812
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "metrics": {
+      "width": 390,
+      "height": 844,
+      "viewportHeight": 844
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "metrics": {
+      "width": 412,
+      "height": 915,
+      "viewportHeight": 915
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "metrics": {
+      "width": 740,
+      "height": 360,
+      "viewportHeight": 360
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "metrics": {
+      "width": 844,
+      "height": 390,
+      "viewportHeight": 390
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "metrics": {
+      "width": 768,
+      "height": 1024,
+      "viewportHeight": 1024
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "metrics": {
+      "width": 1024,
+      "height": 768,
+      "viewportHeight": 768
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "metrics": {
+      "width": 1440,
+      "height": 900,
+      "viewportHeight": 900
+    },
+    "all13MenusFit": true,
+    "min44Touch": true,
+    "noOverlap": true,
+    "noScroll": true,
+    "noticesDialog": true,
+    "soundSettings": true,
+    "nicknameDialog": true,
+    "installInstructions": true,
+    "rotation": true,
+    "errors": []
+  }
+]
