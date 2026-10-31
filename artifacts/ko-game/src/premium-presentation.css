@@ -16,9 +16,9 @@ body .ko-main-menu{background:#000000;padding:72px clamp(24px,6vw,100px) 48px;is
 .ko-main-menu__art-fill{position:absolute;inset:-24px;background-size:cover;background-position:center;filter:blur(20px) brightness(.4)}
 .ko-main-menu__art-original{position:relative;display:block;width:100%;height:100%;object-fit:contain;object-position:center}
 .ko-main-menu .ko-main-menu__shade{width:min(760px,70vw);background:linear-gradient(90deg,#000000ed 0%,#000000cc 65%,transparent 100%)}
-.ko-main-menu .ko-main-menu__content{max-width:570px;min-height:calc(100dvh - 120px);margin:0;justify-content:center}
+.ko-main-menu .ko-main-menu__content{min-width:0;max-width:570px;min-height:calc(100dvh - 120px);margin:0;justify-content:center}
 .ko-main-menu .ko-main-menu__header{text-align:left;margin-bottom:24px}
-.ko-main-menu .ko-main-menu__logo{font-size:clamp(96px,10vw,144px);line-height:.88;letter-spacing:-.055em;text-indent:0;transform:skew(-7deg);transform-origin:left bottom}
+.ko-main-menu .ko-main-menu__logo{width:fit-content;font-size:clamp(96px,10vw,144px);line-height:.88;letter-spacing:-.055em;text-indent:0;transform:skew(-7deg);transform-origin:left bottom}
 .ko-main-menu .ko-main-menu__tagline{margin-top:14px;font-size:12px;letter-spacing:.3em;text-indent:0;color:#b4a98c}
 .ko-main-menu .ko-main-menu__user{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px 16px;margin-top:24px;max-width:100%;line-height:1.7}
 .ko-main-menu .ko-main-menu__user :is(.text-amber-300,.text-violet-300){color:#d6b867}
@@ -182,9 +182,6 @@ body .ko-game-shell{background:#000000}
  .ko-game-shell .ko-game-stage{height:auto;min-height:100dvh;overflow:visible;grid-template-rows:auto auto auto auto}
  .ko-game-shell .ko-board-area{min-height:calc((100vw - 12px) * .7 + 70px);overflow:visible}
  .ko-game-shell .ko-player-footer{height:264px;min-height:264px}
-}
-@media(min-width:768px){
- .ko-main-menu .ko-main-menu__content{max-height:calc(100dvh - 120px);overflow-y:auto;justify-content:safe center}
 }
 @media(max-width:767px){
  body .ko-main-menu--illustrated{padding-top:64px}
