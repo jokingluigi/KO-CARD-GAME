@@ -27,3 +27,9 @@ Runners: `node docs/qa/card-reference-restore-browser.mjs`, `KO_QA_PLAYWRIGHT=fi
 [Before mobile](20261031-card-references/before-mobile.png), [restored mobile popup](20261031-card-references/after-mobile.png), [desktop popup](20261031-card-references/after-desktop.png), [before results](20261031-card-references/before.json), [after results](20261031-card-references/after.json).
 
 Browser tests use real common frontend components and local engine with controlled API fixtures, not a live authenticated collection/deck/PvP session. Physical devices and live-account gameplay were not separately tested.
+
+## Screenshot and deployment verification
+
+Popup screenshots wait for the existing open animation to settle and for the image to decode, then assert the full dialog is within the viewport. Initial mock API interception also intercepted storage images; the final runner serves original published image bytes read through the public backend storage endpoint (cached only in the test process), without substituting another illustration. The final desktop/mobile screenshots confirm the real image, stats and rules together. The public card-record response remains the controlled snapshot fixture. Original image GET returned 200 image/png.
+
+Frontend source `d0e6c7f56e1c94cff40c8800bbffde91ebe949f0` is live. All 110 frontend JavaScript/CSS artifacts match local production SHA-256 hashes; health returned 200. No backend deployment or data migration. [Receipt](20261031-card-references-front-deployment.json).

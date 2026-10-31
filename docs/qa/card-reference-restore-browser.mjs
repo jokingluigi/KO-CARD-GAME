@@ -1,6 +1,25 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
+const imageCache = new Map();
+async function publicImage(path) {
+  if (!imageCache.has(path))
+    imageCache.set(
+      path,
+      promisify(execFile)(
+        "python",
+        [
+          "-c",
+          "import urllib.request,sys;sys.stdout.buffer.write(urllib.request.urlopen(sys.argv[1],timeout=20).read())",
+          "https://ko-card-game.onrender.com" + path,
+        ],
+        { encoding: "buffer", maxBuffer: 8 * 1024 * 1024 },
+      ).then((r) => r.stdout),
+    );
+  return imageCache.get(path);
+}
 const before = process.env.PHASE === "before",
   out = "qa-results/card-reference-" + (before ? "before" : "after");
 await mkdir(out, { recursive: true });
@@ -23,6 +42,11 @@ try {
     let requests = 0;
     await page.route("**/api/**", async (r) => {
       const p = new URL(r.request().url()).pathname;
+      if (p.startsWith("/api/storage/"))
+        return r.fulfill({
+          contentType: "image/png",
+          body: await publicImage(p),
+        });
       if (p === "/api/cards") {
         requests++;
         await new Promise((resolve) => setTimeout(resolve, 150));
@@ -75,8 +99,22 @@ try {
     );
     assert.match(await dialog.innerText(), /비용 1/);
     assert.match(await dialog.innerText(), /다른 아군 선수가 리타이어/);
+    await dialog.locator("img").evaluate((n) => n.decode());
+    await page.waitForFunction(() => {
+      const r = document
+        .querySelector("[data-card-rules-dialog]")
+        ?.getBoundingClientRect();
+      return (
+        r &&
+        r.x >= 0 &&
+        r.y >= 0 &&
+        r.right <= innerWidth + 1 &&
+        r.bottom <= innerHeight + 1
+      );
+    });
     await page.screenshot({
       path: out + `/popup-${mobile ? "mobile" : "desktop"}.png`,
+      animations: "disabled",
     });
     await open(
       dialog.getByRole("button", { name: "닫기", exact: true }).last(),
