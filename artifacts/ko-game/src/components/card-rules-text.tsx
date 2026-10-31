@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { getCardDefinitions } from '../game/cards/test-cards';
+import { fetchPublicCardTagCatalog } from '../game/cards/published-cards';
 import { KEYWORD_DESCRIPTIONS, KEYWORD_LABELS } from './alt-inspector-utils';
 import type { CardDefinition } from '../game/cards/types';
 
 /** Uses real catalog entries, never invented cards, for references in effect text. */
 export function CardRulesText({text,interactive=true}:{text:string;interactive?:boolean}) {
  const [detail,setDetail]=useState<{title:string;text:string;card?:CardDefinition}|null>(null);
+ const [publicCards,setPublicCards]=useState<CardDefinition[]>([]);
+ useEffect(()=>{
+  if(!interactive)return;
+  let disposed=false;
+  // Collection/deck details can open before any match has registered a runtime catalog.
+  // Reuse the published tag-browser loader and its shared request/cache; never mutate battle data.
+  void fetchPublicCardTagCatalog().then(cards=>{if(!disposed)setPublicCards(cards);}).catch(()=>{ /* Existing runtime references and keyword help remain usable offline. */ });
+  return()=>{disposed=true;};
+ },[interactive]);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const holdOrigin=useRef({x:0,y:0});
  const trigger=useRef<HTMLElement|null>(null);
@@ -14,7 +24,7 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
  useEffect(()=>clear,[]);
  useEffect(()=>{if(!interactive){clear();setDetail(null);}},[interactive]);
  if(!interactive)return <>{text}</>;
- const cards=getCardDefinitions();
+ const cards=[...new Map([...publicCards,...getCardDefinitions()].map(card=>[card.id,card])).values()];
  const labels=Object.entries(KEYWORD_LABELS).filter(([key])=>KEYWORD_DESCRIPTIONS[key]);
  const names=[...new Set([...cards.map(c=>c.name).filter(n=>n.length>1),...labels.map(([,label])=>label)])].sort((a,b)=>b.length-a.length);
  const escape=(s:string)=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');

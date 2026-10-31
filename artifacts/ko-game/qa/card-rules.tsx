@@ -8,8 +8,9 @@ import { CardDetailDialog } from '../src/components/card-detail-dialog';
 import { AltInspectProvider, Inspectable } from '../src/components/alt-inspector';
 import { setRuntimeCardDefinitions } from '../src/game';
 const reference = {id:'qa-reference',name:'정보 확인 선수',cost:2,attack:3,health:4,rulesText:'도발',keywords:[] as [],abilities:[],isToken:false,isChampionToken:false};
-setRuntimeCardDefinitions([reference]);
-const text = '아머(2). 정보 확인 선수를 소환합니다. 카운트다운(3).';
+const publicCatalog = new URLSearchParams(location.search).has('public-catalog');
+setRuntimeCardDefinitions(publicCatalog ? [] : [reference]);
+const text = publicCatalog ? '좀비를 소환합니다. 좀비 데헌을 확인하세요.' : '아머(2). 정보 확인 선수를 소환합니다. 카운트다운(3).';
 function Scene() {
  const [actions,setActions]=useState(0);
  const [open,setOpen]=useState(false);
