@@ -2070,7 +2070,7 @@ function BoardSlot({
         <button
           type="button"
           disabled={!activeUsable}
-          title={!activeUsable ? (card.enteredThisTurn ? "다음 자기 턴부터 사용할 수 있습니다." : "지금은 액티브를 사용할 수 없습니다.") : "액티브 사용"}
+          title={card.activeUsed || card.activeUsedThisTurn ? "이미 사용했습니다. 필드에 있는 동안 총 1회만 사용할 수 있습니다." : !activeUsable ? (card.enteredThisTurn ? "다음 자기 턴부터 사용할 수 있습니다." : "지금은 액티브를 사용할 수 없습니다.") : "액티브 사용"}
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => {
@@ -2079,7 +2079,7 @@ function BoardSlot({
           }}
           className="ko-card-active-button absolute top-9 left-1/2 z-[120] -translate-x-1/2 whitespace-nowrap rounded border border-blue-500 bg-blue-900/95 px-3 py-1.5 text-[10px] font-bold text-blue-100 shadow-lg transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-500 min-h-11 min-w-[56px] touch-manipulation md:min-h-0 md:-top-12 md:px-4 md:py-2 md:text-xs"
         >
-          액티브
+          {card.activeUsed || card.activeUsedThisTurn ? "사용 완료" : "액티브"}
         </button>
       )}
        <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}

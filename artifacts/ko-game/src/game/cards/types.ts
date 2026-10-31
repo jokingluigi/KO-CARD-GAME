@@ -197,6 +197,9 @@ export interface CardInstance {
   /** Counted dodge is backward compatible with the original boolean flag. */
   dodgeCharges?: number;
   isStunned: boolean;
+  /** One activation for this uninterrupted stay on the battlefield. */
+  activeUsed?: boolean;
+  /** Legacy turn marker; retained for existing serialized matches. */
   activeUsedThisTurn: boolean;
   isDirectDeployedChampion: boolean;
   /** Creation provenance for development diagnostics and event correlation. */

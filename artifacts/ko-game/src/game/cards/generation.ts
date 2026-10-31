@@ -102,6 +102,7 @@ export function generateCardInstance(
     dodgeAvailable: definition.keywords.includes('DODGE'),
     dodgeCharges: definition.keywords.includes('DODGE') ? configuredDodgeCharges(definition.effectConfig) : 0,
     isStunned: false,
+    activeUsed: false,
     activeUsedThisTurn: false,
     isDirectDeployedChampion: false,
     capturedCards: [],

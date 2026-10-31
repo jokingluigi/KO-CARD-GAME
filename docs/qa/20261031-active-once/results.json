@@ -1,0 +1,34 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "actualActiveUse": true,
+    "usedLabel": true,
+    "disabledAcrossTurnsAndReload": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "actualActiveUse": true,
+    "usedLabel": true,
+    "disabledAcrossTurnsAndReload": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "actualActiveUse": true,
+    "usedLabel": true,
+    "disabledAcrossTurnsAndReload": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualActiveUse": true,
+    "usedLabel": true,
+    "disabledAcrossTurnsAndReload": true,
+    "errors": []
+  }
+]

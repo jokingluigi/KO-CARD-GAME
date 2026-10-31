@@ -1830,7 +1830,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       players: next.players.map((player) => ({
         ...player,
         board: player.board.map((card) => card?.instanceId === pending.sourceInstanceId
-          ? { ...card, activeUsedThisTurn: true }
+          ? { ...card, activeUsed: true, activeUsedThisTurn: true }
           : card) as typeof player.board,
       })),
     };
@@ -2098,6 +2098,8 @@ function applyEffectInternal(
         instanceId: sourceCard.instanceId,
         boardSlot: sourceCard.boardSlot,
         enteredThisTurn: sourceCard.enteredThisTurn,
+        activeUsed: Boolean(sourceInState(state, sourceCard.instanceId)?.activeUsed || sourceInState(state, sourceCard.instanceId)?.activeUsedThisTurn),
+        activeUsedThisTurn: Boolean(sourceInState(state, sourceCard.instanceId)?.activeUsedThisTurn),
       };
       return {
         ...state,
@@ -2442,7 +2444,7 @@ function applyEffectInternal(
         boardSlot: null, enteredThisTurn: false, attacksUsedThisTurn: 0,
         isSilenced: false, isSilenceImmune: false, dodgeAvailable: (captured.baseSnapshot.dodgeCharges ?? 0) > 0,
         dodgeCharges: captured.baseSnapshot.dodgeCharges ?? (getActiveCardKeywords(captured.baseSnapshot as CardInstance).includes('DODGE') ? 1 : 0),
-        isStunned: false, activeUsedThisTurn: false, isDirectDeployedChampion: false, capturedCards: [],
+        isStunned: false, activeUsed: false, activeUsedThisTurn: false, isDirectDeployedChampion: false, capturedCards: [],
       };
       const withoutCaptured = {
         ...state,
@@ -2806,6 +2808,8 @@ function applyEffectInternal(
               instanceId: current.instanceId,
               boardSlot: current.boardSlot,
               enteredThisTurn: current.enteredThisTurn,
+              activeUsed: Boolean(current.activeUsed || current.activeUsedThisTurn),
+              activeUsedThisTurn: current.activeUsedThisTurn,
               attacksUsedThisTurn: current.attacksUsedThisTurn,
               currentAttack: current.currentAttack,
               currentHealth: current.currentHealth,

@@ -89,11 +89,11 @@ export function useActiveAbility(
       '사용할 수 있는 액티브 능력이 없습니다.',
     );
   }
-  if (card.activeUsedThisTurn) {
+  if (card.activeUsed || card.activeUsedThisTurn) {
     return actionFailure(
       state,
       'ACTIVE_ALREADY_USED',
-      '이번 턴에는 이미 액티브 능력을 사용했습니다.',
+      '이미 액티브 능력을 사용했습니다. 필드에 있는 동안 한 번만 사용할 수 있습니다.',
     );
   }
   if (card.enteredThisTurn || card.enteredOnTurn === state.turn) {
@@ -131,7 +131,7 @@ export function canUseActiveAbility(
   return Boolean(
     card &&
       !card.enteredThisTurn && card.enteredOnTurn !== state.turn &&
-      !card.activeUsedThisTurn &&
+      !card.activeUsed && !card.activeUsedThisTurn &&
       getActiveAbility(card),
   );
 }

@@ -56,6 +56,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
                     entryDefenseActive: false,
                     attacksUsedThisTurn: 0,
                     extraWrestlerAttacksThisTurn:0,
+                     activeUsed: Boolean(card.activeUsed || card.activeUsedThisTurn),
                      activeUsedThisTurn: false,
                   }
                 : null,

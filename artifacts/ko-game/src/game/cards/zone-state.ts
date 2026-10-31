@@ -85,6 +85,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     keywords: draft?.keywords ?? (definition ? [...definition.keywords] : card.countdownTurns !== undefined && !card.keywords.includes('COUNTDOWN')
       ? [...card.keywords, 'COUNTDOWN'] : card.keywords),
     abilities: definition ? structuredClone(definition.abilities) : card.abilities,
+    activeUsed: false,
     activeUsedThisTurn: false,
     statHistory: [],
   };
