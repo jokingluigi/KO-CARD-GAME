@@ -1,0 +1,74 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "forecastReadOnly": true,
+    "reasonAnchored": true,
+    "engineAttackAndGroupedLog": true,
+    "previewUsesCurrentSettings": true,
+    "settingsChangeSilent": true,
+    "quietPreference": true,
+    "noPageScroll": true,
+    "errors": []
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "forecastReadOnly": true,
+    "reasonAnchored": true,
+    "engineAttackAndGroupedLog": true,
+    "previewUsesCurrentSettings": true,
+    "settingsChangeSilent": true,
+    "quietPreference": true,
+    "noPageScroll": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "forecastReadOnly": true,
+    "reasonAnchored": true,
+    "engineAttackAndGroupedLog": true,
+    "previewUsesCurrentSettings": true,
+    "settingsChangeSilent": true,
+    "quietPreference": true,
+    "noPageScroll": true,
+    "errors": []
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "forecastReadOnly": true,
+    "reasonAnchored": true,
+    "engineAttackAndGroupedLog": true,
+    "previewUsesCurrentSettings": true,
+    "settingsChangeSilent": true,
+    "quietPreference": true,
+    "noPageScroll": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "forecastReadOnly": true,
+    "reasonAnchored": true,
+    "engineAttackAndGroupedLog": true,
+    "previewUsesCurrentSettings": true,
+    "settingsChangeSilent": true,
+    "quietPreference": true,
+    "noPageScroll": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "forecastReadOnly": true,
+    "reasonAnchored": true,
+    "engineAttackAndGroupedLog": true,
+    "previewUsesCurrentSettings": true,
+    "settingsChangeSilent": true,
+    "quietPreference": true,
+    "noPageScroll": true,
+    "errors": []
+  }
+]

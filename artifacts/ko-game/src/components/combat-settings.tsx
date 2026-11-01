@@ -1,3 +1,4 @@
+import {CombatSettingsPreview} from './combat-settings-preview';
 import { useState } from "react";
 import {
   readCombatPreferences,
@@ -72,6 +73,8 @@ export function CombatSettings() {
           </select>
         </label>
       ))}
+      <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={value.quietBoard} onChange={e=>update({quietBoard:e.target.checked})}/>평상시 반복 강조 줄이기</label>
+      <CombatSettingsPreview preferences={value}/>
       <label className="flex min-h-11 items-center gap-2">
         <input
           type="checkbox"

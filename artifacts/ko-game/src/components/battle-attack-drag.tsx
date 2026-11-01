@@ -1,3 +1,4 @@
+import {cloneRenderedCard} from './rendered-card-clone';
 import { useEffect, useRef, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import { getLegalActions, type GameState } from "@/game";
@@ -149,7 +150,7 @@ export function BattleAttackDrag(props: Props) {
         g.started = true;
       window.dispatchEvent(new Event("ko-card-gesture-start"));
         const r = g.node.getBoundingClientRect();
-        const ghost = g.node.cloneNode(true) as HTMLElement;
+        const ghost = cloneRenderedCard(g.node);
         ghost.removeAttribute("id");
         ghost.removeAttribute("role");
         ghost.setAttribute("aria-hidden", "true");
@@ -159,8 +160,6 @@ export function BattleAttackDrag(props: Props) {
           position: "fixed",
           left: "0",
           top: "0",
-          width: r.width + "px",
-          height: r.height + "px",
           pointerEvents: "none",
           zIndex: "195",
           transition: "none",

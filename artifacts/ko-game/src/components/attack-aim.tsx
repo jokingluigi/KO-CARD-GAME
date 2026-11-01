@@ -49,13 +49,13 @@ export function AttackAim({
     };
     const clear=()=>{if(line.current)line.current.style.opacity='0';if(contact.current)contact.current.style.opacity='0';};
     const focus=(e:FocusEvent)=>{if(!(e.target instanceof Element))return;const r=e.target.getBoundingClientRect();move({clientX:r.x+r.width/2,clientY:r.y+r.height/2});};
-    window.addEventListener("pointermove",move);
-    window.addEventListener("pointerdown",move);
+    window.addEventListener("pointermove",move,true);
+    window.addEventListener("pointerdown",move,true);
     window.addEventListener("focusin",focus);
     window.addEventListener("resize",clear);
     window.addEventListener("blur",clear);
     window.addEventListener("scroll",clear,true);
-    return()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerdown",move);window.removeEventListener("focusin",focus);window.removeEventListener("resize",clear);window.removeEventListener("blur",clear);window.removeEventListener("scroll",clear,true);};
+    return()=>{window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerdown",move,true);window.removeEventListener("focusin",focus);window.removeEventListener("resize",clear);window.removeEventListener("blur",clear);window.removeEventListener("scroll",clear,true);};
   }, [source, targets, champion, championId, valid]);
   return createPortal(
     <svg aria-hidden="true" className="ko-attack-aim">

@@ -18,3 +18,9 @@ export function paidCardId(event:GameState['events'][number],events:GameState['e
   const plays=events.filter(p=>p.type==='CARD_PLAYED'&&p.playerId===event.playerId&&(!event.presentationResolutionId||p.presentationResolutionId===event.presentationResolutionId));
   return plays.length===1?plays[0].cardInstanceId:undefined;
 }
+
+export function healthAttentionPlans(before:GameState,after:GameState){
+ if(before.gameId!==after.gameId||after.status!=='IN_PROGRESS'||after.events.length<before.events.length)return [];
+ const events=after.events.slice(before.events.length);
+ return after.players.flatMap(p=>{const old=before.players.find(x=>x.id===p.id);if(!old)return[];const hurt=events.some(e=>e.type==='DAMAGE_DEALT'&&e.target?.type==='PLAYER'&&e.target.playerId===p.id&&(e.amount??0)>0);const healed=(p.presentationHealing?.sequence??0)>(old.presentationHealing?.sequence??0)&&(p.presentationHealing?.total??0)>(old.presentationHealing?.total??0);return hurt||healed?[p.id]:[];});
+}

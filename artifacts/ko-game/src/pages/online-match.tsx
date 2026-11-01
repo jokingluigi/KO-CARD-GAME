@@ -171,6 +171,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
   const pendingOpponentAttacksRef = useRef<AttackAnimationState[]>([]);
   const opponentConnectionStateRef = useRef<OnlineConnectionStatus | null>(null);
+  const recoveringActionRef=useRef(false);
+
   const noticeTimerRef = useRef<number | null>(null);
   const noticeTokenRef = useRef(0);
   const playAnimationTimerRef = useRef<number | null>(null);
@@ -205,6 +207,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       console.info("[KO online match]", { event: "connection-notification", matchId, next, ...client.diagnostics });
       setConnection(next);
       if (next !== "open") {
+        if(stateRef.current)recoveringActionRef.current=true;
         console.info("[KO online match]", { event: "snapshot-invalidated-by-connection", matchId, next });
         setHasAuthoritativeSnapshot(false);
         pendingActionIdRef.current = null;
@@ -323,6 +326,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           pendingActionInFlightRef.current = false;
           setPendingAction(false);
         }
+        if(recoveringActionRef.current){recoveringActionRef.current=false;setNotice("서버 상태를 다시 확인했어요. 표시된 전투 상태에서 계속하세요.");if(noticeTimerRef.current!==null)window.clearTimeout(noticeTimerRef.current);noticeTimerRef.current=window.setTimeout(()=>{setNotice(null);noticeTimerRef.current=null;},5000);}
         stateRef.current = projected;
         versionRef.current = "version" in message ? message.version : null;
         setSeat(nextSeat);
@@ -684,6 +688,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     return watchActionAcknowledgement({
       stillPending: () => pendingActionInFlightRef.current && pendingActionIdRef.current === requestId,
       resync: () => {
+        recoveringActionRef.current=true;
         setPlayError("행동 결과 확인이 지연되고 있어요. 서버 상태를 다시 확인합니다.");
         requestMatchResync();
       },

@@ -1,3 +1,4 @@
+import {AttackForecast,LocalActionFeedback,useBattleContextGuide} from './player-ux/battle-decision-tools';
 import {TargetSelectionFocus} from "./player-ux/target-selection-focus";
 import {BattleAttention} from "./player-ux/battle-attention";
 import {HandReader,BattleHelp} from "./player-ux/battle-reading";
@@ -269,6 +270,12 @@ export function GameStatePreview({
     try { return localStorage.getItem("ko-match-coach-v1") === "done"; } catch { return false; }
   });
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
+  const [localReason,setLocalReason]=React.useState<{id:string;message:string}|null>(null);
+  const [combatPreferences,setCombatPreferences]=React.useState(readCombatPreferences);
+  React.useEffect(()=>{const changed=()=>setCombatPreferences(readCombatPreferences());window.addEventListener("ko-combat-preferences",changed);return()=>window.removeEventListener("ko-combat-preferences",changed);},[]);
+  React.useEffect(()=>{setLocalReason(null);},[state.gameId,state.turn]);
+  React.useEffect(()=>{if(!localReason)return;const t=setTimeout(()=>setLocalReason(null),4000);return()=>clearTimeout(t);},[localReason]);
+  const explainAt=(id:string,message:string)=>{const node=id===state.players[0].id?playerChampionRef.current:id===state.players[1].id?championRef.current:handCardRefs.current.get(id)??boardCardRefs.current.get(id);setAttackHint(node?null:message);setLocalReason({id,message});};
   const [attackHint, setAttackHint] = React.useState<string | null>(null);
   React.useEffect(()=>{if(!attackHint)return;const timer=setTimeout(()=>setAttackHint(null),4000);return()=>clearTimeout(timer);},[attackHint]);
   React.useEffect(()=>{setAttackHint(null);},[state.gameId,state.turn]);
@@ -876,6 +883,7 @@ export function GameStatePreview({
       .filter((action) => action.type === 'USE_ACTIVE')
       .map((action) => action.cardInstanceId),
   );
+  const contextGuide=useBattleContextGuide(effectTargeting?"TARGET":selectedAttackerId?"ATTACK":selectedHandCard?.cardType==="WRESTLER"?"SUMMON":isMyTurn&&legalActiveCardIds.size?"ACTIVE":null);
   const selectedChampionAbility = me.champion?.questCompleted && me.champion.upgradedAbility ? me.champion.upgradedAbility : me.champion?.ability;
   const championAbilityCost = selectedChampionAbility?.cost ?? me.champion?.abilityCost ?? 0;
   const canUseChampion = canUseChampionAbility(state, me.id);
@@ -894,7 +902,7 @@ export function GameStatePreview({
     : me.championAbilityUsedThisTurn
       ? '이번 턴에는 이미 사용했습니다.'
     : me.champion && me.currentGold < championAbilityCost
-      ? '현재 골드가 부족합니다.'
+      ? `골드가 ${championAbilityCost-me.currentGold} 부족해요. 필요 ${championAbilityCost} · 보유 ${me.currentGold}`
       : '현재 사용할 수 없습니다.';
   const selectedBackground = mediaCatalog.backgrounds.find(
     (item) => item.id === state.backgroundId,
@@ -1027,7 +1035,7 @@ export function GameStatePreview({
     }
     if (!selectedAttackerId) return;
     if (!legalAttackTargets.has(cardId)) {
-      setAttackHint('이 대상은 공격할 수 없습니다. 강조된 대상을 선택하세요.');
+      explainAt(cardId,'이 대상은 공격할 수 없습니다. 강조된 대상을 선택하세요.');
       return;
     }
     setAttackHint(null);
@@ -1041,7 +1049,7 @@ export function GameStatePreview({
     }
     if (!selectedAttackerId) return;
     if (!legalAttackTargets.has(opp.id)) {
-      setAttackHint(opponentChampionProtected ? '챔피언 토큰이 보호하는 동안 본체를 공격할 수 없습니다.' : '이 대상은 공격할 수 없습니다. 강조된 대상을 선택하세요.');
+      explainAt(opp.id,opponentChampionProtected ? '챔피언 토큰이 보호하는 동안 본체를 공격할 수 없습니다.' : '이 대상은 공격할 수 없습니다. 강조된 대상을 선택하세요.');
       return;
     }
     setAttackHint(null);
@@ -1096,13 +1104,14 @@ export function GameStatePreview({
 
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
-     <div className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+     <div data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
       <CardRevealPresentation state={state} />
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} spriteManaged={blackGold} />}
+      <LocalActionFeedback message={!settingsOpen&&!historyOpen&&!emoteOpen?localReason?.message??null:null} node={localReason?.id===me.id?playerChampionRef.current:localReason?.id===opp.id?championRef.current:localReason?handCardRefs.current.get(localReason.id)??boardCardRefs.current.get(localReason.id)??null:null}/>
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
 
       {/* Background Ambience */}
@@ -1369,16 +1378,19 @@ export function GameStatePreview({
                 {playError || interactionStatus || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
-                    : `강조된 대상 ${state.targetingState?.minTargets ?? 1}개 선택 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1} · ${validEffectTargetIds.size}개 선택 가능`
+                    : `대상 선택 · ${state.cardPool?.find(d=>d.id===state.targetingState?.sourceCard?.definitionId)?.name??"현재 효과"} · 강조된 대상 ${state.targetingState?.minTargets ?? 1}개 선택 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1} · ${validEffectTargetIds.size}개 선택 가능`
+                  : contextGuide.text ? contextGuide.text
                   : !isMyTurn ? '상대가 행동하고 있어요.'
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
-                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : '손패를 내거나 필드의 선수로 공격하세요.')}
+                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : `남은 행동 · 공격 ${new Set(remainingActions.filter(a=>a.type==='ATTACK').map(a=>a.type==='ATTACK'?a.attackerInstanceId:'')).size}명 · 액티브 ${legalActiveCardIds.size} · 고유능력 ${canUseChampion?'가능':'불가'}`)}
               </p>}
+              <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
+              {contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
                 : effectTargeting ? !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
-                : selectedCardId ? <button type="button" onClick={() => onSelectCard(selectedCardId)}>선택 취소</button>
-                : selectedAttackerId ? <button type="button" onClick={() => onSelectAttacker(selectedAttackerId)}>선택 취소</button> : !controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
+                : selectedCardId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectCard(selectedCardId);}}>선택 취소</button>
+                : selectedAttackerId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectAttacker(selectedAttackerId);}}>선택 취소</button> : !controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
             </div>}
           </aside>
              {/* My Board + Zones */}
@@ -1433,7 +1445,7 @@ export function GameStatePreview({
                              !getAttackLegality(state, me.id, card.instanceId).allowed
                            ) {
                               const legality = getAttackLegality(state, me.id, card.instanceId);
-                              setAttackHint(legality.allowed ? null : legality.message);
+                              if(!legality.allowed)explainAt(card.instanceId,legality.message);else setAttackHint(null);
                              return;
                            }
                            setAttackHint(null);
@@ -1472,7 +1484,7 @@ export function GameStatePreview({
                      type="button"
                      aria-label="설정 닫기"
                      onClick={closeSettings}
-                     className="rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                     className="min-h-11 min-w-11 rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white"
                    >
                      ×
                    </button>
@@ -1732,7 +1744,7 @@ export function GameStatePreview({
                  >
                    <button
                      aria-disabled={!championActionReady}
-                     onClick={()=>{if(championActionReady)onUseChampionAbility();else setAttackHint(interactionStatus ?? championUnavailableReason);}}
+                     onClick={()=>{if(championActionReady)onUseChampionAbility();else explainAt(me.id,interactionStatus ?? championUnavailableReason);}}
                      className={`ko-champion-ability w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
                        championActionReady
                        ? me.champion?.questCompleted ? 'cursor-pointer border-amber-400 bg-amber-900/70 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:bg-amber-800' : 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
@@ -1766,7 +1778,7 @@ export function GameStatePreview({
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){setAttackHint(reason);return;}if(!playableHandIds.has(card.instanceId)){setAttackHint("현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){setAttackHint(interactionStatus);return;}setAttackHint(null);onSelectCard(card.instanceId);}}
+                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
                            onUseTechnique={() => handleUseTechnique(card.instanceId)}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}

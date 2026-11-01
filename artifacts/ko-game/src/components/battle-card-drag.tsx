@@ -1,3 +1,5 @@
+import {cloneRenderedCard} from './rendered-card-clone';
+import {handGestureIntent} from './player-ux/gesture-intent';
 import { useEffect, useRef, type RefObject } from "react";
 import { getLegalActions, type GameState, type BoardSlot } from "@/game";
 import {
@@ -144,16 +146,18 @@ export function BattleCardDrag(props: Props) {
       const dx = e.clientX - g.startX,
         dy = e.clientY - g.startY;
       if (!g.started) {
-        if (Math.hypot(dx, dy) < 9) return;
+        const intent=handGestureIntent(dx,dy,e.pointerType==="touch");
+        if(intent==="WAIT")return;
         // Horizontal touch movement belongs to the hand scroller.
-        if (e.pointerType === "touch" && Math.abs(dx) > Math.abs(dy) * 1.1) {
+        if (intent==="SCROLL") {
+          window.dispatchEvent(new Event("ko-card-gesture-start"));
           clean();
           return;
         }
         g.started = true;
         window.dispatchEvent(new Event("ko-card-gesture-start"));
         g.node.dataset.dragging = "true";
-        const ghost = g.node.cloneNode(true) as HTMLElement;
+        const ghost = cloneRenderedCard(g.node);
         g.ghost = ghost;
         ghost.removeAttribute("id");
         ghost.removeAttribute("data-dragging");
@@ -167,8 +171,6 @@ export function BattleCardDrag(props: Props) {
           position: "fixed",
           left: "0",
           top: "0",
-          width: g.source.width + "px",
-          height: g.source.height + "px",
           margin: "0",
           transition: "none",
           animation: "none",

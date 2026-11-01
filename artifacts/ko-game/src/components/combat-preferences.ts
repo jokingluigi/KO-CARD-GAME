@@ -6,6 +6,7 @@ export type CombatPreferences = {
   flash: number;
   spriteMotion: number;
   confirmEndTurn: boolean;
+  quietBoard: boolean;
 };
 export const COMBAT_PREFERENCES_KEY = "ko-combat-presentation-v1";
 export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
@@ -16,6 +17,7 @@ export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
   flash: 1,
   spriteMotion: 1,
   confirmEndTurn: true,
+  quietBoard: true,
 };
 export function parseCombatPreferences(
   value: string | null,
@@ -34,6 +36,7 @@ export function parseCombatPreferences(
       flash: bounded(p.flash),
       spriteMotion: bounded(p.spriteMotion),
       confirmEndTurn: p.confirmEndTurn !== false,
+      quietBoard: p.quietBoard !== false,
     };
   } catch {
     return { ...DEFAULT_COMBAT_PREFERENCES };

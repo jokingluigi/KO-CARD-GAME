@@ -29,3 +29,11 @@
 .ko-effect-target-focus {position:fixed;inset:0;width:100%;height:100%;z-index:190;pointer-events:none}
 .ko-game-stage[data-effect-targeting=true] .ko-hand-cards .ko-hand-card {opacity:1;filter:none}
 .ko-game-stage[data-effect-targeting=true] .ko-board-slot.opacity-40 {opacity:1;filter:none}
+
+/* Keep resting boards quiet; selected/eligible targets retain their existing hierarchy. */
+.ko-game-shell[data-quiet-board=true] .ko-hand-card--available:not(.ko-hand-card--selected):not(:hover) {animation:none;box-shadow:none}
+.ko-game-shell[data-quiet-board=true] .ko-attack-ready:not([data-card-highlight=selected]):not([data-card-highlight=target]) {animation:none}
+.ko-game-shell :is(.ko-hand-card,.ko-board-slot) [data-card-stat] {font-variant-numeric:tabular-nums;text-shadow:0 1px 2px #000,1px 0 2px #000,-1px 0 2px #000}
+.ko-game-shell :is(.ko-hand-card,.ko-board-slot):focus-visible {outline:2px solid #f4dc9b;outline-offset:2px}
+.ko-local-feedback {font-family:inherit;line-height:1.35}
+@media(max-width:767px){.ko-board-preview .ko-battle-command button {padding-inline:6px;font-size:11px}.ko-game-shell :is(.ko-hand-card,.ko-board-slot) [data-card-stat] {filter:drop-shadow(0 0 1px #000)}}
