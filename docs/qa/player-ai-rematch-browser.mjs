@@ -11,7 +11,7 @@ const data = JSON.parse(readFileSync(new URL('../../artifacts/ko-game/qa/art-dir
 const cards = data.cards.cards.filter(c => !c.isToken && !c.isChampionToken);
 const selected = cards.flatMap(c => Array(c.rarity === 'NORMAL' ? 3 : c.rarity === 'EPIC' ? 2 : 1).fill(c)).slice(0,25);
 const champion = data.champions.champions[0];
-const deck = {id:'race-deck', name:'Replay race',championDefinitionId:champion.id,cardDefinitionIds:selected.map(c=>c.id),cards:selected,champion,isValid:true};
+const deck = {isSelected:true,id:'race-deck', name:'Replay race',championDefinitionId:champion.id,cardDefinitionIds:selected.map(c=>c.id),cards:selected,champion,isValid:true};
 const ai = {...deck,id:'race-ai',enabled:true,displayOrder:0,difficulty:'NORMAL'};
 const token = {id:'race-token',name:'Replay Rush',cost:0,attack:2,health:2,rulesText:'',keywords:['RUSH'],abilities:[],isToken:false,isChampionToken:false};
 const summoner = {...token,id:'race-summoner',name:'Replay Summoner',attack:0,keywords:[],abilities:[{trigger:'ENTER_FIELD',effects:[{type:'STRUCTURED',action:'SUMMON',target:{zone:'BOARD',owner:'SELF',selection:'RANDOM',count:1,filter:{excludeSource:true}}}]}]};
@@ -53,7 +53,6 @@ try {
    return route.fulfill({json});
   });
   await page.goto(origin+'/ai-match');
-  await page.getByRole('button',{name:/매치 시작/}).click();
   await page.getByRole('button',{name:'설정 열기',exact:true}).waitFor();
   // Intro waits a fixed period. Wait for the actual committed AI greeting.
   await page.waitForFunction(()=>document.body.innerText.includes('내 턴') || document.querySelector('.ko-opponent-champion')!==null);

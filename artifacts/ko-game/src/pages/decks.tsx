@@ -419,7 +419,7 @@ export default function Decks() {
       const card = cardById.get(id);
       return Boolean(card && (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) && !card.isToken && !card.isChampionToken);
     }));
-    if (unavailableIds.length > 0) reasons.push(validationReason("CARD", "CARD_NOT_PLAYABLE", "공개된 일반 카드만 대표 덱에 사용할 수 있습니다.", unavailableIds));
+    if (unavailableIds.length > 0) reasons.push(validationReason("CARD", "CARD_NOT_PLAYABLE", "공개된 일반 카드만 출전 덱에 사용할 수 있습니다.", unavailableIds));
     counts.forEach((count, id) => {
       const card = cardById.get(id);
       if (!card) return;
@@ -644,6 +644,7 @@ export default function Decks() {
 
   async function handleSelect() {
     if (!editingId || !isValidForSelection) return;
+    if(dirty){setErrorMessage("변경 사항을 먼저 저장한 뒤 출전 덱으로 지정해 주세요.");return;}
     setIsMutating(true);
     setErrorMessage("");
     setStatusMessage("");
@@ -654,9 +655,9 @@ export default function Decks() {
       setDecks(refreshedDecks);
       const selected = refreshedDecks.find((deck) => deck.id === result.deck?.id) ?? result.deck;
       openDeck(selected);
-      setStatusMessage("대표 덱을 변경했습니다.");
+      setStatusMessage("출전 덱을 변경했습니다.");
     } catch (error: unknown) {
-      setErrorMessage(error instanceof Error ? error.message : "대표 덱을 변경하지 못했습니다.");
+      setErrorMessage(error instanceof Error ? error.message : "출전 덱을 변경하지 못했습니다.");
     } finally {
       setIsMutating(false);
     }
@@ -793,7 +794,7 @@ export default function Decks() {
                           {deckValidityLabel(deck.isValid)}
                       </span>
                     </span>
-                    {deck.isSelected && <Check className="h-4 w-4 shrink-0 text-[#e7b642]" aria-label="대표 덱" />}
+                    {deck.isSelected && <Check className="h-4 w-4 shrink-0 text-[#e7b642]" aria-label="출전 덱" />}
                   </button>
                 ))
               )}
@@ -898,7 +899,7 @@ export default function Decks() {
                 </div>
                 {editingDeck?.isSelected && (
                   <span className="mt-5 shrink-0 font-display text-[10px] font-bold tracking-[0.12em] text-[#efc65c]" data-testid="status-selected-deck">
-                    SELECTED
+                    현재 출전 덱
                   </span>
                 )}
                 <button type="button" className="ko-decks__collapse-button" aria-expanded={!editorCollapsed} onClick={() => setEditorCollapsed((collapsed) => !collapsed)}>{editorCollapsed ? '덱 정보 펼치기 ▲' : '덱 정보 접기 ▼'}</button>
@@ -954,7 +955,7 @@ export default function Decks() {
                 {cardIds.length !== DECK_SIZE && (
                   <p className="ko-decks__notice ko-decks__notice--quiet mt-3" data-testid="status-deck-incomplete">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                     저장은 가능하지만, 대표 덱으로 선택하려면 카드가 정확히 {DECK_SIZE}장 필요합니다.
+                     저장은 가능하지만, 출전 덱으로 선택하려면 카드가 정확히 {DECK_SIZE}장 필요합니다.
                   </p>
                 )}
               </div>
@@ -1072,8 +1073,8 @@ export default function Decks() {
                 <Check className="h-4 w-4" aria-hidden="true" />
                 {isMutating ? "처리 중..." : "전략 저장"}
               </button>
-              <button type="button" className="ko-decks__secondary-action" data-testid="button-select-deck" disabled={isMutating || !editingId || !isValidForSelection} onClick={handleSelect}>
-                대표 덱 선택
+              <button type="button" className="ko-decks__secondary-action" data-testid="button-select-deck" title={dirty?"변경 사항을 먼저 저장하세요.":"빠른 대전·AI 대전에 사용할 덱"} disabled={isMutating || !editingId || !isValidForSelection || dirty || editingDeck?.isSelected} onClick={handleSelect}>
+                {editingDeck?.isSelected?"현재 출전 덱":dirty?"저장 후 출전 지정":"출전 덱으로 지정"}
               </button>
               {editingId && (
                 <button type="button" className="ko-decks__danger-action" aria-label="덱 삭제" data-testid="button-delete-deck" disabled={isMutating} onClick={handleDelete}>

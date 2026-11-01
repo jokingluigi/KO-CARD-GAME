@@ -1,3 +1,4 @@
+import {resolveLaunchDeck,launchDeckEditor} from "@/lib/launch-deck";
 import {rememberMatchDeck} from "@/components/player-tools/shelf";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Radio, WifiOff } from "lucide-react";
@@ -7,13 +8,13 @@ import {
   OnlineAuthGate,
   OnlineShell,
   SelectedDeckStamp,
-  useAvailableDeckSelection,
+
   useOnlineDecks,
 } from "@/components/online-lobby-ui";
 import { getOnlineLobbyClient, type OnlineLobbyConnectionState } from "@/lib/online-lobby-client";
 import { ROUTES } from "@/lib/routes";
 
-type QuickState = "selecting" | "searching";
+type QuickState = "selecting" | "joining" | "searching";
 
 const connectionCopy: Record<OnlineLobbyConnectionState, string> = {
   idle: "연결 대기",
@@ -33,6 +34,7 @@ function QuickMatchPage() {
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(()=>new URLSearchParams(window.location.search).get("repeat"));
   const [error, setError] = useState<string | null>(decksError);
   const [elapsed, setElapsed] = useState(0);
+  const [queuedDeck,setQueuedDeck]=useState<{deckId:string;deckName:string;championName:string|null}|null>(null);
   const repeat=new URLSearchParams(window.location.search).get("repeat");
   const autoQueued=useRef(false);
   useEffect(()=>{if(repeat&&decks&&!decks.some(d=>d.id===repeat&&d.isValid))setError("이전 덱을 사용할 수 없어요. 다른 덱을 선택해 주세요.");},[decks,repeat]);
@@ -42,9 +44,10 @@ function QuickMatchPage() {
   const searchStartedAtRef = useRef<number | null>(null);
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
-  useAvailableDeckSelection(decks, selectedDeckId, setSelectedDeckId);
+  const launch=decks?resolveLaunchDeck(decks,repeat):null;
+  useEffect(()=>{if(decks&&!joinRequestedRef.current&&!autoQueued.current)setSelectedDeckId(launch?.deck?.id??null);},[decks,repeat]);
 
-  selectedDeckMeta.current=decks?.find(d=>d.id===selectedDeckId)??null;
+  if(!joinRequestedRef.current)selectedDeckMeta.current=decks?.find(d=>d.id===selectedDeckId)??null;
   useEffect(() => {
     selectedDeckIdRef.current = selectedDeckId;
   }, [selectedDeckId]);
@@ -59,6 +62,8 @@ function QuickMatchPage() {
     });
     const unsubscribeMessage = client.onMessage((message) => {
       if (message.type === "QUICK_QUEUE_JOINED") {
+        if(!joinRequestedRef.current)return;
+        setQueuedDeck(message.deck);selectedDeckMeta.current={id:message.deck.deckId,name:message.deck.deckName};selectedDeckIdRef.current=message.deck.deckId;
         searchStartedAtRef.current = Date.now();
         setQuickState("searching");
         setError(null);
@@ -80,7 +85,7 @@ function QuickMatchPage() {
       if (message.type === "LOBBY_ERROR" || message.type === "ERROR") {
         joinRequestedRef.current = false;
         setError(message.message);
-        if (message.code !== "OFFLINE") setQuickState("selecting");
+        setQuickState("selecting");setQueuedDeck(null);
       }
     });
     return () => {
@@ -102,8 +107,9 @@ function QuickMatchPage() {
   }, [quickState]);
 
   const startSearch = () => {
-    if (!selectedDeckId || !selectedDeck?.isValid) {
-       setError("온라인 대전에 사용할 수 있는 덱을 선택해 주세요.");
+    if(joinRequestedRef.current)return;
+    if (!selectedDeckId || !selectedDeck?.isValid || launch?.reason) {
+       setError("덱 편집기에서 사용할 수 있는 출전 덱을 지정해 주세요.");
       return;
     }
     if (connection !== "open") {
@@ -112,24 +118,27 @@ function QuickMatchPage() {
     }
     setError(null);
     joinRequestedRef.current = true;
+    setQuickState("joining");
+    selectedDeckIdRef.current=selectedDeckId;
     client.send({ type: "JOIN_QUICK_QUEUE", deckId: selectedDeckId });
   };
 
-  useEffect(()=>{if(repeat&&selectedDeckId===repeat&&selectedDeck?.isValid&&connection==="open"&&!autoQueued.current){autoQueued.current=true;startSearch();}},[repeat,selectedDeckId,selectedDeck,connection]);
+  useEffect(()=>{if(decks&&!launch?.reason&&selectedDeck?.isValid&&connection==="open"&&!autoQueued.current){autoQueued.current=true;startSearch();}},[decks,repeat,selectedDeckId,selectedDeck,connection]);
   const cancelSearch = () => {
     joinRequestedRef.current = false;
     client.send({ type: "LEAVE_QUICK_QUEUE" });
     setQuickState("selecting");
+    setQueuedDeck(null);selectedDeckIdRef.current=selectedDeckId;
     setError(null);
   };
 
   return (
     <OnlineShell
       eyebrow="QUICK MATCH"
-      title={quickState === "searching" ? "상대를 찾는 중" : "빠르게 입장하기"}
+      title={quickState === "searching" ? "상대를 찾는 중" : quickState === "joining" ? "대기열 입장 중" : "빠르게 입장하기"}
       description={quickState === "searching"
         ? "대기열에서 가장 오래 기다린 상대와 연결합니다. 이 화면을 닫으면 검색이 취소됩니다."
-        : "실제 사용할 덱을 고른 뒤 검색을 시작하세요. 클라이언트는 덱의 유효성을 최종 결정하지 않습니다."}
+        : "출전 덱으로 자동 입장합니다. 덱 변경은 덱 편집기에서 할 수 있어요."}
       status={
         <span className={`mt-2 inline-flex items-center gap-1.5 text-[0.62rem] font-black ${
           connection === "open" ? "text-emerald-400" : "text-neutral-500"
@@ -147,16 +156,16 @@ function QuickMatchPage() {
         <div className="grid gap-3 md:grid-cols-2" data-testid="status-online-decks-loading">
           {[0, 1].map((item) => <div key={item} className="h-36 animate-pulse rounded-lg bg-neutral-900" />)}
         </div>
-      ) : quickState === "searching" ? (
+      ) : quickState !== "selecting" ? (
         <section className="ko-online-panel mx-auto max-w-2xl rounded-xl p-7 text-center sm:p-12">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/[0.07] text-amber-400">
             <LoaderCircle className="h-8 w-8 animate-spin" aria-hidden="true" />
           </div>
           <p className="mt-7 font-display text-xs font-black tracking-[0.25em] text-amber-400">SEARCHING LIVE QUEUE</p>
-          <h2 className="mt-3 text-2xl font-black text-white" data-testid="status-quick-searching">상대를 찾는 중...</h2>
+          <h2 className="mt-3 text-2xl font-black text-white" data-testid="status-quick-searching">{quickState==="joining"?"대기열 입장을 확인 중이에요.":"상대를 찾는 중..."}</h2>
           <p className="mt-2 text-sm text-neutral-500" data-testid="text-quick-elapsed">검색 {elapsed}초</p>
           <div className="mx-auto mt-8 max-w-sm text-left">
-            <SelectedDeckStamp deck={selectedDeck} />
+            <SelectedDeckStamp deck={queuedDeck?{name:queuedDeck.deckName,champion:queuedDeck.championName?{name:queuedDeck.championName}:null,isValid:true}:selectedDeck} />
           </div>
           {error && <p className="mt-6 text-sm font-bold text-red-300" data-testid="status-quick-error">{error}</p>}
           <button
@@ -170,7 +179,7 @@ function QuickMatchPage() {
         </section>
       ) : (
         <>
-          <DeckPicker decks={decks} selectedDeckId={selectedDeckId} onSelect={(id) => { setSelectedDeckId(id); setError(null); }} />
+          <section className="space-y-3"><SelectedDeckStamp deck={selectedDeck}/>{launch?.reason&&<p role="status" className="text-amber-200">{launch.reason}</p>}<button type="button" className="min-h-11 border border-amber-700 px-4" onClick={()=>navigate(launchDeckEditor(launch?.deck?.id))}>덱 편집기에서 출전 덱 변경</button></section>
           {error && (
             <div className="mt-5 flex items-center gap-2 rounded border border-red-900/70 bg-red-950/20 px-4 py-3 text-sm font-bold text-red-200" data-testid="status-quick-error">
               <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -182,7 +191,7 @@ function QuickMatchPage() {
             <button
               type="button"
               data-testid="button-quick-search"
-              disabled={!selectedDeck?.isValid || connection !== "open"}
+              disabled={Boolean(launch?.reason) || !selectedDeck?.isValid || connection !== "open"}
               onClick={startSearch}
               className="ko-online-action rounded bg-amber-400 px-6 py-3 text-sm font-black text-black hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-neutral-800 disabled:text-neutral-500"
             >

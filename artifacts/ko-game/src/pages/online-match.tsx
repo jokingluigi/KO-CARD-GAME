@@ -1,3 +1,4 @@
+import {launchDeckEditor} from "@/lib/launch-deck";
 import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
 import {watchActionAcknowledgement} from "@/lib/action-recovery";
 import {confirmedCounterDamage} from "@/components/attack-animation-utils";
@@ -1104,7 +1105,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         onReturnToMainMenu={() => navigate(returnRoute)}
       />
       {matchResultVisible && (
-        <MatchResultOverlay onChooseDeck={()=>navigate(returnRoute)} cosmetics={cosmetics} opponentNickname={opponentPublicPlayer?.displayName} state={state} mediaCatalog={mediaCatalog} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
+        <MatchResultOverlay onChooseDeck={()=>navigate(draft?returnRoute:launchDeckEditor())} cosmetics={cosmetics} opponentNickname={opponentPublicPlayer?.displayName} state={state} mediaCatalog={mediaCatalog} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
           onRetryReward={() => setRewardRetry((count) => count + 1)} onReturnToMainMenu={() => navigate(returnRoute)} />
       )}
     </>

@@ -1,3 +1,4 @@
+import type {FrozenLaunchDeck} from "./frozen-launch-deck";
 import {randomUUID} from 'node:crypto';
 import {and,eq,isNull,sql} from 'drizzle-orm';
 import {db,aiQuestMatchesTable,championsTable,usersTable} from '@workspace/db';
@@ -16,7 +17,7 @@ export async function activeQuickAI(userId:string) {
   if(row)liveUsers.add(userId);
   return row?.id??null;
 }
-export async function prepareQuickAI(userId:string,deckId:string) {
+export async function prepareQuickAI(userId:string,deckId:string,frozenDeck?:FrozenLaunchDeck) {
   const matchId='ai-'+randomUUID();
   const decks=(await listAIDecks({enabledOnly:true,context:'AI_DECK'})).filter(d=>d.champion?.status!=='DISABLED'&&d.cards.every(c=>c.status!=='DISABLED'));
   const ai=selectAIOpponentDeck(decks,matchId);
@@ -24,7 +25,7 @@ export async function prepareQuickAI(userId:string,deckId:string) {
   const [user]=await db.select().from(usersTable).where(eq(usersTable.id,userId)).limit(1);
   if(!user)throw new Error('로그인이 필요합니다.');
   const identity={userId,deckId,aiDeckId:ai.id,matchId};
-  const prepared=await completeAIMatchQuestProgress({...identity,isTestAccount:isTestAccountUser(user),outcome:'LOSS',actions:[],prepareOnly:true});
+  const prepared=await completeAIMatchQuestProgress({...identity,isTestAccount:isTestAccountUser(user),outcome:'LOSS',actions:[],prepareOnly:true,queuedDeck:frozenDeck});
   const [champion]=await db.select().from(championsTable).where(eq(championsTable.id,prepared.state.players[0]!.champion!.id)).limit(1);
   const intro=(c:typeof champion|typeof ai.champion)=>({name:c?.name??'',imageUrl:c?.imageUrl??null,introLineOne:c?.introLineOne??null});
   await saveAIQuestStart(identity,prepared.state,prepared.difficulty,prepared.startingDeck,{active:true,opponentName:ai.name,opponentCosmetics:ai.cosmetics,selfChampion:intro(champion),opponentChampion:intro(ai.champion),intro:prepared.intro});

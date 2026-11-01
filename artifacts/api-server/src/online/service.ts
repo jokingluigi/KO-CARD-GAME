@@ -1,3 +1,4 @@
+import {withFrozenLaunchDeck,type FrozenLaunchDeck} from "../lib/frozen-launch-deck";
 import {CosmeticEmoteChannel} from '../lib/cosmetic-emotes';
 import {loadMatchCosmetics} from '../lib/cosmetics';
 import type {MatchCosmetics} from '@workspace/cosmetics';
@@ -807,6 +808,7 @@ export async function validateOnlineDeck(
   userId: string,
   deckId: string,
   testAccountOverride = false,
+  frozen?:FrozenLaunchDeck,
 ): Promise<OnlineDeckValidation> {
   const deck = await loadUserDeck(userId, deckId);
   if (!deck) {
@@ -824,14 +826,15 @@ export async function validateOnlineDeck(
     .from(usersTable)
     .where(eq(usersTable.id, userId))
     .limit(1);
+  const launchDeck=withFrozenLaunchDeck(deck,frozen);
   const resolved = await resolveDeck(
-    deck,
+    launchDeck,
     userId,
     testAccountOverride || isTestAccountUser(account),
   );
   return {
     deckId,
-    deckName: deck.name,
+    deckName: launchDeck.name,
     championName: resolved.champion?.name ?? null,
     championDefinitionId: resolved.champion?.id ?? null,
     cardDefinitionIds: resolved.cardDefinitionIds,
@@ -971,14 +974,15 @@ export async function startOnlineMatch(
   player2UserId: string,
   player2DeckId: string,
   existingWaitingMatchId?: string,
+  frozenDecks?:[FrozenLaunchDeck,FrozenLaunchDeck],
 ): Promise<OnlineMatchRuntime> {
   if (player1UserId === player2UserId) {
     throw new Error("같은 사용자는 서로 매칭될 수 없습니다.");
   }
 
   const [firstDeck, secondDeck] = await Promise.all([
-    validateOnlineDeck(player1UserId, player1DeckId),
-    validateOnlineDeck(player2UserId, player2DeckId),
+    validateOnlineDeck(player1UserId, player1DeckId,false,frozenDecks?.[0]),
+    validateOnlineDeck(player2UserId, player2DeckId,false,frozenDecks?.[1]),
   ]);
   if (!firstDeck.isValid || !secondDeck.isValid) {
     throw new Error("두 플레이어의 덱이 더 이상 유효하지 않습니다.");

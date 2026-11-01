@@ -510,7 +510,7 @@ router.post("/:id/select", async (request, response): Promise<void> => {
   }
   const resolved = await resolveDeck(existing, user.id, isTestAccountUser(user));
   if (!resolved.isValid) {
-    response.status(400).json({ message: "미완성 또는 사용할 수 없는 덱은 대표 덱으로 설정할 수 없습니다." });
+    response.status(400).json({ message: "미완성 또는 사용할 수 없는 덱은 출전 덱으로 설정할 수 없습니다." });
     return;
   }
   await db.transaction(async (tx) => {

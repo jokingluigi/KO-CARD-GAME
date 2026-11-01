@@ -238,16 +238,16 @@ export function DeckPicker({
   );
 }
 
-export function SelectedDeckStamp({ deck }: { deck: Deck | undefined }) {
+export function SelectedDeckStamp({ deck }: { deck: {name:string;champion:{name:string}|null;isValid?:boolean} | undefined }) {
   if (!deck) return null;
   return (
     <div className="flex items-center gap-3 rounded border border-amber-500/25 bg-amber-400/[0.05] px-4 py-3" data-testid="status-online-selected-deck">
       <Shield className="h-4 w-4 text-amber-400" aria-hidden="true" />
       <div className="min-w-0">
         <p className="truncate text-sm font-black text-white">{deck.name}</p>
-         <p className="truncate text-[0.68rem] font-bold text-neutral-500">{deck.champion?.name ?? "챔피언 없음"} · 대전 준비</p>
+         <p className="truncate text-[0.68rem] font-bold text-neutral-500">{deck.champion?.name ?? "챔피언 없음"} · {deck.isValid===false?"구성 확인 필요":"대전 준비"}</p>
       </div>
-      <Check className="ml-auto h-4 w-4 text-emerald-400" aria-hidden="true" />
+      {deck.isValid!==false&&<Check className="ml-auto h-4 w-4 text-emerald-400" aria-hidden="true" />}
     </div>
   );
 }

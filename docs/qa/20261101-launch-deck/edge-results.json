@@ -1,0 +1,11 @@
+[
+  {
+    "retryAfter503": true,
+    "noStaleSelectionAcrossAccounts": true,
+    "cancelBeforeAcknowledgement": true,
+    "lateAcknowledgementIgnored": true,
+    "serverFrozenDeckShown": true,
+    "noDuplicateQueueIntent": true,
+    "errors": []
+  }
+]

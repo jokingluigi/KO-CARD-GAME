@@ -1,3 +1,4 @@
+import {withFrozenLaunchDeck,type FrozenLaunchDeck} from "./frozen-launch-deck";
 import {loadAiMatchIntro} from './ai-match-intro';
 import { executeUsageObservedAction as executeAction } from './usage-statistics-observer';
 import {processStoredAIQuestMatch} from './ai-quest-match-storage';
@@ -158,7 +159,7 @@ export function replayAIMatch(
   return state;
 }
 
-type AIQuestInput = {userId:string;isTestAccount:boolean;deckId:string;aiDeckId:string;matchId:string;outcome:'WIN'|'LOSS';actions:unknown[]};
+type AIQuestInput = {queuedDeck?:FrozenLaunchDeck;userId:string;isTestAccount:boolean;deckId:string;aiDeckId:string;matchId:string;outcome:'WIN'|'LOSS';actions:unknown[]};
 type AIQuestStart = {state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS';startingDeck:string[];intro:Awaited<ReturnType<typeof loadAiMatchIntro>>};
 export function completeAIMatchQuestProgress(input:AIQuestInput & {prepareOnly:true}):Promise<AIQuestStart>;
 export function completeAIMatchQuestProgress(input:AIQuestInput):Promise<{reward:RewardGrantResult|null;completed:boolean;message?:string}>;
@@ -171,6 +172,7 @@ export async function completeAIMatchQuestProgress(input: {
   outcome: "WIN" | "LOSS";
   actions: unknown[];
   prepareOnly?: boolean;
+  queuedDeck?:FrozenLaunchDeck;
 }): Promise<AIQuestStart | { reward: RewardGrantResult | null; completed: boolean; message?: string }> {
   if (!/^ai-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.matchId)) {
     throw new Error("AI 경기 식별자가 올바르지 않습니다.");
@@ -195,8 +197,9 @@ export async function completeAIMatchQuestProgress(input: {
 
   if (!input.prepareOnly && await processStoredAIQuestMatch(input, replayAIMatch)) return { reward, completed: true };
 
-  const userDeck = await loadUserDeck(input.userId, input.deckId);
-  if (!userDeck) throw new Error("사용할 수 있는 덱을 찾을 수 없습니다.");
+  const savedUserDeck = await loadUserDeck(input.userId, input.deckId);
+  if (!savedUserDeck) throw new Error("사용할 수 있는 덱을 찾을 수 없습니다.");
+  const userDeck=withFrozenLaunchDeck(savedUserDeck,input.prepareOnly?input.queuedDeck:undefined);
   const resolvedUserDeck = await resolveDeck(userDeck, input.userId, input.isTestAccount);
   if (!resolvedUserDeck.isValid || !userDeck.championDefinitionId) {
     throw new Error("현재 사용할 수 없는 덱입니다.");

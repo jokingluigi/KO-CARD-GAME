@@ -1,3 +1,4 @@
+import {LaunchDeckBanner} from "./launch-deck-banner";
 import "./main-menu-viewport.css";
 import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -249,6 +250,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           </DialogContent>
         </Dialog>
 
+        {user&&<LaunchDeckBanner key={user.id} accountId={user.id}/>}
         <section aria-label="메인 메뉴" className="ko-main-menu__groups">
           {([{ title: "대전", labels: ["온라인 매치", "AI 매치", "타워 모드", "드래프트 모드"] },
             { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼"] },

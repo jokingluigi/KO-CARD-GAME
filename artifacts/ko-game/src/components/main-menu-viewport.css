@@ -364,3 +364,60 @@ main.ko-main-menu.ko-main-menu
     grid-column: 1 / 4;
   }
 }
+
+/* Representative art stays behind the lobby; the selected deck has a separate poster. */
+.ko-main-menu .ko-launch-banner {display:flex;gap:12px;flex-shrink:0;min-height:88px;max-height:140px;border-left:3px solid #b69b60;background:#090909e8;overflow:hidden}
+.ko-launch-banner__art {width:100px;flex-shrink:0;min-height:88px;background:#101010;display:grid;place-items:center}
+.ko-launch-banner__copy {min-width:0;flex:1;padding:8px 10px 8px 0}
+.ko-launch-banner__copy h2 {font-size:16px;line-height:20px;color:#efe5d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ko-launch-banner__deck {font-size:12px;color:#cabd9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ko-launch-banner button {min-height:44px;padding:4px 10px;border-bottom:1px solid #a48a54;color:#e7ce91;font-size:12px}
+@media(min-width:1000px) and (min-height:550px){
+ .ko-main-menu.ko-main-menu .ko-main-menu__content {position:relative;padding-right:clamp(250px,28vw,360px)}
+ .ko-main-menu .ko-launch-banner {position:absolute;right:0;top:0;bottom:0;width:clamp(230px,26vw,330px);max-height:none;flex-direction:column;border:1px solid #8c7448;gap:0}
+ .ko-launch-banner__art {width:100%;flex:1;min-height:0}
+ .ko-launch-banner__copy {flex:none;padding:16px}
+ .ko-launch-banner__copy h2 {font-size:22px;line-height:28px}
+}
+@media(max-width:999px){main.ko-main-menu.ko-main-menu .ko-main-menu__item {min-height:44px;padding:6px}}
+@media(max-width:767px) and (orientation:portrait) and (max-height:800px){
+ .ko-main-menu .ko-launch-banner {height:96px;max-height:96px;min-height:96px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__item {min-height:44px}
+}
+@media(max-width:767px) and (orientation:portrait) and (max-height:650px){
+ main.ko-main-menu.ko-main-menu {gap:4px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__content {gap:4px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__groups {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;align-content:start}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__group,main.ko-main-menu.ko-main-menu .ko-main-menu__grid {display:contents}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__group>h2 {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__item {min-height:44px;justify-content:center;text-align:center;padding:4px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__icon {display:none}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__copy>span:first-child {font-size:11px!important;line-height:14px}
+ .ko-main-menu .ko-launch-banner {height:76px;min-height:76px;max-height:76px}
+ .ko-launch-banner__art {width:66px;min-height:0}
+ .ko-main-menu .ko-launch-banner__copy {position:relative;padding:4px 74px 4px 0}
+ .ko-launch-banner button {position:absolute;right:4px;top:20px}
+ .ko-launch-banner__copy [role=status] {font-size:10px;line-height:12px}
+}
+@media(max-height:450px) and (orientation:landscape){
+ .ko-main-menu.ko-main-menu .ko-main-menu__content {padding-right:0;position:relative}
+ .ko-main-menu .ko-launch-banner {position:absolute;right:0;top:64px;bottom:0;width:155px;min-height:0;max-height:none;flex-direction:column}
+ .ko-launch-banner__art {width:100%;flex:1;min-height:0}
+ .ko-launch-banner__copy {padding:4px;flex:none}
+ .ko-launch-banner__copy h2 {font-size:12px;line-height:15px}
+ .ko-launch-banner__copy p {font-size:10px;line-height:12px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__groups {width:calc(100% - 165px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;align-content:start}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__group,main.ko-main-menu.ko-main-menu .ko-main-menu__grid {display:contents}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__group>h2 {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__item {min-height:44px;justify-content:center;text-align:center;padding:4px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__icon {display:none}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__copy>span:first-child {font-size:11px!important;line-height:14px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user {display:grid;grid-template-columns:minmax(0,1fr) 44px 44px;gap:0 2px;font-size:10px}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user>span:first-child {grid-column:1;grid-row:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__nickname-edit {grid-column:2;grid-row:1;justify-content:center}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user>button[aria-label=로그아웃] {grid-column:3;grid-row:1;justify-content:center}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__nickname-edit svg {display:block}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user>button>span {display:none}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user>.text-amber-300 {grid-column:1;grid-row:2}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user>.text-violet-300 {grid-column:2/4;grid-row:2}
+}

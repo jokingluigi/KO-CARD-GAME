@@ -105,8 +105,13 @@ export function fetchDeckOptions(): Promise<DeckOptions> {
 }
 
 export async function fetchDecks(): Promise<Deck[]> {
-  const body = await request<{ decks: Deck[] }>("");
-  return body.decks;
+  try {
+    const body = await request<{ decks: Deck[] }>("",{signal:AbortSignal.timeout(12000)});
+    return body.decks;
+  } catch(error) {
+    if(error instanceof Error&&error.name==='TimeoutError')throw new Error('출전 덱 확인 응답이 늦어지고 있어요. 연결을 확인한 뒤 다시 시도해 주세요.');
+    throw error;
+  }
 }
 
 export function saveDeck(payload: {

@@ -25,6 +25,7 @@ type LobbyConnection = OnlineMatchConnection & {
 };
 
 type QueueEntry = {
+  deck:OnlineDeckValidation;
   userId: string;
   deckId: string;
   connection: LobbyConnection;
@@ -181,7 +182,7 @@ async function pairQuickQueue(): Promise<void> {
     const second = entries.find((entry) => entry.userId !== first.userId);
     if (!first || !second) return;
 
-    const firstDeck = await validateOnlineDeck(first.userId, first.deckId);
+    const firstDeck = await validateOnlineDeck(first.userId, first.deckId,false,first.deck);
     if (!firstDeck.isValid) {
       clearTimeout(first.timer);
       quickQueue.delete(first.userId);
@@ -189,7 +190,7 @@ async function pairQuickQueue(): Promise<void> {
       error(first.connection, "INVALID_DECK", firstDeck.invalidReasons.join(" ") || "선택한 덱을 사용할 수 없습니다.");
       continue;
     }
-    const secondDeck = await validateOnlineDeck(second.userId, second.deckId);
+    const secondDeck = await validateOnlineDeck(second.userId, second.deckId,false,second.deck);
     if (!secondDeck.isValid) {
       clearTimeout(second.timer);
       quickQueue.delete(second.userId);
@@ -209,6 +210,7 @@ async function pairQuickQueue(): Promise<void> {
         first.deckId,
         second.userId,
         second.deckId,
+        undefined,[first.deck,second.deck],
       );
       const firstOpponent = {
         nickname: second.connection.nickname,
@@ -243,7 +245,7 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
     const existing = quickQueue.get(connection.userId);
     if (existing) {
       existing.connection=connection;
-      const deck = await validateOnlineDeck(connection.userId, existing.deckId);
+      const deck = existing.deck;
       send(connection, {
         type: "QUICK_QUEUE_JOINED",
         deck: {
@@ -259,8 +261,10 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
       error(connection, "INVALID_DECK", "온라인 대전에 사용할 덱을 선택해 주세요.");
       return;
     }
-    if (!(await validateDeck(connection, deckId))) return;
+    const confirmedDeck=await validateDeck(connection,deckId);
+    if(!confirmedDeck)return;
     const entry: QueueEntry = {
+      deck:structuredClone(confirmedDeck),
       userId: connection.userId,
       deckId,
       connection,
@@ -273,7 +277,7 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
         const remaining=30_000-(Date.now()-entry.joinedAt);
         if(remaining>0){entry.timer=setTimeout(expire,remaining);entry.timer.unref();return;}
         quickQueue.delete(entry.userId);presence.set(entry.userId,'MATCH_STARTING');
-        try {const matchId=await prepareQuickAI(entry.userId,entry.deckId);presence.set(entry.userId,'IDLE');send(entry.connection,{type:'QUICK_AI_MATCH_FOUND',matchId});}
+        try {const matchId=await prepareQuickAI(entry.userId,entry.deckId,entry.deck);presence.set(entry.userId,'IDLE');send(entry.connection,{type:'QUICK_AI_MATCH_FOUND',matchId});}
         catch(e){presence.set(entry.userId,'IDLE');error(entry.connection,'MATCH_CREATION_FAILED',e instanceof Error?e.message:'대전을 준비하지 못했습니다.');}
       }).catch(e=>logger.error({err:e},'Quick queue deadline failed'));
     };
@@ -282,7 +286,7 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
     presence.set(connection.userId, "QUICK_QUEUE");
     await pairQuickQueue();
     if (quickQueue.has(connection.userId)) {
-      const deck = await validateOnlineDeck(connection.userId, deckId);
+      const deck = entry.deck;
       send(connection, {
         type: "QUICK_QUEUE_JOINED",
         deck: {
