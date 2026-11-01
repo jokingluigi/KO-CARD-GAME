@@ -165,9 +165,7 @@ try {
   );
   await page.screenshot({ path: out + "/home-mobile-with-temporary-art.png" });
   await page.getByTestId("button-battle-modes").click();
-  await page
-    .getByRole("button", { name: "온라인 대전 빠른 대전 · 친구 대전" })
-    .click();
+
   await page.waitForURL("**/online");
   await page.goto(origin + "/admin/media");
   await section.getByRole("button", { name: "등록 해제", exact: true }).click();

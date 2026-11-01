@@ -132,7 +132,8 @@ try {
       new CustomEvent("ko-qa-load-state", { detail: { state: next } }),
     );
   });
-  await p.waitForTimeout(100);
+  await p.getByTestId('battle-event-caption').filter({hasText:'내 챔피언 체력 +2 회복'}).waitFor();
+  await p.screenshot({path:`${out}/committed-healing-caption-mobile.png`});
   await p.getByTestId("button-battle-match-history").click();
   await p.getByRole("heading", { name: "확인한 챔피언 회복" }).waitFor();
   assert.match(await p.getByRole("dialog").innerText(), /나 \+2 · 1회/);
@@ -151,6 +152,7 @@ try {
     attackCommits: true,
     effectTargetsAndCancel: true,
     actualHealingRecorded: true,
+    committedHealingCaption:true,
     errors,
   });
   await writeFile(

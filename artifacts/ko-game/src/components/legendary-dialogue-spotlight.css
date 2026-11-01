@@ -131,3 +131,4 @@
     animation: none;
   }
 }
+.ko-legendary-spotlight__line{font-size:calc(clamp(17px,4.8vw,24px) * var(--ko-dialogue-scale,1));overflow:auto;scrollbar-width:thin;pointer-events:auto}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, CircleAlert, Crown, LockKeyhole, Radio, Shield, Swords } from "lucide-react";
+import { ArrowLeft, Bot, Layers3, Check, CircleAlert, Crown, LockKeyhole, Radio, Shield, Swords } from "lucide-react";
 import { useLocation } from "wouter";
 import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
 import { fetchDecks, type Deck } from "@/lib/decks-client";
@@ -48,6 +48,7 @@ export function OnlineShell({
   backHref = ROUTES.ONLINE,
   status,
   titleStatus,
+  brand="ONLINE",
 }: {
   eyebrow: string;
   title: string;
@@ -56,6 +57,7 @@ export function OnlineShell({
   backHref?: string;
   status?: ReactNode;
   titleStatus?: ReactNode;
+  brand?: "ONLINE"|"BATTLE";
 }) {
   const [, navigate] = useLocation();
   return (
@@ -73,7 +75,7 @@ export function OnlineShell({
             뒤로
           </button>
           <div className="text-right">
-            <div className="font-display text-[0.68rem] font-black tracking-[0.42em] text-amber-400">KO / ONLINE</div>
+            <div className="font-display text-[0.68rem] font-black tracking-[0.42em] text-amber-400">KO / {brand}</div>
             {status}
           </div>
         </header>
@@ -84,7 +86,7 @@ export function OnlineShell({
         </section>
         <div className="ko-lobby-content">{children}</div>
         <footer className="border-t border-neutral-900 py-5 text-[0.65rem] font-bold tracking-[0.12em] text-neutral-600">
-          KO CARD GAME / ONLINE BATTLE
+          KO CARD GAME / {brand === "BATTLE" ? "BATTLE MODES" : "ONLINE BATTLE"}
         </footer>
       </div>
     </main>
@@ -259,30 +261,35 @@ export function ModeCard({
   icon,
   onClick,
   testId,
+  disabled = false,
+  actionLabel,
 }: {
   title: string;
   titleStatus?: ReactNode;
   description: string;
-  icon: "quick" | "friendly";
+  icon: "quick" | "friendly" | "ai" | "draft";
   onClick: () => void;
   testId: string;
+  disabled?: boolean;
+  actionLabel?: string;
 }) {
   return (
     <button
       type="button"
       data-testid={testId}
+      disabled={disabled}
       onClick={onClick}
       className="ko-mode-choice ko-online-panel ko-online-action group text-left"
     >
       <div className="flex items-start justify-between">
         <div className="rounded border border-amber-500/25 bg-amber-400/[0.06] p-3 text-amber-400">
-          {icon === "quick" ? <Radio className="h-6 w-6" aria-hidden="true" /> : <LockKeyhole className="h-6 w-6" aria-hidden="true" />}
+          {icon === "ai" ? <Bot className="h-6 w-6" aria-hidden="true" /> : icon === "draft" ? <Layers3 className="h-6 w-6" aria-hidden="true" /> : icon === "quick" ? <Radio className="h-6 w-6" aria-hidden="true" /> : <LockKeyhole className="h-6 w-6" aria-hidden="true" />}
         </div>
         <Swords className="h-5 w-5 text-neutral-700 transition-colors group-hover:text-amber-500" aria-hidden="true" />
       </div>
       <h2 className="ko-mode-choice__title flex items-center gap-3 text-2xl text-white"><span>{title}</span>{titleStatus}</h2>
       <p className="mt-3 max-w-sm text-sm leading-6 text-neutral-400">{description}</p>
-      <span className="mt-7 block text-xs font-black tracking-[0.18em] text-amber-400">{icon === "quick" ? "덱 선택하고 대전 찾기 →" : "방 만들기 / 코드 입력 →"}</span>
+      <span className="mt-7 block text-xs font-black tracking-[0.18em] text-amber-400">{actionLabel ?? (icon === "quick" ? "출전 덱으로 대전 찾기 →" : "방 만들기 / 코드 입력 →")}</span>
     </button>
   );
 }

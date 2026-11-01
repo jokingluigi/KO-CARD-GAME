@@ -411,7 +411,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
             </div>
             <div className="space-y-1.5">
               {keywords.map((keyword) => (
-                <p key={`${keyword.key}-description`} className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">
+                <p key={`${keyword.key}-description`} className="ko-readable-content text-neutral-300">
                   <strong className="font-bold text-amber-200">{keyword.label}:</strong> {keyword.description}
                 </p>
               ))}
@@ -451,7 +451,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           </div>
           <div className="mt-2 space-y-1.5">
             {statuses.map((status) => (
-              <p key={`${status.key}-description`} className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">
+              <p key={`${status.key}-description`} className="ko-readable-content text-neutral-300">
                 <strong className="font-bold text-rose-200">{status.label}:</strong> {status.description}
               </p>
             ))}
@@ -459,11 +459,11 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
         </InspectorSection>
       )}
       {card.draftMutation && <InspectorSection title="🔧 Draft Mutation" tone="neutral"><p>{card.draftMutation.name} · ATK {card.draftMutation.attack >= 0 ? '+' : ''}{card.draftMutation.attack} · HP {card.draftMutation.health >= 0 ? '+' : ''}{card.draftMutation.health} · 비용 {card.draftMutation.cost >= 0 ? '+' : ''}{card.draftMutation.cost}</p><p>{card.draftMutation.keywords.map(k => KEYWORD_LABELS[k]).join(' · ')}</p></InspectorSection>}
-      <InspectorSection title="효과 설명" tone="neutral">
+      <InspectorSection title="효과 설명" tone="neutral"><div className="ko-readable-content">
         <p data-testid="inspector-card-rules" className="whitespace-pre-wrap break-words text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.55] text-neutral-100">
           <CardRulesText text={rulesText}/>
         </p>
-      </InspectorSection>
+      </div></InspectorSection>
       {card.isGenerated && card.lineage && (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 px-3 py-2 text-xs text-neutral-300">
           <strong className="text-amber-300">생성 출처 · </strong>
@@ -559,7 +559,7 @@ export function ChampionAbilityInspectContent({
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
       <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{ability.name}</h3>
       <div className="my-3 font-display text-[clamp(1rem,1.3vw,1.125rem)] font-bold text-primary">비용 {ability.cost ?? champion.abilityCost} 골드</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300"><CardRulesText text={ability.description}/></p>
+      <p className="ko-readable-content text-neutral-300"><CardRulesText text={ability.description}/></p>
       <div className={`mt-3 text-[clamp(0.875rem,1.1vw,1rem)] font-bold ${available ? 'text-emerald-300' : 'text-red-300'}`}>
         {available ? '현재 사용할 수 있습니다.' : unavailableReason}
       </div>
@@ -575,7 +575,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">챔피언 퀘스트</div>
       <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{quest.name}</h3>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300"><CardRulesText text={quest.description}/></p>
+      <p className="ko-readable-content text-neutral-300"><CardRulesText text={quest.description}/></p>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">진행</div>
       <div className="font-display text-[clamp(1rem,1.3vw,1.125rem)] font-black text-white">
         {champion.questCompleted
@@ -583,7 +583,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
           : `${champion.questProgress} / ${quest.requiredProgress}`}
       </div>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">완료 보상</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>
+      <p className="ko-readable-content text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>
     </div>
   );
 }

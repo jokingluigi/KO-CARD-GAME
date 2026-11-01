@@ -1,3 +1,4 @@
+import {ReadingAccessibilitySettings} from "./player-ux/reading-accessibility";
 import {BattleModeButton} from "./battle-mode-button";
 import {LaunchDeckBanner} from "./launch-deck-banner";
 import "./main-menu-viewport.css";
@@ -73,7 +74,7 @@ const menuItems = [
 ] as const;
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, onNicknameChanged }: MainMenuProps) {
-  const [battleModesOpen,setBattleModesOpen]=useState(false),[allMenusOpen,setAllMenusOpen]=useState(false);
+  const [allMenusOpen,setAllMenusOpen]=useState(false),[readingOpen,setReadingOpen]=useState(false);
   const [towerEnabled, setTowerEnabled] = useState(false);
   const [draftEnabled, setDraftEnabled] = useState(false);
   const [notice, setNotice] = useState("");
@@ -174,7 +175,9 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
             }} />
         </label>
         <div className="mt-3"><SfxVolumeControl /></div>
+        <button type="button" className="mt-3 min-h-11 border border-amber-700 px-3 text-sm text-amber-100" onClick={()=>{setSoundSettingsOpen(false);setReadingOpen(true);}}>화면 · 접근성</button>
       </div>}
+      <Dialog open={readingOpen} onOpenChange={setReadingOpen}><DialogContent className="max-h-[85dvh] overflow-auto bg-neutral-950 text-white"><DialogTitle>화면 · 접근성</DialogTitle><DialogDescription>글자와 전투 안내를 조절합니다. 설정은 이 기기에 저장됩니다.</DialogDescription><ReadingAccessibilitySettings/></DialogContent></Dialog>
       {backgroundUrl && (
         <div aria-hidden="true" className="ko-main-menu__art pointer-events-none">
           <div className="ko-main-menu__art-fill" style={{ backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }} />
@@ -195,8 +198,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
                 setEditingNickname((open) => !open);
               }}><Pencil aria-hidden="true" className="h-4 w-4" /><span>닉네임 변경</span></button>
               {user.isTestAccount && (
-                <span className="rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-[10px] font-black tracking-wider text-amber-200">
-                  TEST ACCOUNT · 전체 카드/Champion · 재화 무제한
+                <span title="테스트 계정 · 전체 카드/챔피언 · 재화 무제한" aria-label="테스트 계정 · 전체 카드와 챔피언 사용 가능 · 재화 무제한" className="ko-main-menu__test-badge rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-[10px] font-black tracking-wider text-amber-200">
+                  TEST ACCOUNT
                 </span>
               )}
               <span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span>
@@ -253,8 +256,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         </Dialog>
 
         {user&&<LaunchDeckBanner key={user.id} accountId={user.id}/>}
-        <BattleModeButton artwork={mainContent.battleMenuArtwork} onClick={()=>setBattleModesOpen(true)}/>
-        <Dialog open={battleModesOpen} onOpenChange={setBattleModesOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>대전 모드</DialogTitle><DialogDescription>원하는 방식으로 경기에 들어가세요. 출전 덱은 덱 편집기에서 변경합니다.</DialogDescription><nav aria-label="대전 모드 선택" className="ko-mode-choices"><button type="button" onClick={()=>{setBattleModesOpen(false);navigate(ROUTES.ONLINE);}}><strong>온라인 대전</strong><span>빠른 대전 · 친구 대전</span></button><button type="button" onClick={()=>{setBattleModesOpen(false);onAiMatch?.();}}><strong>AI 대전 시작</strong><span>출전 덱으로 바로 시작</span></button><button type="button" disabled={!draftEnabled} onClick={()=>{setBattleModesOpen(false);navigate('/draft');}}><strong>드래프트</strong><span>{draftEnabled?'카드를 선택해 덱 구성':'현재 이용할 수 없어요'}</span></button></nav></DialogContent></Dialog>
+        <section className="ko-home-battle" aria-label="대전 시작">
+        <BattleModeButton artwork={mainContent.battleMenuArtwork} onClick={()=>navigate(ROUTES.ONLINE)}/>
+        <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>출전 덱으로 매칭</span></button><button type="button" onClick={()=>onAiMatch?.()}>AI 대전 <span>바로 시작</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'덱 구성부터 시작':'현재 이용 불가'}</span></button></nav>
+        </section>
         <nav className="ko-lobby-shortcuts" aria-label="덱과 꾸미기"><button type="button" onClick={()=>onDeckEdit?.()}>덱 편집</button><button type="button" onClick={()=>navigate(ROUTES.COLLECTION)}>컬렉션</button><button type="button" onClick={()=>navigate('/cosmetics')}>꾸미기</button></nav>
         <button type="button" className="ko-lobby-more" onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸</button>
         <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>

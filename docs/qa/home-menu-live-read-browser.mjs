@@ -53,18 +53,13 @@ try {
     ),
   );
   await page.getByTestId("button-battle-modes").click();
-  await page.getByRole("dialog").waitFor();
-  assert.equal(
-    await page
-      .getByRole("navigation", { name: "대전 모드 선택" })
-      .getByRole("button")
-      .count(),
-    3,
-  );
+  await page.waitForURL('**/online');
+  await page.getByTestId('button-mode-ai').waitFor();
+  assert.equal(await page.locator('.ko-battle-mode-grid>button').count(),4);
   await page.screenshot({
     path: "docs/qa/20261101-home-menu/deployed-mode-picker.png",
   });
-  await page.keyboard.press("Escape");
+
   assert.ok(
     writes.every((r) => r.path === "/api/online-matches/ws-ticket"),
     "only blocked presence ticket attempts; no game mutations",

@@ -277,3 +277,179 @@
   strong {
   font-size: 46px;
 }
+/* Space belongs to actions. Empty deck notices never become blank posters. */
+.ko-home-battle {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+  min-height: 0;
+}
+.ko-home-mode-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid #8d7545;
+  border-top: 0;
+  background: #11110fef;
+}
+.ko-home-mode-shortcuts button {
+  min-height: 58px;
+  padding: 8px 4px;
+  color: #efdb9f;
+  font-size: 14px;
+  border-right: 1px solid #51452d;
+}
+.ko-home-mode-shortcuts button:last-child {
+  border-right: 0;
+}
+.ko-home-mode-shortcuts button span {
+  display: block;
+  font-size: 10px;
+  color: #c4bba7;
+  margin-top: 3px;
+}
+.ko-home-mode-shortcuts button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ko-home-mode-shortcuts button:focus-visible,
+.ko-lobby-shortcuts button:focus-visible,
+.ko-lobby-more:focus-visible {
+  outline: 2px solid #f4d994;
+  outline-offset: -3px;
+}
+.ko-home-lobby.ko-main-menu .ko-launch-banner--empty {
+  min-height: 82px;
+  max-height: 110px;
+}
+.ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__art {
+  display: none;
+}
+.ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__copy {
+  padding: 8px 12px;
+}
+.ko-home-lobby.ko-main-menu .ko-launch-banner--empty button {
+  background: #bba264;
+  color: #080808;
+  padding-inline: 12px;
+  margin-top: 4px;
+}
+@media (min-width: 1000px) and (min-height: 550px) {
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty {
+    bottom: auto;
+    max-height: 250px;
+    min-height: 160px;
+  }
+  .ko-home-lobby .ko-home-battle {
+    flex: 1;
+    max-height: 380px;
+  }
+  .ko-home-lobby .ko-home-battle > .ko-battle-mode-button {
+    flex: 1;
+    height: auto;
+    min-height: 170px;
+  }
+}
+@media (max-width: 767px) and (min-height: 700px) {
+  .ko-home-lobby .ko-home-battle > .ko-battle-mode-button {
+    height: clamp(150px, 23dvh, 230px);
+  }
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty {
+    min-height: 100px;
+    max-height: 132px;
+  }
+}
+@media (max-height: 699px) {
+  .ko-home-mode-shortcuts {
+    display: none;
+  }
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty {
+    min-height: 76px;
+    max-height: 92px;
+  }
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__copy {
+    padding: 4px 8px;
+  }
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty [role="status"] {
+    font-size: 10px;
+    line-height: 12px;
+  }
+  .ko-home-lobby.ko-main-menu
+    .ko-launch-banner--empty
+    .ko-launch-banner__copy
+    h2 {
+    font-size: 13px;
+    line-height: 16px;
+  }
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty button {
+    margin: 0;
+    background: transparent;
+    color: #eddb9f;
+  }
+}
+.ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+}
+.ko-home-lobby.ko-main-menu
+  .ko-launch-banner--empty
+  .ko-launch-banner__copy
+  > p,
+.ko-home-lobby.ko-main-menu .ko-launch-banner--empty h2 {
+  grid-column: 1;
+}
+.ko-home-lobby.ko-main-menu
+  .ko-launch-banner--empty
+  .ko-launch-banner__copy
+  > button {
+  grid-column: 2;
+  grid-row: 1/5;
+  position: static;
+  margin: 0;
+}
+.ko-home-lobby.ko-main-menu
+  .ko-launch-banner--empty
+  .ko-launch-banner__deck:empty {
+  display: none;
+}
+@media (max-height: 450px) and (orientation: landscape) {
+  .ko-home-lobby.ko-main-menu .ko-main-menu__content {
+    gap: 6px;
+  }
+  .ko-home-lobby .ko-home-battle > .ko-battle-mode-button {
+    height: 80px;
+    min-height: 80px;
+  }
+  .ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ko-home-lobby.ko-main-menu
+    .ko-launch-banner--empty
+    .ko-launch-banner__copy
+    > button {
+    min-height: 44px;
+  }
+}
+
+.ko-home-lobby.ko-main-menu .ko-home-battle {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+}
+@media (max-height: 340px) and (orientation: landscape) {
+  .ko-home-lobby .ko-main-menu__test-badge {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    padding: 0;
+    border: 0;
+  }
+}

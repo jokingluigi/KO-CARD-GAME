@@ -7,6 +7,10 @@ export type CombatPreferences = {
   spriteMotion: number;
   confirmEndTurn: boolean;
   quietBoard: boolean;
+  detailTextScale: number;
+  dialogueTextScale: number;
+  highContrastTargets: boolean;
+  visualEventCaptions: boolean;
 };
 export const COMBAT_PREFERENCES_KEY = "ko-combat-presentation-v1";
 export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
@@ -18,6 +22,10 @@ export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
   spriteMotion: 1,
   confirmEndTurn: true,
   quietBoard: true,
+  detailTextScale: 1,
+  dialogueTextScale: 1,
+  highContrastTargets: true,
+  visualEventCaptions: true,
 };
 export function parseCombatPreferences(
   value: string | null,
@@ -37,10 +45,17 @@ export function parseCombatPreferences(
       spriteMotion: bounded(p.spriteMotion),
       confirmEndTurn: p.confirmEndTurn !== false,
       quietBoard: p.quietBoard !== false,
+      detailTextScale: textScale(p.detailTextScale),
+      dialogueTextScale: textScale(p.dialogueTextScale),
+      highContrastTargets: p.highContrastTargets !== false,
+      visualEventCaptions: p.visualEventCaptions !== false,
     };
   } catch {
     return { ...DEFAULT_COMBAT_PREFERENCES };
   }
+}
+function textScale(value: unknown) {
+  return value === 1.15 || value === 1.3 ? value : 1;
 }
 function bounded(v: unknown) {
   return typeof v === "number" && Number.isFinite(v)

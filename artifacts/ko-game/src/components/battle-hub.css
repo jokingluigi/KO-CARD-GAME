@@ -1,0 +1,128 @@
+.ko-mode-hub .ko-online-shell {
+  padding-top: 16px;
+}
+.ko-mode-hub .ko-lobby-heading {
+  margin: 20px 0;
+}
+.ko-mode-hub .ko-lobby-heading h1 {
+  font-size: clamp(28px, 5vw, 46px);
+  line-height: 1.2;
+}
+.ko-mode-hub .ko-lobby-heading > p:last-child {
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.ko-mode-hub .ko-mode-deck {
+  margin-bottom: 20px;
+}
+.ko-mode-deck .ko-launch-banner {
+  display: flex;
+  gap: 12px;
+  border-left: 3px solid #b69b60;
+  background: #121211;
+  min-height: 88px;
+  max-height: 130px;
+  overflow: hidden;
+}
+.ko-mode-deck .ko-launch-banner__art {
+  width: 90px;
+  min-height: 0;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+.ko-mode-deck .ko-launch-banner__copy {
+  padding: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.ko-mode-deck .ko-launch-banner__copy h2 {
+  font-size: 16px;
+  line-height: 1.4;
+}
+.ko-mode-deck .ko-launch-banner__copy p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ko-mode-deck .ko-launch-banner button {
+  min-height: 44px;
+  color: #e7ce91;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.ko-mode-deck .ko-launch-banner--empty .ko-launch-banner__art {
+  display: none;
+}
+.ko-battle-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ko-mode-hub .ko-online-shell .ko-mode-choice {
+  padding: 18px;
+  min-height: 200px;
+  border: 1px solid #665634;
+  border-top: 3px solid #b49b60;
+  background: #131310;
+  border-radius: 0;
+}
+.ko-mode-hub .ko-online-shell .ko-mode-choice__title {
+  margin-top: 16px;
+  font-size: 24px;
+}
+.ko-mode-hub .ko-online-shell .ko-mode-choice > span:last-child {
+  margin-top: 18px;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.ko-mode-hub .ko-online-shell .ko-mode-choice:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ko-mode-hub .ko-online-shell .ko-mode-choice:focus-visible {
+  outline: 3px solid #f4d994;
+  outline-offset: 3px;
+}
+@media (max-width: 767px) {
+  .ko-mode-hub .ko-online-shell {
+    padding: 12px;
+  }
+  .ko-mode-hub .ko-online-shell .ko-mode-choice {
+    padding: 12px;
+    min-height: 186px;
+  }
+  .ko-mode-hub .ko-online-shell .ko-mode-choice__title {
+    font-size: 20px;
+    gap: 4px;
+  }
+  .ko-mode-hub .ko-online-shell .ko-mode-choice p {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .ko-mode-hub .ko-online-shell .ko-mode-choice > div > div {
+    padding: 8px;
+  }
+  .ko-mode-hub .ko-online-shell .ko-mode-choice > span:last-child {
+    font-size: 11px;
+    margin-top: 12px;
+  }
+  .ko-mode-hub .ko-lobby-heading {
+    margin: 14px 0;
+  }
+  .ko-mode-hub .ko-lobby-heading h1 {
+    margin-top: 8px;
+  }
+  .ko-mode-hub footer {
+    padding-block: 12px;
+  }
+}
+.ko-mode-hub .ko-lobby-content{margin-top:0;padding-bottom:12px}
+.ko-mode-hub .ko-online-shell>div.relative{min-height:calc(100dvh - 100px)}
+.ko-mode-hub .ko-online-shell .ko-mode-choice>p{margin-top:8px}
+.ko-mode-deck .ko-launch-banner--empty{min-height:76px}
+.ko-mode-deck .ko-launch-banner--empty .ko-launch-banner__copy{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 8px}
+.ko-mode-deck .ko-launch-banner--empty .ko-launch-banner__copy>:not(button){grid-column:1}
+.ko-mode-deck .ko-launch-banner--empty .ko-launch-banner__deck:empty{display:none}
+.ko-mode-deck .ko-launch-banner--empty button{grid-column:2;grid-row:1/4}
+@media(max-width:767px) and (max-height:780px){.ko-mode-hub .ko-lobby-heading{margin:8px 0}.ko-mode-hub .ko-mode-deck{margin-bottom:12px}}

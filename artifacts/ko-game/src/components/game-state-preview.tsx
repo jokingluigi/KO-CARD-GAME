@@ -1,3 +1,4 @@
+import {useBattleEventCaption} from "./player-ux/use-battle-event-caption";
 import {AttackForecast,LocalActionFeedback,useBattleContextGuide} from './player-ux/battle-decision-tools';
 import {TargetSelectionFocus} from "./player-ux/target-selection-focus";
 import {BattleAttention} from "./player-ux/battle-attention";
@@ -272,6 +273,7 @@ export function GameStatePreview({
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const [localReason,setLocalReason]=React.useState<{id:string;message:string}|null>(null);
   const [combatPreferences,setCombatPreferences]=React.useState(readCombatPreferences);
+  const eventCaption=useBattleEventCaption(state,combatPreferences.visualEventCaptions);
   React.useEffect(()=>{const changed=()=>setCombatPreferences(readCombatPreferences());window.addEventListener("ko-combat-preferences",changed);return()=>window.removeEventListener("ko-combat-preferences",changed);},[]);
   React.useEffect(()=>{setLocalReason(null);},[state.gameId,state.turn]);
   React.useEffect(()=>{if(!localReason)return;const t=setTimeout(()=>setLocalReason(null),4000);return()=>clearTimeout(t);},[localReason]);
@@ -1112,6 +1114,7 @@ export function GameStatePreview({
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} spriteManaged={blackGold} />}
       <LocalActionFeedback message={!settingsOpen&&!historyOpen&&!emoteOpen?localReason?.message??null:null} node={localReason?.id===me.id?playerChampionRef.current:localReason?.id===opp.id?championRef.current:localReason?handCardRefs.current.get(localReason.id)??boardCardRefs.current.get(localReason.id)??null:null}/>
+      <p role="status" aria-live="polite" aria-atomic="true" className="ko-battle-event-reader" data-testid="battle-event-caption">{eventCaption}</p>
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
 
       {/* Background Ambience */}
@@ -1338,6 +1341,8 @@ export function GameStatePreview({
             <button
               type="button"
               disabled={!canEndTurn}
+              data-actions-remain={Boolean(remainingActions.length&&isMyTurn)}
+              aria-label={confirmEndTurn?'남은 행동이 있지만 턴 종료 확정':`턴 종료${remainingActions.length&&isMyTurn?' · 사용 가능한 공격 또는 능력 남음':''}`}
               onClick={() => {
                 if(selectedCardId||selectedAttackerId){if(selectedCardId)onSelectCard(selectedCardId);if(selectedAttackerId)onSelectAttacker(selectedAttackerId);setAttackHint('선택을 해제했어요. 턴을 끝내려면 다시 눌러주세요.');return;}
                 if (readCombatPreferences().confirmEndTurn && remainingActions.length && turnSecondsRemaining > 10 && !confirmEndTurn) {
@@ -1380,6 +1385,7 @@ export function GameStatePreview({
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
                     : `대상 선택 · ${state.cardPool?.find(d=>d.id===state.targetingState?.sourceCard?.definitionId)?.name??"현재 효과"} · 강조된 대상 ${state.targetingState?.minTargets ?? 1}개 선택 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1} · ${validEffectTargetIds.size}개 선택 가능`
                   : contextGuide.text ? contextGuide.text
+                  : eventCaption && !selectedCardId && !selectedAttackerId ? <span aria-hidden="true">{eventCaption}</span>
                   : !isMyTurn ? '상대가 행동하고 있어요.'
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
@@ -1957,6 +1963,9 @@ function HandCard({
       type="button"
       data-touch-inspect-trigger
       className="ko-hand-inspect-button hidden"
+      style={targetingActive && targetable ? {visibility:'hidden',pointerEvents:'none'}:undefined}
+      aria-hidden={targetingActive && targetable ? true:undefined}
+      tabIndex={targetingActive && targetable ? -1:undefined}
       aria-label={`${def?.name ?? '카드'} 상세정보`}
       onClick={(event) => event.stopPropagation()}
     >

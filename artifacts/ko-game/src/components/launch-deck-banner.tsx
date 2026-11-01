@@ -68,7 +68,7 @@ export function LaunchDeckBanner({ accountId }: { accountId?: string }) {
     : null;
   return (
     <aside
-      className="ko-launch-banner"
+      className={`ko-launch-banner ${!champion?"ko-launch-banner--empty":""}`}
       aria-label="현재 출전 덱"
       data-testid="launch-deck-banner"
     >
@@ -102,7 +102,7 @@ export function LaunchDeckBanner({ accountId }: { accountId?: string }) {
                 : "출전 덱 확인 중…")}
         </h2>
         <p className="ko-launch-banner__deck">{deck?.name ?? ""}</p>
-        {(error || selected?.reason) && (
+        {(error || (deck && selected?.reason)) && (
           <p role="status" className="text-xs text-amber-100">
             {error ?? selected?.reason}
           </p>
@@ -115,7 +115,7 @@ export function LaunchDeckBanner({ accountId }: { accountId?: string }) {
               : navigate(launchDeckEditor(deck?.id))
           }
         >
-          {error ? "다시 확인" : "덱 변경"}
+          {error ? "다시 확인" : champion ? "덱 변경" : "출전 덱 고르기"}
         </button>
       </div>
     </aside>

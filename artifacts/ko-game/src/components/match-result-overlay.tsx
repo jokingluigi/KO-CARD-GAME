@@ -336,7 +336,7 @@ export function MatchResultOverlay({
           </div>
         </div>
         <footer className="ko-result-footer">
-        <button type="button" className="ko-result-details" aria-expanded={details} onClick={()=>setDetails(v=>!v)}>{details ? "전장과 챔피언 보기" : "상세 결과 · 경기 기록 보기"}</button>
+
 
           <div className="ko-result-reward" data-reward-state={reward?"confirmed":rewardStatus??"none"} data-testid="match-reward" aria-live="polite">
             {reward ? (
@@ -363,6 +363,7 @@ export function MatchResultOverlay({
             {continueLabel}
             <span aria-hidden="true">↗</span>
           </button>
+        <button type="button" className="ko-result-details" aria-expanded={details} onClick={()=>setDetails(v=>!v)}>{details ? "전장과 챔피언 보기" : "상세 결과 · 경기 기록 보기"}</button>
         </footer>
       </article>
     </div>

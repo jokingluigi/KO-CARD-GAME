@@ -212,6 +212,7 @@ export function TargetSelectionFocus({
               .map((h) => (
                 <rect
                   key={h.id}
+                  data-focus-outline={h.id}
                   x={h.x}
                   y={h.y}
                   width={h.width}

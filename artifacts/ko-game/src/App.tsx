@@ -1,3 +1,4 @@
+import {ReadingAccessibilityBridge} from "@/components/player-ux/reading-accessibility";
 import { GameNavigation } from '@/components/game-navigation';
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
 import {SitePresenceBridge} from '@/components/site-presence';
@@ -43,6 +44,7 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <SitePresenceBridge />
+      <ReadingAccessibilityBridge/>
       <GameNavigation />
       <Suspense fallback={<GameLoading />}><Switch>
         <Route path="/admin/:section?" component={Admin} />

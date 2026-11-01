@@ -1,0 +1,163 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 360,
+    "height": 740,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "pendingNoFakeReward": true,
+    "retryCallbacks": true,
+    "towerLabel": true,
+    "emptyComplete": true,
+    "keyboardContained": true
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "outcome": "victory",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "outcome": "defeat",
+    "realMvp": true,
+    "noOverflow": true,
+    "stickyAction": true,
+    "reward": true,
+    "highlights": true,
+    "noDuplicateDialogue": true
+  }
+]

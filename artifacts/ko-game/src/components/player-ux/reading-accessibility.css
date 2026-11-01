@@ -1,0 +1,71 @@
+:root {
+  --ko-detail-scale: 1;
+  --ko-dialogue-scale: 1;
+}
+.ko-readable-content,
+.ko-reading-sample {
+  font-size: calc(16px * var(--ko-detail-scale));
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.ko-readable-content :is(p, li) {
+  font-size: inherit;
+}
+.ko-readable-history .ko-history-events :is(summary, li > span) {
+  font-size: calc(14px * var(--ko-detail-scale));
+  line-height: 1.6;
+}
+.ko-readable-history .ko-history-events summary > span {
+  font-size: calc(12px * var(--ko-detail-scale));
+  line-height: 1.6;
+}
+html[data-contrast-targets="true"] .ko-hand-card--selected {
+  outline: 3px double #fff1bb;
+  outline-offset: 2px;
+}
+html[data-contrast-targets="true"] [data-card-highlight="target"] {
+  outline: 3px dashed #fff1bb;
+  outline-offset: -3px;
+}
+html[data-contrast-targets="true"] [data-card-highlight="selected"] {
+  outline: 3px double #fff1bb;
+  outline-offset: -3px;
+}
+html[data-contrast-targets="true"]
+  .ko-game-stage[data-targeting="true"]
+  [data-targetable="true"] {
+  outline: 3px dashed #fff1bb;
+  outline-offset: -3px;
+}
+.ko-reading-settings input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #d1b675;
+  flex-shrink: 0;
+}
+.ko-battle-event-reader {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.ko-history-events.ko-readable-history :is(summary, li > span) {
+  font-size: calc(14px * var(--ko-detail-scale));
+  line-height: 1.6;
+}
+.ko-history-events.ko-readable-history summary > span {
+  font-size: calc(12px * var(--ko-detail-scale));
+  line-height: 1.6;
+}
+html[data-contrast-targets="true"]
+  .ko-effect-target-focus
+  [data-focus-outline] {
+  stroke: #fff1bb;
+  stroke-width: 3;
+  stroke-dasharray: 6 3;
+}

@@ -37,3 +37,6 @@
 .ko-game-shell :is(.ko-hand-card,.ko-board-slot):focus-visible {outline:2px solid #f4dc9b;outline-offset:2px}
 .ko-local-feedback {font-family:inherit;line-height:1.35}
 @media(max-width:767px){.ko-board-preview .ko-battle-command button {padding-inline:6px;font-size:11px}.ko-game-shell :is(.ko-hand-card,.ko-board-slot) [data-card-stat] {filter:drop-shadow(0 0 1px #000)}}
+.ko-turn-end[data-actions-remain=true]{border-bottom:3px double #3b2a0c}
+.ko-turn-end[data-actions-remain=true]:focus-visible{outline:3px solid #f3dfad;outline-offset:2px}
+.ko-local-feedback[role=status]{border-left-width:4px;line-height:1.55}

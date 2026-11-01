@@ -111,7 +111,7 @@ export function CardDetailDialog({
                 className="mx-auto w-full max-w-[320px]"
               />
               </FullCardArtwork>
-              <div className="space-y-4 rounded-lg border border-neutral-800 bg-black/30 p-4 text-sm">
+              <div className="ko-readable-content space-y-4 rounded-lg border border-neutral-800 bg-black/30 p-4">
                 <div className="grid grid-cols-2 gap-3">
                   <DetailStat label="비용" value={String(card.cost)} />
                   <DetailStat label="희귀도" value={rarityLabel(card.rarity)} />

@@ -58,13 +58,13 @@ export function MotionNumber({value,className='',format=(n:number)=>String(n)}:{
  const previous=useRef(value);
  const element=useRef<HTMLSpanElement>(null);
  useLayoutEffect(()=>{
-  const changed=previous.current!==value;previous.current=value;
+  const previousValue=previous.current,changed=previousValue!==value;previous.current=value;
   if(!changed||prefersReducedMotion()||!Number.isFinite(value))return;
   const animation=animatePresentation(element.current,
-   [{scale:'1'},{scale:'1.08',offset:.3},{scale:'1'}],
+   [{scale:'1',textShadow:'0 0 0 transparent'},{scale:'1.08',textShadow:value>previousValue?'0 0 6px #efdb9b':'0 0 6px #e89580',offset:.3},{scale:'1',textShadow:'0 0 0 transparent'}],
    {duration:180,easing:MOTION_EASING.recovery});
   return()=>animation?.cancel();
  },[value]);
  // Always display authoritative health/resources; never invent intermediate combat values.
- return <span ref={element} className={className} data-value={value} aria-label={String(format(value))}>{format(value)}</span>;
+ return <span ref={element} style={{display:"inline-block"}} className={className} data-value={value} aria-label={String(format(value))}>{format(value)}</span>;
 }

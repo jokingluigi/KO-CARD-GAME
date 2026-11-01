@@ -119,7 +119,7 @@ function HistoryList({
           if (!open) setDetail(null);
         }}
       />
-      <div className="ko-history-events max-h-[58dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
+      <div className="ko-history-events ko-readable-history max-h-[58dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
         {groups.length === 0 ? (
           <p className="py-4 text-center text-sm text-neutral-400">
             아직 기록이 없습니다

@@ -34,7 +34,7 @@ try {
    const counts=JSON.parse(await page.getByTestId('result-callbacks').textContent());assert.equal(counts.quests,1);assert.equal(counts.rewards,1);await page.getByRole('button',{name:'타워 보상으로'}).waitFor();
    await page.screenshot({path:`${out}/error-retry-${width}.png`});
    await page.evaluate(()=>window.showResult({outcome:'complete',empty:true}));await page.locator('[data-result=complete]').waitFor();await page.getByRole('button',{name:'상세 결과 · 경기 기록 보기',exact:true}).click();await page.getByText('MVP를 선정할 선수 기록이 없습니다.').waitFor();
-   const root=page.getByTestId('match-result-overlay');await root.focus();await page.keyboard.press('Shift+Tab');assert.equal(await page.getByTestId('button-return-to-main-menu').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Tab');assert.equal(await root.evaluate(e=>e.contains(document.activeElement)),true);
+   const root=page.getByTestId('match-result-overlay');await root.focus();await page.keyboard.press('Shift+Tab');assert.equal(await page.getByRole('button',{name:'전장과 챔피언 보기',exact:true}).evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Tab');assert.equal(await root.evaluate(e=>e.contains(document.activeElement)),true);
    results.push({pendingNoFakeReward:true,retryCallbacks:true,towerLabel:true,emptyComplete:true,keyboardContained:true});
   }
   assert.deepEqual(errors,[]);await page.close();

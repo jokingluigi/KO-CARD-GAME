@@ -64,7 +64,7 @@ export function HandReader({
                   </p>
                 </div>
               </div>
-              <div className="my-4 text-base leading-7">
+              <div className="ko-readable-content my-4">
                 <CardRulesText
                   text={getCardRuntimeRulesText(
                     card,
@@ -122,7 +122,7 @@ export function BattleHelp() {
           <DialogDescription>
             설정에서 언제든 다시 확인할 수 있어요.
           </DialogDescription>
-          <ol className="space-y-4 text-sm leading-6">
+          <ol className="ko-readable-content space-y-4">
             <li>
               1. 손패를 누른 뒤 빈 아군 슬롯을 누르거나, 카드를 슬롯으로
               드래그해 소환하세요.

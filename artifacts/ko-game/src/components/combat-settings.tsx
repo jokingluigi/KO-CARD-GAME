@@ -1,5 +1,6 @@
-import {CombatSettingsPreview} from './combat-settings-preview';
-import { useState } from "react";
+import { ReadingAccessibilitySettings } from "./player-ux/reading-accessibility";
+import { CombatSettingsPreview } from "./combat-settings-preview";
+import { useState, useEffect } from "react";
 import {
   readCombatPreferences,
   saveCombatPreferences,
@@ -7,8 +8,13 @@ import {
 } from "./combat-preferences";
 export function CombatSettings() {
   const [value, setValue] = useState(readCombatPreferences);
+  useEffect(() => {
+    const changed = () => setValue(readCombatPreferences());
+    window.addEventListener("ko-combat-preferences", changed);
+    return () => window.removeEventListener("ko-combat-preferences", changed);
+  }, []);
   const update = (patch: Partial<CombatPreferences>) => {
-    const next = { ...value, ...patch };
+    const next = { ...readCombatPreferences(), ...patch };
     setValue(next);
     saveCombatPreferences(next);
   };
@@ -73,8 +79,16 @@ export function CombatSettings() {
           </select>
         </label>
       ))}
-      <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={value.quietBoard} onChange={e=>update({quietBoard:e.target.checked})}/>평상시 반복 강조 줄이기</label>
-      <CombatSettingsPreview preferences={value}/>
+      <label className="flex min-h-11 items-center gap-2">
+        <input
+          type="checkbox"
+          checked={value.quietBoard}
+          onChange={(e) => update({ quietBoard: e.target.checked })}
+        />
+        평상시 반복 강조 줄이기
+      </label>
+      <CombatSettingsPreview preferences={value} />
+      <ReadingAccessibilitySettings />
       <label className="flex min-h-11 items-center gap-2">
         <input
           type="checkbox"
