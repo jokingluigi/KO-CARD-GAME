@@ -66,3 +66,11 @@ AI 보상·퀘스트 제출 경로로 진입하지 않으며 계정 덱·재화�
 ## 변경 파일
 
 `App.tsx`, `main-menu.tsx`, `home.tsx`, `game-state-preview.tsx`, `audio/music-route.ts` 및 검사, `components/tutorial/lesson-engine.ts`, `lesson-engine.test.ts`, `lesson-ui.tsx`, `tutorial-client.ts`, `tutorial.css`. 기존 안내 검사 갱신 및 실습 전체/복구 브라우저 검사 추가. DB 스키마·운영 데이터 마이그레이션 없음.
+
+## 배포 및 운영 주소 확인
+
+기존 상시 배포 승인에 따라 작업 브랜치의 소스 `84a272f4b519e3a7c0b30f4a4c4b95f66decd1fc`를 프런트 서비스에 배포했다. API 서버 소스·DB 스키마 변경이나 main 병합은 하지 않았다. Render live 소스 일치, health 200, JS/CSS 119개 파일의 로컬 빌드와 운영 SHA-256 일치를 확인했다. 점검 설정은 배포 전후 false로 유지했다.
+
+운영 `/tutorial`의 실제 번들과 실시간 공개 카드/챔피언/이미지를 읽어 여섯 실습의 사용 가능 여부, 실제 멀리건→소환→턴 종료→챔피언 공격→승리를 확인했다. 계정 응답은 검증용으로 격리하고 모든 쓰기 요청을 차단했으며 운영 데이터 쓰기는 0건이다. 브라우저는 환경의 인증서 체인 문제로 `ignoreHTTPSErrors`를 사용했으므로 TLS 검증 결과로 보지는 않는다.
+
+[배포 증거](20261102-playable-tutorial-front-deployment.json) · [운영 브라우저 검사](20261102-playable-tutorial/deployed-browser.json) · [운영 실습 화면](20261102-playable-tutorial/deployed-battle.png)

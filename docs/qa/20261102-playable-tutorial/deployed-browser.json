@@ -1,0 +1,35 @@
+{
+  "deployedBundle": true,
+  "publicCatalogLive": true,
+  "allSixLessonsAvailable": true,
+  "actualMulliganSummonTurnAndVictory": true,
+  "accountIntercepted": true,
+  "productionWritesSent": 0,
+  "blockedRequests": [
+    "/api/online-matches/ws-ticket",
+    "/api/online-matches/ws-ticket",
+    "/api/online-matches/ws-ticket",
+    "/api/online-matches/ws-ticket",
+    "/api/online-matches/ws-ticket"
+  ],
+  "publicGetPaths": [
+    "/api/healthz",
+    "/api/cards",
+    "/api/champions",
+    "/api/game-media",
+    "/api/card-frames",
+    "/api/storage/objects/uploads/cosmetics/5e69372f-cf6e-44a1-9c98-d9ee94b64947.png",
+    "/api/storage/objects/uploads/card-images/7ba39a55-98d0-4be8-aec3-9faece9c2855.png",
+    "/api/storage/objects/uploads/cosmetics/ac189b4c-3fd9-48ed-82a3-1c69cb833a0f.png",
+    "/api/storage/objects/uploads/cosmetics/048f5a24-e392-4230-be23-ecbcfec5bd98.png",
+    "/api/storage/objects/uploads/cosmetics/02effd4a-697d-4ed1-85b1-f7186716a26d.png",
+    "/api/storage/objects/uploads/cosmetics/48ca2ee1-81dd-4833-b164-fbc26b9d4042.png",
+    "/api/storage/objects/uploads/cosmetics/dfd5db00-6cc0-47ba-806d-5610ace204c0.png",
+    "/api/storage/objects/uploads/cosmetics/5d1abefd-8be0-4a96-9b1b-7bdc3214d49c.png",
+    "/api/storage/objects/uploads/cosmetics/ac948b64-4d26-43bd-b1f0-3a2e223a9f72.png",
+    "/api/storage/objects/uploads/cosmetics/b01cc74c-522e-4292-9dfc-caab3aa019ba.png",
+    "/api/storage/objects/uploads/cosmetics/60d1cedc-52cc-4d62-84e4-898406054c1d.png",
+    "/api/storage/objects/uploads/card-images/aa057260-1ead-4ee1-b1f0-42f0cb9dccb7.png"
+  ],
+  "errors": []
+}
