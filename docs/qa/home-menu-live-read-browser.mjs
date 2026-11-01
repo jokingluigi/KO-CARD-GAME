@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
-const out = process.env.KO_QA_RECEIPT_DIR ?? "docs/qa/20261101-ux-accessibility";
+const out =
+  process.env.KO_QA_RECEIPT_DIR ?? "docs/qa/20261101-ux-accessibility";
 const browser = await chromium.launch(),
   page = await browser.newPage({
     viewport: { width: 390, height: 844 },
@@ -48,6 +49,11 @@ try {
   await page.locator(".ko-main-menu__art-original").waitFor();
   await page.locator(".ko-main-menu__art-original").evaluate((n) => n.decode());
   await page.evaluate(() => document.fonts.ready);
+  if (process.env.KO_QA_MOTION === "1")
+    await page.waitForFunction(
+      () =>
+        document.querySelector(".ko-main-menu__logo")?.dataset.uiMotionPlayed,
+    );
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollHeight <= innerHeight + 1,
@@ -58,6 +64,12 @@ try {
   await page.waitForURL("**/online");
   await page.getByTestId("button-mode-ai").waitFor();
   assert.equal(await page.locator(".ko-battle-mode-grid>button").count(), 4);
+  if (process.env.KO_QA_MOTION === "1") {
+    await page.waitForFunction(
+      () => document.querySelector("h1")?.dataset.uiMotionPlayed,
+    );
+    assert.equal(await page.locator(".ko-navigation-indicator").count(), 1);
+  }
   await page.screenshot({
     path: `${out}/deployed-mode-picker.png`,
   });
@@ -72,6 +84,7 @@ try {
     JSON.stringify(
       {
         deployedBundle: true,
+        motionBridgeVerified: process.env.KO_QA_MOTION === "1",
         publicBackgroundDecoded: true,
         accountIntercepted: true,
         modePicker: true,
