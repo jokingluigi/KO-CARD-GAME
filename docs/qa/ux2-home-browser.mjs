@@ -152,8 +152,9 @@ try {
     await page.getByRole("button", { name: "음량 설정", exact: true }).click();
     await page.getByRole("slider", { name: "배경음 볼륨" }).waitFor();
     await page.getByRole("button", { name: "음량 설정", exact: true }).click();
+    await page.getByRole("button", { name: "계정 메뉴", exact: true }).click();
     await page
-      .getByRole("button", { name: "닉네임 변경", exact: true })
+      .getByRole("menuitem", { name: "닉네임 변경", exact: true })
       .click();
     await page.getByRole("dialog").waitFor();
     await page.getByLabel("새 닉네임").fill("새 이름");

@@ -1,0 +1,11 @@
+✔ home counts only claimable results, deduplicates receipts and omits disabled/claimed rewards (1.329939ms)
+✔ latest notice is chronological, version changes when edited, missing dates preserve server order (0.200006ms)
+✔ existing menu layouts stay valid; independent desktop/mobile crop survives serialization; unsafe values rejected (0.540841ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 187.112725

@@ -8,6 +8,7 @@ export type HomeArtPlacement = {
 };
 export type HomeMenuLayout = {
   version: 1;
+  background?: HomeBackgroundPlacement;
   imageId: string | null;
   desktop: HomeArtPlacement;
   mobile: HomeArtPlacement;
@@ -51,9 +52,50 @@ export function parseHomeMenuLayout(value: unknown): HomeMenuLayout | null {
       return null;
     return { scale: p.scale, x: p.x, y: p.y, flip: p.flip, fit: p.fit };
   };
+  const background =
+    v.background === undefined
+      ? undefined
+      : parseHomeBackgroundPlacement(v.background);
+  if (background === null) return null;
   const desktop = placement(v.desktop),
     mobile = placement(v.mobile);
   return desktop && mobile
-    ? { version: 1, imageId: v.imageId as string | null, desktop, mobile }
+    ? {
+        version: 1,
+        imageId: v.imageId as string | null,
+        desktop,
+        mobile,
+        ...(background ? { background } : {}),
+      }
     : null;
+}
+
+export type HomeBackgroundPlacement = {
+  desktop: { x: number; y: number };
+  mobile: { x: number; y: number };
+};
+export const defaultHomeBackgroundPlacement = (): HomeBackgroundPlacement => ({
+  desktop: { x: 50, y: 50 },
+  mobile: { x: 50, y: 50 },
+});
+export function parseHomeBackgroundPlacement(
+  value: unknown,
+): HomeBackgroundPlacement | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as HomeBackgroundPlacement;
+  for (const device of ["desktop", "mobile"] as const) {
+    const p = v[device];
+    if (
+      !p ||
+      ![p.x, p.y].every(
+        (n) =>
+          typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 100,
+      )
+    )
+      return null;
+  }
+  return {
+    desktop: { x: v.desktop.x, y: v.desktop.y },
+    mobile: { x: v.mobile.x, y: v.mobile.y },
+  };
 }

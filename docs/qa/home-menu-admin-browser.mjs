@@ -85,6 +85,7 @@ try {
         background: { id: "fixture", assetUrl: art },
         bgm: null,
         battleMenuArtwork: { ...layout, imageUrl: layout.imageId ? art : null },
+        backgroundPlacement: layout.background ?? null,
       };
     else if (p.endsWith("/decks")) json = { decks: [] };
     else if (p.endsWith("/cards")) json = { cards: [] };
@@ -122,6 +123,20 @@ try {
     "1",
   );
   await section.getByLabel("가로 기준점", { exact: true }).fill("65");
+  await section.locator(".ko-home-background-image").waitFor();
+  assert.equal(
+    await section
+      .locator(".ko-home-background-image")
+      .evaluate((n) => getComputedStyle(n).objectFit),
+    "cover",
+  );
+  await section.getByLabel("배경 가로 위치", { exact: true }).fill("80");
+  await section.getByLabel("배경 세로 위치", { exact: true }).fill("40");
+  await section
+    .getByLabel("배경 미리보기 화면", { exact: true })
+    .selectOption("desktop");
+  await section.getByLabel("배경 가로 위치", { exact: true }).fill("20");
+  await section.getByLabel("배경 세로 위치", { exact: true }).fill("60");
   await section
     .getByRole("button", { name: "홈 메뉴 저장", exact: true })
     .click();
@@ -133,6 +148,10 @@ try {
   assert.equal(layout.desktop.scale, 1);
   assert.equal(layout.desktop.x, 65);
   assert.equal(layout.imageId, "qa-art");
+  assert.deepEqual(layout.background, {
+    desktop: { x: 20, y: 60 },
+    mobile: { x: 80, y: 40 },
+  });
   await section.screenshot({ path: out + "/admin-pc.png" });
   await page.reload();
   await section.getByLabel("홈 메뉴 등록 이미지").waitFor();
@@ -150,9 +169,20 @@ try {
       .isDisabled(),
     true,
   );
+  assert.equal(
+    await section.getByLabel("배경 가로 위치", { exact: true }).inputValue(),
+    "80",
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await section.screenshot({ path: out + "/admin-mobile.png" });
   await page.goto(origin + "/");
+  await page.locator(".ko-home-background-image").waitFor();
+  assert.equal(
+    await page
+      .locator(".ko-home-background-image")
+      .evaluate((n) => getComputedStyle(n).objectPosition),
+    "80% 40%",
+  );
   await page.getByTestId("button-battle-modes").waitFor();
   await page.locator(".ko-battle-mode-button img").waitFor();
   assert.equal(
@@ -197,6 +227,8 @@ try {
         initialFailureDisablesSave: true,
         upload: true,
         independentPlacement: true,
+        independentBackgroundPosition: true,
+        backgroundSaveReloadAndActualHome: true,
         saveReentry: true,
         activeDeleteGuard: true,
         unregisterAndDelete: true,

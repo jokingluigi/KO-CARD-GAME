@@ -1,0 +1,16 @@
+{
+  "actualRoutes": true,
+  "fixtureArt": true,
+  "productionWrites": false,
+  "initialFailureDisablesSave": true,
+  "upload": true,
+  "independentPlacement": true,
+  "independentBackgroundPosition": true,
+  "backgroundSaveReloadAndActualHome": true,
+  "saveReentry": true,
+  "activeDeleteGuard": true,
+  "unregisterAndDelete": true,
+  "homeIntegration": true,
+  "onlineChoice": true,
+  "errors": []
+}

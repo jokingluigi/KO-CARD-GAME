@@ -89,7 +89,7 @@ publicRouter.get("/main-content", async (_request, response): Promise<void> => {
     publicHomeMenuArtwork().catch(()=>null),
   ]);
   response.setHeader("Cache-Control", "no-store");
-  response.json({ notices, background, bgm,battleMenuArtwork });
+  response.json({ notices, background, bgm,battleMenuArtwork, backgroundPlacement:battleMenuArtwork?.background ?? null });
 });
 
 adminRouter.use(async (request, _response, next) => {

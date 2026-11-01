@@ -1,9 +1,13 @@
+import {HomeBackgroundImage} from "./home-background-image";
+import {useHomeRewardStatus} from "./home-reward-status";
+import {latestHomeNotice,homeNoticeVersion} from "./home-lobby-policy";
+import {DropdownMenu,DropdownMenuTrigger,DropdownMenuContent,DropdownMenuItem} from "./ui/dropdown-menu";
 import {ReadingAccessibilitySettings} from "./player-ux/reading-accessibility";
 import {BattleModeButton} from "./battle-mode-button";
 import {LaunchDeckBanner} from "./launch-deck-banner";
 import "./main-menu-viewport.css";
-import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX, Pencil } from "lucide-react";
-import { useEffect, useState } from "react";
+import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX, Pencil, ChevronDown } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useLocation } from "wouter";
 import { changeNickname, type AuthUser } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
@@ -74,6 +78,11 @@ const menuItems = [
 ] as const;
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, onNicknameChanged }: MainMenuProps) {
+  const toolbarRef=useRef<HTMLDivElement>(null),accountRef=useRef<HTMLButtonElement>(null);
+  const [toolbarSpace,setToolbarSpace]=useState(350);
+  useLayoutEffect(()=>{const node=toolbarRef.current;if(!node)return;const update=()=>setToolbarSpace(Math.ceil(node.getBoundingClientRect().width)+12);update();const observer=new ResizeObserver(update);observer.observe(node);return()=>observer.disconnect();},[]);
+  const rewards=useHomeRewardStatus(user?.id);
+  const [noticeSeen,setNoticeSeen]=useState<{account:string;version:string}>({account:'',version:''});
   const [allMenusOpen,setAllMenusOpen]=useState(false),[readingOpen,setReadingOpen]=useState(false);
   const [towerEnabled, setTowerEnabled] = useState(false);
   const [draftEnabled, setDraftEnabled] = useState(false);
@@ -144,6 +153,12 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   }, [mainContent.background?.assetUrl]);
 
   const backgroundUrl = backgroundState === "ready" ? mainContent.background?.assetUrl : null;
+  const latestNotice=latestHomeNotice(mainContent.notices),noticeVersion=homeNoticeVersion(latestNotice);
+  const noticeKey=`ko-home-notice-seen-v1:${user?.id??'guest'}`;
+  useEffect(()=>{let version='';try{version=localStorage.getItem(noticeKey)??'';}catch{}setNoticeSeen({account:noticeKey,version});},[noticeKey]);
+  const hasNewNotice=Boolean(noticeVersion&&noticeSeen.account===noticeKey&&noticeSeen.version!==noticeVersion);
+  function openNotices(){setAnnouncementsOpen(true);setNoticeSeen({account:noticeKey,version:noticeVersion});try{localStorage.setItem(noticeKey,noticeVersion);}catch{}}
+
 
   function toggleBgm() {
     const next = !bgmMuted;
@@ -153,8 +168,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   }
 
   return (
-    <main className={`ko-home-lobby ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
-      <div className="ko-main-menu__toolbar">
+    <main style={{"--home-toolbar-space":toolbarSpace+"px"} as CSSProperties} className={`ko-home-lobby ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
+      <div ref={toolbarRef} className="ko-main-menu__toolbar">
       <InstallAppButton />
       <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="relative z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
         {bgmMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
@@ -181,7 +196,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
       {backgroundUrl && (
         <div aria-hidden="true" className="ko-main-menu__art pointer-events-none">
           <div className="ko-main-menu__art-fill" style={{ backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }} />
-          <img className="ko-main-menu__art-original" src={backgroundUrl} alt="" decoding="async" />
+          <HomeBackgroundImage url={backgroundUrl} placement={mainContent.backgroundPlacement}/>
         </div>
       )}
       <div aria-hidden="true" className="ko-main-menu__shade pointer-events-none absolute inset-0 z-[1]" />
@@ -191,26 +206,18 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p></div>
           {user && onLogout && (
             <div className="ko-main-menu__user">
-              <span>{user.nickname}</span>
-              <button type="button" aria-label="닉네임 변경" className="ko-main-menu__nickname-edit rounded border border-neutral-600 px-2 py-1 text-xs text-neutral-200" onClick={() => {
-                setNicknameDraft(user.nickname);
-                setNicknameError("");
-                setEditingNickname((open) => !open);
-              }}><Pencil aria-hidden="true" className="h-4 w-4" /><span>닉네임 변경</span></button>
-              {user.isTestAccount && (
-                <span title="테스트 계정 · 전체 카드/챔피언 · 재화 무제한" aria-label="테스트 계정 · 전체 카드와 챔피언 사용 가능 · 재화 무제한" className="ko-main-menu__test-badge rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-[10px] font-black tracking-wider text-amber-200">
-                  TEST ACCOUNT
-                </span>
-              )}
-              <span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span>
-              <span className="text-violet-300">프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span>
-              <button type="button" onClick={onLogout} aria-label="로그아웃">
-                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>로그아웃</span>
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><button ref={accountRef} type="button" className="ko-home-account" aria-label="계정 메뉴"><span>{user.nickname}</span><ChevronDown aria-hidden="true" className="h-3.5 w-3.5"/></button></DropdownMenuTrigger>
+                <DropdownMenuContent onCloseAutoFocus={e=>{if(editingNickname)e.preventDefault();}} align="end" className="border-neutral-700 bg-neutral-950 text-neutral-100">
+                  <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>{setNicknameDraft(user.nickname);setNicknameError("");setEditingNickname(true);}}><Pencil aria-hidden="true" className="h-4 w-4"/>닉네임 변경</DropdownMenuItem>
+                  <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>onLogout?.()}><LogOut aria-hidden="true" className="h-4 w-4"/>로그아웃</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="ko-home-wallet" aria-label="보유 재화"><span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span><span className="text-violet-300">프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span></div>
+              {user.isTestAccount&&<span className="ko-main-menu__test-badge" title="테스트 계정 · 전체 카드/챔피언 · 재화 무제한">TEST ACCOUNT</span>}
             </div>
           )}
-          <Dialog open={Boolean(user && editingNickname)} onOpenChange={setEditingNickname}><DialogContent className="border-neutral-700 bg-neutral-950 text-white"><DialogHeader><DialogTitle>닉네임 변경</DialogTitle><DialogDescription>새 닉네임은 2~16자로 입력해 주세요.</DialogDescription></DialogHeader><form className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-2" onSubmit={async (event) => {
+          <Dialog open={Boolean(user && editingNickname)} onOpenChange={setEditingNickname}><DialogContent onCloseAutoFocus={e=>{e.preventDefault();accountRef.current?.focus({preventScroll:true});}} className="border-neutral-700 bg-neutral-950 text-white"><DialogHeader><DialogTitle>닉네임 변경</DialogTitle><DialogDescription>새 닉네임은 2~16자로 입력해 주세요.</DialogDescription></DialogHeader><form className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-2" onSubmit={async (event) => {
             event.preventDefault();
             if (nicknameSaving) return;
             const nickname = nicknameDraft.trim();
@@ -240,8 +247,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
 
         {mainContent.notices.length > 0 && (
           <section className="ko-main-menu__announcements" aria-label="공지">
-            <button type="button" aria-haspopup="dialog" aria-expanded={announcementsOpen} onClick={() => setAnnouncementsOpen(true)}>
-              <span>공지 · {mainContent.notices.length}건</span><span>전체 보기 ▸</span>
+            <button type="button" aria-haspopup="dialog" aria-expanded={announcementsOpen} aria-label={`공지 · ${mainContent.notices.length}건`} onClick={openNotices}>
+              <span className="ko-home-notice-label">공지</span><span className="ko-home-notice-title">{latestNotice?.title}</span>{hasNewNotice&&<span className="ko-home-notice-new">새 소식</span>}<span aria-hidden="true">▸</span>
             </button>
           </section>
         )}
@@ -258,11 +265,12 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         {user&&<LaunchDeckBanner key={user.id} accountId={user.id}/>}
         <section className="ko-home-battle" aria-label="대전 시작">
         <BattleModeButton artwork={mainContent.battleMenuArtwork} onClick={()=>navigate(ROUTES.ONLINE)}/>
-        <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>출전 덱으로 매칭</span></button><button type="button" onClick={()=>onAiMatch?.()}>AI 대전 <span>바로 시작</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'덱 구성부터 시작':'현재 이용 불가'}</span></button></nav>
+        <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>선택 덱으로 시작</span></button><button type="button" onClick={()=>onAiMatch?.()}>AI 대전 <span>연습 경기</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'카드를 골라 구성':'현재 이용 불가'}</span></button></nav>
         </section>
         <nav className="ko-lobby-shortcuts" aria-label="덱과 꾸미기"><button type="button" onClick={()=>onDeckEdit?.()}>덱 편집</button><button type="button" onClick={()=>navigate(ROUTES.COLLECTION)}>컬렉션</button><button type="button" onClick={()=>navigate('/cosmetics')}>꾸미기</button></nav>
-        <button type="button" className="ko-lobby-more" onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸</button>
+        <button type="button" className="ko-lobby-more" aria-label="보상 · 상점 · 전체 메뉴 ▸" aria-describedby={rewards?.total?'home-reward-count':undefined} onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸{Boolean(rewards?.total)&&<span id="home-reward-count" className="ko-home-reward-count">받을 보상 {rewards!.total}건</span>}</button>
         <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>
+        {Boolean(rewards?.total)&&<aside aria-label="수령 가능한 보상" className="ko-home-reward-links">{Boolean(rewards?.quests)&&<button className="min-h-11" type="button" onClick={()=>navigate('/daily-quests')}>퀘스트 보상 {rewards!.quests}건 받으러 가기 ▸</button>}{Boolean(rewards?.attendance)&&<button className="min-h-11" type="button" onClick={()=>navigate('/attendance')}>출석 보상 받으러 가기 ▸</button>}</aside>}
         <section aria-label="메인 메뉴" className="ko-main-menu__groups ko-lobby-all-menus">
           {([{ title: "기타", labels: ["타워 모드"] },
             { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼"] },

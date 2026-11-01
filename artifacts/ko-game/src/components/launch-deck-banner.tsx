@@ -92,16 +92,16 @@ export function LaunchDeckBanner({ accountId }: { accountId?: string }) {
         )}
       </div>
       <div className="ko-launch-banner__copy">
-        <p className="text-xs text-amber-200">현재 출전 덱</p>
+        <p className="text-xs text-amber-200">{champion ? selected?.reason ? "덱 확인 필요" : "현재 출전 중" : "현재 출전 덱"}</p>
         <h2>
-          {champion?.name ??
+          {(champion ? deck?.name : undefined) ??
             (decks
               ? "출전 덱을 지정하세요"
               : error
                 ? "출전 덱 확인 실패"
                 : "출전 덱 확인 중…")}
         </h2>
-        <p className="ko-launch-banner__deck">{deck?.name ?? ""}</p>
+        <p className="ko-launch-banner__deck">{champion?.name ?? ""}</p>
         {(error || (deck && selected?.reason)) && (
           <p role="status" className="text-xs text-amber-100">
             {error ?? selected?.reason}

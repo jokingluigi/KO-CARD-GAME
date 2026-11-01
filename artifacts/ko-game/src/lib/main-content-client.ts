@@ -1,4 +1,4 @@
-import {parseHomeMenuLayout,type HomeMenuArtwork} from "@workspace/cosmetics";
+import {parseHomeMenuLayout,parseHomeBackgroundPlacement,type HomeBackgroundPlacement,type HomeMenuArtwork} from "@workspace/cosmetics";
 export type MainNotice = {
   id: string;
   title: string;
@@ -20,6 +20,7 @@ export type MainContentMedia = {
 
 export type MainContent = {
   battleMenuArtwork?:HomeMenuArtwork|null;
+  backgroundPlacement?:HomeBackgroundPlacement|null;
   notices: MainNotice[];
   background: MainContentMedia | null;
   bgm: MainContentMedia | null;
@@ -40,6 +41,7 @@ export async function fetchMainContent(): Promise<MainContent> {
   const body = await response.json() as Partial<MainContent>;
   return {
     battleMenuArtwork: parseHomeMenuLayout(body.battleMenuArtwork) && typeof body.battleMenuArtwork?.imageUrl === "string" ? body.battleMenuArtwork : null,
+    backgroundPlacement: parseHomeBackgroundPlacement(body.backgroundPlacement),
     notices: Array.isArray(body.notices) ? body.notices : [],
     background: body.background ?? null,
     bgm: body.bgm ?? null,

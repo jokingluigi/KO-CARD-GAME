@@ -1,3 +1,4 @@
+import {AdminHomeBackground} from "./admin-home-background";
 import { useEffect, useRef, useState } from "react";
 import {
   defaultHomeMenuLayout,
@@ -414,6 +415,7 @@ export function AdminHomeMenuArt({
                 />
               </div>
             </div>
+            <AdminHomeBackground value={layout.background} onChange={background=>setLayout(x=>({...x,background}))}/>
             <button
               type="button"
               disabled={!dirty}

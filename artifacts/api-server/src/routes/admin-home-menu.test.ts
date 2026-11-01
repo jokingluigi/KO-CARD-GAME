@@ -63,6 +63,7 @@ test("real HTTP route checks administrator permission and rejects invalid placem
       (await put({ ...defaultHomeMenuLayout(), mobile: { scale: 99 } })).status,
       400,
     );
+    assert.equal((await put({...defaultHomeMenuLayout(),background:{desktop:{x:50,y:50},mobile:{x:101,y:50}}})).status,400);
     assert.equal(saves, 0);
     assert.equal((await put(defaultHomeMenuLayout(), "USER")).status, 403);
     assert.equal(saves, 0);

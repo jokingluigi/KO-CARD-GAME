@@ -91,7 +91,7 @@ export type DailyCompletionBonus = {
  status:"DISABLED"|"IN_PROGRESS"|"COMPLETED"|"CLAIMED";claimedAt:string|null;
 };
 export const claimDailyCompletionBonus=()=>request<{bonus:DailyCompletionBonus;reward:unknown;alreadyClaimed:boolean}>("/daily-quests/completion-bonus/claim",{method:"POST"});
-export const fetchDailyQuests = () => request<{ assignments: DailyQuest[]; completionBonus?:DailyCompletionBonus; seasons?: Array<{id:string;name:string;endsAt:string}>; timezone?:string }>("/daily-quests");
+export const fetchDailyQuests = (options?:{signal?:AbortSignal}) => request<{ assignments: DailyQuest[]; completionBonus?:DailyCompletionBonus; seasons?: Array<{id:string;name:string;endsAt:string}>; timezone?:string }>("/daily-quests",options);
 export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
   submitWithReceipt(
     () => request<{ completed: boolean; message?: string; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", { method: "POST", body: JSON.stringify(body) }),
@@ -101,7 +101,7 @@ export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
     },
   );
 export const claimDailyQuest = (id: string) => request<{ assignment: DailyQuest; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>(`/daily-quests/${encodeURIComponent(id)}/claim`, { method: "POST" });
-export const fetchAttendance = () => request<AttendanceData>("/attendance");
+export const fetchAttendance = (options?:{signal?:AbortSignal}) => request<AttendanceData>("/attendance",options);
 export const claimAttendance = () => request<{ attendance: AttendanceData; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>("/attendance/claim", { method: "POST" });
 export const fetchRewardAdminData = () => request<RewardAdminData>("/admin/rewards");
 export type RewardCatalogCard = { id: string; name: string; imageUrl: string | null; status: string; isToken: boolean; isChampionToken: boolean };

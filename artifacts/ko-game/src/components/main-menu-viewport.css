@@ -243,7 +243,7 @@
     top: 6px;
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__header {
-    padding-right: 240px;
+    padding-right: var(--home-toolbar-space, 350px);
     min-height: 52px;
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__logo {
@@ -315,53 +315,17 @@ main.ko-main-menu.ko-main-menu
     min-height: clamp(44px, calc((100dvh - 340px) / 6), 68px);
   }
 }
-.ko-main-menu__nickname-edit svg {
-  display: none;
-}
 @media (max-width: 767px) and (max-height: 650px) and (orientation: portrait) {
   main.ko-main-menu.ko-main-menu .ko-main-menu__logo {
     font-size: 48px;
   }
   main.ko-main-menu.ko-main-menu .ko-main-menu__user {
     flex: 1;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 44px 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 0 2px;
     font-size: 10px;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__user > span:first-child {
-    grid-column: 1;
-    grid-row: 1;
-    overflow-wrap: anywhere;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__nickname-edit {
-    grid-column: 2;
-    grid-row: 1;
-    justify-content: center;
-  }
-  main.ko-main-menu.ko-main-menu
-    .ko-main-menu__user
-    > button[aria-label="로그아웃"] {
-    grid-column: 3;
-    grid-row: 1;
-    justify-content: center;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__nickname-edit svg {
-    display: block;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__user > button > span {
-    display: none;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__user > .text-amber-300 {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__user > .text-violet-300 {
-    grid-column: 2 / 4;
-    grid-row: 2;
-  }
-  main.ko-main-menu.ko-main-menu .ko-main-menu__user > .rounded {
-    grid-column: 1 / 4;
   }
 }
 
@@ -412,12 +376,5 @@ main.ko-main-menu.ko-main-menu
  main.ko-main-menu.ko-main-menu .ko-main-menu__item {min-height:44px;justify-content:center;text-align:center;padding:4px}
  main.ko-main-menu.ko-main-menu .ko-main-menu__icon {display:none}
  main.ko-main-menu.ko-main-menu .ko-main-menu__copy>span:first-child {font-size:11px!important;line-height:14px}
- main.ko-main-menu.ko-main-menu .ko-main-menu__user {display:grid;grid-template-columns:minmax(0,1fr) 44px 44px;gap:0 2px;font-size:10px}
- main.ko-main-menu.ko-main-menu .ko-main-menu__user>span:first-child {grid-column:1;grid-row:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- main.ko-main-menu.ko-main-menu .ko-main-menu__nickname-edit {grid-column:2;grid-row:1;justify-content:center}
- main.ko-main-menu.ko-main-menu .ko-main-menu__user>button[aria-label=로그아웃] {grid-column:3;grid-row:1;justify-content:center}
- main.ko-main-menu.ko-main-menu .ko-main-menu__nickname-edit svg {display:block}
- main.ko-main-menu.ko-main-menu .ko-main-menu__user>button>span {display:none}
- main.ko-main-menu.ko-main-menu .ko-main-menu__user>.text-amber-300 {grid-column:1;grid-row:2}
- main.ko-main-menu.ko-main-menu .ko-main-menu__user>.text-violet-300 {grid-column:2/4;grid-row:2}
+ main.ko-main-menu.ko-main-menu .ko-main-menu__user {display:flex;flex-direction:column;align-items:flex-end;gap:0 2px;font-size:10px}
 }
