@@ -59,3 +59,11 @@
 ## 미검증과 한계
 
 물리적 Android/iOS·저사양 GPU FPS/메모리·실제 화면 읽기 프로그램·색각/저시력 사용자의 체감·오조작 감소율·실제 사용자 PvP·드래프트 전체 런은 이번에 검증하지 않았다. 사용자 만족도나 메타크리틱 점수 상승을 입증했다고 주장하지 않는다. 운영 계정/덱/보상·카드/챔피언 원본·게임 규칙·서버 판정 변경과 main 병합 없음.
+
+## 배포 확인
+
+기존 자동 배포 승인에 따라 소스 `31f0051a66f6e3ccc2e8413feed2713e9e86ee8f`의 프런트만 배포했다. API 재배포·DB 쓰기/스키마 변경 없음. Render 해당 커밋 live, health 200, 점검 비활성 유지. 배포 전 API 상태 조회 한 번은 30초 시간 초과였고 프런트 프록시와 API 직접 재조회가 모두 정상 응답한 뒤 진행했다.
+
+운영 JS/CSS **117개 전체 SHA-256**이 로컬 검증 빌드와 일치한다. [배포 영수증](20261101-ux-accessibility-front-deployment.json).
+
+배포된 번들을 390×844 브라우저에서 실행해 대표 배경 decode, 홈 스크롤 없음, 홈 → 공통 대전 화면의 네 항목 표시를 확인했다. 계정/덱 응답은 브라우저에서 대역으로 제공하고 모든 POST를 차단해 운영 사용자 데이터에 쓰지 않았다. 실행 환경 인증서 체인 문제로 이 브라우저 검사만 ignoreHTTPSErrors를 사용했으므로 TLS 인증서 검증 결과는 아니다. [배포 홈](20261101-ux-accessibility/deployed-home.png) · [배포 대전 모드](20261101-ux-accessibility/deployed-mode-picker.png) · [브라우저 결과](20261101-ux-accessibility/deployed-browser.json).

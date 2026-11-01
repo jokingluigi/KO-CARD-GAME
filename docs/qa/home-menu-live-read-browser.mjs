@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
+const out = "docs/qa/20261101-ux-accessibility";
 const browser = await chromium.launch(),
   page = await browser.newPage({
     viewport: { width: 390, height: 844 },
@@ -52,12 +53,13 @@ try {
       () => document.documentElement.scrollHeight <= innerHeight + 1,
     ),
   );
+  await page.screenshot({ path: `${out}/deployed-home.png` });
   await page.getByTestId("button-battle-modes").click();
-  await page.waitForURL('**/online');
-  await page.getByTestId('button-mode-ai').waitFor();
-  assert.equal(await page.locator('.ko-battle-mode-grid>button').count(),4);
+  await page.waitForURL("**/online");
+  await page.getByTestId("button-mode-ai").waitFor();
+  assert.equal(await page.locator(".ko-battle-mode-grid>button").count(), 4);
   await page.screenshot({
-    path: "docs/qa/20261101-home-menu/deployed-mode-picker.png",
+    path: `${out}/deployed-mode-picker.png`,
   });
 
   assert.ok(
@@ -66,7 +68,7 @@ try {
   );
   assert.deepEqual(errors, []);
   await writeFile(
-    "docs/qa/20261101-home-menu/deployed-browser.json",
+    `${out}/deployed-browser.json`,
     JSON.stringify(
       {
         deployedBundle: true,
