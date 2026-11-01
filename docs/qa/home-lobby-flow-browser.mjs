@@ -52,6 +52,9 @@ const art =
     isActive: true,
     sortOrder: 0,
   };
+const liveContent = process.env.KO_QA_HOME_MAIN_CONTENT
+  ? JSON.parse(await readFile(process.env.KO_QA_HOME_MAIN_CONTENT, "utf8"))
+  : null;
 const b = await chromium.launch(),
   out = "qa-results/home-lobby-flow",
   results = [];
@@ -83,6 +86,16 @@ async function setup(p, { missing = false, invalid = false } = {}) {
   await p.route("**/api/**", async (r) => {
     const path = new URL(r.request().url()).pathname,
       q = r.request();
+    if (
+      liveContent &&
+      process.env.KO_QA_HOME_BACKGROUND &&
+      path === liveContent.background?.assetUrl
+    ) {
+      return r.fulfill({
+        contentType: "image/png",
+        body: await readFile(process.env.KO_QA_HOME_BACKGROUND),
+      });
+    }
     let json = {};
     if (path.endsWith("/auth/me"))
       json = {
@@ -132,7 +145,8 @@ async function setup(p, { missing = false, invalid = false } = {}) {
     } else if (path.endsWith("/ai-decks"))
       json = { decks: [ai], extraCards: [], extraChampions: [] };
     else if (path.endsWith("/game-media")) json = { backgrounds: [], bgms: [] };
-    else if (path.endsWith("/main-content")) json = data["main-content"];
+    else if (path.endsWith("/main-content"))
+      json = liveContent ?? data["main-content"];
     else if (path.endsWith("/ai-match-start")) {
       const body = q.postDataJSON();
       starts.push(body);
@@ -246,8 +260,10 @@ try {
       1,
     );
     await p.goto("http://127.0.0.1:5186/");
-    await p.getByTestId('button-battle-modes').click();
-    await p.getByRole('button',{name:'AI 대전 시작 출전 덱으로 바로 시작'}).click();
+    await p.getByTestId("button-battle-modes").click();
+    await p
+      .getByRole("button", { name: "AI 대전 시작 출전 덱으로 바로 시작" })
+      .click();
     await p
       .getByRole("button", { name: "설정 열기", exact: true })
       .waitFor({ timeout: 20000 });

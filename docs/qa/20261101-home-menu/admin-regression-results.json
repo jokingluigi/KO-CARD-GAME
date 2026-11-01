@@ -1,0 +1,9 @@
+{
+  "results": [
+    "fast-admin PASS",
+    "pending-admin PASS",
+    "guest PASS",
+    "music PASS"
+  ],
+  "errors": []
+}
