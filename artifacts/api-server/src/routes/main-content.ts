@@ -1,3 +1,4 @@
+import {publicHomeMenuArtwork} from "../lib/home-menu-media";
 import { and, desc, eq, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -81,13 +82,14 @@ publicRouter.get("/notices", async (_request, response): Promise<void> => {
 });
 
 publicRouter.get("/main-content", async (_request, response): Promise<void> => {
-  const [notices, background, bgm] = await Promise.all([
+  const [notices, background, bgm,battleMenuArtwork] = await Promise.all([
     publicNotices(),
     activeMainMedia("BACKGROUND"),
     activeMainMedia("BGM"),
+    publicHomeMenuArtwork().catch(()=>null),
   ]);
   response.setHeader("Cache-Control", "no-store");
-  response.json({ notices, background, bgm });
+  response.json({ notices, background, bgm,battleMenuArtwork });
 });
 
 adminRouter.use(async (request, _response, next) => {

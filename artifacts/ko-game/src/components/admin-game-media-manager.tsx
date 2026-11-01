@@ -1,3 +1,4 @@
+import {AdminHomeMenuArt} from "./admin-home-menu-art";
 import {AdminEditorSections} from './admin-editor-sections';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, Music2, Play, Power, Square, Trash2, Upload } from "lucide-react";
@@ -316,6 +317,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
 
   return (
     <div className="space-y-6">
+      <AdminHomeMenuArt onUnauthorized={onUnauthorized}/>
       <div>
         <div className="font-display text-xs font-bold tracking-[0.2em] text-primary">GAME MEDIA</div>
         <h2 className="mt-1 text-2xl font-black">백그라운드 관리</h2>

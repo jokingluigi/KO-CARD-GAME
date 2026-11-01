@@ -1,3 +1,4 @@
+import {removeHomeMenuImage} from "../lib/home-menu-media";
 import {verifyCatalogAssets} from "./cosmetics";
 import {parseBattleSprite} from "@workspace/cosmetics";
 import {AssetCleanupGate} from "../lib/asset-cleanup-gate";
@@ -111,6 +112,7 @@ const CARD_KEYWORDS = [
 ] as const;
 const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 const GAME_MEDIA_TYPES = [
+  "HOME_MENU_ART",
   "BACKGROUND",
   "BGM",
   'VICTORY_BGM',
@@ -2522,12 +2524,12 @@ router.delete("/card-frames/:cardType/:rarity", async (request, response): Promi
 });
 
 function gameMediaConfig(mediaType: (typeof GAME_MEDIA_TYPES)[number]) {
-  return mediaType === "BACKGROUND"
+  return (mediaType === "BACKGROUND" || mediaType === "HOME_MENU_ART")
     ? {
         prefix: "/objects/uploads/game-backgrounds/",
         storage: backgroundImageStorage,
         types: GAME_BACKGROUND_TYPES,
-        maxSize: MAX_CARD_IMAGE_SIZE,
+        maxSize: mediaType === "HOME_MENU_ART" ? 10 * 1024 * 1024 : MAX_CARD_IMAGE_SIZE,
       }
     : mediaType === "BGM" || mediaType === 'VICTORY_BGM' || mediaType === 'DEFEAT_BGM'
       ? {
@@ -2548,7 +2550,8 @@ function gameMediaExtensions(
   mediaType: (typeof GAME_MEDIA_TYPES)[number],
   contentType: string,
 ) {
-  return mediaType === "BACKGROUND"
+  if(mediaType === "HOME_MENU_ART" && !["image/png","image/webp"].includes(contentType)) return undefined;
+  return (mediaType === "BACKGROUND" || mediaType === "HOME_MENU_ART")
     ? GAME_BACKGROUND_TYPES[contentType as keyof typeof GAME_BACKGROUND_TYPES]
     : GAME_BGM_TYPES[contentType as keyof typeof GAME_BGM_TYPES];
 }
@@ -2577,8 +2580,8 @@ router.post("/game-media/uploads/request-url", async (request, response): Promis
   if (!validExtensions || !validExtensions.some((item) => item === extension) ||
       !Number.isInteger(size) || size <= 0 || size > config.maxSize) {
     response.status(400).json({
-      message: mediaType === "BACKGROUND"
-        ? `PNG, JPG, JPEG, WEBP 파일만 업로드할 수 있으며 최대 크기는 ${Math.floor(config.maxSize / 1024 / 1024)}MB입니다.`
+      message: (mediaType === "BACKGROUND" || mediaType === "HOME_MENU_ART")
+        ? `${mediaType === "HOME_MENU_ART" ? "PNG, WEBP" : "PNG, JPG, JPEG, WEBP"} 파일만 업로드할 수 있으며 최대 크기는 ${Math.floor(config.maxSize / 1024 / 1024)}MB입니다.`
         : "MP3, OGG, WAV 오디오 파일만 업로드할 수 있으며 최대 크기는 20MB입니다.",
     });
     return;
@@ -2602,7 +2605,7 @@ router.post("/game-media/uploads/complete", async (request, response): Promise<v
   const extension = objectPath.toLowerCase().split(".").pop() ?? "";
   const validExtensions = gameMediaExtensions(mediaType, contentType);
   const validPath = objectPath.startsWith(config.prefix);
-  const valid = mediaType === "BACKGROUND"
+  const valid = (mediaType === "BACKGROUND" || mediaType === "HOME_MENU_ART")
     ? validPath && Boolean(validExtensions?.some((item) => item === extension)) &&
       await backgroundImageStorage.verifyImage(objectPath, contentType, config.maxSize)
     : validPath && Boolean(validExtensions?.some((item) => item === extension)) &&
@@ -2657,7 +2660,7 @@ router.post("/game-media", async (request, response): Promise<void> => {
   const titleEnabled = body.titleEnabled === undefined
     ? body.mainEnabled === undefined ? false : body.mainEnabled
     : body.titleEnabled;
-  const validDimensions = mediaType !== "BACKGROUND" ||
+  const validDimensions = (mediaType !== "BACKGROUND" && mediaType !== "HOME_MENU_ART") ||
     (width !== null && height !== null &&
       Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0);
   if (!isGameMediaType(mediaType) || !name || name.length > 120 ||
@@ -2696,12 +2699,12 @@ router.post("/game-media", async (request, response): Promise<void> => {
       assetUrl,
       fileName,
       contentType,
-      width: mediaType === "BACKGROUND" ? width as number : null,
-      height: mediaType === "BACKGROUND" ? height as number : null,
+      width: (mediaType === "BACKGROUND" || mediaType === "HOME_MENU_ART") ? width as number : null,
+      height: (mediaType === "BACKGROUND" || mediaType === "HOME_MENU_ART") ? height as number : null,
       volume: mediaType !== "BACKGROUND" ? volume as number : 100,
-      gameEnabled,
+      gameEnabled:mediaType==="HOME_MENU_ART"?false:gameEnabled,
       titleEnabled: mediaType === "BACKGROUND" || mediaType === "BGM" ? titleEnabled : false,
-      enabled: gameEnabled,
+      enabled:mediaType==="HOME_MENU_ART"?false:gameEnabled,
       mainEnabled: mediaType === "BACKGROUND" || mediaType === "BGM" ? titleEnabled : false,
     }).returning();
   });
@@ -2716,6 +2719,7 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
     response.status(404).json({ message: "게임 미디어를 찾을 수 없습니다." });
     return;
   }
+  if(existing.mediaType==="HOME_MENU_LAYOUT"){response.status(400).json({message:"홈 메뉴 이미지 관리에서 수정하세요."});return;}
   const body = request.body && typeof request.body === "object"
     ? request.body as Record<string, unknown> : {};
   const name = body.name === undefined ? existing.name : typeof body.name === "string" ? body.name.trim() : "";
@@ -2748,9 +2752,9 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
     }
     return tx.update(gameMediaTable).set({
       name,
-      gameEnabled,
+      gameEnabled:existing.mediaType==="HOME_MENU_ART"?false:gameEnabled,
       titleEnabled,
-      enabled: gameEnabled,
+      enabled:existing.mediaType==="HOME_MENU_ART"?false:gameEnabled,
       volume: existing.mediaType !== "BACKGROUND" ? volume : existing.volume,
       mainEnabled: titleEnabled,
       updatedAt: new Date(),
@@ -2766,6 +2770,10 @@ router.delete("/game-media/:id", async (request, response): Promise<void> => {
   if (!existing) {
     response.status(404).json({ message: "게임 미디어를 찾을 수 없습니다." });
     return;
+  }
+  if(existing.mediaType==='HOME_MENU_LAYOUT'){response.status(400).json({message:'홈 메뉴 이미지 관리에서 등록 해제하세요.'});return;}
+  if(existing.mediaType==='HOME_MENU_ART'){
+    try{await removeHomeMenuImage(id);response.status(204).end();}catch(e){response.status(409).json({message:e instanceof Error?e.message:'이미지를 삭제하지 못했습니다.'});}return;
   }
   await db.delete(gameMediaTable).where(eq(gameMediaTable.id, id));
   const config = gameMediaConfig(existing.mediaType as (typeof GAME_MEDIA_TYPES)[number]);

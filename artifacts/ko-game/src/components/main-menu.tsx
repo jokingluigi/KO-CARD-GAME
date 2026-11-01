@@ -1,3 +1,4 @@
+import {BattleModeButton} from "./battle-mode-button";
 import {LaunchDeckBanner} from "./launch-deck-banner";
 import "./main-menu-viewport.css";
 import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX, Pencil } from "lucide-react";
@@ -72,6 +73,7 @@ const menuItems = [
 ] as const;
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, onNicknameChanged }: MainMenuProps) {
+  const [battleModesOpen,setBattleModesOpen]=useState(false),[allMenusOpen,setAllMenusOpen]=useState(false);
   const [towerEnabled, setTowerEnabled] = useState(false);
   const [draftEnabled, setDraftEnabled] = useState(false);
   const [notice, setNotice] = useState("");
@@ -150,7 +152,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   }
 
   return (
-    <main className={`ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
+    <main className={`ko-home-lobby ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
       <div className="ko-main-menu__toolbar">
       <InstallAppButton />
       <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="relative z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
@@ -251,8 +253,13 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         </Dialog>
 
         {user&&<LaunchDeckBanner key={user.id} accountId={user.id}/>}
-        <section aria-label="메인 메뉴" className="ko-main-menu__groups">
-          {([{ title: "대전", labels: ["온라인 매치", "AI 매치", "타워 모드", "드래프트 모드"] },
+        <BattleModeButton artwork={mainContent.battleMenuArtwork} onClick={()=>setBattleModesOpen(true)}/>
+        <Dialog open={battleModesOpen} onOpenChange={setBattleModesOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>대전 모드</DialogTitle><DialogDescription>원하는 방식으로 경기에 들어가세요. 출전 덱은 덱 편집기에서 변경합니다.</DialogDescription><nav aria-label="대전 모드 선택" className="ko-mode-choices"><button type="button" onClick={()=>{setBattleModesOpen(false);navigate(ROUTES.ONLINE);}}><strong>온라인 대전</strong><span>빠른 대전 · 친구 대전</span></button><button type="button" onClick={()=>{setBattleModesOpen(false);onAiMatch?.();}}><strong>AI 대전 시작</strong><span>출전 덱으로 바로 시작</span></button><button type="button" disabled={!draftEnabled} onClick={()=>{setBattleModesOpen(false);navigate('/draft');}}><strong>드래프트</strong><span>{draftEnabled?'카드를 선택해 덱 구성':'현재 이용할 수 없어요'}</span></button></nav></DialogContent></Dialog>
+        <nav className="ko-lobby-shortcuts" aria-label="덱과 꾸미기"><button type="button" onClick={()=>onDeckEdit?.()}>덱 편집</button><button type="button" onClick={()=>navigate(ROUTES.COLLECTION)}>컬렉션</button><button type="button" onClick={()=>navigate('/cosmetics')}>꾸미기</button></nav>
+        <button type="button" className="ko-lobby-more" onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸</button>
+        <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>
+        <section aria-label="메인 메뉴" className="ko-main-menu__groups ko-lobby-all-menus">
+          {([{ title: "기타", labels: ["타워 모드"] },
             { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼"] },
             { title: "보상과 상점", labels: ["일일 퀘스트", "출석 보드", "내 팩", "상점"] }]).map(group => <section key={group.title} aria-label={group.title} className="ko-main-menu__group">
           <h2>{group.title}</h2><div className="ko-main-menu__grid">
@@ -266,6 +273,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
               type="button"
               data-testid={`button-main-menu-${label === "온라인 매치" ? "online" : label === "AI 매치" ? "ai" : label}`}
               onClick={() => {
+                setAllMenusOpen(false);
                 if (label === '타워 모드') { navigate('/tower'); return; }
                 if (label === '드래프트 모드') { navigate('/draft'); return; }
                 if(label==="내 기록"){navigate("/player-notebook");return;}
@@ -321,7 +329,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
             </button>
           ))}
           </div></section>)}
-        </section>
+        </section></DialogContent></Dialog>
         {notice && (
           <p role="status" className="mt-6 text-center text-sm font-bold text-amber-300">
             {notice}

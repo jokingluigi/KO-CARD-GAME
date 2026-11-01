@@ -197,3 +197,4 @@ export * from './battle-sprite';
 export * from './champion-sprite-skin';
 
 export * from './pack-probabilities';
+export * from './home-menu';

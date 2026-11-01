@@ -20,14 +20,14 @@ try{for(const scenario of ['fast-admin','pending-admin','guest','music']){
  await route.fulfill({json});});
  await page.goto(origin+(scenario==='music'?'/admin/media':'/admin'));
  if(scenario==='pending-admin'){
-  await page.getByRole('textbox',{name:'이메일',exact:true}).waitFor({timeout:5000});assert.equal(checks,1);
+  await page.getByRole('textbox',{name:'이메일',exact:true}).waitFor({timeout:5000});assert.ok(checks>=1&&checks<=2,'initial request plus the existing 1500ms recovery probe');
   await page.getByRole('textbox',{name:'이메일',exact:true}).fill('local@admin.invalid');await page.getByLabel('비밀번호',{exact:true}).fill('Local12345!');await page.getByRole('button',{name:'로그인',exact:true}).last().click();
   await page.getByRole('heading',{name:'운영 개요',exact:true}).waitFor();assert.deepEqual(writes,['/api/auth/login']);
   // Late old session response must not undo the explicit successful login.
   for(const route of pending.filter(r=>new URL(r.request().url()).pathname==='/api/admin/session'))await route.fulfill({json:{authenticated:false,user:null}}).catch(()=>{});
   await page.waitForTimeout(200);await page.getByRole('heading',{name:'운영 개요',exact:true}).waitFor();
  }else if(scenario==='guest'){await page.getByRole('heading',{name:'관리자 권한이 필요합니다'}).waitFor();assert.equal(writes.length,0);}
- else if(scenario==='fast-admin'){await page.getByRole('heading',{name:'운영 개요',exact:true}).waitFor({timeout:5000});assert.equal(checks,1);assert.equal(writes.length,0);}
+ else if(scenario==='fast-admin'){await page.getByRole('heading',{name:'운영 개요',exact:true}).waitFor({timeout:5000});assert.ok(checks>=1&&checks<=2,'initial request plus the existing 1500ms recovery probe');assert.equal(writes.length,0);}
  else{
   await page.getByRole('tab',{name:'승리·패배 음악',exact:true}).click();const panel=page.getByRole('tabpanel').filter({has:page.getByRole('heading',{name:'승리 음악',exact:true})});
   await page.getByRole('heading',{name:'승리 음악',exact:true}).waitFor();await page.getByRole('heading',{name:'패배 음악',exact:true}).waitFor();

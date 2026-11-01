@@ -1,3 +1,4 @@
+import adminHomeMenuRouter from "./admin-home-menu";
 import adminBattleSpritesRouter from "./admin-battle-sprites";
 import shopDecksRouter from "./shop-decks";
 import cosmeticsRouter from './cosmetics';
@@ -52,6 +53,7 @@ router.use("/admin/battle-sprites", adminBattleSpritesRouter);
 router.use(cosmeticsRouter);
 router.use("/admin/usage-statistics", adminUsageStatisticsRouter);
 router.use("/admin/tags", adminTagsRouter);
+router.use("/admin/home-menu",adminHomeMenuRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
 router.use("/test-auth", testAuthRouter);

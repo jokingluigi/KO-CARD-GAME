@@ -15,6 +15,7 @@ type DownloadedObject = {
 };
 
 type AssetStorageProvider = {
+  download(objectPath:string,folder:string):Promise<DownloadedObject|null>;
   createUpload(extension: string, folder: string): Promise<{
     assetId: string;
     objectPath: string;
@@ -348,7 +349,7 @@ class SupabaseAssetStorageProvider implements AssetStorageProvider {
     return objectNameForFolder(objectPath, folder);
   }
 
-  private async download(
+  async download(
     objectPath: string,
     folder: string,
   ): Promise<DownloadedObject | null> {
@@ -492,6 +493,9 @@ function createAssetStorageProvider(): AssetStorageProvider {
 
 class ImageAssetStorage {
   private readonly provider = createAssetStorageProvider();
+
+  download(objectPath:string){return this.provider.download(objectPath,this.folder);}
+  save(objectPath:string,buffer:Buffer,contentType:string){return this.provider.save(objectPath,buffer,contentType);}
 
   constructor(private readonly folder: string) {}
 

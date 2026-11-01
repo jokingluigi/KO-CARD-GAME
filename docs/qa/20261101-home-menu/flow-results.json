@@ -1,0 +1,32 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "homeUsesDeckChampionAndSkin": true,
+    "editorSelectionAndSavePersist": true,
+    "quickAutoStartsOnce": true,
+    "cancelDoesNotRequeue": true,
+    "aiAutoStartsSelectedDeck": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "homeUsesDeckChampionAndSkin": true,
+    "editorSelectionAndSavePersist": true,
+    "quickAutoStartsOnce": true,
+    "cancelDoesNotRequeue": true,
+    "aiAutoStartsSelectedDeck": true,
+    "errors": []
+  },
+  {
+    "mode": "missing",
+    "noSilentFallback": true,
+    "noMatchStarted": true
+  },
+  {
+    "mode": "invalid",
+    "noSilentFallback": true,
+    "noMatchStarted": true
+  }
+]
