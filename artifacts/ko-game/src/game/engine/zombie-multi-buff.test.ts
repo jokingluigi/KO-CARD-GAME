@@ -439,3 +439,8 @@ test("display wording and granted text cannot disable the zombie retirement cap"
     assert.deepEqual(stats(s), Array(3).fill([3, 3, 3]), mode);
   }
 });
+
+test('retirement and absorption expose distinct display provenance without modifying executable stat-history or extra events',()=>{
+ let s=setup(3);const initial=s.players[0].board[0]!.statHistory??[];s=retire(s);for(const c of s.players[0].board.filter(Boolean)){assert.deepEqual(c!.statHistory??[],initial);assert.ok(c!.visualStatHistory?.every(e=>e.sourceName==='아군 리타이어 강화 · 1/2회'));}
+ s=cast(s);for(const c of s.players[0].board.filter(Boolean)){assert.deepEqual(c!.statHistory??[],initial);assert.ok(c!.visualStatHistory?.some(e=>e.sourceName==='효과로 소환된 좀비 흡수'));assert.equal(c!.visualStatHistory?.filter(e=>e.stat==='attack').length,2);}
+});

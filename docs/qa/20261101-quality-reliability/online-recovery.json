@@ -1,0 +1,11 @@
+{
+  "stalledAcknowledgementRecovered": true,
+  "oneMutatingActionPerIntent": true,
+  "readOnlyResync": true,
+  "visiblePendingState": true,
+  "historicalAudioSkipped": true,
+  "newSummonAudioOnce": true,
+  "staleVersionIgnored": true,
+  "newMatchStartsAtVersionZero": true,
+  "errors": []
+}

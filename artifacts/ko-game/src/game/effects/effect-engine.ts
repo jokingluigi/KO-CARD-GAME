@@ -10,7 +10,7 @@ import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
-import { existingZombies, isZombieToken, ZOMBIE_RETIREMENT_GROWTH_LIMIT, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
+import { existingZombies, withZombieStatFeedback, isZombieToken, ZOMBIE_RETIREMENT_GROWTH_LIMIT, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense, isEntryDefenseTargetProtected } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
@@ -3966,7 +3966,7 @@ export function resolveCardRetiredListeners(
         const used=growth.counts[card.instanceId] ?? 0;
         if(used >= ZOMBIE_RETIREMENT_GROWTH_LIMIT)return card;
         growth.counts[card.instanceId]=used+1;recordedGrowth=true;
-        return {...card,currentAttack:card.currentAttack+1,currentHealth:card.currentHealth+1,maxHealth:card.maxHealth+1};
+        return withZombieStatFeedback(card,1,1,state.turn,retiredCard,`아군 리타이어 강화 · ${used+1}/${ZOMBIE_RETIREMENT_GROWTH_LIMIT}회`);
       }) as typeof p.board })) };
     if(recordedGrowth)state={...state,zombieGrowthThisTurn:growth};
   }

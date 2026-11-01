@@ -13,8 +13,9 @@ test('admin sandbox rejects incomplete decks, invalid floors and unavailable car
   for (const invalid of [{ ...setup, floor: 0 }, { ...setup, floor: 17 }, { ...setup, floor: 1.5 }, { ...setup, playerDeck: deck.slice(1) }, { ...setup, seed: '' }])
     assert.throws(() => parseTowerSandboxSetup(invalid));
   assert.throws(() => createTowerSandbox({ ...setup, playerDeck: Array(25).fill('missing') }, cards, TEST_CHAMPIONS));
-  assert.throws(() => createTowerSandbox(setup, cards.map(card => ({ ...card, status: 'DRAFT' })), TEST_CHAMPIONS));
+  assert.throws(() => createTowerSandbox(setup, cards.map(card => ({ ...card, status: 'DISABLED' })), TEST_CHAMPIONS));
 });
+test('admin sandbox permits draft definitions without publishing them',()=>{const draft=cards.map(card=>({...card,status:'DRAFT' as const}));assert.ok(createTowerSandbox(setup,draft,TEST_CHAMPIONS));assert.ok(draft.every(card=>card.status==='DRAFT'));});
 test('sandbox reuses Tower initialization and completes without changing its selected deck', () => {
   const saved = JSON.stringify(setup);
   let state = createTowerSandbox(setup, cards, TEST_CHAMPIONS);

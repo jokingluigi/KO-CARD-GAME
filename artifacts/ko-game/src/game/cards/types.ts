@@ -210,6 +210,8 @@ export interface CardInstance {
   fusionCount?: number;
   fusionSourceIds?: string[];
   statHistory?: CardStatHistoryEntry[];
+  /** Display-only provenance, excluded from executable FIRST_ATTACK_GAIN bookkeeping. */
+  visualStatHistory?: CardStatHistoryEntry[];
   /** Snapshot retained only for chained effects that consume the last retirement. */
   lastRetiredStats?: { attack: number; health: number };
   /** Executable text copied from a published match CardDefinition. */

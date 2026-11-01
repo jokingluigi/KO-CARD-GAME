@@ -1,3 +1,5 @@
+import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
+import {watchActionAcknowledgement} from "@/lib/action-recovery";
 import {confirmedCounterDamage} from "@/components/attack-animation-utils";
 import { prepareIntroPortraits } from '@/game/match-assets';
 import { questMusic as selectQuestMusic } from '@/components/quest-media';
@@ -241,6 +243,13 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         message.type === "MATCH_ENDED" ||
         message.type === "RESYNC_REQUIRED"
       ) {
+        if(!acceptsSnapshotVersion(versionRef.current,message.version)){
+          if(message.type==="ACTION_ACCEPTED"&&pendingActionIdRef.current===message.requestId){
+            pendingActionIdRef.current=null;pendingActionInFlightRef.current=false;setPendingAction(false);
+            pendingAttackRef.current=null;pendingPlayRef.current=null;
+          }
+          return;
+        }
         const nextSeat = message.type === "MATCH_SNAPSHOT" ? message.seat : seatRef.current;
         if (!nextSeat || !matchId) return;
         if (message.type === "MATCH_SNAPSHOT" || message.type === "RESYNC_REQUIRED") {
@@ -297,6 +306,11 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         setRuntimeCardDefinitions(mergeOnlineCardCatalog(accountCardsRef.current, projected));
         setHasAuthoritativeSnapshot(true);
         const previous = stateRef.current;
+        if(message.type==="MATCH_SNAPSHOT"||message.type==="RESYNC_REQUIRED"){
+          // A full snapshot restores state; old summon events are not new audio cues.
+          lastAudioEventCountRef.current=projected.events.length;
+          processedAudioEventsRef.current.clear();
+        }
         if (message.type === "ACTION_ACCEPTED") {
           if (pendingActionIdRef.current === message.requestId) {
             pendingActionIdRef.current = null;
@@ -664,6 +678,23 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     navigate(returnRoute);
   }
 
+  useEffect(() => {
+    if (!pendingAction || !isConnected) return;
+    const requestId = pendingActionIdRef.current;
+    return watchActionAcknowledgement({
+      stillPending: () => pendingActionInFlightRef.current && pendingActionIdRef.current === requestId,
+      resync: () => {
+        setPlayError("행동 결과 확인이 지연되고 있어요. 서버 상태를 다시 확인합니다.");
+        requestMatchResync();
+      },
+      reconnect: () => {
+        setPlayError("연결을 복구하고 있어요. 같은 행동을 다시 실행하지 않습니다.");
+        setHasAuthoritativeSnapshot(false);
+        client.reconnectNow();
+      },
+    });
+  }, [pendingAction, isConnected, matchId]);
+
   function clearRejectedActionMessage() {
     preserveRejectedActionMessageRef.current = false;
     setPlayError(null);
@@ -979,6 +1010,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         selectedCardId={selectedCardId}
         selectedAttackerId={selectedAttackerId}
         mediaCatalog={mediaCatalog}
+        interactionStatus={pendingAction ? "행동 결과를 서버에서 확인 중이에요." : !isConnected ? "연결을 복구하고 있어요." : presentationBusy ? "전투 연출 중이에요. 잠시 후 다음 행동을 할 수 있어요." : null}
         playError={playError}
         turnSecondsRemaining={secondsRemaining}
         onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
@@ -1079,5 +1111,6 @@ function nextSeatForIntro(seat: "PLAYER_ONE" | "PLAYER_TWO" | null): "PLAYER_ONE
 }
 
 export default function OnlineMatch({ draft = false }: { draft?: boolean }) {
-  return <OnlineAuthGate>{() => <OnlineMatchPage draft={draft} />}</OnlineAuthGate>;
+  const {matchId}=useParams<{matchId:string}>();
+  return <OnlineAuthGate>{() => <OnlineMatchPage key={`${draft}:${matchId}`} draft={draft} />}</OnlineAuthGate>;
 }

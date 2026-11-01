@@ -34,7 +34,7 @@ export function startAppInstallation() {
     emitChange();
   });
 
-  if (import.meta.env.PROD && 'serviceWorker' in window.navigator) {
+  if (import.meta.env?.PROD && 'serviceWorker' in window.navigator) {
     window.addEventListener('load', () => {
       const base = import.meta.env.BASE_URL;
       void window.navigator.serviceWorker.register(`${base}service-worker.js`, {

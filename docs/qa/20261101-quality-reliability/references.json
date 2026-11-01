@@ -1,0 +1,29 @@
+[
+  {
+    "mobile": false,
+    "publicCardLink": true,
+    "longestNameMatch": true,
+    "realPublishedDetails": true,
+    "nestedDetail": true,
+    "clickDoesNotPlayCard": true,
+    "sharedCatalogRequest": true,
+    "totalRequestsIncludingExistingRelated": 3,
+    "errors": []
+  },
+  {
+    "mobile": true,
+    "publicCardLink": true,
+    "longestNameMatch": true,
+    "realPublishedDetails": true,
+    "nestedDetail": true,
+    "clickDoesNotPlayCard": true,
+    "sharedCatalogRequest": true,
+    "totalRequestsIncludingExistingRelated": 3,
+    "errors": []
+  },
+  {
+    "catalog503": true,
+    "runtimeReferenceAndKeywordStillWork": true,
+    "errors": []
+  }
+]

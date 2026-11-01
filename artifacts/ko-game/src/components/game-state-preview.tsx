@@ -141,6 +141,7 @@ interface GameStatePreviewProps {
   onOpponentAttackPresentation?: (animation: AttackAnimationState) => void;
   onSelfPlayPresentation?: (card: CardInstance, playerId: string) => void;
   onUseActive: (cardInstanceId: string) => void;
+  interactionStatus?: string | null;
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
   onEffectTarget: (targetId: string) => void;
@@ -196,6 +197,7 @@ export function GameStatePreview({
   onOpponentAttackPresentation,
   onSelfPlayPresentation,
   onUseActive,
+  interactionStatus = null,
   onUseChampionAbility,
   onCancelEffectTargeting,
   onEffectTarget,
@@ -874,7 +876,10 @@ export function GameStatePreview({
       .filter((action) => action.type === 'USE_ACTIVE')
       .map((action) => action.cardInstanceId),
   );
+  const selectedChampionAbility = me.champion?.questCompleted && me.champion.upgradedAbility ? me.champion.upgradedAbility : me.champion?.ability;
+  const championAbilityCost = selectedChampionAbility?.cost ?? me.champion?.abilityCost ?? 0;
   const canUseChampion = canUseChampionAbility(state, me.id);
+  const championActionReady = canUseChampion && canEndTurn && !effectTargeting && !interactionStatus;
   const mySurvivalHealth = getPlayerSurvivalHealth(state, me.id);
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
@@ -888,7 +893,7 @@ export function GameStatePreview({
     ? '내 턴에만 사용할 수 있습니다.'
     : me.championAbilityUsedThisTurn
       ? '이번 턴에는 이미 사용했습니다.'
-    : me.champion && me.currentGold < me.champion.abilityCost
+    : me.champion && me.currentGold < championAbilityCost
       ? '현재 골드가 부족합니다.'
       : '현재 사용할 수 없습니다.';
   const selectedBackground = mediaCatalog.backgrounds.find(
@@ -1092,8 +1097,8 @@ export function GameStatePreview({
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
      <div className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
-      <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
-      <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
+      <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
+      <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
       <CardRevealPresentation state={state} />
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
@@ -1345,6 +1350,7 @@ export function GameStatePreview({
               공격이나 능력 사용이 남아 있어요.
               <button type="button" className="mt-1 block font-bold underline" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
             </div>}
+            {!blackGold && interactionStatus && <p role="status" className="text-xs text-amber-200">{interactionStatus}</p>}
             {!blackGold && playError && (
               <div className="absolute right-0 top-full mt-2 w-44 rounded border border-red-500 bg-red-950/95 px-3 py-2 text-[10px] font-bold text-red-200 shadow-xl">
                 {playError}
@@ -1360,7 +1366,7 @@ export function GameStatePreview({
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
               {(!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
-                {playError || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
+                {playError || interactionStatus || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
                     : `강조된 대상 ${state.targetingState?.minTargets ?? 1}개 선택 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1} · ${validEffectTargetIds.size}개 선택 가능`
@@ -1719,21 +1725,21 @@ export function GameStatePreview({
                    content={
                      <ChampionAbilityInspectContent
                        champion={me.champion}
-                       available={canUseChampion}
-                       unavailableReason={championUnavailableReason}
+                       available={championActionReady}
+                       unavailableReason={interactionStatus ?? championUnavailableReason}
                      />
                    }
                  >
                    <button
-                     aria-disabled={!canUseChampion}
-                     onClick={()=>{if(canUseChampion)onUseChampionAbility();else setAttackHint(championUnavailableReason);}}
+                     aria-disabled={!championActionReady}
+                     onClick={()=>{if(championActionReady)onUseChampionAbility();else setAttackHint(interactionStatus ?? championUnavailableReason);}}
                      className={`ko-champion-ability w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
-                       canUseChampion
+                       championActionReady
                        ? me.champion?.questCompleted ? 'cursor-pointer border-amber-400 bg-amber-900/70 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:bg-amber-800' : 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
                      }`}
                    >
-                     <span className="ko-ability-label">{me.champion.questCompleted && me.champion.upgradedAbility ? '강화 능력' : '챔피언 능력'}</span> <span className="ko-ability-cost">(비용 {me.champion.abilityCost} 골드)</span>
+                     <span className="ko-ability-label">{me.champion.questCompleted && me.champion.upgradedAbility ? '강화 능력' : '챔피언 능력'}</span> <span className="ko-ability-cost">(비용 {championAbilityCost} 골드)</span>
                    </button>
                  </Inspectable>
                )}
@@ -1760,7 +1766,7 @@ export function GameStatePreview({
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){setAttackHint(reason);return;}setAttackHint(null);onSelectCard(card.instanceId);}}
+                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){setAttackHint(reason);return;}if(!playableHandIds.has(card.instanceId)){setAttackHint("현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){setAttackHint(interactionStatus);return;}setAttackHint(null);onSelectCard(card.instanceId);}}
                            onUseTechnique={() => handleUseTechnique(card.instanceId)}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}
@@ -2070,7 +2076,7 @@ function BoardSlot({
         <button
           type="button"
           disabled={!activeUsable}
-          title={card.activeUsed || card.activeUsedThisTurn ? "이미 사용했습니다. 필드에 있는 동안 총 1회만 사용할 수 있습니다." : !activeUsable ? (card.enteredThisTurn ? "다음 자기 턴부터 사용할 수 있습니다." : "지금은 액티브를 사용할 수 없습니다.") : "액티브 사용"}
+          title={card.activeUsed || card.activeUsedThisTurn ? "이미 사용했습니다. 필드에 있는 동안 총 1회만 사용할 수 있습니다." : !activeUsable ? (card.enteredThisTurn ? "다음 자기 턴부터 사용할 수 있습니다." : "지금은 액티브를 사용할 수 없습니다.") : "액티브 사용 · 필드에 있는 동안 총 1회"}
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => {

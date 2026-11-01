@@ -88,5 +88,6 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     activeUsed: false,
     activeUsedThisTurn: false,
     statHistory: [],
+    visualStatHistory: [],
   };
 }

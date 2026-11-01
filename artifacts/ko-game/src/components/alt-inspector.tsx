@@ -1,3 +1,4 @@
+import {matchTurnNumber} from "@workspace/game-engine/rules";
 import {useCosmeticImage} from './cosmetic-battle';
 import { CardRulesText } from './card-rules-text';
 import {
@@ -237,8 +238,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
         >
           <button
             type="button"
-            className="ko-touch-inspector-close hidden"
-            style={isTouchInspecting ? { display: "block" } : undefined}
+            className="ko-touch-inspector-close ml-auto mb-2 block min-h-11 min-w-11 rounded border border-neutral-700 px-3 text-xs"
             onClick={clear}
             aria-label="상세정보 닫기"
           >
@@ -489,8 +489,8 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
                 <div className="mt-1 flex flex-wrap gap-x-2 text-[clamp(0.75rem,0.95vw,0.875rem)] text-neutral-500">
                   <span>{change.delta >= 0 ? '+' : ''}{change.delta}</span>
                   {change.sourceName && <span>출처: {change.sourceName}</span>}
-                  {change.turnNumber !== undefined && <span>턴 {change.turnNumber}</span>}
-                  {change.duration && <span>{change.duration === 'THIS_TURN' ? '이번 턴까지' : change.duration === 'UNTIL_NEXT_TURN' ? '다음 턴까지' : '영구 변경'}</span>}
+                  {change.turnNumber !== undefined && <span>턴 {matchTurnNumber(change.turnNumber!)}</span>}
+                  {change.duration && <span>{change.duration === 'THIS_TURN' ? '현재 행동 턴까지' : change.duration === 'UNTIL_NEXT_TURN' ? '다음 행동 턴까지' : '영구 변경'}</span>}
                 </div>
               </div>
             ))}
@@ -558,8 +558,8 @@ export function ChampionAbilityInspectContent({
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
       <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{ability.name}</h3>
-      <div className="my-3 font-display text-[clamp(1rem,1.3vw,1.125rem)] font-bold text-primary">비용 {champion.abilityCost} 골드</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{ability.description}</p>
+      <div className="my-3 font-display text-[clamp(1rem,1.3vw,1.125rem)] font-bold text-primary">비용 {ability.cost ?? champion.abilityCost} 골드</div>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300"><CardRulesText text={ability.description}/></p>
       <div className={`mt-3 text-[clamp(0.875rem,1.1vw,1rem)] font-bold ${available ? 'text-emerald-300' : 'text-red-300'}`}>
         {available ? '현재 사용할 수 있습니다.' : unavailableReason}
       </div>
@@ -575,7 +575,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">챔피언 퀘스트</div>
       <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{quest.name}</h3>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{quest.description}</p>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300"><CardRulesText text={quest.description}/></p>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">진행</div>
       <div className="font-display text-[clamp(1rem,1.3vw,1.125rem)] font-black text-white">
         {champion.questCompleted
@@ -583,7 +583,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
           : `${champion.questProgress} / ${quest.requiredProgress}`}
       </div>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">완료 보상</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{championQuestRewardText(champion)}</p>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>
     </div>
   );
 }

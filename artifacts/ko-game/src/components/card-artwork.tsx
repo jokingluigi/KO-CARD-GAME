@@ -4,7 +4,11 @@ import {
   type ImageDisplaySettings,
 } from "../game/cards/types";
 
-export function CardArtwork({
+export function CardArtwork(props: Parameters<typeof CardArtworkRequest>[0]) {
+  return <CardArtworkRequest key={JSON.stringify([props.src,props.fallbackSrc])} {...props}/>;
+}
+
+function CardArtworkRequest({
   src,
   displayOverride,
   fallbackSrc,
@@ -35,10 +39,11 @@ export function CardArtwork({
   showHint?: boolean;
   loading?: "eager" | "lazy";
 }) {
-  const [loaded,setLoaded]=useState(false);
+  const [loadedSrc,setLoadedSrc]=useState<string|null>(null);
   const [failed, setFailed] = useState(false);
   const [fallbackFailed,setFallbackFailed]=useState(false);
   const displaySrc=failed ? (fallbackSrc!==src?fallbackSrc:undefined) : src;
+  const loaded=loadedSrc===displaySrc;
   const dragRef = useRef<{
     pointerId: number;
     startClientX: number;
@@ -95,7 +100,7 @@ export function CardArtwork({
     dragRef.current = null;
   }
 
-  useEffect(()=>{setLoaded(false);},[displaySrc]);
+
   const imageStyle = {
     objectFit: settings.imageDisplayMode === "CONTAIN" ? "contain" : "cover",
     objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
@@ -131,8 +136,9 @@ export function CardArtwork({
     >
       {!loaded&&<span aria-hidden="true" className="pointer-events-none absolute inset-0 border border-neutral-800 bg-neutral-950/40"/>}
       <img
+        key={displaySrc}
         data-art-loading={!loaded}
-        onLoad={()=>setLoaded(true)}
+        onLoad={()=>setLoadedSrc(displaySrc??null)}
         src={displaySrc}
         loading={loading}
         decoding="async"

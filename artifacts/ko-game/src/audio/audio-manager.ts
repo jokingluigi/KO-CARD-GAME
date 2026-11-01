@@ -1,3 +1,4 @@
+import {impactAudioPriority} from "./impact-audio-policy";
 import {externalSound} from './external-assets';
 import type { MusicContext } from './music-route';
 import { acceptsSound } from '../components/presentation-policy';
@@ -38,6 +39,8 @@ function hasBrowserAudio() {
 }
 
 class AudioManager {
+  private attackRevision = 0;
+  private attackCleanup: (()=>void)|null=null;
   private soundPriority = 0;
   private soundUntil = 0;
   private overlays = new Set<HTMLAudioElement>();
@@ -183,9 +186,10 @@ class AudioManager {
 
   playAttack(url: string, volume: number, pitch = 1) {
     if (!hasBrowserAudio() || !url) return;
-    const priority = url.includes("finisher") ? 9 : url.includes("heavy") ? 7 : 5;
+    const priority = impactAudioPriority(url);
     if (!acceptsSound(this.soundPriority, this.soundUntil, priority, Date.now())) return;
     this.stopAttack();
+    const revision=this.attackRevision;
     this.soundPriority = priority; this.soundUntil = Date.now() + (priority === 9 ? 650 : 180);
     this.duckBgmForImpact(url.includes('combat-finisher') ? 0.28 : 0.66, url.includes('combat-finisher') ? 650 : 270);
     try {
@@ -197,12 +201,11 @@ class AudioManager {
       audio.volume = safeVolume(volume * this.sfxVolume / 100);
       audio.playbackRate = Math.max(0.8, Math.min(1.25, pitch));
       this.attackAudio = audio;
-      audio.addEventListener("ended", () => {
-        if (this.attackAudio === audio) this.attackAudio = null;
-      }, { once: true });
-      audio.play().catch(() => {
-        if (this.attackAudio === audio) this.attackAudio = null;
-      });
+      const cleanup=()=>{audio.removeEventListener?.("ended",ended);if(this.attackCleanup===cleanup)this.attackCleanup=null;};
+      const ended=()=>{if(this.attackRevision===revision&&this.attackAudio===audio)this.attackAudio=null;cleanup();};
+      this.attackCleanup=cleanup;
+      audio.addEventListener("ended",ended,{once:true});
+      audio.play().catch(()=>{if(this.attackRevision===revision&&this.attackAudio===audio){this.attackAudio=null;cleanup();}});
     } catch {
       this.attackAudio = null;
     }
@@ -242,6 +245,7 @@ class AudioManager {
   }
 
   stopAttack() {
+    this.attackRevision++;this.attackCleanup?.();this.attackCleanup=null;
     this.soundPriority = 0; this.soundUntil = 0;
     for (const audio of this.overlays) audio.pause(); this.overlays.clear();
     if (!this.attackAudio) return;

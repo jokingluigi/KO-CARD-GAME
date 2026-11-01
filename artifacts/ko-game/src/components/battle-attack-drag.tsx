@@ -27,6 +27,8 @@ export function BattleAttackDrag(props: Props) {
   const latest = useRef(props);
   latest.current = props;
   const cancelRef = useRef(() => {});
+  const validateRef=useRef(()=>{});
+  useEffect(()=>validateRef.current(),[props.state]);
   useEffect(() => {
     cancelRef.current();
   }, [props.enabled, props.state.gameId, props.state.turn]);
@@ -71,6 +73,7 @@ export function BattleAttackDrag(props: Props) {
         latest.current.select(old.id);
     };
     cancelRef.current = cancel;
+    validateRef.current=()=>{if(gesture&&!actions(gesture.id).length)cancel();};
     const targetAt = (x: number, y: number) => {
       const p = latest.current,
         hit = document.elementFromPoint(x, y);
@@ -144,6 +147,7 @@ export function BattleAttackDrag(props: Props) {
         )
           return;
         g.started = true;
+      window.dispatchEvent(new Event("ko-card-gesture-start"));
         const r = g.node.getBoundingClientRect();
         const ghost = g.node.cloneNode(true) as HTMLElement;
         ghost.removeAttribute("id");
@@ -222,30 +226,33 @@ export function BattleAttackDrag(props: Props) {
     const hidden = () => {
       if (document.hidden) cancel();
     };
+    const pointerCancel = (event: PointerEvent) => { if (gesture?.pointer === event.pointerId) cancel(); };
     document.addEventListener("pointerdown", down, true);
     document.addEventListener("pointermove", move, {
       capture: true,
       passive: false,
     });
     document.addEventListener("pointerup", up, true);
-    document.addEventListener("pointercancel", cancel, true);
+    document.addEventListener("pointercancel", pointerCancel, true);
     document.addEventListener("lostpointercapture", lost, true);
     document.addEventListener("click", click, true);
     document.addEventListener("keydown", key);
     document.addEventListener("visibilitychange", hidden);
     window.addEventListener("resize", cancel);
+    window.addEventListener("blur", cancel);
     window.addEventListener("ko-gamepad-cancel", cancel);
     return () => {
       clean();
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointermove", move, true);
       document.removeEventListener("pointerup", up, true);
-      document.removeEventListener("pointercancel", cancel, true);
+      document.removeEventListener("pointercancel", pointerCancel, true);
       document.removeEventListener("lostpointercapture", lost, true);
       document.removeEventListener("click", click, true);
       document.removeEventListener("keydown", key);
       document.removeEventListener("visibilitychange", hidden);
       window.removeEventListener("resize", cancel);
+      window.removeEventListener("blur", cancel);
       window.removeEventListener("ko-gamepad-cancel", cancel);
     };
   }, [props.state.gameId]);

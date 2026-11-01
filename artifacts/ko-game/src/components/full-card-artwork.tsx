@@ -1,5 +1,6 @@
+import {RecoverableArtwork} from "./recoverable-artwork";
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 
 const ArtworkContext = createContext<((name: string, imageUrl: string, fallbackImageUrl?:string|null) => void) | null>(null);
 
@@ -17,8 +18,8 @@ function ArtworkDialog({ name, imageUrl,fallbackImageUrl, open, onOpenChange }: 
 }) {
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent overlayClassName="!z-[250]" className="!z-[260] flex max-h-[96dvh] max-w-[min(96vw,1050px)] flex-col items-center border-neutral-700 bg-neutral-950 p-3 text-white">
-      <DialogTitle className="self-start text-sm">{name} · 풀 일러스트</DialogTitle>
-      {imageUrl && <img key={imageUrl} src={imageUrl} alt={`${name} 전체 일러스트`} className="max-h-[86dvh] max-w-full object-contain" onError={event=>{const image=event.currentTarget;if(fallbackImageUrl&&image.dataset.fallback!=="true"){image.dataset.fallback="true";image.src=fallbackImageUrl;}else image.hidden=true;}} />}
+      <DialogTitle className="self-start text-sm">{name} · 풀 일러스트</DialogTitle><DialogDescription className="sr-only">{name} 원본 이미지를 크게 볼 수 있습니다.</DialogDescription>
+      {imageUrl && <RecoverableArtwork src={imageUrl} fallbackSrc={fallbackImageUrl} alt={`${name} 전체 일러스트`} className="max-h-[76dvh] max-w-full object-contain" />}
     </DialogContent>
   </Dialog>;
 }

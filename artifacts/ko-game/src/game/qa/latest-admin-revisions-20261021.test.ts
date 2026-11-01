@@ -38,7 +38,7 @@ test('Zombies played from hand coexist; effect summons merge into an existing zo
  let s=setup();s=play(s,def('좀비'),0,'z1');s=play(s,def('좀비'),1,'z2');assert.equal(s.players[0].board.filter(Boolean).length,2);
  board(s,0,2);board(s,0,3);const source=s.players[0].board[2]!;const events=s.events.length;
  s=applyEffect(s,'player-1',source,{type:'STRUCTURED',action:'SUMMON',values:{definitionRef:{id:def('좀비').id},count:1}});
- assert.equal(s.players[0].board.filter(Boolean).length,4);assert.equal(s.players[0].board[0]!.currentAttack,2);assert.equal(s.players[0].board[1]!.currentAttack,1);assert.equal(s.events.slice(events).filter(e=>e.type==='ENTER_FIELD').length,0);
+ assert.equal(s.players[0].board.filter(Boolean).length,4);assert.equal(s.players[0].board[0]!.currentAttack,2);assert.equal(s.players[0].board[1]!.currentAttack,2);assert.equal(s.events.slice(events).filter(e=>e.type==='ENTER_FIELD').length,0);
  const before=s.players[0].board[0]!.currentAttack;const enemy=board(s,1,0,{...unit,health:1});s=applyEffect(s,'player-1',source,{type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount:1}},[enemy.instanceId]);assert.equal(s.players[0].board[0]!.currentAttack,before);
 });
 test('Belmort base power can target either side and destroys lethal ally; upgraded wording still targets enemies only',()=>{

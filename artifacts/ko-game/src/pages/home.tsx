@@ -1612,6 +1612,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       selectedCardId={selectedCardId}
       selectedAttackerId={selectedAttackerId}
       mediaCatalog={mediaCatalog}
+      interactionStatus={playAnimation || attackAnimation ? "전투 연출 중이에요. 잠시 후 다음 행동을 할 수 있어요." : null}
       playError={playError}
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}

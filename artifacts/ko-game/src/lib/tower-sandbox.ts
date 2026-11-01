@@ -27,7 +27,7 @@ export function towerSandboxEligible(card: CardDefinition): boolean {
 export function createTowerSandbox(value: unknown, cards: CardDefinition[], champions: ChampionDefinition[]) {
   const setup = parseTowerSandboxSetup(value);
   const allowed = new Set(cards.filter(towerSandboxEligible).map(card => card.id));
-  if ([...setup.playerDeck, ...setup.enemyDeck].some(id => !allowed.has(id))) throw new Error('테스트 덱에는 공개된 덱 사용 가능 카드만 넣을 수 있습니다.');
+  if ([...setup.playerDeck, ...setup.enemyDeck].some(id => !allowed.has(id))) throw new Error('테스트 덱에는 테스트에서 사용 가능한 카드만 넣을 수 있습니다. 비활성 카드와 토큰은 제외됩니다.');
   return initializeTowerBattle({ normalEnemy: setup.floor % 4 !== 0, gameId: `admin-tower-sandbox:${setup.floor}`, seed: seedNumber(`${setup.seed}:battle:${setup.floor}`),
     championIds: [setup.championId, setup.enemyChampionId], decks: [setup.playerDeck, setup.enemyDeck],
     ...(setup.relicTypes?.length ? { tower: { playerId: 'player-1', relics: setup.relicTypes.map(effectType => ({ id: `sandbox:${effectType}`, effectType, values: {} })) } } : {}) }, cards, champions);

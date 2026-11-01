@@ -1,4 +1,4 @@
-import type { CardDefinition, CardInstance } from '../cards/types';
+import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import type { GameState } from '../types/game-state';
 
 export const ZOMBIE_RULES = '좀비를 손에서 내는 것이 아니라 효과로 소환할때 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환 될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.(한턴에 효과 최대 2번까지만 발동)';
@@ -20,16 +20,20 @@ export function existingZombies(state: GameState, playerId: string): CardInstanc
 export function existingZombie(state: GameState, playerId: string): CardInstance | undefined {
   return existingZombies(state, playerId)[0];
 }
+/** Presentation provenance must not change executable stat-listener counts. */
+export function withZombieStatFeedback(card:CardInstance,attack:number,health:number,turn:number,source:CardInstance,sourceName:string):CardInstance {
+ const next={...card,currentAttack:card.currentAttack+attack,currentHealth:card.currentHealth+health,maxHealth:card.maxHealth+health};
+ const changes=([['currentAttack','attack'],['currentHealth','currentHealth'],['maxHealth','maxHealth']] as const).flatMap(([field,stat]):CardStatHistoryEntry[]=>next[field]===card[field]?[]:[{stat,before:card[field],after:next[field],delta:next[field]-card[field],sourceInstanceId:source.instanceId,sourceDefinitionId:source.definitionId,sourceName,turnNumber:turn,duration:'PERMANENT'}]);
+ return {...next,visualStatHistory:[...(card.visualStatHistory??[]),...changes].slice(-120)};
+}
 export function mergeZombie(state: GameState, playerId: string, incoming: CardInstance): GameState | undefined {
   if (!isZombieToken(state, incoming)) return undefined;
   const recipients = new Set(existingZombies(state, playerId).filter(c=>c.instanceId!==incoming.instanceId).map(c=>c.instanceId));
   if (!recipients.size) return undefined;
   return { ...state, players: state.players.map(p => p.id !== playerId ? p : {
     ...p, hand: p.hand.filter(c => c.instanceId !== incoming.instanceId),
-    board: p.board.map(c => !c || !recipients.has(c.instanceId) ? c : {
-      ...c, currentAttack: c.currentAttack + incoming.currentAttack,
-      currentHealth: c.currentHealth + incoming.currentHealth, maxHealth: c.maxHealth + incoming.currentHealth,
-    }) as typeof p.board,
+    board: p.board.map(c => !c || !recipients.has(c.instanceId) ? c :
+      withZombieStatFeedback(c,incoming.currentAttack,incoming.currentHealth,state.turn,incoming,'효과로 소환된 좀비 흡수')) as typeof p.board,
   }) };
 }
 

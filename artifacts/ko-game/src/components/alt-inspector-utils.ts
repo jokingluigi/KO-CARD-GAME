@@ -21,7 +21,7 @@ export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
   TAUNT: '상대는 가능한 경우 이 선수를 먼저 공격해야 합니다.',
   DODGE: '처음 받는 피해 1회를 완전히 무효화합니다.',
   STUN: '기절한 동안 공격할 수 없습니다. 기절한 선수의 자기 턴 종료 시 해제됩니다.',
-  MULTI_STRIKE: '한 턴에 두 번 공격할 수 있습니다.',
+  MULTI_STRIKE: '자기 행동 턴에 두 번 공격할 수 있습니다.',
   SILENCE: '카드의 키워드와 능력을 비활성화합니다.',
 };
 
@@ -130,7 +130,7 @@ export function getNumericChanges(card: CardInstance): NumericChange[] {
     maxHealth: card.baseHealth ?? definition?.health ?? card.maxHealth,
     cost: card.baseCost ?? definition?.cost ?? card.currentCost,
   };
-  const history = (card as CardInstance & { statHistory?: NumericChange[] }).statHistory ?? [];
+  const history:NumericChange[] = [...(card.statHistory ?? []),...(card.visualStatHistory ?? [])];
   const changes = history.filter((entry) => entry.before !== entry.after);
   const has = new Set(changes.map((entry) => entry.stat));
   const inferred: NumericChange[] = [];

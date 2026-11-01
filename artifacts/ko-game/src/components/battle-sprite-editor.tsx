@@ -155,10 +155,18 @@ export function BattleSpriteEditor({
   const editableExpressions = Object.entries(SPRITE_EXPRESSIONS).filter(
     ([key]) => editing === "NORMAL" || key !== "awaken",
   );
+  const [uploadNote,setUploadNote]=useState("");
+  const uploadRef=useRef<AbortController|null>(null);
+  useEffect(()=>()=>{const request=uploadRef.current;uploadRef.current=null;request?.abort();},[]);
   const frame = config.frames[expression];
   const put = (frame: SpriteFrame) =>
     onChange(withSpriteFrame(config, expression, frame));
   async function upload(file: File) {
+    if(uploadRef.current)return;
+    const controller=new AbortController();uploadRef.current=controller;
+    const current=()=>uploadRef.current===controller;
+    let transmissionTimer:ReturnType<typeof setTimeout>|undefined;
+    setUploadNote("");
     setBusy(true);
     onBusyChange?.(true);
     setError("");
@@ -173,26 +181,30 @@ export function BattleSpriteEditor({
         uploadURL: string;
         objectPath: string;
       }>("/admin/cosmetics/uploads", {
-        method: "POST",
+        method: "POST", signal:controller.signal,
         body: JSON.stringify({
           name: file.name,
           size: file.size,
           contentType: file.type,
         }),
       }, {timeoutMs:60000,label:"스프라이트 업로드 준비"});
+      if(!current()||controller.signal.aborted)return;
       setUploadPhase("이미지 파일 전송 중…");
+      transmissionTimer=setTimeout(()=>controller.abort(new DOMException("Upload timed out","TimeoutError")),120000);
       const uploaded = await fetch(request.uploadURL, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
-        signal: AbortSignal.timeout(120000),
+        signal: controller.signal,
       });
+      clearTimeout(transmissionTimer);
       if (!uploaded.ok) throw Error("업로드 실패");
+      if(!current()||controller.signal.aborted)return;
       setUploadPhase("업로드 완료 · 이미지 검증 중…");
       const image = await cosmeticsRequest<{ imageUrl: string }>(
         "/admin/cosmetics/uploads/complete",
         {
-          method: "POST",
+          method: "POST", signal:controller.signal,
           body: JSON.stringify({
             objectPath: request.objectPath,
             contentType: file.type,
@@ -200,6 +212,7 @@ export function BattleSpriteEditor({
         },
         {timeoutMs:60000,label:"스프라이트 이미지 검증"},
       );
+      if(!current()||controller.signal.aborted)return;
       put({
         url: image.imageUrl,
         self: {
@@ -214,13 +227,17 @@ export function BattleSpriteEditor({
         },
       });
     } catch (e) {
-      setError(e instanceof Error&&["TimeoutError","AbortError"].includes(e.name)?"이미지 전송 응답이 지연됐어요. 기존 표정은 유지됩니다. 연결을 확인하고 이미지를 다시 선택해 주세요.":e instanceof Error ? e.message : "등록 실패");
+      if(!current())return;
+      if(controller.signal.aborted && controller.signal.reason?.name!=="TimeoutError")setUploadNote("업로드를 취소했어요. 기존 표정은 유지됩니다.");
+      else setError(e instanceof Error&&["TimeoutError","AbortError"].includes(e.name)?"이미지 전송 응답이 지연됐어요. 기존 표정은 유지됩니다. 연결을 확인하고 다시 시도해 주세요.":e instanceof Error ? e.message : "등록 실패");
     } finally {
-      setBusy(false);
-      setUploadPhase("");
-      onBusyChange?.(false);
+      clearTimeout(transmissionTimer);
+      if(current()){
+        uploadRef.current=null;setBusy(false);setUploadPhase("");onBusyChange?.(false);
+      }
     }
   }
+
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
     const change = () =>
@@ -598,14 +615,14 @@ export function BattleSpriteEditor({
       className={`ko-sprite-editor my-4 min-w-0 space-y-3 border border-neutral-700 p-3 [&_select]:max-w-full [&_input[type=number]]:w-20 ${workspace ? "ko-sprite-editor--workspace" : ""}`}
       disabled={busy}
     >
-      <legend>현재 외형 스킨의 대전 스프라이트</legend>
+      <legend>현재 외형 스킨의 대전 스프라이트 {busy&&<button type="button" onClick={()=>uploadRef.current?.abort()} className="ml-2 min-h-11 rounded border border-neutral-600 px-3 text-xs">업로드 취소</button>}</legend>
       <p className="text-xs">
         이 설정은 현재 편집 중인 스킨에만 저장됩니다. 챔피언 편집 화면은 기본
         외형 스킨입니다. 다른 스킨의 표정이나 각성 세트를 가져오지 않습니다.
       </p>
       <p className="text-xs">
         기존 10표정에 선택 등록하는 각성 표정이 추가됩니다. 피격 1~4 · 강한 피격 5 이상 · 저체력 1~5.
-        안도(회복)는 실제 체력이 증가했을 때입니다. 공격은 주문·고유능력 사용
+        안도(회복)는 실제 체력이 증가했을 때입니다. 공격은 선수 공격·주문·고유능력 사용
         확정에 반응합니다. 놀람은 내 레전더리 선수의 리타이어·파괴·소멸, 상대의
         레전더리·챔피언 토큰 소환, 기본 6코스트 이상 선수 소환·주문 사용, 상대
         퀘스트 완료에 반응합니다. 일반 세트의 각성 표정은 퀘스트 완료 후 기본 표정을 대체합니다. 전용 각성 세트를 사용하면 1~2초 표시 후 해당 세트로 전환합니다. 누락
@@ -700,6 +717,7 @@ export function BattleSpriteEditor({
               e.currentTarget.value = "";
             }}
           />
+          {uploadNote&&<p role="status" className="text-sm text-neutral-300">{uploadNote}</p>}
           {busy&&<p role="status" aria-live="polite">{uploadPhase} 느린 연결에서는 잠시 걸릴 수 있어요.</p>}
       {error && <p role="alert">{error}</p>}
           {frame && (

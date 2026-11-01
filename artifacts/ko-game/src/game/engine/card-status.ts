@@ -47,6 +47,7 @@ export function silenceCard(
       temporaryStatModifiers: [],
       temporaryKeywordGrants: [],
       statHistory: [],
+    visualStatHistory: [],
       keywords: [],
       dodgeAvailable: false,
       dodgeCharges: 0,

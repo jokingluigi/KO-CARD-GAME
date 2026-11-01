@@ -1,0 +1,21 @@
+[
+  {
+    "artworkFailureRetry": true,
+    "newSourceDoesNotFlashOldFallback": true,
+    "loadingState": true
+  },
+  {
+    "upload": "cancel",
+    "preservesPreviousFrame": true,
+    "noFinalize": true
+  },
+  {
+    "uploadRetrySucceeds": true,
+    "preservesAlignment": true
+  },
+  {
+    "upload": "unmount",
+    "preservesPreviousFrame": true,
+    "noFinalize": true
+  }
+]
