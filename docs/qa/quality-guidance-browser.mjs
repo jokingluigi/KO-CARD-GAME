@@ -40,7 +40,16 @@ try {
       return r.fulfill({ json });
     });
     await p.goto("http://127.0.0.1:5186/");
-    const trigger = p.getByTestId("button-main-menu-튜토리얼");
+    await p
+      .getByRole("button", { name: "보상 · 상점 · 전체 메뉴 ▸", exact: true })
+      .click();
+    await p.getByTestId("button-main-menu-튜토리얼").click();
+    await p.waitForURL("**/tutorial");
+    await p.getByRole("heading", { name: "직접 배우는 카드 전투" }).waitFor();
+    const trigger = p.getByRole("button", {
+      name: "규칙 설명 보기",
+      exact: true,
+    });
     await trigger.click();
     const dialog = p.getByRole("dialog");
     await dialog.waitFor();
@@ -72,7 +81,12 @@ try {
     await dialog.waitFor({ state: "detached" });
     assert.equal(active, true);
     assert.equal(turn, true);
-    assert.equal(await p.evaluate(() => scrollY), 0);
+    assert.equal(
+      await p.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+      true,
+    );
     assert.deepEqual(errors, []);
     results.push({
       width,
@@ -81,7 +95,7 @@ try {
       escapeCloses: true,
       eightSteps: true,
       lifetimeActiveAndPairedTurnExplained: true,
-      noHomeScroll: true,
+      tutorialEntryAndNoHorizontalOverflow: true,
       errors,
     });
     await p.close();

@@ -1,0 +1,16 @@
+✔ all six lessons use real published definitions without mutating the catalog (10.730214ms)
+✔ basics requires real mulligan, summon, turn passing and lethal champion attack (5.011508ms)
+✔ combat lesson uses actual combat damage and counterattack (2.819088ms)
+✔ spell selection cancellation preserves gold and hand; only actual committed spell completes (12.645903ms)
+✔ active completes on real use and stays unavailable after a new turn (1.702343ms)
+✔ champion lesson completes quest by actual ability cost and upgrades through existing rules (2.733621ms)
+✔ wrong actions, replayed completion, and unsupported catalogs do not silently advance (0.85707ms)
+✔ rush lesson can summon and attack a champion in the same turn through real rules (1.352865ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 335.274839

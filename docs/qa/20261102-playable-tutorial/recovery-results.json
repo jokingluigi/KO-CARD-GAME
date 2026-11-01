@@ -1,0 +1,28 @@
+[
+  {
+    "mode": "failure",
+    "loadingFailureHandled": true,
+    "retryOrUnavailableExplained": true,
+    "failedImagesStillPlayable": true,
+    "smallViewportTargets": true,
+    "restartResets": true,
+    "exitDoesNotMarkComplete": true,
+    "errors": []
+  },
+  {
+    "mode": "empty",
+    "loadingFailureHandled": true,
+    "retryOrUnavailableExplained": true,
+    "errors": []
+  },
+  {
+    "mode": "timeout",
+    "loadingFailureHandled": true,
+    "retryOrUnavailableExplained": true,
+    "failedImagesStillPlayable": true,
+    "smallViewportTargets": true,
+    "restartResets": true,
+    "exitDoesNotMarkComplete": true,
+    "errors": []
+  }
+]

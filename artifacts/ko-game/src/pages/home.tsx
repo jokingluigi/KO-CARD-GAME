@@ -1,3 +1,6 @@
+import {fetchTutorialCatalog} from '@/components/tutorial/tutorial-client';
+import { LESSONS, lessonUnavailable, createTutorialLesson, tutorialGoal, tutorialActionAllowed, type LessonId, type TutorialCatalog } from '@/components/tutorial/lesson-engine';
+import { TutorialMenu, TutorialCoach, readTutorialProgress, saveTutorialProgress } from '@/components/tutorial/lesson-ui';
 import {resolveLaunchDeck,launchDeckEditor} from "@/lib/launch-deck";
 import {confirmedCounterDamage} from "@/components/attack-animation-utils";
 import { questMusic } from '@/components/quest-media';
@@ -137,6 +140,7 @@ function actualAttackDamage(
 export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser } = {}) {
   const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
+  const isTutorial = window.location.pathname.endsWith('/tutorial');
   const isTowerSandbox = searchParams.get('source') === 'admin' && searchParams.get('towerTest') === '1';
   const isAiMatch = window.location.pathname.endsWith('/ai-match') || isTowerSandbox;
   const quickMatchId = isAiMatch ? searchParams.get('quickMatch') : null;
@@ -149,6 +153,12 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const [authUser, setAuthUser] = useState<AuthUser | null>(initialAuthUser ?? null);
   const [authError, setAuthError] = useState<string | null>(null);
   const authRequestGeneration = useRef(0);
+  const [practiceCatalog,setPracticeCatalog]=useState<TutorialCatalog|null>(null);
+  const [tutorialLesson,setTutorialLesson]=useState<LessonId|null>(null);
+  const [tutorialCancelled,setTutorialCancelled]=useState(false);
+  const [tutorialRetry,setTutorialRetry]=useState(0);
+  const [practiceCompleted,setPracticeCompleted]=useState<LessonId[]>([]);
+  const tutorialGeneration=useRef(0);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
@@ -352,6 +362,18 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       return () => {
         cancelled = true;
       };
+    }
+    if (isTutorial) {
+      setMatchReady(false); setPracticeCatalog(null); setTutorialLesson(null); setPlayError(null);
+      setPracticeCompleted(readTutorialProgress(authUser!.id));
+      const controller=new AbortController();
+      const timeout=window.setTimeout(()=>{cancelled=true;controller.abort();setPlayError('연습 데이터를 불러오는 시간이 길어졌어요. 다시 시도해 주세요.');},12000);
+      Promise.all([fetchTutorialCatalog(controller.signal),fetchGameMedia().catch(()=>emptyGameMediaCatalog)]).then(([catalog,media])=>{
+        if(cancelled)return;
+        clearTimeout(timeout);
+        setRuntimeCardDefinitions(catalog.cards);setMediaCatalog(media);setPracticeCatalog(catalog);
+      }).catch(()=>{if(!cancelled){clearTimeout(timeout);setPlayError('공개 카드와 챔피언을 불러오지 못했어요. 다시 시도해 주세요.');}});
+      return ()=>{cancelled=true;controller.abort();clearTimeout(timeout);};
     }
     if (isTowerSandbox) {
       setMatchReady(false);
@@ -606,7 +628,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     return () => {
       cancelled = true;
     };
-  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, quickMatchId, isTowerSandbox, testCardId, testChampionId]);
+  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, quickMatchId, isTowerSandbox, testCardId, testChampionId, isTutorial, tutorialRetry]);
 
   useEffect(()=>{
     if(!quickMatchId||authStatus!=='authenticated'||!authUser)return;
@@ -948,7 +970,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }, [playError]);
 
   useEffect(() => {
-    if (gameState.status !== 'IN_PROGRESS' || !gameplayReady) {
+    if (isTutorial || gameState.status !== 'IN_PROGRESS' || !gameplayReady) {
       setTurnSecondsRemaining(gameState.status === 'IN_PROGRESS' ? TURN_TIME_LIMIT_SECONDS : 0);
       return;
     }
@@ -976,11 +998,32 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     }, 250);
 
     return () => window.clearInterval(intervalId);
-  }, [turnKey, gameState.status, gameplayReady]);
+  }, [turnKey, gameState.status, gameplayReady, isTutorial]);
 
+  const practiceGoal=isTutorial&&tutorialLesson&&practiceCatalog?tutorialGoal(tutorialLesson,gameState,practiceCatalog,tutorialCancelled):null;
+  useEffect(()=>{
+    if(!isTutorial||!tutorialLesson||!practiceGoal?.complete||!authUser)return;
+    saveTutorialProgress(authUser.id,tutorialLesson);setPracticeCompleted(readTutorialProgress(authUser.id));
+  },[isTutorial,tutorialLesson,practiceGoal?.complete,authUser?.id]);
+  function startPractice(id:LessonId) {
+    if(!practiceCatalog)return;
+    try{
+      const state=createTutorialLesson(practiceCatalog,id,`tutorial:${Date.now()}:${++tutorialGeneration.current}`);
+      aiMatchQuestContextRef.current=null;setAiMatchStarted(false);setIsAdminTestMatch(false);
+      setSelectedCardId(null);setSelectedAttackerId(null);setPlayAnimation(null);setAttackAnimation(null);setAttackImpactTriggered(false);
+      pendingEntranceAudioRef.current=null;setPresentationBusy(false);presentationBusyRef.current=false;
+      latestGameStateRef.current=state;setGameState(state);setTutorialCancelled(false);setTutorialLesson(id);setPlayError(null);setMatchReady(true);
+    }catch(error){setPlayError(error instanceof Error?error.message:'실습을 시작하지 못했어요.');}
+  }
+  function allowPractice(action:GameAction) {
+    if(!isTutorial||!tutorialLesson||!practiceGoal)return true;
+    if(tutorialActionAllowed(tutorialLesson,practiceGoal,action,tutorialCancelled))return true;
+    setPlayError(`지금은 ‘${practiceGoal.title}’을 연습해요. 훈련 안내에서 할 일을 확인하세요.`);return false;
+  }
   function handleMulligan(cardInstanceIds: string[]) {
     const current = latestGameStateRef.current;
     const action: GameAction = { type: 'MULLIGAN', playerId: current.players[0].id, cardInstanceIds };
+    if(!allowPractice(action))return;
     const result = executeAction(current, action);
     if (!result.success) { setPlayError(result.message); return; }
     if (isAiMatch) recordHumanAIMatchAction(action);
@@ -991,6 +1034,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }
 
   function handleEndTurn(isTimeout = false) {
+    if(!allowPractice({type:'END_TURN',playerId:gameState.players[0].id}))return;
     const currentState = latestGameStateRef.current;
     if (!gameplayReady || currentState.status !== 'IN_PROGRESS') return;
     if (!isTimeout && (playAnimation || attackAnimation)) return;
@@ -1134,6 +1178,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       return;
     }
 
+    if(!allowPractice({type:'ATTACK',playerId:gameState.players[0].id,attackerInstanceId:selectedAttackerId!,target:{type:'WRESTLER',playerId:gameState.players[1].id,cardInstanceId:targetCardInstanceId}}))return;
     const result = attack(
       gameState,
       gameState.players[0].id,
@@ -1215,6 +1260,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     setPlayError(null);
   }
   function handleEffectTarget(targetId: string) {
+    if(!allowPractice({type:'SELECT_EFFECT_TARGET',playerId:gameState.players[0].id,targetId}))return;
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS') return;
     if (!gameState.targetingState?.active || !gameState.targetingState.validTargetIds.includes(targetId)) {
       setPlayError('선택할 수 없는 대상입니다.');
@@ -1265,6 +1311,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if(!cancelled.success){setPlayError(cancelled.message);return;}
     const next = cancelled.state;
     if (next === gameState) return;
+    if(isTutorial&&tutorialLesson==='spell'&&gameState.targetingState?.phase==='PRE_COMMIT'&&!next.targetingState?.active)setTutorialCancelled(true);
     setGameState(next);
     setPlayError(null);
   }
@@ -1284,6 +1331,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       type: 'PLAYER',
       playerId: gameState.players[1].id,
     };
+    if(!allowPractice({type:'ATTACK',playerId:gameState.players[0].id,attackerInstanceId:selectedAttackerId!,target:{type:'PLAYER',playerId:gameState.players[1].id}}))return;
     const result = attack(
       gameState,
       gameState.players[0].id,
@@ -1383,6 +1431,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
     }
+    if(!allowPractice({type:'PLAY_WRESTLER',playerId:gameState.players[0].id,cardInstanceId:selectedCardId,boardSlot:slot}))return;
     const result = playWrestlerFromHand(
       gameState,
       gameState.players[0].id,
@@ -1417,6 +1466,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }
 
   function handleUseTechnique(cardInstanceId: string, source: CardPlayGeometry["source"]) {
+    if(!allowPractice({type:'BEGIN_TARGETED_ACTION',playerId:gameState.players[0].id,action:{type:'PLAY_TECHNIQUE',cardInstanceId}}))return;
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
@@ -1443,6 +1493,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
     if (!targetCardInstanceId) return;
+    if(!allowPractice({type:'USE_ACTIVE',playerId:gameState.players[0].id,cardInstanceId:targetCardInstanceId}))return;
     const result = executeAction(gameState, {
       type: 'BEGIN_TARGETED_ACTION',
       playerId: gameState.players[0].id,
@@ -1462,6 +1513,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }
 
   function handleUseChampionAbility() {
+    if(!allowPractice({type:'USE_CHAMPION_ABILITY',playerId:gameState.players[0].id}))return;
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const result = executeAction(gameState, {
       type: 'BEGIN_TARGETED_ACTION',
@@ -1527,7 +1579,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     );
   }
 
-  if (!testCardId && !testChampionId && !isAdminSource && !isAiMatch) {
+  if(isTutorial&&!tutorialLesson)return <TutorialMenu catalog={practiceCatalog} error={playError} completed={practiceCompleted} onStart={startPractice} onBack={()=>navigate('/')} onDeckEdit={()=>navigate(ROUTES.DECKS)} onRetry={()=>setTutorialRetry(v=>v+1)}/>;
+  if (!testCardId && !testChampionId && !isAdminSource && !isAiMatch && !isTutorial) {
     return (
       <MainMenu
         user={authUser ?? undefined}
@@ -1626,6 +1679,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       playerNickname={isAiMatch?authUser?.nickname:undefined}
       opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
       key={`game:${gameState.gameId}`}
+      endTurnAllowed={!isTutorial || practiceGoal?.focus==='END_TURN'}
+      tutorialFocus={practiceGoal?.focus}
+      tutorialGuide={isTutorial&&tutorialLesson&&practiceGoal&&practiceCatalog?<TutorialCoach key={gameState.gameId} id={tutorialLesson} goal={practiceGoal} error={playError} busy={presentationBusy||Boolean(playAnimation)||Boolean(attackAnimation)} setup={tutorialLesson==='basics'?`공개 선수 ‘${practiceCatalog.unit!.name}’로 연습해요. 시작 골드는 1이고, 상대 체력은 공격 한 번으로 끝낼 수 있게 ${practiceCatalog.unit!.attack}로 맞췄어요. 실전의 시작 체력과 덱 구성은 이 연습 상황과 달라요.`:tutorialLesson==='champion'?`${practiceCatalog.champion!.name}의 실제 고유능력과 퀘스트예요. 빠르게 완료를 경험하도록 퀘스트 진행도와 골드를 미리 준비했어요.`:'공개 카드의 실제 효과를 사용해요. 이전 턴부터 필드에 있던 선수와 골드 6을 준비했어요. 제한 시간 없이 안내된 행동을 연습하세요.'} onRestart={()=>startPractice(tutorialLesson)} onCourses={()=>{setMatchReady(false);setTutorialLesson(null);setPlayError(null);}} onNext={()=>{const next=LESSONS.slice(LESSONS.findIndex(l=>l.id===tutorialLesson)+1).find(l=>!lessonUnavailable(practiceCatalog,l.id));if(next&&practiceCatalog)startPractice(next.id);else{setMatchReady(false);setTutorialLesson(null);}}}/>:undefined}
+      showTurnTimer={!isTutorial}
       state={gameState}
       selectedCardId={selectedCardId}
       selectedAttackerId={selectedAttackerId}
@@ -1680,7 +1737,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         navigate(ROUTES.ADMIN);
       } : undefined}
     />
-     {matchResultVisible && (
+     {matchResultVisible && !isTutorial && (
        <MatchResultOverlay deckRecord={aiMatchQuestContextRef.current ? {id:aiMatchQuestContextRef.current.deckId,name:aiDecks?.find(d=>d.id===aiMatchQuestContextRef.current?.deckId)?.name??"AI 대전 덱"}:undefined} onRematch={isAiMatch&&!isTowerSandbox&&!quickMatchId&&aiMatchQuestContextRef.current ? async()=>{await startAiMatch(aiMatchQuestContextRef.current!.deckId);if(aiRestartErrorRef.current)throw Error(aiRestartErrorRef.current);}:undefined} onChooseDeck={isAiMatch&&!isTowerSandbox?()=>window.location.assign(launchDeckEditor(aiMatchQuestContextRef.current?.deckId)):undefined} cosmetics={isAiMatch ? aiCosmetics : undefined}
          opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
          state={gameState}

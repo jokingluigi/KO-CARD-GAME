@@ -120,6 +120,9 @@ interface GameStatePreviewProps {
   introActive?: boolean;
   cinematicIntro?: {id:string;kind:'BOSS'|'HIDDEN_BOSS';title:string;subtitle:string;art?:string|null};
   guidedTutorial?: boolean;
+  tutorialGuide?: React.ReactNode;
+  tutorialFocus?: string;
+  endTurnAllowed?: boolean;
   canEndTurn?: boolean;
   bgmMuted: boolean;
   onBgmMutedChange: (muted: boolean) => void;
@@ -176,6 +179,7 @@ export function GameStatePreview({
   introActive = false,
   cinematicIntro,
   guidedTutorial = false,
+  tutorialGuide, tutorialFocus, endTurnAllowed=true,
   canEndTurn: canEndTurnOverride,
   bgmMuted,
   onBgmMutedChange,
@@ -1106,7 +1110,7 @@ export function GameStatePreview({
 
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
-     <div data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+     <div data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
@@ -1340,7 +1344,7 @@ export function GameStatePreview({
             </div>
             <button
               type="button"
-              disabled={!canEndTurn}
+              disabled={!canEndTurn || !endTurnAllowed}
               data-actions-remain={Boolean(remainingActions.length&&isMyTurn)}
               aria-label={confirmEndTurn?'남은 행동이 있지만 턴 종료 확정':`턴 종료${remainingActions.length&&isMyTurn?' · 사용 가능한 공격 또는 능력 남음':''}`}
               onClick={() => {
@@ -1379,7 +1383,7 @@ export function GameStatePreview({
                 </div>
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
-              {(!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
+              {tutorialGuide || ((!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
                 {playError || interactionStatus || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
@@ -1390,13 +1394,13 @@ export function GameStatePreview({
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
                   : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : `남은 행동 · 공격 ${new Set(remainingActions.filter(a=>a.type==='ATTACK').map(a=>a.type==='ATTACK'?a.attackerInstanceId:'')).size}명 · 액티브 ${legalActiveCardIds.size} · 고유능력 ${canUseChampion?'가능':'불가'}`)}
-              </p>}
+              </p>)}
               <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
-              {contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
+              {!tutorialGuide&&contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
                 : effectTargeting ? !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
                 : selectedCardId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectCard(selectedCardId);}}>선택 취소</button>
-                : selectedAttackerId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectAttacker(selectedAttackerId);}}>선택 취소</button> : !controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
+                : selectedAttackerId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectAttacker(selectedAttackerId);}}>선택 취소</button> : !tutorialGuide&&!controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
             </div>}
           </aside>
              {/* My Board + Zones */}

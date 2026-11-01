@@ -17,7 +17,6 @@ import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main
 import { audioManager } from "@/audio/audio-manager";
 import { BGM_MUTE_STORAGE_KEY, BGM_VOLUME_STORAGE_KEY, readStoredBgmMute, readStoredBgmVolume } from "@/audio/audio-settings";
 import { SfxVolumeControl } from "./sfx-volume-control";
-import { MatchTutorial } from "./match-tutorial";
 import { InstallAppButton } from "./install-app-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 
@@ -96,7 +95,6 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
   const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [nicknameSaving, setNicknameSaving] = useState(false);
@@ -305,7 +303,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
                   return;
                 }
                 if (label === "튜토리얼") {
-                  setTutorialStep(0);
+                  navigate("/tutorial");
                   return;
                 }
                 if (label === "온라인 매치") {
@@ -354,9 +352,6 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           </p>
         )}
       </div>
-      {tutorialStep !== null && (
-        <MatchTutorial step={tutorialStep} onStepChange={setTutorialStep} onClose={() => setTutorialStep(null)} />
-      )}
     </main>
   );
 }

@@ -57,6 +57,7 @@ function Router() {
         <Route path="/draft" component={Draft} />
         <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/ai-match" component={Home} />
+        <Route path="/tutorial" component={Home} />
         <Route path="/online/match/:matchId">{() => <OnlineMatch />}</Route>
         <Route path="/daily-quests" component={DailyQuests} />
         <Route path="/attendance" component={Attendance} />
