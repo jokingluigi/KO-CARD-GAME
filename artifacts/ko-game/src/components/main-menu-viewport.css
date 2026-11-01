@@ -57,12 +57,12 @@
 }
 .ko-main-menu.ko-main-menu .ko-main-menu__content {
   width: 100%;
-  max-width: 1440px;
+  max-width: 1240px;
   min-height: 0;
   min-width: 0;
   margin: 0 auto;
   flex: 1;
-  gap: 8px;
+  gap: 14px;
   justify-content: flex-start;
   overflow: visible;
 }
@@ -106,7 +106,7 @@
   flex-shrink: 0;
   padding: 0;
   margin: 0;
-  background: #000b;
+  background: rgb(8 8 8 / 0.52);
 }
 .ko-main-menu__announcements > button {
   display: flex;
@@ -180,7 +180,7 @@
     gap: 12px;
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__content {
-    gap: 12px;
+    gap: 18px;
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__groups {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -366,15 +366,15 @@ main.ko-main-menu.ko-main-menu
 }
 
 /* Representative art stays behind the lobby; the selected deck has a separate poster. */
-.ko-main-menu .ko-launch-banner {display:flex;gap:12px;flex-shrink:0;min-height:88px;max-height:140px;border-left:3px solid #b69b60;background:#090909e8;overflow:hidden}
-.ko-launch-banner__art {width:100px;flex-shrink:0;min-height:88px;background:#101010;display:grid;place-items:center}
+.ko-main-menu .ko-launch-banner {display:flex;gap:12px;flex-shrink:0;min-height:88px;max-height:140px;border-left:1px solid #b69b6070;border-radius:6px;background:#090909ad;overflow:hidden}
+.ko-launch-banner__art {width:100px;flex-shrink:0;min-height:88px;background:var(--launch-art-background,#101010);display:grid;place-items:center}
 .ko-launch-banner__copy {min-width:0;flex:1;padding:8px 10px 8px 0}
 .ko-launch-banner__copy h2 {font-size:16px;line-height:20px;color:#efe5d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ko-launch-banner__deck {font-size:12px;color:#cabd9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ko-launch-banner button {min-height:44px;padding:4px 10px;border-bottom:1px solid #a48a54;color:#e7ce91;font-size:12px}
 @media(min-width:1000px) and (min-height:550px){
  .ko-main-menu.ko-main-menu .ko-main-menu__content {position:relative;padding-right:clamp(250px,28vw,360px)}
- .ko-main-menu .ko-launch-banner {position:absolute;right:0;top:0;bottom:0;width:clamp(230px,26vw,330px);max-height:none;flex-direction:column;border:1px solid #8c7448;gap:0}
+ .ko-main-menu .ko-launch-banner {position:absolute;right:0;top:24px;bottom:24px;width:clamp(230px,26vw,330px);max-height:none;flex-direction:column;border:1px solid #8c744866;gap:0}
  .ko-launch-banner__art {width:100%;flex:1;min-height:0}
  .ko-launch-banner__copy {flex:none;padding:16px}
  .ko-launch-banner__copy h2 {font-size:22px;line-height:28px}

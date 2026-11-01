@@ -1,0 +1,348 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "selected": true,
+    "scroll": 0,
+    "widthOverflow": 0,
+    "controls": [
+      {
+        "text": "KO CARD BATTLE대전 모드온라인 · AI · 드래프트▶",
+        "x": 12,
+        "y": 362,
+        "width": 366,
+        "height": 168.796875,
+        "hit": true
+      },
+      {
+        "text": "빠른 대전 출전 덱으로 매칭",
+        "x": 12,
+        "y": 540.796875,
+        "width": 115.328125,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "AI 대전 바로 시작",
+        "x": 137.328125,
+        "y": 540.796875,
+        "width": 115.328125,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "드래프트 덱 구성부터 시작",
+        "x": 262.65625,
+        "y": 540.796875,
+        "width": 115.34375,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "덱 편집",
+        "x": 12,
+        "y": 612.796875,
+        "width": 114,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "컬렉션",
+        "x": 138,
+        "y": 612.796875,
+        "width": 114,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "꾸미기",
+        "x": 264,
+        "y": 612.796875,
+        "width": 114,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "보상 · 상점 · 전체 메뉴 ▸",
+        "x": 12,
+        "y": 670.796875,
+        "width": 181.5,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "selected": false,
+    "scroll": 0,
+    "widthOverflow": 0,
+    "controls": [
+      {
+        "text": "KO CARD BATTLE대전 모드온라인 · AI · 드래프트▶",
+        "x": 12,
+        "y": 348,
+        "width": 366,
+        "height": 168.796875,
+        "hit": true
+      },
+      {
+        "text": "빠른 대전 출전 덱으로 매칭",
+        "x": 12,
+        "y": 526.796875,
+        "width": 115.328125,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "AI 대전 바로 시작",
+        "x": 137.328125,
+        "y": 526.796875,
+        "width": 115.328125,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "드래프트 덱 구성부터 시작",
+        "x": 262.65625,
+        "y": 526.796875,
+        "width": 115.34375,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "덱 편집",
+        "x": 12,
+        "y": 598.796875,
+        "width": 114,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "컬렉션",
+        "x": 138,
+        "y": 598.796875,
+        "width": 114,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "꾸미기",
+        "x": 264,
+        "y": 598.796875,
+        "width": 114,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "보상 · 상점 · 전체 메뉴 ▸",
+        "x": 12,
+        "y": 656.796875,
+        "width": 181.5,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "selected": true,
+    "scroll": 0,
+    "widthOverflow": 0,
+    "controls": [
+      {
+        "text": "KO CARD BATTLE대전 모드온라인 · AI · 드래프트▶",
+        "x": 100,
+        "y": 362.734375,
+        "width": 880,
+        "height": 216,
+        "hit": true
+      },
+      {
+        "text": "빠른 대전 출전 덱으로 매칭",
+        "x": 100,
+        "y": 588.734375,
+        "width": 286.65625,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "AI 대전 바로 시작",
+        "x": 396.65625,
+        "y": 588.734375,
+        "width": 286.671875,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "드래프트 덱 구성부터 시작",
+        "x": 693.328125,
+        "y": 588.734375,
+        "width": 286.65625,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "덱 편집",
+        "x": 100,
+        "y": 670.734375,
+        "width": 285.328125,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "컬렉션",
+        "x": 397.328125,
+        "y": 670.734375,
+        "width": 285.328125,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "꾸미기",
+        "x": 694.65625,
+        "y": 670.734375,
+        "width": 285.34375,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "보상 · 상점 · 전체 메뉴 ▸",
+        "x": 100,
+        "y": 738.734375,
+        "width": 181.5,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "selected": false,
+    "scroll": 0,
+    "widthOverflow": 0,
+    "controls": [
+      {
+        "text": "KO CARD BATTLE대전 모드온라인 · AI · 드래프트▶",
+        "x": 100,
+        "y": 362.734375,
+        "width": 880,
+        "height": 216,
+        "hit": true
+      },
+      {
+        "text": "빠른 대전 출전 덱으로 매칭",
+        "x": 100,
+        "y": 588.734375,
+        "width": 286.65625,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "AI 대전 바로 시작",
+        "x": 396.65625,
+        "y": 588.734375,
+        "width": 286.671875,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "드래프트 덱 구성부터 시작",
+        "x": 693.328125,
+        "y": 588.734375,
+        "width": 286.65625,
+        "height": 58,
+        "hit": true
+      },
+      {
+        "text": "덱 편집",
+        "x": 100,
+        "y": 670.734375,
+        "width": 285.328125,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "컬렉션",
+        "x": 397.328125,
+        "y": 670.734375,
+        "width": 285.328125,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "꾸미기",
+        "x": 694.65625,
+        "y": 670.734375,
+        "width": 285.34375,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "보상 · 상점 · 전체 메뉴 ▸",
+        "x": 100,
+        "y": 738.734375,
+        "width": 181.5,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "selected": true,
+    "scroll": 0,
+    "widthOverflow": 0,
+    "controls": [
+      {
+        "text": "KO CARD BATTLE대전 모드온라인 · AI · 드래프트▶",
+        "x": 12,
+        "y": 132,
+        "width": 551,
+        "height": 80,
+        "hit": true
+      },
+      {
+        "text": "덱 편집",
+        "x": 12,
+        "y": 218,
+        "width": 175.65625,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "컬렉션",
+        "x": 199.65625,
+        "y": 218,
+        "width": 175.671875,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "꾸미기",
+        "x": 387.328125,
+        "y": 218,
+        "width": 175.671875,
+        "height": 44,
+        "hit": true
+      },
+      {
+        "text": "보상 · 상점 · 전체 메뉴 ▸",
+        "x": 12,
+        "y": 268,
+        "width": 181.5,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "errors": []
+  }
+]

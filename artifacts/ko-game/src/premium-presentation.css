@@ -23,7 +23,7 @@ body .ko-main-menu{background:#000000;padding:72px clamp(24px,6vw,100px) 48px;is
 .ko-main-menu .ko-main-menu__user{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px 16px;margin-top:24px;max-width:100%;line-height:1.7}
 .ko-main-menu .ko-main-menu__user :is(.text-amber-300,.text-violet-300){color:#d6b867}
 .ko-main-menu .ko-main-menu__user button{min-height:32px;border:0;border-bottom:1px solid #494034;background:transparent}
-.ko-main-menu .ko-main-menu__content>section:not(.ko-main-menu__grid):not(.ko-home-battle){border:0;border-block:1px solid #3c3326;border-radius:0;background:#000000;box-shadow:none;padding:12px 0;margin-bottom:18px}
+.ko-main-menu .ko-main-menu__content>section:not(.ko-main-menu__grid):not(.ko-home-battle):not(.ko-main-menu__announcements){border:0;border-block:1px solid #3c3326;border-radius:0;background:#000000;box-shadow:none;padding:12px 0;margin-bottom:18px}
 .ko-main-menu .ko-main-menu__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
 .ko-main-menu .ko-main-menu__item{min-height:60px;padding:12px 0;border:0;border-bottom:1px solid #3c3326;box-shadow:none;animation:none;flex-direction:row;align-items:center;gap:12px;border-radius:0;background:transparent}
 .ko-main-menu .ko-main-menu__item:hover{background:#d6b8670b;transform:none}
