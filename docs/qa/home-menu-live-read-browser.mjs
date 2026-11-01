@@ -59,6 +59,22 @@ try {
       () => document.documentElement.scrollHeight <= innerHeight + 1,
     ),
   );
+  if (process.env.KO_QA_HOME_ACTIONS === "1") {
+    await page.getByRole("button", { name: "계정 메뉴", exact: true }).click();
+    await page
+      .getByRole("menuitem", { name: "닉네임 변경", exact: true })
+      .waitFor();
+    await page
+      .getByRole("menuitem", { name: "로그아웃", exact: true })
+      .waitFor();
+    await page.keyboard.press("Escape");
+    await page.locator("[role=menu]").waitFor({ state: "detached" });
+    assert.equal(
+      await page.locator("#home-reward-count").count(),
+      0,
+      "incomplete reward responses must not invent a count",
+    );
+  }
   await page.screenshot({ path: `${out}/deployed-home.png` });
   await page.getByTestId("button-battle-modes").click();
   await page.waitForURL("**/online");
@@ -85,6 +101,7 @@ try {
       {
         deployedBundle: true,
         motionBridgeVerified: process.env.KO_QA_MOTION === "1",
+        homeActionsVerified: process.env.KO_QA_HOME_ACTIONS === "1",
         publicBackgroundDecoded: true,
         accountIntercepted: true,
         modePicker: true,

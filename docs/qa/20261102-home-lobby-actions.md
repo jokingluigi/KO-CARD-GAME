@@ -45,3 +45,13 @@
 [모바일](20261102-home-lobby-actions/home-mobile.png) · [모바일 가로](20261102-home-lobby-actions/home-landscape.png) · [PC](20261102-home-lobby-actions/home-desktop.png) · [관리자 모바일](20261102-home-lobby-actions/admin-background-mobile.png) · [관리자 PC](20261102-home-lobby-actions/admin-background-desktop.png)
 
 [홈 기능 결과](20261102-home-lobby-actions/behavior-results.json) · [일반 12해상도](20261102-home-lobby-actions/user-12-viewports.json) · [관리자 12해상도](20261102-home-lobby-actions/admin-12-viewports.json) · [관리자 저장/구도](20261102-home-lobby-actions/admin-editor-results.json) · [실제 AI 경로](20261102-home-lobby-actions/actual-ai-route-results.json) · [정책 검사](20261102-home-lobby-actions/unit-tests.txt) · [권한/검증 검사](20261102-home-lobby-actions/route-tests.txt)
+
+## 배포 확인
+
+소스 `556e6d07d8d2cbd32d0279a130b0ff971cc0d09e`를 기존 자동 배포 승인에 따라 API→프런트 순서로 배포했다. API/프런트 모두 Render live·health 200이며 점검 비활성을 유지했다. API의 공개 `backgroundPlacement` 필드와 기존 설정의 중앙 배치 호환을 읽기 요청으로 확인했다. 운영 배경 위치를 테스트 값으로 저장하지 않았다. 별도 운영 DB 편집/마이그레이션 작업은 수행하지 않았고 기존 API 시작 절차는 변경하지 않았다.
+
+사전 상태 조회는 한 차례 양쪽 경로에서 18초 시간 초과였으며 재조회에서 정상 응답한 뒤 진행했다. 운영 JS/CSS **118개 SHA-256 전체**가 검증 빌드와 일치한다. [API 영수증](20261102-home-lobby-actions-api-deployment.json) · [프런트 영수증](20261102-home-lobby-actions-front-deployment.json).
+
+390×844에서 실제 배포 번들을 실행해 공개 배경 decode, 계정 메뉴의 닉네임 변경/로그아웃 항목과 닫기, 부분 보상 응답 시 가짜 건수 없음, 홈 스크롤 없음, 홈→네 가지 대전 모드 이동, 기존 진입 모션을 확인했다. 계정·보상 응답은 브라우저 대역이며 모든 POST를 차단해 운영 데이터 변경 요청은 전송하지 않았다. 실행 환경 인증서 체인 문제로 이 브라우저 검사만 `ignoreHTTPSErrors`를 사용했으므로 TLS 인증서 검증 결과가 아니다.
+
+[배포 홈 화면](20261102-home-lobby-actions/deployed-home.png) · [배포 브라우저 결과](20261102-home-lobby-actions/deployed-browser.json).
