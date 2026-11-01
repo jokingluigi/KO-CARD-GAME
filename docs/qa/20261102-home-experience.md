@@ -54,3 +54,11 @@
 홈: `main-menu.tsx`, `launch-deck-banner.tsx`, `home-deck-policy.ts`, `home-packs-shortcut.tsx`, `battle-mode-button.tsx`, `home-lobby.css`, `main-menu-viewport.css`, `decks-client.ts`, `collection-client.ts`, `online-quick.tsx`.
 
 공통 엔진: `cards/silence-immunity.ts`, `cards/generation.ts`, `cards/zone-state.ts`, `engine/card-status.ts`, `engine/champion-token.ts`, `effects/effect-engine.ts`. 관련 단위 검사 및 브라우저 검사 추가/갱신.
+
+## 배포 확인
+
+- 소스 `2546bc6af46799d7bcad1848619c5c67c786752f`를 기존 상시 배포 승인에 따라 API→프런트 순서로 배포했다. 두 서비스 모두 해당 소스로 live, health 200. main 병합 없음.
+- 프런트의 JS/CSS 119개를 로컬 운영 빌드와 SHA-256으로 대조했다. 점검 설정은 배포 전후 false로 유지했다.
+- 운영 주소의 실제 번들에서 홈·배경·계정 메뉴·새 출전 덱 선택 창·대전 모드 진입·스크롤 없는 배치·기존 모션 연결을 확인했다. 계정 응답은 검증용으로 가로채고 모든 쓰기 요청을 차단했다. 실제 계정으로 라이브 PvP를 진행한 검사는 아니다.
+- 환경 인증서 체인 때문에 브라우저 검사는 `ignoreHTTPSErrors`를 사용했으므로 TLS 검증 결과로 간주하지 않는다.
+- 배포 증거: [API](20261102-home-experience-api-deployment.json), [프런트](20261102-home-experience-front-deployment.json), [운영 번들 브라우저 검사](20261102-home-experience/deployed-browser.json), [운영 덱 선택 화면](20261102-home-experience/deployed-deck-picker.png).

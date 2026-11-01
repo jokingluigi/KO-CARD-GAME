@@ -1,0 +1,30 @@
+{
+  "deployedBundle": true,
+  "motionBridgeVerified": true,
+  "homeTwelveVerified": true,
+  "homeActionsVerified": true,
+  "publicBackgroundDecoded": true,
+  "accountIntercepted": true,
+  "modePicker": true,
+  "noScroll": true,
+  "blockedRequests": [
+    {
+      "method": "POST",
+      "path": "/api/online-matches/ws-ticket"
+    },
+    {
+      "method": "POST",
+      "path": "/api/online-matches/ws-ticket"
+    },
+    {
+      "method": "POST",
+      "path": "/api/online-matches/ws-ticket"
+    },
+    {
+      "method": "POST",
+      "path": "/api/online-matches/ws-ticket"
+    }
+  ],
+  "productionWritesSent": 0,
+  "errors": []
+}

@@ -75,6 +75,25 @@ try {
       "incomplete reward responses must not invent a count",
     );
   }
+  if (process.env.KO_QA_HOME_TWELVE === "1") {
+    await page
+      .getByRole("button", { name: "출전 덱 고르기", exact: true })
+      .click();
+    await page
+      .getByRole("dialog")
+      .getByRole("heading", { name: "출전 덱 선택" })
+      .waitFor();
+    await page
+      .getByRole("dialog")
+      .getByText(
+        "저장된 덱이 없어요. 챔피언과 카드를 골라 첫 덱을 만들어 주세요.",
+        { exact: true },
+      )
+      .waitFor();
+    await page.screenshot({ path: `${out}/deployed-deck-picker.png` });
+    await page.keyboard.press("Escape");
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+  }
   await page.screenshot({ path: `${out}/deployed-home.png` });
   await page.getByTestId("button-battle-modes").click();
   await page.waitForURL("**/online");
@@ -101,6 +120,7 @@ try {
       {
         deployedBundle: true,
         motionBridgeVerified: process.env.KO_QA_MOTION === "1",
+        homeTwelveVerified: process.env.KO_QA_HOME_TWELVE === "1",
         homeActionsVerified: process.env.KO_QA_HOME_ACTIONS === "1",
         publicBackgroundDecoded: true,
         accountIntercepted: true,
