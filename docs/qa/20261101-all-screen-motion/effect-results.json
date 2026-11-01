@@ -1,0 +1,26 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualEngineMultiTargetDamage": true,
+    "actualTargetCount": 2,
+    "sourceToTargetLinks": true,
+    "confirmedDestroyVacancy": true,
+    "delayMs": 280,
+    "expiry": true,
+    "resizeCleanup": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualEngineMultiTargetDamage": true,
+    "actualTargetCount": 2,
+    "sourceToTargetLinks": true,
+    "confirmedDestroyVacancy": true,
+    "delayMs": 280,
+    "expiry": true,
+    "resizeCleanup": true,
+    "errors": []
+  }
+]

@@ -315,7 +315,7 @@ export function GameStatePreview({
     if (coachStage === 3 && state.events.some((event) => event.type === 'CHAMPION_QUEST_PROGRESS' && event.playerId === state.players[0]?.id)) setCoachStage(4);
   }, [state.events, state.players, guidedTutorial, coachDismissed, coachStage]);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
-  useHandMotion(handCardRefs, state.players[0]?.hand.map(card=>card.instanceId).join(':') ?? '');
+  useHandMotion(handCardRefs, `${state.gameId}:${handSort}:${state.players[0]?.hand.map(card=>card.instanceId+':'+card.currentCost).join(':') ?? ''}`);
   const motion = useBattleMotion();
   const playerHandRef = React.useRef<HTMLDivElement | null>(null);
   const playerDeckRef = React.useRef<HTMLDivElement | null>(null);

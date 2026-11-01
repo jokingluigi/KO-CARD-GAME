@@ -19,7 +19,7 @@ export function BattleZoneVisuals({state,hand,board,introActive}:{state:GameStat
   const current=new Map<string,DOMRect>();for(const [id,n]of [...board.current,...hand.current])current.set(id,n.getBoundingClientRect());positions.current=current;
   const reset=before.gameId!==state.gameId||before.events.length>state.events.length;
   motions.current.forEach(a=>a.cancel());motions.current=[];
-  const animate=(n:Element|null|undefined,frames:Keyframe[],duration=260)=>{if(!n||prefersReducedMotion())return;try{motions.current.push(n.animate(frames,{duration,easing:'ease-out'}));}catch{}};
+  const animate=(n:Element|null|undefined,frames:Keyframe[],duration=260,delay=0)=>{if(!n||prefersReducedMotion())return;try{motions.current.push(n.animate(frames,{duration,delay,easing:'ease-out'}));}catch{}};
   const entering=ready&&!wasReady.current&&!reset;wasReady.current=ready;
   if(reset||!ready){setFlights([]);setWaves([]);if(waveTimer.current)clearTimeout(waveTimer.current);return;}
   if(entering){root?.querySelectorAll('.ko-hand-cards img,.ko-board-cards img,.ko-portrait-window img').forEach(n=>animate(n,[{opacity:.65,filter:'brightness(1.12)'},{opacity:1,filter:'brightness(1)'}],240));}
@@ -27,9 +27,16 @@ export function BattleZoneVisuals({state,hand,board,introActive}:{state:GameStat
   const incoming=effectWavePlans(before,state,getCardDefinition).flatMap(plan=>{
     const source=current.get(plan.sourceId)??old.get(plan.sourceId)??(plan.sourcePlayerId?root?.querySelector(plan.sourcePlayerId===state.players[0].id?'.ko-player-champion .ko-portrait-window':'.ko-opponent-champion .ko-portrait-window')?.getBoundingClientRect():undefined);if(!source)return [];
     const targets=plan.targets.flatMap(t=>{const r=t.cardId?current.get(t.cardId)??old.get(t.cardId):root?.querySelector(t.playerId===state.players[0].id?'.ko-player-champion':'.ko-opponent-champion')?.getBoundingClientRect();return r?[at(r)]:[];});
-    return targets.length>1?[{id:plan.id,from:at(source),targets:targets.slice(0,8)}]:[];
+    return targets.length>0?[{id:plan.id,from:at(source),targets:targets.slice(0,8)}]:[];
   });
   if(incoming.length){if(waveTimer.current)clearTimeout(waveTimer.current);setWaves(incoming.slice(-2));waveTimer.current=setTimeout(()=>setWaves([]),800);}
+  for(const event of state.events.slice(before.events.length)){
+   if(!['CARD_RETIRED','CARD_DESTROYED','CARD_VANISHED','CARD_REMOVED'].includes(event.type)||!event.playerId)continue;
+   const owner=before.players.find(p=>p.id===event.playerId),slot=owner?.board.findIndex(c=>c?.instanceId===event.cardInstanceId);
+   if(slot===undefined||slot<0)continue;const nextOwner=state.players.find(p=>p.id===event.playerId);if(nextOwner?.board[slot])continue;
+   const side=event.playerId===state.players[0].id?'player':'opponent';
+   animate(root?.querySelectorAll(`.ko-${side}-board-row .ko-board-slot`)[slot],[{boxShadow:'inset 0 0 0 2px #c9af76',filter:'brightness(1.15)'},{boxShadow:'inset 0 0 0 0px transparent',filter:'brightness(1)'}],320,280);
+  }
   const next:CardLeaveAnimationState[]=[];
   for(const p of zoneVisualPlans(before,state,state.players[0].id)){
    const self=p.playerId===state.players[0].id,side=self?'player':'opponent';

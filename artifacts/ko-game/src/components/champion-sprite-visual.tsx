@@ -1,3 +1,4 @@
+import {boundPortraitFrames} from "./motion/battle-motion-bounds";
 import './battle-atmosphere.css';
 import {
   useEffect,
@@ -199,7 +200,7 @@ export function ChampionSpriteVisual({
       css.getPropertyValue("--sprite-battle-axis").trim() === "vertical";
     const minimum =
       Number(css.getPropertyValue("--sprite-motion-floor")) || 0.35;
-    const frames = motionFrames(
+    const frames = boundPortraitFrames(motionFrames(
       cue,
       self,
       Math.max(minimum, Math.min(1, rect.height / 220)),
@@ -208,7 +209,7 @@ export function ChampionSpriteVisual({
       gestureDirection,
       motion,
       vertical,
-    );
+    ),rect,{width:innerWidth,height:innerHeight});
     const saved = continuity.current;
     if (saved?.identity === identity && saved.set === setIdentity) {
       frames[0] = {

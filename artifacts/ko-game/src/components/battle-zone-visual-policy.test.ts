@@ -22,7 +22,7 @@ test('AoE needs actual shared provenance and separate targets, excludes combat a
  const before=state(),after=structuredClone(before);
  const event={type:'DAMAGE_DEALT' as const,amount:2,reason:'EFFECT',source:{type:'CARD' as const,cardInstanceId:card.instanceId},sourceContext:{causationId:'effect1'}};
  after.events=[{...event,target:{type:'PLAYER',playerId:'me'}},{...event,target:{type:'PLAYER',playerId:'other'}}];assert.equal(effectWavePlans(before,after).length,1);
- after.events[1].sourceContext={causationId:'different'};assert.deepEqual(effectWavePlans(before,after),[]);
+ after.events[1].sourceContext={causationId:'different'};const separate=effectWavePlans(before,after);assert.equal(separate.length,2);assert.ok(separate.every(p=>p.targets.length===1));assert.notEqual(separate[0].id,separate[1].id);
  after.events=after.events.map(e=>({...e,sourceContext:{causationId:'effect1'},reason:'COMBAT'}));assert.deepEqual(effectWavePlans(before,after),[]);
  after.events=after.events.map(e=>({...e,reason:'EFFECT',amount:0}));assert.deepEqual(effectWavePlans(before,after),[]);
 });

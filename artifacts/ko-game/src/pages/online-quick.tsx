@@ -162,7 +162,7 @@ function QuickMatchPage() {
             <LoaderCircle className="h-8 w-8 animate-spin" aria-hidden="true" />
           </div>
           <p className="mt-7 font-display text-xs font-black tracking-[0.25em] text-amber-400">SEARCHING LIVE QUEUE</p>
-          <h2 className="mt-3 text-2xl font-black text-white" data-testid="status-quick-searching">{quickState==="joining"?"대기열 입장을 확인 중이에요.":"상대를 찾는 중..."}</h2>
+          <h2 className="mt-3 text-2xl font-black text-white" data-ui-motion-state={`ACTIVE:${quickState}`} data-testid="status-quick-searching">{quickState==="joining"?"대기열 입장을 확인 중이에요.":"상대를 찾는 중..."}</h2>
           <p className="mt-2 text-sm text-neutral-500" data-testid="text-quick-elapsed">검색 {elapsed}초</p>
           <div className="mx-auto mt-8 max-w-sm text-left">
             <SelectedDeckStamp deck={queuedDeck?{name:queuedDeck.deckName,champion:queuedDeck.championName?{name:queuedDeck.championName}:null,isValid:true}:selectedDeck} />

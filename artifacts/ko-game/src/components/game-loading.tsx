@@ -1,5 +1,5 @@
 import { useLocation } from 'wouter';
-const names: Record<string,string> = {'/decks':'덱 편집','/collection':'컬렉션','/shop':'상점','/packs':'내 팩','/daily-quests':'퀘스트','/tower':'타워','/draft':'드래프트','/cosmetics':'꾸미기','/online':'온라인 대전'};
+const names: Record<string,string> = {'/decks':'덱 편집','/collection':'컬렉션','/shop':'상점','/packs':'내 팩','/daily-quests':'퀘스트','/tower':'타워','/draft':'드래프트','/cosmetics':'꾸미기','/online':'대전 모드'};
 export function GameLoading() {
  const [path]=useLocation();
  return <main className="ko-loading-screen" aria-busy="true" aria-label="화면 불러오기">

@@ -1,3 +1,4 @@
+import {MotionNumber} from "@/components/presentation-motion";
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
 import { useLocation } from "wouter";
@@ -21,6 +22,7 @@ function objectiveLabel(objective: string) {
 
 export default function DailyQuestsPage() {
   const [, navigate] = useLocation();
+  const [lastBalance,setLastBalance]=useState<number|null>(null);
   const [tab,setTab] = useState<"DAILY"|"SEASON">("DAILY");
   const [seasons,setSeasons] = useState<Array<{id:string;name:string;endsAt:string}>>([]);
   const [timezone,setTimezone] = useState("Asia/Seoul");
@@ -65,6 +67,7 @@ export default function DailyQuestsPage() {
     setBusyId(quest.id);
     try {
       const result = await claimDailyQuest(quest.id);
+      if(result.reward)setLastBalance(result.reward.balanceAfter);
       setQuests((current) => current.map((item) => item.id === quest.id ? result.assignment : item));
       setMessage(result.alreadyClaimed ? "이미 받은 보상입니다." : rewardLabel(result.assignment));
       if (!result.alreadyClaimed) {
@@ -132,6 +135,7 @@ export default function DailyQuestsPage() {
           <p className="mt-2 text-sm text-neutral-500">일일 퀘스트는 하루 동안 고정됩니다. 드래프트 도전자 진행도는 날짜가 바뀌어도 유지됩니다.</p>
         </header>
         {!loading && <section className="ko-quest-summary" aria-label="퀘스트 현황"><div><strong>{quests.filter(q => (q.platform?.questType ?? "DAILY") === tab && q.status === "COMPLETED").length}</strong><span>받을 수 있는 보상</span></div><div><strong>{quests.filter(q => (q.platform?.questType ?? "DAILY") === tab && q.status === "CLAIMED").length}</strong><span>수령 완료</span></div></section>}
+        {lastBalance!==null&&<p data-ui-balance data-ui-mount-motion data-ui-motion-state={`SUCCESS:${lastBalance}`} className="mb-4 border-l-2 border-amber-700 px-3 py-2 text-sm text-amber-100">수령 후 보유 크레딧 <MotionNumber value={lastBalance} format={n=>n.toLocaleString()}/></p>}
         {message && <p role="status" className="mb-5 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
         <nav className="mb-5 flex gap-3" aria-label="퀘스트 종류">{(["DAILY","SEASON"] as const).map(t=><button key={t} onClick={()=>setTab(t)} className={"min-h-11 border px-4 py-2 font-bold "+(tab===t?"border-amber-500 bg-amber-400 text-black":"border-neutral-700 text-neutral-300")}>{t==="DAILY"?"일일 퀘스트":"시즌 퀘스트"}</button>)}</nav>
         <p className="mb-4 text-xs text-neutral-400">일일 초기화: {timezone} 00:00 · 시즌 진행도는 날짜가 바뀌어도 유지됩니다.</p>
@@ -139,14 +143,14 @@ export default function DailyQuestsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-black text-amber-200">일일 퀘스트 3개 완료 보상</h2><span>{completionBonus.progress} / {completionBonus.targetValue}</span></div>
           <p className="text-xs text-neutral-400">{completionBonus.date} · 개별 보상 수령과 무관하게 일일 퀘스트 3개 달성 · 하루 1회</p>
           <progress className="w-full accent-amber-400" value={completionBonus.progress} max={completionBonus.targetValue}/>
-          <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm font-bold text-amber-200">{rewardDisplay(completionBonus)}</span><button type="button" data-testid="button-claim-daily-completion-bonus" disabled={completionBonus.status!=="COMPLETED"||Boolean(busyId)} onClick={()=>void claimBonus()} className="min-h-11 rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{completionBonus.status==="CLAIMED"?"수령 완료":completionBonus.status==="COMPLETED"?"추가 보상 받기":"진행 중"}</button></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm font-bold text-amber-200">{rewardDisplay(completionBonus)}</span><button type="button" data-testid="button-claim-daily-completion-bonus" data-ui-motion-state={busyId==="completion-bonus"?"PENDING":completionBonus.status==="CLAIMED"?"SUCCESS":""} disabled={completionBonus.status!=="COMPLETED"||Boolean(busyId)} onClick={()=>void claimBonus()} className="min-h-11 rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{completionBonus.status==="CLAIMED"?"수령 완료":completionBonus.status==="COMPLETED"?"추가 보상 받기":"진행 중"}</button></div>
         </section>}
         {loading ? <p className="rounded border border-neutral-800 p-8 text-center text-neutral-500">퀘스트를 불러오는 중...</p> : quests.filter(q=>(q.platform?.questType??"DAILY")===tab).length === 0 ? <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">이 분류에 진행 중인 퀘스트가 없습니다.</p> : (
           <div className="grid gap-4 md:grid-cols-3">
             {quests.filter(q=>(q.platform?.questType??"DAILY")===tab).map((quest) => {
               const percent = Math.min(100, Math.round((quest.progress / quest.targetValue) * 100));
               return (
-                <article key={quest.id} className="rounded-xl border border-neutral-800 bg-black/40 p-5">
+                <article key={quest.id} data-ui-motion-state={`${quest.status==="CLAIMED"?"SUCCESS":quest.status==="COMPLETED"?"ACTIVE":""}:${quest.id}`} className="rounded-xl border border-neutral-800 bg-black/40 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div><p className="text-[10px] font-black tracking-[0.2em] text-primary">{quest.assignmentDate === "LIFETIME" ? "상시 퀘스트 · 1회 한정" : `QUEST ${quest.slot + 1}`}</p><h2 className="mt-2 font-black text-white">{quest.title}</h2>{quest.platform?.questType==="SEASON"&&<p className="mt-1 text-xs text-neutral-400">{seasons.find(s=>s.id===quest.platform?.seasonId)?.name} · 종료 {new Date(seasons.find(s=>s.id===quest.platform?.seasonId)?.endsAt??"").toLocaleDateString("ko-KR")}</p>}</div>
                     {quest.status === "CLAIMED" ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /> : <ListChecks className="h-5 w-5 shrink-0 text-amber-400" />}
@@ -154,7 +158,7 @@ export default function DailyQuestsPage() {
                   <p className="mt-4 min-h-12 text-sm leading-6 text-neutral-400">{quest.description}</p>
                   <p className="mt-4 text-xs font-bold text-neutral-300">{objectiveLabel(quest.objectiveType)} · {quest.progress}/{quest.targetValue}</p>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${percent}%` }} /></div>
-                    <div className="mt-5 flex items-center justify-between gap-3"><span className="text-sm font-black text-amber-200">{rewardDisplay(quest)}</span><button type="button" disabled={quest.status !== "COMPLETED" || Boolean(busyId)} onClick={() => void claim(quest)} className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-40">{quest.status === "CLAIMED" ? "수령 완료" : quest.status === "COMPLETED" ? "보상 받기" : "진행 중"}</button></div>
+                    <div className="mt-5 flex items-center justify-between gap-3"><span className="text-sm font-black text-amber-200">{rewardDisplay(quest)}</span><button type="button" data-ui-motion-state={busyId===quest.id?"PENDING":""} disabled={quest.status !== "COMPLETED" || Boolean(busyId)} onClick={() => void claim(quest)} className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-40">{quest.status === "CLAIMED" ? "수령 완료" : quest.status === "COMPLETED" ? "보상 받기" : "진행 중"}</button></div>
                 </article>
               );
             })}

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
-const out = "docs/qa/20261101-ux-accessibility";
+const out = process.env.KO_QA_RECEIPT_DIR ?? "docs/qa/20261101-ux-accessibility";
 const browser = await chromium.launch(),
   page = await browser.newPage({
     viewport: { width: 390, height: 844 },

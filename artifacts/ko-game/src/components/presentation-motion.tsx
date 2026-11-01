@@ -31,13 +31,14 @@ export function useBattleMotion() {
 export function useHandMotion(elements:RefObject<ReadonlyMap<string,HTMLElement>>,identity:string) {
  const previous=useRef(new Map<string,DOMRect>());
  const running=useRef<Animation[]>([]);
- const viewport=useRef(0);
+ const viewport=useRef('');
  useLayoutEffect(()=>{
   for(const a of running.current)a.cancel();running.current=[];
   const next=new Map<string,DOMRect>();
   for(const [id,element] of elements.current??[])next.set(id,element.getBoundingClientRect());
-  if(!prefersReducedMotion()&&(!viewport.current||viewport.current===window.innerWidth)) {
+  if(!prefersReducedMotion()&&(!viewport.current||viewport.current===`${window.innerWidth}x${window.innerHeight}`)) {
    for(const [id,element] of elements.current??[]) {
+    if(element.closest('[data-dragging=true],[data-drag-returning=true],.ko-hand-card--selected')||element.querySelector('[data-dragging=true]'))continue;
     const before=previous.current.get(id),after=next.get(id)!;
     const dx=before?before.left-after.left:0,dy=before?before.top-after.top:0;
     if(before&&Math.hypot(dx,dy)>1) {
@@ -49,7 +50,7 @@ export function useHandMotion(elements:RefObject<ReadonlyMap<string,HTMLElement>
     }
    }
   }
-  viewport.current=window.innerWidth;previous.current=next;
+  viewport.current=`${window.innerWidth}x${window.innerHeight}`;previous.current=next;
  },[elements,identity]);
  useEffect(()=>()=>{for(const a of running.current)a.cancel();},[]);
 }

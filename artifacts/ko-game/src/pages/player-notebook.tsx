@@ -12,7 +12,7 @@ export default function PlayerNotebook() {
       ]);
   return (
     <main className="ko-player-notebook ko-experience-page min-h-screen bg-neutral-950 p-5 text-white">
-      <a href="/">← 메인</a>
+      <Link href="/">← 메인</Link>
       <h1 className="my-5 text-2xl">내 전적 · 수집 목표</h1>
       <p>
         이 브라우저에 계정별로 저장됩니다. 다른 기기와 동기화되지 않으며 서버

@@ -243,10 +243,10 @@ export function motionFrames(
       key(0.82, -sign * 0.6 * rebound, 0.3, -sign * 0.15 * rebound),
       key(1),
     ];
+  if(cue.kind === "WRESTLER_ATTACK")return [key(0),key(.1,-sign*.35,.2,-sign*.1),key(.24,sign*3.2,-.5,sign*.55,1.006,1.08),key(.45,sign*2,-.15,sign*.8,1.004),key(.82,-sign*.25*rebound,.08,-sign*.1),key(1)];
   if (
     cue.kind === "SUMMON" ||
-    cue.kind === "LEGENDARY_SUMMON" ||
-    cue.kind === "WRESTLER_ATTACK"
+    cue.kind === "LEGENDARY_SUMMON"
   ) {
     const power = cue.kind === "LEGENDARY_SUMMON" ? 1.6 : 1;
     return [

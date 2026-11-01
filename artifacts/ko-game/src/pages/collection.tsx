@@ -345,13 +345,13 @@ export default function CollectionPage() {
              <p className="mt-2 text-sm text-neutral-500">보유한 카드와 제작 가능한 카드, 챔피언을 확인할 수 있습니다.</p>
           </div>
              <div className="flex flex-wrap items-center justify-end gap-2 text-xs font-black">
-               <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-amber-200">
+               <div data-ui-balance className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-amber-200">
                  <Sparkles className="h-4 w-4 text-amber-400" />
-                 ◆ {collection.isTestAccount ? "∞" : collection.prismBalance.toLocaleString()} 일반 프리즘
+                 ◆ {collection.isTestAccount ? "∞" : <MotionNumber value={collection.prismBalance} format={n=>n.toLocaleString()}/>} 일반 프리즘
                </div>
                <div className="flex items-center gap-2 rounded-full border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-rose-200">
                  <Shield className="h-4 w-4 text-rose-300" />
-                 ◈ {collection.isTestAccount ? "∞" : championPrismBalance.toLocaleString()} 챔피언 프리즘
+                 ◈ {collection.isTestAccount ? "∞" : <MotionNumber value={championPrismBalance} format={n=>n.toLocaleString()}/>} 챔피언 프리즘
                </div>
            </div>
         </header>

@@ -50,7 +50,7 @@ export function summonFrames(source:{left:number;top:number},target:{left:number
  const position=(x:number,y:number,size:number,angle=0)=>`translate3d(${x}px,${y}px,0) scale(${size}) rotate(${angle}deg)`;
  if(reduced)return [{opacity:0,transform:position(target.left,target.top,scale)},{opacity:1,transform:position(target.left,target.top,scale)}];
  const heavy=impactRank(profile)>=3,front=heavy?1.18:1.07,t=landing/duration;
- return [{offset:0,opacity:1,transform:position(source.left,source.top,1)},{offset:.14,transform:position(source.left,source.top-12,1.08,-2)},{offset:t-.16,transform:position(target.left,target.top-(heavy?48:22),scale*front),easing:'cubic-bezier(.75,0,1,.7)'},{offset:t,transform:position(target.left,target.top,scale*(heavy?.96:.99))},{offset:t+.11,transform:position(target.left,target.top-2,scale*1.03),easing:'cubic-bezier(.16,1,.3,1)'},{offset:1,transform:position(target.left,target.top,scale)}];
+ return [{offset:0,opacity:1,transform:position(source.left,source.top,1)},{offset:.14,transform:position(source.left,source.top-12,1.08,-2)},{offset:t-.16,transform:position(target.left,target.top-(heavy?48:22),scale*front),easing:'cubic-bezier(.75,0,1,.7)'},{offset:t,transform:position(target.left,target.top,scale*(heavy?.96:.99))},{offset:t+(1-t)*.35,transform:position(target.left,target.top-1,scale*(heavy?1.016:1.008)),easing:'cubic-bezier(.16,1,.3,1)'},{offset:t+(1-t)*.8,transform:position(target.left,target.top,scale*.998)},{offset:1,transform:position(target.left,target.top,scale)}];
 }
 
 /** Read existing effect metadata conservatively; never execute or change spell effects. */

@@ -1,0 +1,1 @@
+[{"attackDragForecastAndAimVisibleBeforeCommit":true,"attackCommits":true,"effectTargetsAndCancel":true,"actualHealingRecorded":true,"committedHealingCaption":true,"errors":[]}]

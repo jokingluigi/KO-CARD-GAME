@@ -1,0 +1,53 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": false,
+    "routeAndNavMotion": true,
+    "equipMotion": true,
+    "purchaseCancelNoWrite": true,
+    "purchasePendingNoDuplicate": true,
+    "purchaseFailureThenRetry": true,
+    "cancelFocusReturned": true,
+    "noDialogReceiptOverlap": true,
+    "actualReceiptBalance": true,
+    "questAndAttendance": true,
+    "packReveal": true,
+    "notebookEntry": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "reduced": false,
+    "routeAndNavMotion": true,
+    "equipMotion": true,
+    "purchaseCancelNoWrite": true,
+    "purchasePendingNoDuplicate": true,
+    "purchaseFailureThenRetry": true,
+    "cancelFocusReturned": true,
+    "noDialogReceiptOverlap": true,
+    "actualReceiptBalance": true,
+    "questAndAttendance": true,
+    "packReveal": true,
+    "notebookEntry": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "reduced": true,
+    "routeAndNavMotion": true,
+    "equipMotion": true,
+    "purchaseCancelNoWrite": true,
+    "purchasePendingNoDuplicate": true,
+    "purchaseFailureThenRetry": true,
+    "cancelFocusReturned": true,
+    "noDialogReceiptOverlap": true,
+    "actualReceiptBalance": true,
+    "questAndAttendance": true,
+    "packReveal": true,
+    "notebookEntry": true,
+    "errors": []
+  }
+]

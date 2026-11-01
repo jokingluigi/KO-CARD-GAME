@@ -1,13 +1,17 @@
 import {useLayoutEffect,useEffect,useRef,type RefObject} from 'react';
 import {prefersReducedMotion} from './presentation-config';
+const flights=new Set<()=>void>();
+export function clearInterfaceFlights(){for(const stop of [...flights])stop();}
 export function flyBetween(from:Element|null|undefined,to:Element|null|undefined,reverse=false) {
  if(!from||!to||prefersReducedMotion())return;
  const a=from.getBoundingClientRect(),b=to.getBoundingClientRect();if(!a.width||!b.width)return;
- const ghost=from.cloneNode(true) as HTMLElement;ghost.removeAttribute('id');ghost.removeAttribute('data-testid');ghost.querySelectorAll('[id],[data-testid]').forEach(n=>{n.removeAttribute('id');n.removeAttribute('data-testid');});ghost.inert=true;ghost.setAttribute('aria-hidden','true');
+ const ghost=from.cloneNode(true) as HTMLElement;ghost.removeAttribute('id');ghost.removeAttribute('data-testid');ghost.querySelectorAll('[id],[data-testid]').forEach(n=>{n.removeAttribute('id');n.removeAttribute('data-testid');});ghost.inert=true;ghost.dataset.uiFlight='true';ghost.setAttribute('aria-hidden','true');
  Object.assign(ghost.style,{position:'fixed',left:`${a.left}px`,top:`${a.top}px`,width:`${a.width}px`,height:`${a.height}px`,zIndex:'290',margin:'0',pointerEvents:'none',transformOrigin:'center',overflow:'hidden'});
  document.body.appendChild(ghost);
- const expiry=setTimeout(()=>ghost.remove(),400);
- try{const animation=ghost.animate([{translate:'0px 0px',scale:'1',opacity:.8},{translate:`${b.left+b.width/2-a.left-a.width/2}px ${b.top+b.height/2-a.top-a.height/2}px`,scale:reverse?'0.65':'0.2',opacity:0}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});animation.finished.catch(()=>{}).finally(()=>{clearTimeout(expiry);ghost.remove();});}catch{clearTimeout(expiry);ghost.remove();}
+ let animation:Animation|undefined;const stop=()=>{clearTimeout(expiry);animation?.cancel();ghost.remove();flights.delete(stop);};
+ const expiry=setTimeout(stop,400);flights.add(stop);
+ try{animation=ghost.animate([{translate:'0px 0px',scale:'1',opacity:.8},{translate:`${b.left+b.width/2-a.left-a.width/2}px ${b.top+b.height/2-a.top-a.height/2}px`,scale:reverse?'0.65':'0.2',opacity:0}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});animation.finished.catch(()=>{}).finally(stop);}catch{stop();}
+ return stop;
 }
 /** Keyed FLIP keeps retained search results in place instead of replaying entrances. */
 export function useGridReflow(root:RefObject<HTMLElement|null>,signature:unknown){

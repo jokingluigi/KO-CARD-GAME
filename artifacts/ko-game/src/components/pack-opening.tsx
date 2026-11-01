@@ -197,7 +197,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                       : isRevealed && isSkin
                         ? "border-cyan-300 shadow-[0_0_28px_rgba(103,232,249,0.45)]"
                         : "border-neutral-700"
-                } bg-neutral-900 ${isRevealed ? "animate-[card-flip_350ms_ease-out]" : ""}`}>
+                } bg-neutral-900 ${isRevealed ? "ko-pack-reward-surface" : ""}`}>
                   {!isRevealed ? (
                     <div className="text-center"><Sparkles className="mx-auto h-8 w-8 text-amber-400" /><p className="mt-3 text-xs font-black text-neutral-400">REVEAL</p></div>
                   ) : reward.rewardType === "IMAGE_EMOTE" && reward.cosmetic ? (

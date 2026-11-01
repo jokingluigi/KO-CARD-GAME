@@ -54,7 +54,9 @@ export function attackFrames(
       transform: pose(dx, dy, 1.06, tilt * 0.3),
       easing: "cubic-bezier(.16,1,.3,1)",
     },
-    { offset: 0.82, transform: pose(dx * 0.1, dy * 0.1, 1.02) },
+    {offset:(timeline.release+(timeline.duration-timeline.release)*.18)/timeline.duration,transform:pose(dx*.84,dy*.84,1.035,-tilt*.22),easing:"cubic-bezier(.12,.65,.25,1)"},
+    {offset:(timeline.release+(timeline.duration-timeline.release)*.78)/timeline.duration,transform:pose(-dx*.018,-dy*.018,1.005,-tilt*.08),easing:"ease-out"},
+    {offset:(timeline.release+(timeline.duration-timeline.release)*.93)/timeline.duration,transform:pose(dx*.003,dy*.003,1)},
     { offset: 1, opacity: 1, transform: pose(0, 0, 1) },
   ];
 }

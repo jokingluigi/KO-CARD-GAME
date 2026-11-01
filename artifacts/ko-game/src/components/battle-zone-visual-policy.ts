@@ -59,5 +59,5 @@ export function effectWavePlans(before:GameState,after:GameState,lookup?:(id:str
   if(target&&!group.targets.some(t=>JSON.stringify(t)===JSON.stringify(target)))group.targets.push(target);
   groups.set(id,group);
  }
- return [...groups.values()].filter(g=>g.targets.length>1);
+ return [...groups.values()].filter(g=>g.targets.length>0);
 }

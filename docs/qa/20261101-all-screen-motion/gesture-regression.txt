@@ -1,0 +1,1 @@
+{"longHoldDoesNotOpenDuringDrag":true,"secondaryCancelIgnored":true,"actualSummon":true,"blurCancels":true,"sameGameTurnChangeCancels":true,"stateInvalidationCancels":true,"errors":[]}

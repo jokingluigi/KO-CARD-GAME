@@ -1069,7 +1069,7 @@ export default function Decks() {
               }}>덱 공유</button>
             </div>
             <div className="ko-decks__editor-actions">
-              <button type="button" className="ko-decks__primary-action" data-testid="button-save-deck" aria-busy={isMutating} disabled={isMutating} onClick={handleSave}>
+              <button type="button" className="ko-decks__primary-action" data-testid="button-save-deck" data-ui-motion-state={isMutating?"PENDING":statusMessage==="전략을 저장했습니다."?"SUCCESS":""} aria-busy={isMutating} disabled={isMutating} onClick={handleSave}>
                 <Check className="h-4 w-4" aria-hidden="true" />
                 {isMutating ? "처리 중..." : "전략 저장"}
               </button>
@@ -1082,7 +1082,7 @@ export default function Decks() {
                 </button>
               )}
             </div>
-            {statusMessage && <p className="px-[18px] pb-3 text-center text-[0.68rem] font-bold text-[#d5b25b]" role="status" data-testid="status-decks-success">{statusMessage}</p>}
+            {statusMessage && <p className="px-[18px] pb-3 text-center text-[0.68rem] font-bold text-[#d5b25b]" role="status" data-testid="status-decks-success" data-ui-mount-motion data-ui-motion-state={`SUCCESS:${statusMessage}`}>{statusMessage}</p>}
           </section>
         </div>
       </div>

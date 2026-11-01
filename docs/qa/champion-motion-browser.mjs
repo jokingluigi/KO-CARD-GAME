@@ -20,6 +20,10 @@ try {
     });
     await ctx.addInitScript(() => {
       localStorage.setItem("ko-match-screen-shake", "OFF");
+      localStorage.setItem(
+        "ko-combat-presentation-v1",
+        JSON.stringify({ zoom: 0 }),
+      );
       localStorage.setItem("ko-match-coach-v1", "done");
     });
     const page = await ctx.newPage(),
@@ -31,7 +35,9 @@ try {
         const key = url.split("/motion-")[1].split(".png")[0];
         return r.fulfill({
           body: await readFile(
-            "qa-results/final-ten-sprites/fixtures/" + key + ".png",
+            "qa-results/final-ten-sprites/fixtures/" +
+              (key === "awaken" ? "awake" : key) +
+              ".png",
           ),
           contentType: "image/png",
         });
@@ -359,7 +365,8 @@ try {
     await damage(5, true);
     await motion("HEAVY_HIT");
     assert.equal(await own.getAttribute("data-self-damage"), "true");
-    assert.equal(await page.locator("[data-external-vfx=IMPACT]").count(), 0);
+    // Actual self-damage follows the same hit reaction contract; it is not a prevented hit.
+    assert.equal(await page.locator("[data-external-vfx=IMPACT]").count(), 1);
     await waitQuiet();
     await damage(5);
     await motion("HEAVY_HIT");
@@ -547,13 +554,10 @@ try {
         .getAttribute("data-sprite-set"),
       "normal",
     );
-    await page.waitForTimeout(300);
-    assert.equal(
-      await page
-        .locator(".ko-player-champion .ko-battle-actor")
-        .getAttribute("data-sprite-set"),
-      "awakened",
-    );
+    // Registered awaken expression remains readable for 1.5s before the set swap.
+    await page
+      .locator(".ko-player-champion .ko-battle-actor[data-sprite-set=awakened]")
+      .waitFor();
     await page.waitForTimeout(1300);
     if (gestures) {
       await page.evaluate(() => {
@@ -598,7 +602,11 @@ try {
         cardInstanceId: "motion-cast",
       });
       await motion("AWAKEN");
-      await page.waitForTimeout(300);
+      await page
+        .locator(
+          ".ko-player-champion .ko-battle-actor[data-sprite-set=awakened]",
+        )
+        .waitFor();
       assert.equal(await own.getAttribute("data-motion-preset"), "AGGRESSIVE");
       await waitQuiet();
       await page.evaluate(() => {

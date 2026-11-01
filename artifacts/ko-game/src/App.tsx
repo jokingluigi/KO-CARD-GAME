@@ -1,3 +1,4 @@
+import {InterfaceMotionBridge} from "@/components/motion/interface-motion";
 import {ReadingAccessibilityBridge} from "@/components/player-ux/reading-accessibility";
 import { GameNavigation } from '@/components/game-navigation';
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
@@ -44,6 +45,7 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <SitePresenceBridge />
+      <InterfaceMotionBridge/>
       <ReadingAccessibilityBridge/>
       <GameNavigation />
       <Suspense fallback={<GameLoading />}><Switch>

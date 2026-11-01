@@ -72,7 +72,7 @@ export function LaunchDeckBanner({ accountId }: { accountId?: string }) {
       aria-label="현재 출전 덱"
       data-testid="launch-deck-banner"
     >
-      <div className="ko-launch-banner__art">
+      <div className="ko-launch-banner__art" data-ui-motion-state={`REPLACE:${accountId}:${deck?.id??"none"}:${src??"none"}`}>
         {champion ? (
           <CardArtwork
             src={src}

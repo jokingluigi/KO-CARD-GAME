@@ -1,0 +1,266 @@
+[
+  {
+    "width": 360,
+    "action": "attack",
+    "stop": 90,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 5
+  },
+  {
+    "width": 360,
+    "action": "blocked",
+    "stop": 0,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 0
+  },
+  {
+    "width": 360,
+    "action": "finisher",
+    "stop": 140,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 8
+  },
+  {
+    "width": 360,
+    "resizeRecovery": true,
+    "animationApiFailureRecovery": true,
+    "callbacksExactlyOnce": true
+  },
+  {
+    "width": 375,
+    "action": "attack",
+    "stop": 90,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 5
+  },
+  {
+    "width": 375,
+    "action": "blocked",
+    "stop": 0,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 0
+  },
+  {
+    "width": 375,
+    "action": "finisher",
+    "stop": 140,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 7
+  },
+  {
+    "width": 375,
+    "resizeRecovery": true,
+    "animationApiFailureRecovery": true,
+    "callbacksExactlyOnce": true
+  },
+  {
+    "width": 390,
+    "action": "attack",
+    "stop": 90,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 5
+  },
+  {
+    "width": 390,
+    "action": "blocked",
+    "stop": 0,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 0
+  },
+  {
+    "width": 390,
+    "action": "finisher",
+    "stop": 140,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 8
+  },
+  {
+    "width": 390,
+    "resizeRecovery": true,
+    "animationApiFailureRecovery": true,
+    "callbacksExactlyOnce": true
+  },
+  {
+    "width": 412,
+    "action": "attack",
+    "stop": 90,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 5
+  },
+  {
+    "width": 412,
+    "action": "blocked",
+    "stop": 0,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 0
+  },
+  {
+    "width": 412,
+    "action": "finisher",
+    "stop": 140,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 8
+  },
+  {
+    "width": 412,
+    "resizeRecovery": true,
+    "animationApiFailureRecovery": true,
+    "callbacksExactlyOnce": true
+  },
+  {
+    "width": 768,
+    "action": "attack",
+    "stop": 90,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 5
+  },
+  {
+    "width": 768,
+    "action": "blocked",
+    "stop": 0,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 0
+  },
+  {
+    "width": 768,
+    "action": "finisher",
+    "stop": 140,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 7
+  },
+  {
+    "width": 768,
+    "resizeRecovery": true,
+    "animationApiFailureRecovery": true,
+    "callbacksExactlyOnce": true
+  },
+  {
+    "width": 1440,
+    "action": "attack",
+    "stop": 90,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 5
+  },
+  {
+    "width": 1440,
+    "action": "blocked",
+    "stop": 0,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 0
+  },
+  {
+    "width": 1440,
+    "action": "finisher",
+    "stop": 140,
+    "phases": [
+      "ANTICIPATION",
+      "ACCELERATION",
+      "HITSTOP",
+      "REACTION",
+      "RECOVERY"
+    ],
+    "jointHoldFrames": 8
+  },
+  {
+    "width": 1440,
+    "resizeRecovery": true,
+    "animationApiFailureRecovery": true,
+    "callbacksExactlyOnce": true
+  }
+]
