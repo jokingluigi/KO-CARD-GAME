@@ -1,3 +1,5 @@
+import {HomePacksShortcut} from "./home-packs-shortcut";
+import type {HomeLaunchStatus} from "./launch-deck-banner";
 import {HomeBackgroundImage} from "./home-background-image";
 import {useHomeRewardStatus} from "./home-reward-status";
 import {latestHomeNotice,homeNoticeVersion} from "./home-lobby-policy";
@@ -81,6 +83,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   const toolbarRef=useRef<HTMLDivElement>(null),accountRef=useRef<HTMLButtonElement>(null);
   const [toolbarSpace,setToolbarSpace]=useState(350);
   useLayoutEffect(()=>{const node=toolbarRef.current;if(!node)return;const update=()=>setToolbarSpace(Math.ceil(node.getBoundingClientRect().width)+12);update();const observer=new ResizeObserver(update);observer.observe(node);return()=>observer.disconnect();},[]);
+  const [launchStatus,setLaunchStatus]=useState<HomeLaunchStatus>({kind:'LOADING',reason:'출전 덱을 확인하고 있어요.',editUrl:'/decks'});
   const rewards=useHomeRewardStatus(user?.id);
   const [noticeSeen,setNoticeSeen]=useState<{account:string;version:string}>({account:'',version:''});
   const [allMenusOpen,setAllMenusOpen]=useState(false),[readingOpen,setReadingOpen]=useState(false);
@@ -168,7 +171,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   }
 
   return (
-    <main style={{"--home-toolbar-space":toolbarSpace+"px"} as CSSProperties} className={`ko-home-lobby ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
+    <main style={{"--home-toolbar-space":toolbarSpace+"px"} as CSSProperties} data-launch-state={launchStatus.kind} className={`ko-home-lobby ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
       <div ref={toolbarRef} className="ko-main-menu__toolbar">
       <InstallAppButton />
       <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="relative z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
@@ -199,6 +202,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           <HomeBackgroundImage url={backgroundUrl} placement={mainContent.backgroundPlacement}/>
         </div>
       )}
+      {!backgroundUrl&&<div aria-hidden="true" className="ko-home-plain-backdrop font-display">KO</div>}
       <div aria-hidden="true" className="ko-main-menu__shade pointer-events-none absolute inset-0 z-[1]" />
       <div className="ko-main-menu__content relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
         <header className="ko-main-menu__header text-center">
@@ -262,15 +266,16 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           </DialogContent>
         </Dialog>
 
-        {user&&<LaunchDeckBanner key={user.id} accountId={user.id}/>}
+        {user&&<LaunchDeckBanner key={user.id} accountId={user.id} onStatusChange={setLaunchStatus}/>}
         <section className="ko-home-battle" aria-label="대전 시작">
         <BattleModeButton artwork={mainContent.battleMenuArtwork} onClick={()=>navigate(ROUTES.ONLINE)}/>
-        <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>선택 덱으로 시작</span></button><button type="button" onClick={()=>onAiMatch?.()}>AI 대전 <span>연습 경기</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'카드를 골라 구성':'현재 이용 불가'}</span></button></nav>
+        <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" disabled={launchStatus.kind!=="READY"} aria-describedby="home-launch-status" title={launchStatus.reason} onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>선택 덱으로 시작</span></button><button type="button" disabled={launchStatus.kind!=="READY"} aria-describedby="home-launch-status" title={launchStatus.reason} onClick={()=>onAiMatch?.()}>AI 대전 <span>연습 경기</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'카드를 골라 구성':'현재 이용 불가'}</span></button></nav>
         </section>
         <nav className="ko-lobby-shortcuts" aria-label="덱과 꾸미기"><button type="button" onClick={()=>onDeckEdit?.()}>덱 편집</button><button type="button" onClick={()=>navigate(ROUTES.COLLECTION)}>컬렉션</button><button type="button" onClick={()=>navigate('/cosmetics')}>꾸미기</button></nav>
         <button type="button" className="ko-lobby-more" aria-label="보상 · 상점 · 전체 메뉴 ▸" aria-describedby={rewards?.total?'home-reward-count':undefined} onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸{Boolean(rewards?.total)&&<span id="home-reward-count" className="ko-home-reward-count">받을 보상 {rewards!.total}건</span>}</button>
         <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>
         {Boolean(rewards?.total)&&<aside aria-label="수령 가능한 보상" className="ko-home-reward-links">{Boolean(rewards?.quests)&&<button className="min-h-11" type="button" onClick={()=>navigate('/daily-quests')}>퀘스트 보상 {rewards!.quests}건 받으러 가기 ▸</button>}{Boolean(rewards?.attendance)&&<button className="min-h-11" type="button" onClick={()=>navigate('/attendance')}>출석 보상 받으러 가기 ▸</button>}</aside>}
+        <HomePacksShortcut accountId={user?.id}/>
         <section aria-label="메인 메뉴" className="ko-main-menu__groups ko-lobby-all-menus">
           {([{ title: "기타", labels: ["타워 모드"] },
             { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼"] },

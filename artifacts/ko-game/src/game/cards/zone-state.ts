@@ -1,3 +1,4 @@
+import {championTokenSilenceImmune} from './silence-immunity';
 import { draftBaseline } from './draft-mutation';
 import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { configuredDodgeCharges } from './generation';
@@ -76,7 +77,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     isStunned: false,
     isSilenced: false,
     isAbilityDisabled: false,
-    isSilenceImmune: false,
+    isSilenceImmune: championTokenSilenceImmune(card,definition),
     armor: draft?.armor ?? (definition ? Math.max(0, Number(definition.effectConfig?.armor ?? 0)) : card.armor),
     playCondition: definition ? definition.effectConfig?.playCondition as CardInstance['playCondition'] : card.playCondition,
     grantedText: undefined,

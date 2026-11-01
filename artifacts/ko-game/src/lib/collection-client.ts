@@ -153,7 +153,7 @@ export const disenchantCard = (cardDefinitionId: string, quantity = 1, keepPlaya
   method: "POST",
   body: JSON.stringify({ quantity, keepPlayableCopies }),
 });
-export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
+export const fetchPacks = (options?:{signal?:AbortSignal}) => request<{ packs: Pack[] }>("/packs",options);
 export type PackReward = {
   rewardType: "NORMAL_CARD" | "EPIC_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN" | "CHAMPION_SKIN" | "IMAGE_EMOTE";
   originalGranted?: boolean;

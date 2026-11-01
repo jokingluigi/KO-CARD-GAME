@@ -127,8 +127,9 @@ export function saveDeck(payload: {
   });
 }
 
-export function selectDeck(id: string): Promise<{ deck: Deck | null }> {
+export function selectDeck(id: string, options?:{signal?:AbortSignal}): Promise<{ deck: Deck | null }> {
   return request<{ deck: Deck | null }>(`/${encodeURIComponent(id)}/select`, {
+    signal:options?.signal,
     method: "POST",
   });
 }

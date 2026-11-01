@@ -62,7 +62,7 @@
   min-width: 0;
   margin: 0 auto;
   flex: 1;
-  gap: 14px;
+  gap: var(--home-content-gap, 14px);
   justify-content: flex-start;
   overflow: visible;
 }
@@ -180,7 +180,7 @@
     gap: 12px;
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__content {
-    gap: 18px;
+    gap: var(--home-content-gap, 18px);
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__groups {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -201,7 +201,7 @@
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__content {
     justify-content: center;
-    gap: 24px;
+    gap: var(--home-content-gap, 24px);
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__groups {
     flex: none;
@@ -235,7 +235,7 @@
     padding: 6px 12px;
   }
   .ko-main-menu.ko-main-menu .ko-main-menu__content {
-    gap: 6px;
+    gap: var(--home-content-gap, 6px);
   }
   .ko-main-menu__toolbar {
     position: absolute;

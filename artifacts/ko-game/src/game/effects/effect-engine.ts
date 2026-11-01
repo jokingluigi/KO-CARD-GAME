@@ -1,3 +1,4 @@
+import {championTokenSilenceImmune} from '../cards/silence-immunity';
 import { matchTurnNumber } from '@workspace/game-engine/rules';
 import type {GameEvent} from "../events/types";
 import {isCounterattackRetirement,isCounterattackDamage} from '../events/retirement-rules';
@@ -41,7 +42,7 @@ import type { EventAttribution, LeaveReason } from '../events/types';
 import { createDeterministicRandom, shuffle } from '../random/random';
 import { destroyCard } from '../engine/destroy-card';
 import { drawCard } from '../engine/draw-card';
-import { silenceCard } from '../engine/card-status';
+import { silenceCard, isCardSilenceImmune } from '../engine/card-status';
 import { enterField } from '../engine/enter-field';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { MINION_A_ID } from '../champions/minion-a';
@@ -2443,7 +2444,7 @@ function applyEffectInternal(
         ...captured.baseSnapshot,
         instanceId: `${sourceCard.instanceId}:captured:${state.events.length}`,
         boardSlot: null, enteredThisTurn: false, attacksUsedThisTurn: 0,
-        isSilenced: false, isSilenceImmune: false, dodgeAvailable: (captured.baseSnapshot.dodgeCharges ?? 0) > 0,
+        isSilenced: false, isSilenceImmune: championTokenSilenceImmune(captured.baseSnapshot,state.cardPool?.find(d=>d.id===captured.baseSnapshot.definitionId)??state.minionACardPool?.find(d=>d.id===captured.baseSnapshot.definitionId)), dodgeAvailable: (captured.baseSnapshot.dodgeCharges ?? 0) > 0,
         dodgeCharges: captured.baseSnapshot.dodgeCharges ?? (getActiveCardKeywords(captured.baseSnapshot as CardInstance).includes('DODGE') ? 1 : 0),
         isStunned: false, activeUsed: false, activeUsedThisTurn: false, isDirectDeployedChampion: false, capturedCards: [],
       };
@@ -3440,7 +3441,7 @@ function applyEffectInternal(
             if (effect.action === 'DISABLE_ABILITY') return { ...card, isAbilityDisabled: true };
             if (effect.action === 'WEAKEN_TO_STUN_SILENCE') {
               const attack = Math.max(0, card.currentAttack - amount);
-              return finish(attack === 0 ? { ...card, currentAttack: attack, isStunned: true, isSilenced: true } : { ...card, currentAttack: attack });
+              return finish(attack === 0 ? { ...card, currentAttack: attack, isStunned: true, isSilenced: isCardSilenceImmune(state,card)?card.isSilenced:true } : { ...card, currentAttack: attack });
             }
              if (effect.action === 'BUFF') {
                if (effect.values?.healthUntilOwnerTurnStart && card.temporaryStatModifiers?.some(modifier=>modifier.untilOwnerTurnStart)) return card;

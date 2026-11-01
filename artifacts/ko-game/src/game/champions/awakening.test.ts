@@ -128,7 +128,7 @@ test("lethal HP0 preserves defeat and never awakens", () => {
   assert.equal(owner(result).champion!.questCompleted, false);
   assert.equal(owner(result).champion!.awakening, undefined);
 });
-test("silence during combat disables counter even when a later trigger retires the tank", () => {
+test("champion-token silence immunity preserves the counter when a later trigger retires the tank", () => {
   const s = awaken(),
     tank = stage(s);
   const effects: CardEffect[] = ["SILENCE", "RETIRE"].map((action) => ({
@@ -154,7 +154,7 @@ test("silence during combat disables counter even when a later trigger retires t
     },
   });
   assert.ok(r.success);
-  assert.equal(r.state.players[1].board[0]?.currentHealth, 14);
+  assert.equal(r.state.players[1].board[0]?.currentHealth, basic.health - tank.currentAttack - (1 + tank.awakening!.awakeningPower));
   assert.equal(stage(r.state).awakening?.stage, "HEALER");
 });
 test("persisted awakening requires all three authoritative exclusive card definitions", () => {
@@ -341,19 +341,20 @@ test("dedicated cards enter the owner-confirmed FULL pool but never STANDARD", (
 });
 
 for (const wanted of ["TANK", "HEALER", "DEALER"] as const)
-  test(`${wanted} silence preserves awakened bases and sequence while disabling passive`, () => {
+  test(`${wanted} silence immunity preserves awakened bases, sequence and passive`, () => {
     let s = advance(awaken(), wanted),
       p = owner(s),
       c = stage(s);
     s = silenceCard(s, c.instanceId);
     c = stage(s);
+    assert.equal(c.isSilenced,false);
     assert.equal(c.currentAttack, c.awakening!.baseAttack);
     assert.equal(c.maxHealth, c.awakening!.baseHealth);
     const hp = p.health;
     if (wanted === "HEALER")
       assert.equal(
         owner(resolveTriggeredAbilities(s, p.id, c, "TURN_END")).health,
-        hp,
+        Math.min(p.maxHealth,hp+3),
       );
     const reset = resetCardAfterLeavingBoard(
       { ...c, currentAttack: c.currentAttack + 2, maxHealth: c.maxHealth + 2 },
@@ -372,7 +373,7 @@ for (const wanted of ["TANK", "HEALER", "DEALER"] as const)
     );
   });
 for (const silenced of [false, true])
-  test(`dealer pierce ignores only effect armor, normal combat still reduces, silence=${silenced}`, () => {
+  test(`dealer pierce ignores only effect armor, normal combat still reduces, silenceAttempt=${silenced}`, () => {
     let s = advance(awaken(), "DEALER");
     s.activePlayerId = "player-1";
     const c = stage(s);
@@ -401,7 +402,7 @@ for (const silenced of [false, true])
         },
       });
     assert.ok(r.success);
-    assert.equal(r.state.players[1].board[0]?.currentHealth, silenced ? 13 : 9);
+    assert.equal(r.state.players[1].board[0]?.currentHealth, 9);
     assert.equal(
       r.state.events.slice(start).filter((e) => e.type === "ATTACK_DECLARED")
         .length,
@@ -445,7 +446,7 @@ test("self damage at 6 HP activates immediately and snapshots before subsequent 
   assert.equal(owner(r).champion!.awakening!.awakeningPower, 0);
 });
 for (const cause of ["effect", "own-attack", "silenced-defense"] as const)
-  test(`tank never counters for ${cause}`, () => {
+  test(`tank counter eligibility after ${cause}`, () => {
     let s = awaken();
     const c = stage(s);
     s.players[1].board[0] = {
@@ -496,7 +497,7 @@ for (const cause of ["effect", "own-attack", "silenced-defense"] as const)
           e.source?.type === "CARD" &&
           e.source.cardInstanceId === c.instanceId,
       ).length,
-      0,
+      cause === "silenced-defense" ? 1 : 0,
     );
   });
 test("healer does not heal on opponent turn end", () => {

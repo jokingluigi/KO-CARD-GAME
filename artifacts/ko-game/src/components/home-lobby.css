@@ -302,14 +302,14 @@
 .ko-home-battle {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--home-space-md, 12px);
   flex-shrink: 0;
   min-height: 0;
 }
 .ko-home-mode-shortcuts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: var(--home-space-md, 12px);
   border: 0;
   background: none;
 }
@@ -500,3 +500,45 @@ main.ko-home-lobby.ko-main-menu .ko-main-menu__user {flex-direction:column;align
  .ko-home-notice-title {font-size:12px;}
  .ko-home-lobby .ko-main-menu__test-badge {font-size:8px;line-height:10px;}
 }
+
+/* Home rhythm: one primary action, supporting actions, then quiet utilities. */
+.ko-home-lobby { --home-space-sm: 8px; --home-space-md: 12px; --home-space-lg: 20px; --home-space-xl: 24px; --home-content-gap: 14px; }
+.ko-home-lobby :is(button,input):focus-visible { outline: 2px solid #ecd08a; outline-offset: 3px; }
+.ko-home-lobby .ko-home-battle button:disabled { cursor:not-allowed;opacity:.5; }
+.ko-home-lobby .ko-battle-mode-button__copy {position:relative;isolation:isolate;}
+.ko-home-lobby .ko-battle-mode-button__copy::before {content:'';position:absolute;inset:-5px;z-index:-1;border-radius:6px;background:rgb(0 0 0 / .18);box-shadow:0 0 18px 10px rgb(0 0 0 / .18);pointer-events:none;}
+.ko-home-lobby :is(.ko-home-wallet,.ko-home-notice-title,.ko-lobby-shortcuts button) {text-shadow:0 1px 3px #000,0 0 2px #000;}
+.ko-home-launch-status {font-size:11px;line-height:1.4;color:#d1c3a7;margin-top:4px;}
+.ko-home-deck-summary {font-size:11px;line-height:1.4;color:#d8c79e;margin-top:4px;}
+.ko-home-start-guide {display:flex;flex-wrap:wrap;gap:2px 8px;font-size:10px;line-height:1.4;margin-top:4px;color:#a39883;}
+.ko-home-start-guide [data-current=true] {color:#f2d78d;}
+.ko-home-deck-picker {max-height:85dvh;overflow-y:auto;}
+.ko-home-deck-options {display:grid;gap:var(--home-space-md,12px);max-height:48dvh;overflow:auto;}
+.ko-home-deck-options article {display:flex;justify-content:space-between;gap:12px;padding:12px;border:1px solid #474032;border-radius:6px;background:#11100d;}
+.ko-home-deck-options article[data-current=true] {border-color:#bd9d5b;}
+.ko-home-deck-options article>div {min-width:0;}
+.ko-home-deck-options strong {overflow-wrap:anywhere;color:#eddfbf;}
+.ko-home-deck-options p {font-size:12px;color:#c3b8a0;}
+.ko-home-deck-options button,.ko-home-pack-stock button {min-height:44px;min-width:44px;padding:8px 12px;}
+.ko-home-deck-options button:disabled {opacity:.5;cursor:not-allowed;}
+.ko-home-pack-stock {display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #51452e;padding-bottom:12px;color:#dfc991;}
+.ko-home-art-fallback {padding:12px;font-size:16px;line-height:1.5;color:#d8c39b;text-align:center;}
+.ko-home-hero-mark {display:grid;place-items:center;height:100%;font-weight:900;font-size:clamp(70px,12vw,170px);color:rgb(201 173 104 / .09);transform:skew(-7deg);}
+.ko-home-plain-backdrop {position:absolute;right:3vw;top:20%;font-size:clamp(160px,35vw,520px);font-weight:900;line-height:1;color:rgb(201 173 104 / .045);pointer-events:none;transform:skew(-7deg);}
+.ko-home-lobby .ko-launch-banner[data-launch-state=ERROR] {border-color:#a3735b;}
+.ko-home-lobby .ko-launch-banner[data-launch-state=INVALID] .ko-home-launch-status {color:#f1d392;}
+@media(max-width:767px) and (max-height:650px){
+ .ko-home-deck-summary {display:none;}
+ .ko-home-lobby .ko-home-launch-status {font-size:10px;line-height:12px;margin-top:1px;}
+ .ko-home-start-guide {gap:0 5px;font-size:9px;line-height:12px;margin-top:1px;}
+}
+
+.ko-queue-phase {transition:border-color 180ms ease-out;}
+.ko-online-shell .ko-queue-phase[data-queue-phase=joining] {border-color:#645944;}
+.ko-online-shell .ko-queue-phase[data-queue-phase=searching] {border-color:#ba9c5f;}
+@media(prefers-reduced-motion:reduce){.ko-queue-phase {transition:none;}}
+
+@media(min-width:768px),(orientation:landscape){.ko-home-lobby {--home-content-gap:18px;}}
+@media(min-width:1200px) and (min-height:760px){.ko-home-lobby {--home-content-gap:24px;}}
+@media(max-width:767px) and (max-height:650px) and (orientation:portrait){.ko-home-lobby {--home-content-gap:4px;}}
+@media(max-height:450px) and (orientation:landscape){.ko-home-lobby {--home-content-gap:6px;}}

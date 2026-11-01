@@ -1,3 +1,4 @@
+import {championTokenSilenceImmune} from './silence-immunity';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { configuredCountdownTurns } from '@workspace/effect-registry';
 import type {
@@ -98,7 +99,7 @@ export function generateCardInstance(
     abilities: [...definition.abilities],
     isSilenced: false,
     isAbilityDisabled: false,
-    isSilenceImmune: false,
+    isSilenceImmune: championTokenSilenceImmune({isToken:options.isToken??definition.isToken,isChampionToken:options.isChampionToken??definition.isChampionToken},definition),
     dodgeAvailable: definition.keywords.includes('DODGE'),
     dodgeCharges: definition.keywords.includes('DODGE') ? configuredDodgeCharges(definition.effectConfig) : 0,
     isStunned: false,

@@ -45,6 +45,7 @@ export function BattleModeButton({
             onError={() => setFailed(layout.imageUrl)}
           />
         )}
+        {(!layout.imageUrl||failed===layout.imageUrl)&&<span className="ko-home-hero-mark font-display">KO</span>}
       </span>
       <span className="ko-battle-mode-button__copy">
         <small>KO CARD BATTLE</small>

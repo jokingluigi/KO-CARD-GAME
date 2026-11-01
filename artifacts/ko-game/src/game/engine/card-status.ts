@@ -1,3 +1,5 @@
+import {championTokenSilenceImmune} from '../cards/silence-immunity';
+import {getCardDefinition} from '../cards/test-cards';
 import { draftBaseline } from '../cards/draft-mutation';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -26,13 +28,18 @@ function updateBoardCard(
   };
 }
 
+export function isCardSilenceImmune(state:GameState,card:NonNullable<GameState['players'][number]['board'][number]>):boolean {
+ const definition=state.cardPool?.find(d=>d.id===card.definitionId)??state.minionACardPool?.find(d=>d.id===card.definitionId)??getCardDefinition(card.definitionId);
+ return Boolean(card.isSilenceImmune)||championTokenSilenceImmune(card,definition);
+}
+
 export function silenceCard(
   state: GameState,
   cardInstanceId: CardInstanceId,
 ): GameState {
   const aura = state.tower?.auraStats?.[cardInstanceId];
   return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) => {
-    if (card.isSilenceImmune) return card;
+    if (isCardSilenceImmune(state,card)) return card;
     const definition = state.cardPool?.find(item => item.id === card.definitionId);
     const draft = card.draftMutation ? draftBaseline(card, definition) : undefined;
     const attack = (card.awakening?.baseAttack ?? draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);

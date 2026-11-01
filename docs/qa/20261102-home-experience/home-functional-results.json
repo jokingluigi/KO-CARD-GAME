@@ -1,0 +1,53 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "homePicker": true,
+    "invalidSelectionDisabled": true,
+    "singleSelectionPost": true,
+    "serverSelectionPersists": true,
+    "delayedSkinArtworkKeepsOldPoster": true,
+    "skinAndTitleCommitTogether": true,
+    "failedSelectionPreservesCanonicalDeck": true,
+    "actualCompositionSummary": true,
+    "invalidDeckReasonAndEdit": true,
+    "onboardingBuildAndSelect": true,
+    "packStockDistinctNoOpenWrite": true,
+    "missingBackgroundAndFailedArtworkFallback": true,
+    "noRuntimeErrors": true
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "homePicker": true,
+    "invalidSelectionDisabled": true,
+    "singleSelectionPost": true,
+    "serverSelectionPersists": true,
+    "delayedSkinArtworkKeepsOldPoster": true,
+    "skinAndTitleCommitTogether": true,
+    "failedSelectionPreservesCanonicalDeck": true,
+    "actualCompositionSummary": true,
+    "invalidDeckReasonAndEdit": true,
+    "onboardingBuildAndSelect": true,
+    "packStockDistinctNoOpenWrite": true,
+    "missingBackgroundAndFailedArtworkFallback": true,
+    "noRuntimeErrors": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "homePicker": true,
+    "invalidSelectionDisabled": true,
+    "singleSelectionPost": true,
+    "serverSelectionPersists": true,
+    "delayedSkinArtworkKeepsOldPoster": true,
+    "skinAndTitleCommitTogether": true,
+    "failedSelectionPreservesCanonicalDeck": true,
+    "actualCompositionSummary": true,
+    "invalidDeckReasonAndEdit": true,
+    "onboardingBuildAndSelect": true,
+    "packStockDistinctNoOpenWrite": true,
+    "missingBackgroundAndFailedArtworkFallback": true,
+    "noRuntimeErrors": true
+  }
+]

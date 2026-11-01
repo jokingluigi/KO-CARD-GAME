@@ -157,11 +157,11 @@ function QuickMatchPage() {
           {[0, 1].map((item) => <div key={item} className="h-36 animate-pulse rounded-lg bg-neutral-900" />)}
         </div>
       ) : quickState !== "selecting" ? (
-        <section className="ko-online-panel mx-auto max-w-2xl rounded-xl p-7 text-center sm:p-12">
+        <section className="ko-online-panel ko-queue-phase mx-auto max-w-2xl rounded-xl p-7 text-center sm:p-12" data-queue-phase={quickState} aria-live="polite">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/[0.07] text-amber-400">
             <LoaderCircle className="h-8 w-8 animate-spin" aria-hidden="true" />
           </div>
-          <p className="mt-7 font-display text-xs font-black tracking-[0.25em] text-amber-400">SEARCHING LIVE QUEUE</p>
+          <p className="mt-7 font-display text-xs font-black tracking-[0.25em] text-amber-400">{quickState==="joining"?"QUEUE CONNECTION":"SEARCHING LIVE QUEUE"}</p>
           <h2 className="mt-3 text-2xl font-black text-white" data-ui-motion-state={`ACTIVE:${quickState}`} data-testid="status-quick-searching">{quickState==="joining"?"대기열 입장을 확인 중이에요.":"상대를 찾는 중..."}</h2>
           <p className="mt-2 text-sm text-neutral-500" data-testid="text-quick-elapsed">검색 {elapsed}초</p>
           <div className="mx-auto mt-8 max-w-sm text-left">
