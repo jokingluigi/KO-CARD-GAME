@@ -48,7 +48,7 @@ export function BattleModeButton({
         {(!layout.imageUrl||failed===layout.imageUrl)&&<span className="ko-home-hero-mark font-display">KO</span>}
       </span>
       <span className="ko-battle-mode-button__copy">
-        <small>KO CARD BATTLE</small>
+        <small>모든 대전 방식 보기</small>
         <strong>대전 모드</strong>
         <span>온라인 · AI · 드래프트</span>
       </span>

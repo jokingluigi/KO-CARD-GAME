@@ -1,0 +1,28 @@
+✔ fetchCurrentUser preserves an unauthenticated response (22.754085ms)
+✔ fetchCurrentUser converts a timeout into a recoverable error (6.030979ms)
+✔ fetchCurrentUser surfaces a bounded server error without logging out (1.427426ms)
+✔ login timeout releases the form instead of waiting indefinitely (6.928089ms)
+✔ a late guest response from before login is replaced by current authentication (2.312567ms)
+✔ pending startup authentication obeys the caller deadline instead of blocking for a minute (5.95764ms)
+✔ parallel session restores share one request; a network failure does not cache logout (101.71873ms)
+✔ logout invalidates the navigation cache (1.397871ms)
+✔ a pending server wake never sends credentials; readiness submits exactly once (1.691968ms)
+✔ temporary gateway error retries only health reads, never the login POST (504.556368ms)
+✔ unavailable server times out without posting a password (5.938221ms)
+✔ leaving the form while waking cancels the eventual credential submission (1.033111ms)
+✔ a login POST failure is reported without automatic credential replay (0.430187ms)
+✔ normal login posts immediately without waiting for a health round trip (0.460392ms)
+✔ fast authoritative session or guest result never starts a fallback (32.730953ms)
+✔ a stalled session is restored by exactly one fresh GET and ignores late errors (15.859496ms)
+✔ failed fallback does not discard a healthy late original session (15.736343ms)
+✔ primary transport failure retries once immediately; two failures surface an error (1.437581ms)
+✔ cancellation cleans the hedge timer and never invents authentication (15.337071ms)
+✔ an authoritative rejected session is not retried (0.464268ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1202.213659

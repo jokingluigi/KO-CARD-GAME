@@ -1,3 +1,5 @@
+import {GamePageHeader} from '@/components/game-page-header';
+import { CatalogPagination } from '@/components/catalog-pagination';
 import {returnToCatalogCard} from "@/components/physical-feedback";
 import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
 import {WishlistArrivals} from "@/components/player-tools/wishlist";
@@ -83,7 +85,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
          <button type="button" aria-label={`${card.name} ${favorite ? '즐겨찾기 해제' : '즐겨찾기'}`} aria-pressed={favorite}
            onClick={(event) => { event.stopPropagation(); onFavorite(); }}
            onKeyDown={(event) => event.stopPropagation()}
-           className="shrink-0 rounded p-1 focus-visible:outline-2 focus-visible:outline-amber-300">
+           className="min-h-11 min-w-11 shrink-0 rounded p-1 focus-visible:outline-2 focus-visible:outline-amber-300">
            <Star className={`h-4 w-4 ${favorite ? 'fill-amber-400 text-amber-400' : 'text-neutral-500'}`} />
          </button>
       </div>
@@ -189,6 +191,8 @@ export default function CollectionPage() {
     };
   }, [loadAttempt, navigate]);
 
+  const [catalogPage,setCatalogPage]=useState(1);
+  useEffect(()=>setCatalogPage(1),[tab,search,sort,cardType,catalogFilters,favoritesOnly]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return [...catalogCards]
@@ -326,25 +330,10 @@ export default function CollectionPage() {
   }
 
   return (
-    <main ref={gridRoot} className="ko-experience-page ko-collection ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-center justify-between gap-3">
-          <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
-            <ArrowLeft className="h-4 w-4" /> 메인 메뉴
-          </button>
-          <button type="button" onClick={() => navigate(ROUTES.DECKS)} className="rounded bg-primary px-4 py-2.5 text-xs font-black text-black transition hover:bg-yellow-400">
-            덱 편집
-          </button>
-        </div>
-
+    <main ref={gridRoot} className="ko-experience-page ko-collection ko-player-page ko-page-enter">
+      <div className="ko-page-content">
         <WishlistArrivals kind="card" owned={[...(collection?.cards??[]).filter(c=>c.quantity>0).map(c=>c.id),...(collection?.champions??[]).filter(c=>c.owned).map(c=>c.id)]}/>
-        <header className="mb-6 flex items-end justify-between gap-4 border-b border-neutral-800 pb-5">
-          <div>
-            <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">MY COLLECTION</p>
-            <h1 className="mt-2 text-3xl font-black">내 컬렉션</h1>
-             <p className="mt-2 text-sm text-neutral-500">보유한 카드와 제작 가능한 카드, 챔피언을 확인할 수 있습니다.</p>
-          </div>
-             <div className="flex flex-wrap items-center justify-end gap-2 text-xs font-black">
+        <GamePageHeader eyebrow="컬렉션" title="내 컬렉션" description="카드를 확인하고 다음 덱을 준비하세요." aside={<div className="ko-collection-wallet">             <div className="flex flex-wrap items-center justify-end gap-2 text-xs font-black">
                <div data-ui-balance className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-amber-200">
                  <Sparkles className="h-4 w-4 text-amber-400" />
                  ◆ {collection.isTestAccount ? "∞" : <MotionNumber value={collection.prismBalance} format={n=>n.toLocaleString()}/>} 일반 프리즘
@@ -353,8 +342,8 @@ export default function CollectionPage() {
                  <Shield className="h-4 w-4 text-rose-300" />
                  ◈ {collection.isTestAccount ? "∞" : <MotionNumber value={championPrismBalance} format={n=>n.toLocaleString()}/>} 챔피언 프리즘
                </div>
-           </div>
-        </header>
+           </div><button type="button" className="ko-surface-back" onClick={()=>navigate(ROUTES.DECKS)}>덱 편집으로 →</button></div>}/>
+
 
         {tab !== 'champions' && <button type="button" disabled={isMutating || excessCount === 0} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-emerald-700 px-4 py-3 font-black text-emerald-300 disabled:opacity-40">초과 카드 일괄 분해 ({excessCount}장)</button>}
         <Dialog open={bulkConfirm} onOpenChange={open => { if (!isMutating) setBulkConfirm(open); }}>
@@ -380,8 +369,8 @@ export default function CollectionPage() {
 
         {tab === "cards" || tab === "crafting" ? (
           <>
-            <section aria-label="카드 검색 및 필터" className="mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+            <section aria-label="카드 검색 및 필터" className="ko-collection-controls mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
+              <div className="ko-collection-search-row grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                 <div className="relative block">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                   <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" aria-label="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-neutral-950 py-2.5 pl-9 pr-9 text-sm text-white outline-none transition focus:border-amber-400" />
@@ -398,7 +387,7 @@ export default function CollectionPage() {
               </button>
                <p className="mt-3 text-xs text-neutral-500">
                  <span className="font-bold text-neutral-300">{tab === "cards" ? filteredCards.length : filteredCraftableCards.length}</span>
-                 {tab === "cards" ? "장의 카드 · 공개 카드 및 소유 카드" : "장의 카드 · PUBLISHED NORMAL/EPIC/LEGENDARY만 표시"}
+                 {tab === "cards" ? "장의 카드 · 공개 카드 및 소유 카드" : "장의 카드 · 제작 가능한 일반·에픽·레전더리"}
                </p>
             </section>
 
@@ -406,9 +395,10 @@ export default function CollectionPage() {
                <EmptyState title={tab === "cards" ? (collection.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-               {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
+               {(tab === "cards" ? filteredCards : filteredCraftableCards).slice((catalogPage-1)*12,catalogPage*12).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
               </div>
             )}
+            <CatalogPagination page={catalogPage} total={(tab === "cards" ? filteredCards : filteredCraftableCards).length} pageSize={12} onChange={n=>{setCatalogPage(n);gridRoot.current?.scrollIntoView({block:'start'});}}/>
           </>
         ) : (
            champions.length === 0 ? (

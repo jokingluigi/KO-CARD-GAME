@@ -1,3 +1,5 @@
+import playerJournalRouter from './player-journal';
+import clientDiagnosticsRouter from './client-diagnostics';
 import adminHomeMenuRouter from "./admin-home-menu";
 import adminBattleSpritesRouter from "./admin-battle-sprites";
 import shopDecksRouter from "./shop-decks";
@@ -40,6 +42,8 @@ const router: IRouter = Router();
 router.use(maintenanceRouter);
 router.use(maintenanceGate);
 router.use(healthRouter);
+router.use('/client-diagnostics', clientDiagnosticsRouter);
+router.use('/player-journal', playerJournalRouter);
 router.use('/tower', towerRouter);
 router.use('/admin/tower', adminTowerRouter);
 router.use('/admin/draft', adminDraftRouter);

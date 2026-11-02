@@ -1,3 +1,4 @@
+import {CosmeticDuplicatePolicy} from '@/components/cosmetic-duplicate-policy';
 import {
   GamePageHeader,
   SHOP_PAGE_LINKS,
@@ -27,7 +28,7 @@ import {
 } from "@/lib/collection-client";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/lib/routes";
-import { fetchCurrentUser } from "@/lib/auth-client";
+import { fetchCurrentUser,refreshCurrentUser } from "@/lib/auth-client";
 
 export default function PacksPage() {
   const [, navigate] = useLocation();
@@ -144,6 +145,7 @@ export default function PacksPage() {
               intention.quantity,
               intention.key,
             );
+      void refreshCurrentUser().catch(()=>{});
       const normalizedOpenings = result.openings;
       setOpenings(normalizedOpenings);
       setOpenedQuantity(result.quantity);
@@ -371,6 +373,7 @@ export default function PacksPage() {
             </button>
           </section>
         )}
+        <CosmeticDuplicatePolicy/>
         {available.length === 0 && !message && (
           <SurfaceEmpty
             title="아직 열어볼 팩이 없어요"

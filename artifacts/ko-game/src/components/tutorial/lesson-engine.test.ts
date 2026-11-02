@@ -26,6 +26,10 @@ if (process.env.KO_TUTORIAL_LIVE_FIXTURES === "1") {
     readFileSync("/tmp/tutorial-live-champions.json", "utf8"),
   );
 }
+if(process.env.KO_TUTORIAL_PINNED_FIXTURES==='1'){
+ const pinned=JSON.parse(readFileSync(new URL('../../../public/tutorial-catalog.json',import.meta.url),'utf8'));
+ raw.cards={cards:pinned.cards};raw.champions={champions:pinned.champions};
+}
 const cards = raw.cards.cards.map(cardRecordToDefinition),
   champions = raw.champions.champions.map(championRecordToDefinition);
 const catalog = tutorialCatalog(cards, champions);

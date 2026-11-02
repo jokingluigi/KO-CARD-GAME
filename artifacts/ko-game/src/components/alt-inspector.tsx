@@ -124,8 +124,9 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   }, [cancelClear]);
   useEffect(() => {
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape") clear(); };
+    window.addEventListener("ko-close-inspector", clear);
     window.addEventListener("keydown", escape);
-    return () => window.removeEventListener("keydown", escape);
+    return () => {window.removeEventListener("keydown", escape);window.removeEventListener("ko-close-inspector", clear);};
   }, [clear]);
   const scheduleClear = useCallback(() => {
     if (isTouchInspecting) return;
@@ -173,6 +174,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   const updatePanelPosition = useCallback(() => {
     if (!target || !panelRef.current) return;
 
+    if(!target.anchor.isConnected||!target.anchor.getClientRects().length){clear();return;}
     const anchorRect = target.anchor.getBoundingClientRect();
     const panelRect = panelRef.current.getBoundingClientRect();
     setPanelPosition(
@@ -183,7 +185,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
         window.innerHeight,
       ),
     );
-  }, [target]);
+  }, [target,clear]);
 
   useLayoutEffect(() => {
     if (!isVisible) return;
@@ -310,7 +312,7 @@ export function Inspectable({
     <div
       className={className}
       onMouseEnter={(event) => {
-        if (Date.now() - lastTouchAt.current > 1000) inspect(event.currentTarget);
+        if (Date.now() - lastTouchAt.current > 1000 && (context.isAltPressed || (window.matchMedia('(hover: hover) and (pointer: fine)').matches && innerHeight>=600))) inspect(event.currentTarget);
       }}
       onMouseLeave={(event) => {
         const next = event.relatedTarget;
@@ -318,7 +320,7 @@ export function Inspectable({
         context.scheduleClear();
       }}
       onFocus={(event) => {
-        if (Date.now() - lastTouchAt.current > 1000) inspect(event.currentTarget);
+        if (Date.now() - lastTouchAt.current > 1000 && event.target instanceof HTMLElement && event.target.matches(':focus-visible')) inspect(event.currentTarget);
       }}
       onPointerDown={(event) => {
         if (event.pointerType === 'touch') lastTouchAt.current = Date.now();

@@ -140,7 +140,7 @@ function actualAttackDamage(
 export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser } = {}) {
   const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const isTutorial = window.location.pathname.endsWith('/tutorial');
+  const isTutorial = window.location.pathname.endsWith('/tutorial') || window.location.pathname.endsWith('/practice');
   const isTowerSandbox = searchParams.get('source') === 'admin' && searchParams.get('towerTest') === '1';
   const isAiMatch = window.location.pathname.endsWith('/ai-match') || isTowerSandbox;
   const quickMatchId = isAiMatch ? searchParams.get('quickMatch') : null;

@@ -178,6 +178,7 @@ export type PackReward = {
   };
   alreadyOwned?: boolean;
   championPrismReward?: number;
+  prismReward?: number;
 };
 export const openPack = (id: string, idempotencyKey: string) => request<{ rewards: PackReward[] }>(`/packs/${encodeURIComponent(id)}/open`, {
   method: "POST",

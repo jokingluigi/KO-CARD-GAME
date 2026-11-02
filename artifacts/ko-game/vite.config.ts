@@ -1,4 +1,8 @@
 import path from 'path';
+import {execFileSync} from 'node:child_process';
+let sourceRevision=process.env.RENDER_GIT_COMMIT??process.env.VITE_BUILD_REVISION;
+if(!sourceRevision){try{sourceRevision=execFileSync('git',['rev-parse','--short=12','HEAD'],{encoding:'utf8',timeout:1000}).trim()+(isLocalDirty()?'_local':'');}catch{sourceRevision='build-'+Date.now();}}
+function isLocalDirty(){try{return execFileSync('git',['diff','--quiet'],{timeout:1000,stdio:'ignore'}),false;}catch{return true;}}
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -29,6 +33,7 @@ if (!basePath) {
 }
 
 export default defineConfig({
+  define:{"import.meta.env.VITE_BUILD_REVISION":JSON.stringify(sourceRevision)},
   base: basePath,
   plugins: [
     react(),

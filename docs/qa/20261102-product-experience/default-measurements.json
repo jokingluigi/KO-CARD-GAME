@@ -1,0 +1,38 @@
+[
+  {
+    "route": "/decks",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scrollHeight": 3381,
+    "firstCardTop": 570.21875
+  },
+  {
+    "route": "/collection",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scrollHeight": 2556,
+    "firstCardTop": 666.4375
+  },
+  {
+    "route": "/shop",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scrollHeight": 1330,
+    "firstCardTop": null
+  },
+  {
+    "route": "/settings",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scrollHeight": 1658,
+    "firstCardTop": null
+  }
+]

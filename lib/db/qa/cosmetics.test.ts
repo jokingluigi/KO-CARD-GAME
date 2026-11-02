@@ -836,14 +836,18 @@ test("champion skin token set: validated linkage, existing owner, actual single/
   const first = await open(false, "set-first");
   assert.equal(first.status, 200, JSON.stringify(first.body));
   assert.equal(first.body.rewards[0].rewardType, "CHAMPION_SKIN");
+  assert.equal(first.body.rewards[0].prismReward, undefined);
   assert.equal(first.body.rewards[0].alreadyOwned, false);
   assert.equal(first.body.rewards[0].originalGranted, true);
   assert.deepEqual((await open(false, "set-first")).body, first.body);
   const bulk = await open(true, "set-bulk");
   assert.equal(bulk.status, 200, JSON.stringify(bulk.body));
   assert.equal(bulk.body.openings.length, 2);
+  assert.ok(bulk.body.openings.every((o:any)=>o.rewards[0].prismReward===200));
+  const beforeReplay=(await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,"player-b")))[0]!.prismBalance;
   assert.ok(bulk.body.openings.every((o: any) => o.rewards[0].alreadyOwned === true && o.rewards[0].originalGranted === false));
   assert.deepEqual((await open(true, "set-bulk")).body, bulk.body);
+  assert.equal((await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,"player-b")))[0]!.prismBalance,beforeReplay);
   const inventory = await api("/cosmetics", "player-b");
   assert.equal(inventory.body.owned.filter((o: any) => o.item.id === item.id).length, 1);
   await equipCosmetic("player-b", "champion:cosmetic-hero", item.id);
@@ -871,7 +875,7 @@ test("champion skin token set: validated linkage, existing owner, actual single/
   assert.equal(cardFirst.body.rewards[0].originalGranted, true);
   const cardBulk = await open(true, "card-set-bulk");
   assert.equal(cardBulk.status, 200, JSON.stringify(cardBulk.body));
-  assert.ok(cardBulk.body.openings.every((o: any) => o.rewards[0].originalGranted === false));
+  assert.ok(cardBulk.body.openings.every((o: any) => o.rewards[0].originalGranted === false&&o.rewards[0].prismReward===100));
   assert.deepEqual((await open(true, "card-set-bulk")).body, cardBulk.body);
   const [base] = await database.select().from(schema.userCardCollectionsTable).where(and(eq(schema.userCardCollectionsTable.userId, "player-b"), eq(schema.userCardCollectionsTable.cardDefinitionId, cards[0]!.id)));
   assert.equal(base!.quantity, 1);
@@ -1290,6 +1294,19 @@ test('unequipped owned image emotes broadcast by ID; unowned/disabled items and 
  sockets[1].send(JSON.stringify({type:'IMAGE_EMOTE',matchId:runtime.matchId,requestId:'not-owned',itemId:item.id}));await new Promise(r=>setTimeout(r,100));assert.ok(messages.every(m=>!m.some(v=>v.requestId==='not-owned')));
  await api(prefix+'/items/'+item.id,'admin','PATCH',{...item,isActive:false});assert.equal(await ownedImageEmote('player-a',item.id),null);
  assert.equal(JSON.stringify(runtime.state),state);assert.equal(runtime.version,version);for(const ws of sockets)ws.close();
+});
+
+test('duplicate image emotes award normal prisms exactly once per claim and disclose policy',async()=>{
+ const item=registered.IMAGE_EMOTE;
+ await database.insert(schema.userCosmeticsTable).values({userId:'player-b',cosmeticId:item.id,acquisitionSource:'QA'}).onConflictDoNothing();
+ await database.insert(schema.packDefinitionsTable).values({id:'duplicate-emote-pack',name:'중복 이모티콘 검증',status:'PUBLISHED',cardsPerPack:1,normalRate:0,epicRate:0,legendaryRate:0,championRate:0,skinChance:0,emoteRate:100,emotePool:[item.id]});
+ await database.insert(schema.userPackInventoryTable).values({userId:'player-b',packDefinitionId:'duplicate-emote-pack',quantity:2});
+ const balance=()=>database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'player-b')).then(rows=>rows[0]!.prismBalance);
+ const before=await balance();
+ const open=()=>fetch(origin+'/api/packs/duplicate-emote-pack/open',{method:'POST',headers:{cookie:cookies['player-b']!,'Content-Type':'application/json','Idempotency-Key':'duplicate-emote-once'},body:'{}'}).then(async r=>({status:r.status,body:await r.json()}));
+ const first=await open();assert.equal(first.status,200,JSON.stringify(first.body));assert.equal(first.body.rewards[0].prismReward,50);assert.equal(await balance(),before+50);
+ assert.deepEqual((await open()).body,first.body);assert.equal(await balance(),before+50);
+ const policy=await api('/packs/duplicate-policy','player-b');assert.equal(policy.status,200);assert.equal(policy.body.rewards.IMAGE_EMOTE,50);
 });
 
 // Reuse this isolated database for the existing pack transaction regression.

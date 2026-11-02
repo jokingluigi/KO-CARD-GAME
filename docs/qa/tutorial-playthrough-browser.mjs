@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile, copyFile } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
-const out = "qa-results/tutorial";
+const out = process.env.KO_TUTORIAL_OUT??"qa-results/tutorial";
+const guestFallback=process.env.KO_TUTORIAL_GUEST_FALLBACK==='1';
 await mkdir(out, { recursive: true });
 const data = JSON.parse(
   await readFile("artifacts/ko-game/qa/art-direction-data.json", "utf8"),
@@ -67,7 +68,7 @@ try {
       let json = {};
       if (path.endsWith("/auth/me"))
         json = {
-          authenticated: true,
+          authenticated: !guestFallback,
           user: {
             id: "tutorial-user",
             role: "USER",
@@ -78,8 +79,8 @@ try {
         };
       else if (path.endsWith("/server-status"))
         json = { enabled: false, allowed: true };
-      else if (path.endsWith("/cards")) json = data.cards;
-      else if (path.endsWith("/champions")) json = data.champions;
+      else if (path.endsWith("/cards")) json = guestFallback?{cards:[]}:data.cards;
+      else if (path.endsWith("/champions")) json = guestFallback?{champions:[]}:data.champions;
       else if (path.endsWith("/card-frames")) json = data["card-frames"];
       else if (path.endsWith("/main-content"))
         json = { notices: [], battleMenuArtwork: null };
@@ -107,7 +108,7 @@ try {
         .getByRole("heading", { name: "실습 성공", exact: true })
         .waitFor({ timeout: 30000 });
     };
-    await p.goto("http://127.0.0.1:5186/tutorial");
+    await p.goto("http://127.0.0.1:5186/"+(guestFallback?"practice":"tutorial"));
     await p.getByTestId("lesson-basics").waitFor();
     assert.equal(await p.getByTestId("lesson-basics").isEnabled(), true);
     await p.screenshot({ path: `${out}/courses-${width}.png` });

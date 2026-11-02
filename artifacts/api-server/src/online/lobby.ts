@@ -1,3 +1,6 @@
+import {chooseQuickPair,type MatchExperience} from './quick-match-quality';
+import {db,onlineMatchesTable} from '@workspace/db';
+import {and,or,eq,desc} from 'drizzle-orm';
 import { randomBytes, randomUUID } from "node:crypto";
 import {activeQuickAI,prepareQuickAI,releaseDisconnectedQuickAI} from '../lib/quick-ai-match';
 import {sitePresence} from './site-presence';
@@ -30,6 +33,8 @@ type QueueEntry = {
   deckId: string;
   connection: LobbyConnection;
   joinedAt: number;
+  experience:MatchExperience;
+  pairTimer?:ReturnType<typeof setTimeout>;
   timer?: ReturnType<typeof setTimeout>;
 };
 
@@ -178,13 +183,13 @@ async function validateDeck(connection: LobbyConnection, deckId: string): Promis
 async function pairQuickQueue(): Promise<void> {
   while (quickQueue.size >= 2) {
     const entries = [...quickQueue.values()].sort((a, b) => a.joinedAt - b.joinedAt);
-    const first = entries[0];
-    const second = entries.find((entry) => entry.userId !== first.userId);
-    if (!first || !second) return;
+    const pair=chooseQuickPair(entries);
+    if(!pair)return;
+    const [first,second]=pair;
 
     const firstDeck = await validateOnlineDeck(first.userId, first.deckId,false,first.deck);
     if (!firstDeck.isValid) {
-      clearTimeout(first.timer);
+      clearTimeout(first.timer); clearTimeout(first.pairTimer);
       quickQueue.delete(first.userId);
       presence.set(first.userId, "IDLE");
       error(first.connection, "INVALID_DECK", firstDeck.invalidReasons.join(" ") || "선택한 덱을 사용할 수 없습니다.");
@@ -192,14 +197,14 @@ async function pairQuickQueue(): Promise<void> {
     }
     const secondDeck = await validateOnlineDeck(second.userId, second.deckId,false,second.deck);
     if (!secondDeck.isValid) {
-      clearTimeout(second.timer);
+      clearTimeout(second.timer); clearTimeout(second.pairTimer);
       quickQueue.delete(second.userId);
       presence.set(second.userId, "IDLE");
       error(second.connection, "INVALID_DECK", secondDeck.invalidReasons.join(" ") || "선택한 덱을 사용할 수 없습니다.");
       continue;
     }
 
-    clearTimeout(first.timer); clearTimeout(second.timer);
+    clearTimeout(first.timer); clearTimeout(first.pairTimer); clearTimeout(second.timer); clearTimeout(second.pairTimer);
     quickQueue.delete(first.userId);
     quickQueue.delete(second.userId);
     presence.set(first.userId, "MATCH_STARTING");
@@ -263,7 +268,13 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
     }
     const confirmedDeck=await validateDeck(connection,deckId);
     if(!confirmedDeck)return;
+    let experience:MatchExperience={games:0,wins:0};
+    try{
+      const recent=await db.select({winner:onlineMatchesTable.winnerUserId}).from(onlineMatchesTable).where(and(eq(onlineMatchesTable.status,'ENDED'),or(eq(onlineMatchesTable.player1UserId,connection.userId),eq(onlineMatchesTable.player2UserId,connection.userId)))).orderBy(desc(onlineMatchesTable.endedAt)).limit(20);
+      experience={games:recent.length,wins:recent.filter(r=>r.winner===connection.userId).length};
+    }catch(error){logger.warn({code:'QUICK_EXPERIENCE_UNAVAILABLE'},'Quick match experience unavailable');experience={games:5,wins:2};}
     const entry: QueueEntry = {
+      experience,
       deck:structuredClone(confirmedDeck),
       userId: connection.userId,
       deckId,
@@ -276,12 +287,13 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
         // The server clock and the same serialized lobby lock decide PvP OR AI.
         const remaining=30_000-(Date.now()-entry.joinedAt);
         if(remaining>0){entry.timer=setTimeout(expire,remaining);entry.timer.unref();return;}
-        quickQueue.delete(entry.userId);presence.set(entry.userId,'MATCH_STARTING');
+        clearTimeout(entry.pairTimer);quickQueue.delete(entry.userId);presence.set(entry.userId,'MATCH_STARTING');
         try {const matchId=await prepareQuickAI(entry.userId,entry.deckId,entry.deck);presence.set(entry.userId,'IDLE');send(entry.connection,{type:'QUICK_AI_MATCH_FOUND',matchId});}
         catch(e){presence.set(entry.userId,'IDLE');error(entry.connection,'MATCH_CREATION_FAILED',e instanceof Error?e.message:'대전을 준비하지 못했습니다.');}
       }).catch(e=>logger.error({err:e},'Quick queue deadline failed'));
     };
     entry.timer=setTimeout(expire,30_000);entry.timer.unref();
+    entry.pairTimer=setTimeout(()=>{void withLobbyLock(async()=>{if(quickQueue.get(entry.userId)===entry)await pairQuickQueue();}).catch(e=>logger.error({err:e},'Quick queue widening failed'));},10050);entry.pairTimer.unref();
     quickQueue.set(connection.userId,entry);
     presence.set(connection.userId, "QUICK_QUEUE");
     await pairQuickQueue();
@@ -303,7 +315,7 @@ export async function leaveQuickQueue(connection: LobbyConnection): Promise<void
   await withLobbyLock(async () => {
     const entry = quickQueue.get(connection.userId);
     if (!entry || entry.connection !== connection) return;
-    clearTimeout(entry.timer);
+    clearTimeout(entry.timer); clearTimeout(entry.pairTimer);
     quickQueue.delete(connection.userId);
     presence.set(connection.userId, "IDLE");
     send(connection, { type: "QUICK_QUEUE_LEFT" });
@@ -475,7 +487,7 @@ export async function detachLobbyConnection(connection: LobbyConnection): Promis
   await withLobbyLock(async () => {
     const entry = quickQueue.get(connection.userId);
     if (entry?.connection === connection) {
-      clearTimeout(entry.timer);
+      clearTimeout(entry.timer); clearTimeout(entry.pairTimer);
       quickQueue.delete(connection.userId);
       presence.set(connection.userId, "IDLE");
     }

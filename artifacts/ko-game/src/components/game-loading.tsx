@@ -1,5 +1,8 @@
 import { useLocation } from "wouter";
 const names: Record<string, string> = {
+  "/settings":"설정",
+  "/account-recovery":"계정 복구",
+  "/practice":"플레이 배우기",
   "/decks": "덱 편집",
   "/collection": "컬렉션",
   "/shop": "상점",

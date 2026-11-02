@@ -1,0 +1,9 @@
+{
+  "passwordChangeSinglePost": true,
+  "clientSessionCleared": true,
+  "resetTokenRemovedFromAddress": true,
+  "resetFormSubmitsCorrectToken": true,
+  "missingProviderIsExplicit": true,
+  "retryAfterFailure": true,
+  "errors": []
+}

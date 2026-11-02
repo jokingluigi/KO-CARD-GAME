@@ -1,3 +1,4 @@
+import {Link} from 'wouter';
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowRight, LockKeyhole, UserRound } from "lucide-react";
 import { submitAuth, type AuthUser } from "@/lib/auth-client";
@@ -138,6 +139,7 @@ export function AuthPage({
           </p>
         </header>
 
+        {!loginOnly&&<section className="ko-auth-introduction"><h2>선수 네 명, 챔피언 하나.<br/>다음 한 수로 뒤집는 카드 배틀.</h2><p>선수를 소환하고 고유능력을 활용해 상대 챔피언을 KO시키세요.</p><Link href="/practice" className="ko-surface-action">로그인 없이 직접 배워보기 →</Link><small>연습 결과와 보상은 실제 계정에 반영되지 않아요.</small></section>}
         <div className="mb-7 flex border-b border-neutral-800">
           <button
             type="button"
@@ -178,6 +180,7 @@ export function AuthPage({
             )}
           </div>
         )}
+        {mode==='login'&&<Link href="/account-recovery" className="ko-auth-recovery-link">비밀번호를 잊었나요?</Link>}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="ko-auth-field">
             <span>이메일</span>
@@ -262,6 +265,9 @@ export function AuthPage({
             )}
           </button>
         </form>
+        {errorMessage&&onRetry&&<button type="button" className="ko-auth-recovery-link" onClick={onRetry}>로그인 상태 다시 확인</button>}
+        {isSubmitting&&<button type="button" className="ko-auth-recovery-link" onClick={()=>{submission.current?.abort();submission.current=null;setIsSubmitting(false);setConnecting(false);setErrorMessage('요청 대기를 취소했어요. 이미 처리됐을 수 있어 로그인 상태를 다시 확인해 주세요.');}}>대기 취소</button>}
+        {!loginOnly&&<p className="ko-auth-account-note">계정은 덱·보유 카드·꾸미기를 보관하는 데 사용돼요. 비밀번호는 다른 사이트와 다르게 설정하세요.</p>}
 
         <p className="mt-7 flex items-center justify-center gap-2 text-xs text-neutral-500">
           {mode === "login" ? (

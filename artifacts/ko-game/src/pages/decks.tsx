@@ -1,3 +1,4 @@
+import { CatalogPagination } from '@/components/catalog-pagination';
 import {prefersReducedMotion} from "@/components/presentation-config";
 import "@/components/player-ux/player-ux.css";
 import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
@@ -107,6 +108,8 @@ function DeckCardVisual({
   onCraft: () => void;
 }) {
   const countView = getDeckCardCountView(card, selectedCount);
+  const [blocked,setBlocked]=useState(false);
+  useEffect(()=>setBlocked(false),[disabled,disabledReason]);
   return (
     <article data-motion-key={card.id} className="ko-decks__collection-card" aria-disabled={disabled && !unowned} data-unowned={unowned || undefined} data-testid={`card-collection-${card.id}`}>
       <Inspectable
@@ -175,8 +178,8 @@ function DeckCardVisual({
         className="ko-decks__card-action"
         aria-label={unowned ? `${card.name} 제작 정보` : `${card.name} 추가`}
         data-testid={`button-add-card-action-${card.id}`}
-        disabled={!unowned && disabled}
-        onClick={unowned ? onCraft : onAdd}
+        aria-disabled={!unowned && disabled}
+        onClick={()=>{if(!unowned&&disabled){setBlocked(true);return;}if(unowned)onCraft();else onAdd();}}
       >
         {unowned ? <Hammer className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
       </button>
@@ -186,10 +189,10 @@ function DeckCardVisual({
       </p>
       {card.quantity !== undefined && (
         <p className="ko-decks__card-type" data-testid={`text-card-ownership-${card.id}`}>
-          보유 {countView.ownedCount} · 덱 {countView.deckCount} · 추가 가능 {countView.availableToAdd}
+          보유 {countView.ownedCount} · 덱 {countView.deckCount}
         </p>
       )}
-      {disabledReason && <p className="ko-decks__card-limit">{disabledReason}</p>}
+      {blocked&&disabledReason&&<p role="status" className="ko-decks__card-limit">{disabledReason}</p>}
     </article>
   );
 }
@@ -448,6 +451,11 @@ export default function Decks() {
     }
      return uniqueValidationReasons(reasons);
   }, [authUser?.role, cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [workspace, setWorkspace] = useState('cards');
+  useEffect(()=>{window.dispatchEvent(new Event('ko-close-inspector'));},[workspace,catalogPage]);
+  useEffect(()=>setCatalogPage(1),[search,filter,catalogFilters,favoritesOnly]);
+  const goPage=(page:number)=>{setCatalogPage(page);document.getElementById('deck-library')?.scrollIntoView({block:'start'});};
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
@@ -710,12 +718,12 @@ export default function Decks() {
 
   return (
     <AltInspectProvider>
-      <main ref={catalogRoot} className="ko-decks">
+      <main ref={catalogRoot} className="ko-decks" data-workspace={workspace}>
       <div className="ko-decks__grain" aria-hidden="true" />
       <div className="ko-decks__wrap">
         <header className="ko-decks__topline">
           <div>
-            <p className="ko-decks__eyebrow">Preparation room / {authUser?.nickname}</p>
+            <p className="ko-decks__eyebrow">덱 준비 / {authUser?.nickname}</p>
             <h1 className="ko-decks__title" data-testid="text-page-title">덱 편집</h1>
             <p className="ko-decks__subtitle">
               챔피언과 카드 25장을 준비하세요. 저장한 덱은 대전에서 선택할 수 있어요.
@@ -757,14 +765,14 @@ export default function Decks() {
         {recovery.recovery&&<section className="my-3 border border-amber-700 p-3 text-sm" role="status"><p>이 계정의 저장하지 않은 덱 편집이 있어요: {recovery.recovery.name}</p><button className="min-h-11 px-3 underline" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);setEditorCollapsed(false);recovery.acknowledge();}}>임시 편집 복구</button><button className="min-h-11 px-3" onClick={recovery.discard}>임시 편집 삭제</button></section>}
         {dirty&&<p className="my-2 text-sm text-amber-200" role="status">저장하지 않은 변경 · {recovery.error?'임시 보관 실패 — 나가기 전에 저장하세요.':recovery.stored?'이 브라우저에 임시 보관됨':'임시 보관 준비 중'}</p>}
         <nav className="ko-workspace-nav" aria-label="덱 편집 작업 이동">
-          <a href="#deck-list">내 덱</a><a href="#deck-library">카드 찾기</a><a href="#deck-workspace" onClick={() => setEditorCollapsed(false)}>현재 덱 · {cardIds.length}/25</a>
+          <button type="button" aria-pressed={workspace==='decks'} onClick={()=>setWorkspace('decks')}>내 덱</button><button type="button" aria-pressed={workspace==='cards'} onClick={()=>setWorkspace('cards')}>카드 찾기</button><button type="button" aria-pressed={workspace==='editor'} onClick={()=>{setWorkspace('editor');setEditorCollapsed(false);}}>현재 덱 · {cardIds.length}/25</button>
         </nav>
         <div className="ko-decks__columns">
           <aside id="deck-list" className="ko-decks__rail" aria-label="덱 목록">
             <button type="button" className="ko-decks__secondary-action min-h-11 mb-3 w-full" data-testid="button-import-deck" disabled={isLoading} onClick={() => { setImportCode(''); setShareMode('import'); }}>덱 가져오기</button>
             <div className="flex items-center justify-between gap-2">
               <p className="ko-decks__section-label">내 덱</p>
-              <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={()=>changeEditor(createDraft)}>
+              <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={()=>changeEditor(()=>{createDraft();setWorkspace("editor");})}>
                 <CirclePlus className="h-3.5 w-3.5" aria-hidden="true" />
                 새 덱
               </button>
@@ -783,7 +791,7 @@ export default function Decks() {
                     type="button"
                     className={`ko-decks__deck-item ${editingId === deck.id ? "ko-decks__deck-item--active" : ""}`}
                     data-testid={`button-open-deck-${deck.id}`}
-                    onClick={() => changeEditor(()=>openDeck(deck))}
+                    onClick={() => changeEditor(()=>{openDeck(deck);setWorkspace("editor");})}
                   >
                     <span className="min-w-0">
                       <span className="ko-decks__deck-item-name block">{deck.name}</span>
@@ -806,11 +814,11 @@ export default function Decks() {
               <div>
                 <p className="ko-decks__section-label">카드 목록</p>
                 <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-[#e8e0d4]" data-testid="text-collection-title">
-                  CARD LOCKER
+                  카드 찾기
                 </h2>
               </div>
               <span className="font-display text-xs tracking-[0.12em] text-[#83786e]" data-testid="text-card-result-count">
-                {filteredCards.length} DEFINITIONS
+                {filteredCards.length}종
               </span>
             </div>
             <div className="ko-decks__toolbar">
@@ -853,7 +861,7 @@ export default function Decks() {
               </div>
             ) : (
               <div className="ko-decks__card-grid" data-testid="grid-card-collection">
-                {filteredCards.map((card) => {
+                {filteredCards.slice((catalogPage-1)*18,catalogPage*18).map((card) => {
                   const action = getDeckCardAction(card, {
                     count: counts.get(card.id) ?? 0,
                     deckCount: cardIds.length,
@@ -880,6 +888,7 @@ export default function Decks() {
                 })}
               </div>
             )}
+            <CatalogPagination page={catalogPage} total={filteredCards.length} pageSize={18} onChange={goPage}/>
           </section>
 
           <section id="deck-workspace" className={`ko-decks__editor ${editorCollapsed ? 'ko-decks__editor--collapsed' : ''}`} aria-label="현재 덱 편집기">
@@ -1167,7 +1176,7 @@ export default function Decks() {
                           )}
                         </>
                       ) : (
-                        <p className="mt-2 text-xs leading-5 text-amber-200">관리자 프리즘 설정이 없어 이 카드를 제작할 수 없습니다.</p>
+                        <p className="mt-2 text-xs leading-5 text-amber-200">현재 제작할 수 없는 카드예요. 잠시 후 다시 확인해 주세요.</p>
                       )}
                     </section>
                   )}

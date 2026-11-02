@@ -6,6 +6,10 @@ import { configureJsonBodyParsing } from "./lib/request-body";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+// Explicit deployment configuration: never trust arbitrary forwarded headers.
+const proxyHops=Number(process.env['TRUST_PROXY_HOPS']??0);
+if(Number.isInteger(proxyHops)&&proxyHops>0&&proxyHops<=3)app.set('trust proxy',proxyHops);
+
 
 const configuredCorsOrigins = new Set(
   (process.env["CORS_ORIGINS"] ?? "")

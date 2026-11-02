@@ -24,10 +24,10 @@ export type AuthResponse = {
 
 const authBasePath = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
 const authApiBase = `${authBasePath}/api/auth`;
-// Session restoration may span a free-service cold start. The form is shown
-// independently after 1.2 seconds, so this does not block login input.
-export const AUTH_REQUEST_TIMEOUT_MS = 60_000;
-export const AUTH_SUBMIT_TIMEOUT_MS = 60_000;
+// Bound each attempt; HomeEntry retries safe session GETs without clearing cookies.
+// Credentials are never automatically reposted. The form remains usable.
+export const AUTH_REQUEST_TIMEOUT_MS = 12_000;
+export const AUTH_SUBMIT_TIMEOUT_MS = 20_000;
 let authRevision = 0;
 let currentUserRequest: Promise<AuthResponse> | null = null;
 let confirmedAuth: { response: AuthResponse; expiresAt: number } | null = null;
@@ -236,6 +236,8 @@ export function refreshCurrentUser() {
   return fetchCurrentUser();
 }
 
+/** Use only after the server has already revoked the session (e.g. password change). */
+export function clearLocalSession():void{invalidateAuth();publishSession({authenticated:false,user:null},true);}
 export async function logout(): Promise<void> {
   invalidateAuth();
   await fetch(`${authApiBase}/logout`, {

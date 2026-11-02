@@ -38,7 +38,6 @@ export function GamePageHeader({
           <p>{eyebrow}</p>
           <h1>
             {title}
-            <span aria-hidden="true">.</span>
           </h1>
           <p>{description}</p>
         </div>

@@ -14,6 +14,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "@types/ws": "^8.18.1",
     "@workspace/api-zod": "workspace:*",
+    "@workspace/cosmetics": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/effect-registry": "workspace:*",
     "@workspace/game-engine": "workspace:*",
@@ -26,7 +27,7 @@
     "pino-http": "^10.5.0",
     "sharp": "^0.34.3",
     "ws": "^8.21.3",
-    "@workspace/cosmetics": "workspace:*"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

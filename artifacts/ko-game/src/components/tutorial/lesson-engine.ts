@@ -40,6 +40,7 @@ export const LESSONS = [
 ] as const;
 export type LessonId = (typeof LESSONS)[number]["id"];
 export interface TutorialCatalog {
+  practiceSource?: "LIVE" | "PINNED";
   cards: CardDefinition[];
   champions: ChampionDefinition[];
   unit?: CardDefinition;

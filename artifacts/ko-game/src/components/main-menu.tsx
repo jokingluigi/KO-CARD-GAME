@@ -177,7 +177,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         {bgmMuted ? "음소거" : "배경음"}
       </button>
       <button type="button" onClick={() => setSoundSettingsOpen((open) => !open)} aria-expanded={soundSettingsOpen}
-        className="relative z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">음량 설정</button>
+        className="relative z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">소리 설정</button>
+        <button type="button" className="ko-home-settings-link" onClick={()=>navigate("/settings")}>설정</button>
       </div>
       {soundSettingsOpen && <div className="absolute right-4 top-16 z-20 w-44 rounded border border-amber-500/50 bg-neutral-950/95 p-3 shadow-xl">
         <label className="block text-xs font-bold text-neutral-300">
@@ -212,10 +213,11 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
                 <DropdownMenuTrigger asChild><button ref={accountRef} type="button" className="ko-home-account" aria-label="계정 메뉴"><span>{user.nickname}</span><ChevronDown aria-hidden="true" className="h-3.5 w-3.5"/></button></DropdownMenuTrigger>
                 <DropdownMenuContent onCloseAutoFocus={e=>{if(editingNickname)e.preventDefault();}} align="end" className="border-neutral-700 bg-neutral-950 text-neutral-100">
                   <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>{setNicknameDraft(user.nickname);setNicknameError("");setEditingNickname(true);}}><Pencil aria-hidden="true" className="h-4 w-4"/>닉네임 변경</DropdownMenuItem>
+                  <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>navigate("/settings")}>계정 · 화면 설정</DropdownMenuItem>
                   <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>onLogout?.()}><LogOut aria-hidden="true" className="h-4 w-4"/>로그아웃</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <div className="ko-home-wallet" aria-label="보유 재화"><span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span><span className="text-violet-300">프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span></div>
+              <div className="ko-home-wallet" aria-label="보유 재화"><span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span><span className="text-violet-300">일반 프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span><span className="text-rose-200">챔피언 프리즘 {user.isTestAccount ? "∞" : user.championPrismBalance.toLocaleString()}</span></div>
               {user.isTestAccount&&<span className="ko-main-menu__test-badge" title="테스트 계정 · 전체 카드/챔피언 · 재화 무제한">TEST ACCOUNT</span>}
             </div>
           )}
@@ -270,6 +272,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" disabled={launchStatus.kind!=="READY"} aria-describedby="home-launch-status" title={launchStatus.reason} onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>선택 덱으로 시작</span></button><button type="button" disabled={launchStatus.kind!=="READY"} aria-describedby="home-launch-status" title={launchStatus.reason} onClick={()=>onAiMatch?.()}>AI 대전 <span>연습 경기</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'카드를 골라 구성':'현재 이용 불가'}</span></button></nav>
         </section>
         <nav className="ko-lobby-shortcuts" aria-label="덱과 꾸미기"><button type="button" onClick={()=>onDeckEdit?.()}>덱 편집</button><button type="button" onClick={()=>navigate(ROUTES.COLLECTION)}>컬렉션</button><button type="button" onClick={()=>navigate('/cosmetics')}>꾸미기</button></nav>
+        <nav className="ko-home-utility-links" aria-label="학습과 보상"><button type="button" onClick={()=>navigate('/tutorial')}>플레이 배우기</button><button type="button" onClick={()=>navigate('/daily-quests')}>퀘스트</button><button type="button" onClick={()=>navigate('/attendance')}>출석</button><button type="button" onClick={()=>navigate('/packs')}>내 팩</button></nav>
         <button type="button" className="ko-lobby-more" aria-label="보상 · 상점 · 전체 메뉴 ▸" aria-describedby={rewards?.total?'home-reward-count':undefined} onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸{Boolean(rewards?.total)&&<span id="home-reward-count" className="ko-home-reward-count">받을 보상 {rewards!.total}건</span>}</button>
         <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>
         {Boolean(rewards?.total)&&<aside aria-label="수령 가능한 보상" className="ko-home-reward-links">{Boolean(rewards?.quests)&&<button className="min-h-11" type="button" onClick={()=>navigate('/daily-quests')}>퀘스트 보상 {rewards!.quests}건 받으러 가기 ▸</button>}{Boolean(rewards?.attendance)&&<button className="min-h-11" type="button" onClick={()=>navigate('/attendance')}>출석 보상 받으러 가기 ▸</button>}</aside>}

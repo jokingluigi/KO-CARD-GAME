@@ -187,7 +187,7 @@ function QuickMatchPage() {
             </div>
           )}
           <div className="mt-8 flex flex-col items-stretch justify-between gap-4 border-t border-neutral-900 pt-6 sm:flex-row sm:items-center">
-            <p className="text-xs leading-5 text-neutral-500"><Radio className="mr-2 inline h-3.5 w-3.5 text-amber-500" aria-hidden="true" />현재는 순위와 MMR 없이 대기 시간 순으로 연결합니다.</p>
+            <p className="text-xs leading-5 text-neutral-500"><Radio className="mr-2 inline h-3.5 w-3.5 text-amber-500" aria-hidden="true" />최근 온라인 경기 경험을 참고해 상대를 찾고, 10초 이후에는 검색 범위를 넓혀요. 순위 점수는 없어요.</p>
             <button
               type="button"
               data-testid="button-quick-search"

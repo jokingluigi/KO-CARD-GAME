@@ -145,6 +145,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                 return <span key={type} className="rounded bg-neutral-900 px-3 py-2 text-neutral-200">{label} {count}</span>;
               })}
             </div>
+            {rewards.some(r=>r.prismReward!==undefined)&&<p className="mt-3 text-sm text-amber-200" role="status">중복 꾸미기 전환 · 일반 프리즘 +{rewards.reduce((sum,r)=>sum+(r.prismReward??0),0).toLocaleString()}</p>}
             {aggregatedRewards.length > 0 ? (
               <ul data-testid="list-aggregated-rewards" className="mt-4 grid gap-2 sm:grid-cols-2">
                 {aggregatedRewards.map(({ key, reward, quantity }) => (
@@ -240,6 +241,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                   ) : <p>보상 없음</p>}
                 </div>
                 {isRevealed && <p className="mt-2 text-center text-xs font-bold text-neutral-300">
+                  {reward.prismReward!==undefined&&<span className="block text-amber-200">중복 전환 · 일반 프리즘 +{reward.prismReward.toLocaleString()}</span>}
                   {reward.alreadyOwned === true ? <span className="mr-1 text-amber-300">중복 ·</span> : reward.alreadyOwned === false ? <span className="mr-1 text-emerald-300">신규 ·</span> : null}
                   {rewardTitle(reward)}
                   {reward.originalGranted && <span className="block mt-1 text-emerald-300">원본 {reward.rewardType === "CHAMPION_SKIN" ? "챔피언 해금" : "카드 1장 지급"}</span>}

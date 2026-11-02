@@ -1,3 +1,4 @@
+import {championEmoteLayout} from './champion-emote-layout';
 import { fetchCosmetics } from "@/lib/cosmetics-client";
 import { createPortal } from "react-dom";
 import {
@@ -108,25 +109,10 @@ function ChampionEmoteBubble({
     [failed, setFailed] = useState(false);
   useLayoutEffect(() => {
     const update = () => {
-      const rect = anchor.current?.getBoundingClientRect();
-      if (!rect) return;
-      const size = innerWidth < 600 ? 104 : 124;
-      const left = Math.max(
-        8,
-        Math.min(
-          innerWidth - size - 8,
-          self ? rect.right + 8 : rect.left - size - 8,
-        ),
-      );
-      const top = Math.max(
-        8,
-        Math.min(
-          innerHeight - size - 8,
-          rect.top + Math.min(rect.height * 0.16, 26),
-        ),
-      );
-      const tail =
-        rect.left + rect.width / 2 < left + size / 2 ? "left" : "right";
+      const windowNode=anchor.current?.querySelector<HTMLElement>('.ko-portrait-window')??anchor.current;
+      const rect=windowNode?.getBoundingClientRect();
+      if(!rect)return;
+      const {left,top,size,tail}=championEmoteLayout(rect,{width:innerWidth,height:innerHeight},self);
       setLayout((old) =>
         old &&
         old.left === left &&

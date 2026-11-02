@@ -23,6 +23,11 @@ export function CombatSettings() {
   return (
     <fieldset className="space-y-2 border-t border-neutral-700 pt-3 text-xs">
       <legend className="font-bold text-amber-200">전투 연출</legend>
+      <div className="ko-presentation-presets" role="group" aria-label="연출 빠른 설정">
+        <button type="button" className={style} onClick={()=>update({intensity:'STRONG',zoom:1,flash:1,spriteMotion:1,reducedMotion:false})}>강한 타격</button>
+        <button type="button" className={style} onClick={()=>update({intensity:'STANDARD',zoom:.4,flash:.4,spriteMotion:.4,reducedMotion:false})}>편안한 표현</button>
+        <button type="button" className={style} onClick={()=>update({intensity:'STANDARD',zoom:0,flash:0,spriteMotion:0,reducedMotion:true})}>움직임 최소화</button>
+      </div>
       <label className="flex items-center justify-between gap-2">
         그래픽 품질
         <select

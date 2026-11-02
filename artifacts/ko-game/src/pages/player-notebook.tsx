@@ -50,7 +50,7 @@ export default function PlayerNotebook() {
           aside={
             <div className="ko-surface-stat">
               <strong>{matches.length}</strong>
-              <span>이 기기의 경기 기록</span>
+              <span>보관된 경기 기록</span>
             </div>
           }
         />
@@ -73,10 +73,11 @@ export default function PlayerNotebook() {
         <details className="ko-notebook-storage">
           <summary>이 기록은 어디에 저장되나요?</summary>
           <p>
-            이 브라우저에 계정별로 저장돼요. 다른 기기와 동기화되지 않으며 서버
-            공식 전적이 아니에요. 최근 200경기를 보관해요.
+            계정에 동기화하고 이 기기에도 보관해요. 오프라인 기록은 연결 후 합쳐져요.
+            유저용 기록이며 공식 순위 전적이 아니에요. 최근 200경기를 보관해요.
           </p>
         </details>
+        {shelf.id&&<div className="ko-journal-sync" role="status"><span>{shelf.syncStatus}</span><button type="button" onClick={()=>void shelf.retrySync()}>동기화 다시 시도</button></div>}
         {shelf.error && (
           <p className="ko-surface-message is-error" role="alert">
             {shelf.error}

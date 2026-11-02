@@ -1,0 +1,14 @@
+✔ journal requires ownership and validates payloads; merges two devices without duplicate matches (120.88157ms)
+✔ password changes require current password, revoke all sessions and preserve the account (204.57197ms)
+✔ email recovery is explicit when unconfigured; tokens expire, are single use and revoke sessions (132.364226ms)
+✔ configured delivery uses a fragment link, stores only token hash and does not enumerate accounts (11.857427ms)
+✔ diagnostics accepts only bounded screen metadata; strips private payloads and limits abuse (24.746913ms)
+✔ anonymous database roles cannot read journals or reset tokens (5.426318ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4337.822145

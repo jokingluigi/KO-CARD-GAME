@@ -133,14 +133,14 @@ router.get("/", async (request, response): Promise<void> => {
   });
 });
 
-type Reward =
+type Reward = { prismReward?:number } & (
   | { rewardType: "NORMAL_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "EPIC_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean; championPrismReward?: number }
   | { rewardType: "CHAMPION_SKIN"; originalGranted?: boolean; cosmeticId: string; cosmetic: typeof import("@workspace/db").cosmeticItemsTable.$inferSelect; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "IMAGE_EMOTE"; cosmeticId:string; cosmetic: typeof import("@workspace/db").cosmeticItemsTable.$inferSelect; alreadyOwned?:boolean }
-  | { rewardType: "SKIN"; originalGranted?: boolean; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
+  | { rewardType: "SKIN"; originalGranted?: boolean; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean });
 
 type QueryExecutor = { select: typeof db.select };
 

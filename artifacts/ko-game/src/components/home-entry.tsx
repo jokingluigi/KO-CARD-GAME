@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth-client";
 const Home = lazy(() => import("@/pages/home"));
 export default function HomeEntry() {
+  const guestPractice=window.location.pathname.endsWith('/practice');
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
@@ -14,6 +15,7 @@ export default function HomeEntry() {
   const [showForm, setShowForm] = useState(false);
   const generation = useRef(0);
   useEffect(() => {
+    if(guestPractice)return;
     const current = ++generation.current;
     setChecking(true);
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -48,6 +50,7 @@ export default function HomeEntry() {
       clearTimeout(revealForm);
     };
   }, [retry]);
+  if(guestPractice)return <Suspense fallback={<AuthLoading/>}><Home initialAuthUser={{id:'guest-practice',email:'',nickname:'연습 플레이어',role:'USER',currency:0,currencyBalance:0,prismBalance:0,championPrismBalance:0,isTestAccount:false}}/></Suspense>;
   if (user)
     return (
       <Suspense fallback={<AuthLoading />}>

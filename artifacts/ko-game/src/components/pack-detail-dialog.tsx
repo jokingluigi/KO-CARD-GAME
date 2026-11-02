@@ -1,3 +1,4 @@
+import {CosmeticDuplicatePolicy} from './cosmetic-duplicate-policy';
 import { packRateTotal } from "@workspace/cosmetics";
 import { PackCover } from "./pack-cover";
 import { SkinBattlePreview } from "./player-tools/skin-battle-preview";
@@ -106,6 +107,7 @@ export function PackDetailDialog({
       aria-label={`${pack.name} 팩 상세`}
     >
       <section className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-950 p-5 text-neutral-100 shadow-2xl sm:p-7">
+        <CosmeticDuplicatePolicy/>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">

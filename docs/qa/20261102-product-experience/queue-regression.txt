@@ -1,0 +1,18 @@
+(node:172602) ExperimentalWarning: Module mocking is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:172602) DeprecationWarning: mock.module(): options.namedExports is deprecated. Use options.exports instead.
+✔ real quick lobby freezes PvP and 30-second AI compositions after editor changes (1040.222733ms)
+[14:58:25.937] [33mWARN[39m (172602): [36mQuick match experience unavailable[39m
+    [35mcode[39m: "QUICK_EXPERIENCE_UNAVAILABLE"
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1730.963333
+[14:58:25.940] [33mWARN[39m (172602): [36mQuick match experience unavailable[39m
+    [35mcode[39m: "QUICK_EXPERIENCE_UNAVAILABLE"
+[00:00:01.000] [33mWARN[39m (172602): [36mQuick match experience unavailable[39m
+    [35mcode[39m: "QUICK_EXPERIENCE_UNAVAILABLE"

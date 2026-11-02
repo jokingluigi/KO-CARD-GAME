@@ -1,3 +1,4 @@
+import accountRecoveryRouter from './account-recovery';
 import { readMaintenance, maintenanceAllows } from '../lib/maintenance';
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
@@ -35,6 +36,7 @@ router.use((_request, response, next) => {
   response.vary("Cookie");
   next();
 });
+router.use(accountRecoveryRouter);
 const STARTING_CURRENCY = Math.max(0, Number.parseInt(process.env["STARTING_CURRENCY"] ?? "1000", 10) || 1000);
 
 function readString(value: unknown): string {

@@ -1,3 +1,4 @@
+import { cosmeticDuplicateReward } from '../lib/cosmetic-duplicate-reward';
 import {ensureDefaultEmotes} from "../lib/default-emotes";
 import {validPackRates} from "@workspace/cosmetics";
 import { grantSkinOriginal } from "../lib/skin-original-grant";
@@ -7,6 +8,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import {
   db,
   championPrismTransactionsTable,
+  prismTransactionsTable,
   packDefinitionsTable,
   packOpeningClaimsTable,
   userCardCollectionsTable,
@@ -54,6 +56,7 @@ router.use(async (request, response, next) => {
   }
 });
 
+router.get('/duplicate-policy',(_req,res)=>{res.json({currency:'PRISM',rewards:{IMAGE_EMOTE:cosmeticDuplicateReward('IMAGE_EMOTE'),SKIN:cosmeticDuplicateReward('SKIN'),CHAMPION_SKIN:cosmeticDuplicateReward('CHAMPION_SKIN')}});});
 router.get("/", async (request, response): Promise<void> => {
   const packs = await db.select({
     pack: packDefinitionsTable,
@@ -138,6 +141,8 @@ export async function openPackRequest(
         return loadReplay(retryClaim.rewards, retryClaim.packDefinitionId);
       }
 
+      // Serialize one account's distinct pack claims, including ownership checks.
+      await tx.select({id:usersTable.id}).from(usersTable).where(eq(usersTable.id,request.authUser!.id)).for('update');
       const [pack] = await tx.select().from(packDefinitionsTable)
         .where(and(eq(packDefinitionsTable.id, packId), eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
         .limit(1);
@@ -252,6 +257,13 @@ export async function openPackRequest(
               userId: request.authUser!.id,
               skinDefinitionId: reward.skinDefinitionId,
             }).onConflictDoNothing();
+          }
+          if(reward.alreadyOwned&&(reward.rewardType==='IMAGE_EMOTE'||reward.rewardType==='SKIN'||reward.rewardType==='CHAMPION_SKIN')){
+            const amount=cosmeticDuplicateReward(reward.rewardType);
+            const [balance]=await tx.update(usersTable).set({prismBalance:sql`${usersTable.prismBalance} + ${amount}`,updatedAt:new Date()}).where(eq(usersTable.id,request.authUser!.id)).returning({value:usersTable.prismBalance});
+            if(!balance)throw new Error('Duplicate reward account missing');
+            await tx.insert(prismTransactionsTable).values({id:randomUUID(),userId:request.authUser!.id,type:'COSMETIC_DUPLICATE',amount,balanceAfter:balance.value,metadata:JSON.stringify({claimId:claim.id,packId,rewardType:reward.rewardType,itemId:reward.rewardType==='SKIN'?reward.skinDefinitionId:reward.cosmeticId})});
+            reward.prismReward=amount;
           }
         }
       }

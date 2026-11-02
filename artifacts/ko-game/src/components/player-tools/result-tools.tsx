@@ -173,6 +173,7 @@ export function ResultTools({
       data-capture-exclude
       className="ko-player-result-tools flex flex-wrap gap-2 border-t border-amber-900 py-3"
     >
+      <details className="ko-result-learning"><summary>다음 경기는 어떻게 준비할까요?</summary><p>경기 요약에서 피해·처치와 마지막 장면을 확인하세요. 덱을 바꾼다면 쓰기 어려웠던 카드부터 소수만 교체하고 다시 비교해 보세요. 자동으로 패배 원인을 단정한 안내는 아니에요.</p><a href={(import.meta.env.BASE_URL??'/')+'tutorial'}>전투 규칙 다시 배우기 →</a></details>
       {onRematch && (
         <button
           className="min-h-11 border border-amber-600 px-3"

@@ -44,3 +44,4 @@ export * from './cosmetics';
 
 export * from "./shop-decks";
 export * from './ai-deck-cosmetics';
+export * from './player-experience';

@@ -1,3 +1,5 @@
+import './components/product-experience.css';
+import {installClientDiagnostics} from '@/lib/client-diagnostics';
 import {InterfaceMotionBridge} from "@/components/motion/interface-motion";
 import {ReadingAccessibilityBridge} from "@/components/player-ux/reading-accessibility";
 import { GameNavigation } from '@/components/game-navigation';
@@ -22,6 +24,8 @@ import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
 
+const Settings=lazy(()=>import('@/pages/settings'));
+const AccountRecovery=lazy(()=>import('@/pages/account-recovery'));
 const PlayerNotebook=lazy(()=>import("@/pages/player-notebook"));
 const Cosmetics = lazy(() => import("@/pages/cosmetics"));
 const Tower = lazy(() => import("@/pages/tower"));
@@ -56,6 +60,9 @@ function Router() {
         <Route path="/tower" component={Tower} />
         <Route path="/draft" component={Draft} />
         <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
+        <Route path="/settings" component={Settings}/>
+        <Route path="/account-recovery" component={AccountRecovery}/>
+        <Route path="/practice" component={Home}/>
         <Route path="/ai-match" component={Home} />
         <Route path="/tutorial" component={Home} />
         <Route path="/online/match/:matchId">{() => <OnlineMatch />}</Route>
@@ -136,6 +143,7 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 }
 
 function App() {
+  useEffect(()=>installClientDiagnostics(),[]);
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

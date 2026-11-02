@@ -1,3 +1,4 @@
+import {reportClientFailure} from '@/lib/client-diagnostics';
 import {
   Component,
   type ComponentType,
@@ -19,6 +20,7 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   error: Error | null;
+  diagnosticId?:string;
 }
 
 function toError(value: unknown): Error {
@@ -35,6 +37,8 @@ function toError(value: unknown): Error {
   }
 }
 
+function readDiagnosticId(){try{return sessionStorage.getItem('ko-last-diagnostic')??'확인 중';}catch{return '저장할 수 없음';}}
+
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-neutral-950 p-6">
@@ -45,6 +49,8 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
         <p className="mt-2 text-sm text-neutral-300">
           다시 시도해 주세요. 문제가 반복되면 발생한 모드와 직전 행동을 알려주세요.
         </p>
+        <p className="mt-3 break-all text-xs text-neutral-400">오류 확인 코드: {readDiagnosticId()}</p>
+        <a href={import.meta.env.BASE_URL} className="ko-surface-back">메인 메뉴로 돌아가기</a>
         {/* Dev only: messages can carry API responses and other internals. */}
         {import.meta.env.DEV ? (
           <pre className="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-left text-xs text-gray-800">
@@ -74,6 +80,7 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
+    this.setState({diagnosticId:reportClientFailure('RENDER',error)});
     console.error(
       'ErrorBoundary caught an error:',
       toError(error),

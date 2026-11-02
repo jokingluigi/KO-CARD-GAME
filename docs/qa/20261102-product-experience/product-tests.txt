@@ -1,0 +1,18 @@
+✔ new players prefer new players; veteran waits widen without permanent starvation (2.555814ms)
+✔ similar recent results win a soft preference; never pairs the same user (0.209962ms)
+✔ mobile communication stays in decorative art instead of vital HUD or cards, on both sides (0.223151ms)
+✔ resizing recalculates the position rather than retaining stale pixels (0.137934ms)
+✔ journal requires ownership and validates payloads; merges two devices without duplicate matches (113.516541ms)
+✔ password changes require current password, revoke all sessions and preserve the account (217.401132ms)
+✔ email recovery is explicit when unconfigured; tokens expire, are single use and revoke sessions (146.923549ms)
+✔ configured delivery uses a fragment link, stores only token hash and does not enumerate accounts (12.113272ms)
+✔ diagnostics accepts only bounded screen metadata; strips private payloads and limits abuse (25.840364ms)
+✔ anonymous database roles cannot read journals or reset tokens (8.189748ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4534.992977
