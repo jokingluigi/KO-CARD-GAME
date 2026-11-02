@@ -57,3 +57,11 @@
 ## 주요 파일
 
 신규 `components/game-page-header.tsx`, `player-surfaces.css`, `reward-display.tsx`, `pack-cover.tsx`, `draft-entry.css`. 변경 `pages/attendance.tsx`, `daily-quests.tsx`, `shop.tsx`, `packs.tsx`, `player-notebook.tsx`, `draft.tsx`, `components/pack-detail-dialog.tsx`, `admin-draft-manager.tsx`(일반 플레이 표시), `game-loading.tsx`, QA 스크립트. 서버·DB 스키마·원본 카드/챔피언 데이터·전투 엔진 변경 없음.
+
+## 운영 반영
+
+기존 상시 배포 승인에 따라 프런트 소스 `33ab155e31286fa44bf286276c55f3fea846c663`를 운영에 배포했다. live, health 200, JS/CSS 127개의 SHA-256을 로컬 운영 빌드와 대조했다. API/스키마 변경이 없어 서버를 다시 배포하지 않았다. 점검 설정은 배포 전후 false로 유지했다. main 병합·운영 DB 수동 변경 없음. 배포 전 상태 조회 첫 30초 응답은 시간 초과되어 재조회 후 정상 응답을 확인하고 진행했다.
+
+운영 주소의 실제 파일에서도 12화면×모바일/PC 캡처를 다시 확인했고, 360×740·390×844·844×390·1440×1000의 구매 확인/취소·팩 요청 키·보상 수령·기록 해제/보존·오류 재시도·수령 불가 경계 상태 검사를 다시 실행해 통과했다. 계정/상점/보상/매치 API 및 WS는 브라우저에서 격리한 응답이다. 운영 거래·아이템 수령·기록 변경 요청은 실제 서버로 전송하지 않았다. 실제 저장/거래의 검증 근거는 앞서 설명한 별도의 격리 DB/HTTP 검사다. ignoreHTTPSErrors를 사용했으므로 TLS 검증을 주장하지 않는다.
+
+[배포 기록](20261102-player-ui-audit-front-deployment.json) · [운영 파일 화면 검사](20261102-player-ui-audit/deployed-screen-audit.json) · [운영 파일 동작 검사](20261102-player-ui-audit/deployed-flows.json)
