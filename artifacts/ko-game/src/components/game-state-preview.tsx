@@ -25,7 +25,7 @@ import "./battle-board.css";
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {cosmeticImage,cosmeticImageSettings} from '@workspace/cosmetics';
 import {BattleCosmeticsContext,CosmeticBack,CosmeticEmoteTools,CosmeticEmoteOverlay,useHideCosmeticEmotes} from './cosmetic-battle';
-import type {MatchCosmetics,ImageEmoteEvent} from '@workspace/cosmetics';
+import type {MatchCosmetics,ImageEmoteEvent,CosmeticItem} from '@workspace/cosmetics';
 import { BattleAttackDrag } from './battle-attack-drag';
 import { AttackAim } from './attack-aim';
 import { BattleCardDrag } from './battle-card-drag';
@@ -105,7 +105,7 @@ interface GameStatePreviewProps {
   localImageEmotes?:boolean;
   cosmetics?:MatchCosmetics;
   imageEmotes?:Record<string,ImageEmoteEvent>;
-  onImageEmote?:(slot:number)=>void;
+  onImageEmote?:(choice:number|string)=>void;
   state: GameState;
   mediaCatalog: GameMediaCatalog;
   backgroundAssetUrl?: string;
@@ -228,11 +228,12 @@ export function GameStatePreview({
   React.useEffect(()=>{let cancelled=false;setLocalCosmetics({});setLocalEmotes({});if(providedCosmetics===undefined)void optionalCosmetics().then(loadout=>{if(!cancelled)setLocalCosmetics({[state.players[0].id]:loadout});});return()=>{cancelled=true;};},[state.gameId,providedCosmetics===undefined]);
   const cosmetics=providedCosmetics??localCosmetics;
   const imageEmotes=providedImageEmotes??localEmotes;
-  const onImageEmote=providedOnImageEmote??((providedCosmetics===undefined||localImageEmotes)?(slot:number)=>{
-    const now=Date.now(),playerId=state.players[0].id,item=cosmetics[playerId]?.emotes[slot-1];
+  const onImageEmote=(providedOnImageEmote||providedCosmetics===undefined||localImageEmotes)?(item:CosmeticItem)=>{
+    if(providedOnImageEmote){providedOnImageEmote(item.id);return;}
+    const now=Date.now(),playerId=state.players[0].id;
     if(state.status==='FINISHED'||now-localEmoteTime.current<800||!item?.imageAssets.art)return;
     localEmoteTime.current=now;setLocalEmotes(old=>({...old,[playerId]:{type:'IMAGE_EMOTE',matchId:state.gameId,playerId,requestId:crypto.randomUUID(),itemId:item.id,imageUrl:item.imageAssets.art!,name:item.name,expiresAt:now+2000}}));
-  }:undefined);
+  }:undefined;
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [emoteOpen, setEmoteOpen] = React.useState(false);
@@ -1677,7 +1678,7 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
                {blackGold && playerZones}
-               <span className="ko-champion-heading !flex min-w-0 items-center gap-1 text-[11px] font-black text-white md:text-sm"><span className="min-w-0 flex-1 truncate" data-testid="text-online-player-nickname">{blackGold ? (playerNickname || "나") : `${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span><CosmeticEmoteTools loadout={cosmetics[me.id]} onSend={onImageEmote} hide={hideImageEmotes} onHide={setHideImageEmotes}/></span>
+               <span className="ko-champion-heading !flex min-w-0 items-center gap-1 text-[11px] font-black text-white md:text-sm"><span className="min-w-0 flex-1 truncate" data-testid="text-online-player-nickname">{blackGold ? (playerNickname || "나") : `${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span><CosmeticEmoteTools onSend={onImageEmote} hide={hideImageEmotes} onHide={setHideImageEmotes}/></span>
               <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                 <div className="relative shrink-0">
                   <div

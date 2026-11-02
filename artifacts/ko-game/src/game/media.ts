@@ -30,9 +30,9 @@ export const emptyGameMediaCatalog: GameMediaCatalog = {
   attackSounds: {},
 };
 
-export async function fetchGameMedia(): Promise<GameMediaCatalog> {
+export async function fetchGameMedia(options?:{signal?:AbortSignal}): Promise<GameMediaCatalog> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-  const response = await fetch(`${apiBase}/game-media`);
+  const response = await fetch(`${apiBase}/game-media`,{signal:options?.signal});
   if (!response.ok) {
     throw new Error(`게임 미디어 목록을 불러오지 못했습니다. (${response.status})`);
   }

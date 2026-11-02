@@ -1,3 +1,4 @@
+import {ownedImageEmote} from '../lib/owned-image-emote';
 import {withFrozenLaunchDeck,type FrozenLaunchDeck} from "../lib/frozen-launch-deck";
 import {CosmeticEmoteChannel} from '../lib/cosmetic-emotes';
 import {loadMatchCosmetics} from '../lib/cosmetics';
@@ -1520,12 +1521,16 @@ export function cleanupMatchRuntime(matchId: string): void {
 
 // Transient presentation channel: never changes combat state, version, RNG or action counters.
 const emoteChannels=new WeakMap<OnlineMatchRuntime,CosmeticEmoteChannel>();
-export function sendImageEmote(runtime:OnlineMatchRuntime,userId:string,requestId:string,slot:number){
- const seat=matchSeat(runtime,userId);if(!seat||runtime.state.status==='FINISHED')return false;
+export async function sendImageEmote(runtime:OnlineMatchRuntime,userId:string,requestId:string,choice:number|string){
+ const finished=()=>runtime.state.status==='FINISHED';
+ const seat=matchSeat(runtime,userId);if(!seat||finished())return false;
  let channel=emoteChannels.get(runtime);if(!channel){channel=new CosmeticEmoteChannel();emoteChannels.set(runtime,channel);}
- const event=channel.send({matchId:runtime.matchId,userId,playerId:seat,requestId,slot,loadout:runtime.snapshot.cosmetics?.[seat]});
- if(!event)return false;
+ const itemId=typeof choice==='string'?choice:runtime.snapshot.cosmetics?.[seat]?.emotes[choice-1]?.id;
+ if(!itemId)return false;
+ const event=await channel.resolveAndSend({matchId:runtime.matchId,userId,playerId:seat,requestId},()=>ownedImageEmote(userId,itemId));
+ if(!event||finished())return false;
  for(const connection of runtime.connections)connection.send(event);
  return true;
 }
+
 import {activeQuickAI} from '../lib/quick-ai-match';

@@ -1,3 +1,4 @@
+import {fetchCosmetics} from '@/lib/cosmetics-client';
 import { createPortal } from "react-dom";
 import {
   createContext,
@@ -12,6 +13,7 @@ import {
   cosmeticImageSettings,
   type MatchCosmetics,
   type CosmeticLoadout,
+  type CosmeticItem,
   type CosmeticAssets,
   type ImageEmoteEvent,
 } from "@workspace/cosmetics";
@@ -96,85 +98,30 @@ export function CosmeticEmoteOverlay({
     document.body,
   );
 }
-export function CosmeticEmoteTools({
-  loadout,
-  onSend,
-  hide,
-  onHide,
-}: {
-  loadout?: CosmeticLoadout;
-  onSend?: (slot: number) => void;
-  hide: boolean;
-  onHide: (hide: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const button = useRef<HTMLButtonElement | null>(null);
-  const rect = button.current?.getBoundingClientRect();
-  return (
-    <span className="cosmetic-emote-tools">
-      <button
-        type="button"
-        ref={button}
-        aria-label="이미지 이모티콘"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
-        ☺
-      </button>
-      {open &&
-        createPortal(
-          <div
-            className="cosmetic-emote-picker"
-            style={{
-              position: "fixed",
-              zIndex: 240,
-              left: Math.max(8, Math.min(innerWidth - 180, rect?.left ?? 8)),
-              right: "auto",
-              bottom: "auto",
-              top: Math.max(8, Math.min(innerHeight - 245, rect?.bottom ?? 8)),
-            }}
-          >
-            {loadout?.emotes?.map((item, i) =>
-              item ? (
-                <button
-                  type="button"
-                  key={i}
-                  aria-label={item.name}
-                  disabled={!onSend}
-                  onClick={() => {
-                    onSend?.(i + 1);
-                    setOpen(false);
-                  }}
-                >
-                  <img src={item.imageAssets.art} alt={item.name} />
-                </button>
-              ) : null,
-            )}
-            {!loadout?.emotes?.some(Boolean) && (
-              <span className="col-span-2 text-xs text-white">
-                장착한 이모티콘 없음
-              </span>
-            )}
-            <label>
-              <input
-                type="checkbox"
-                checked={hide}
-                onChange={(e) => onHide(e.target.checked)}
-              />{" "}
-              상대 이미지 숨기기
-            </label>
-            <button
-              type="button"
-              className="col-span-2 !w-full"
-              onClick={() => setOpen(false)}
-            >
-              닫기
-            </button>
-          </div>,
-          document.body,
-        )}
-    </span>
-  );
+export function CosmeticEmoteTools({onSend,hide,onHide}:{onSend?:(item:CosmeticItem)=>void;hide:boolean;onHide:(hide:boolean)=>void}) {
+ const [open,setOpen]=useState(false),[items,setItems]=useState<CosmeticItem[]>([]),[error,setError]=useState<string|null>(null),[loading,setLoading]=useState(false),[retry,setRetry]=useState(0),[query,setQuery]=useState('');
+ const [,refreshLayout]=useState(0);
+ const button=useRef<HTMLButtonElement|null>(null),panel=useRef<HTMLDivElement|null>(null);
+ const rect=button.current?.getBoundingClientRect();
+ useEffect(()=>{
+  if(!open)return;
+  const controller=new AbortController();setLoading(true);setError(null);setItems([]);setQuery('');
+  fetchCosmetics({signal:controller.signal}).then(data=>{if(controller.signal.aborted)return;if(!Array.isArray(data.owned))throw Error('보유 이모티콘을 확인하지 못했어요.');setItems(data.owned.map(row=>row.item).filter(item=>item.type==='IMAGE_EMOTE'&&item.isActive&&item.imageAssets?.art));}).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'보유 이모티콘을 불러오지 못했어요.');}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+  const outside=(event:PointerEvent)=>{const node=event.target as Node;if(!panel.current?.contains(node)&&!button.current?.contains(node))setOpen(false);};
+  const resize=()=>refreshLayout(x=>x+1);
+  window.addEventListener('resize',resize);
+  document.addEventListener('pointerdown',outside);
+  return()=>{controller.abort();window.removeEventListener('resize',resize);document.removeEventListener('pointerdown',outside);};
+ },[open,retry]);
+ return <span className="cosmetic-emote-tools"><button type="button" ref={button} aria-label="이미지 이모티콘" aria-expanded={open} onClick={()=>setOpen(!open)}>☺</button>
+ {open&&createPortal(<div ref={panel} role="dialog" aria-label="보유 이모티콘" className="cosmetic-emote-picker cosmetic-emote-picker--owned" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setOpen(false);button.current?.focus();}}} style={{position:'fixed',zIndex:240,left:Math.max(8,Math.min(innerWidth-Math.min(320,innerWidth-16)-8,rect?.left??8)),right:'auto',bottom:'auto',top:Math.max(8,Math.min(innerHeight-Math.min(420,innerHeight-16),rect?.bottom??8))}}>
+ <strong className="text-sm text-amber-200">보유 이모티콘</strong>
+ {loading?<p role="status">목록을 불러오고 있어요…</p>:error?<div role="alert"><p>{error}</p><button type="button" className="cosmetic-emote-wide" onClick={()=>setRetry(x=>x+1)}>다시 시도</button></div>:<>
+ {items.length>8&&<input aria-label="보유 이모티콘 검색" placeholder="이름 검색" value={query} onChange={e=>setQuery(e.target.value)}/>}
+ <div className="cosmetic-owned-emotes">{items.filter(item=>item.name.includes(query)).map(item=><button type="button" key={item.id} aria-label={item.name} disabled={!onSend} onClick={()=>{onSend?.(item);setOpen(false);}}><img src={item.imageAssets.art} alt=""/><span>{item.name}</span></button>)}</div>
+ {!items.length&&<p className="text-xs text-white">사용 가능한 이모티콘이 없어요.</p>}{items.length>0&&!items.some(item=>item.name.includes(query))&&<p>검색 결과가 없어요.</p>}</>}
+ <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={hide} onChange={e=>onHide(e.target.checked)}/>상대 이미지 숨기기</label><button type="button" className="cosmetic-emote-wide" onClick={()=>{setOpen(false);button.current?.focus();}}>닫기</button>
+ </div>,document.body)}</span>;
 }
 export function useHideCosmeticEmotes() {
   const [hide, setHide] = useState(() => {

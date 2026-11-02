@@ -1011,7 +1011,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           </div>
         </section>
       )}
-      <GameStatePreview cosmetics={cosmetics} imageEmotes={imageEmotes} onImageEmote={isConnected?(slot)=>{if(matchId)client.send({type:"IMAGE_EMOTE",matchId,requestId:crypto.randomUUID(),slot});}:undefined}
+      <GameStatePreview cosmetics={cosmetics} imageEmotes={imageEmotes} onImageEmote={isConnected?(slot)=>{if(matchId)client.send({type:"IMAGE_EMOTE",matchId,requestId:crypto.randomUUID(),...(typeof slot==='string'?{itemId:slot}:{slot})});}:undefined}
         state={state}
         selectedCardId={selectedCardId}
         selectedAttackerId={selectedAttackerId}

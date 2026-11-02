@@ -8,7 +8,7 @@ export { isOnlineActionPayload };
 export type { OnlineActionPayload };
 
 export type OnlineClientMessage =
-  | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot:number}
+  | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot?:number;itemId?:string}
   | { type: "SUBSCRIBE"; matchId: string }
   | { type: "UNSUBSCRIBE"; matchId: string }
   | {

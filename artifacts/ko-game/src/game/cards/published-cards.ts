@@ -127,9 +127,9 @@ export function abilitiesFor(
   return [];
 }
 
-async function fetchPublishedCardRecords(): Promise<PublishedCardRecord[]> {
+async function fetchPublishedCardRecords(signal?:AbortSignal): Promise<PublishedCardRecord[]> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-  const response = await fetch(`${apiBase}/cards`);
+  const response = await fetch(`${apiBase}/cards`,{signal});
   if (!response.ok) return [];
 
   const body = (await response.json()) as { cards?: PublishedCardRecord[] };
@@ -195,14 +195,14 @@ export async function fetchPublishedChampionTokenCards(): Promise<CardDefinition
 
 /** All published definitions are kept in the match snapshot so explicit
  * structured references can resolve by stable ID, including cards outside a deck. */
-export async function fetchPublishedCardDefinitions(): Promise<CardDefinition[]> {
-  return (await fetchPublishedCardRecords()).map(cardRecordToDefinition);
+export async function fetchPublishedCardDefinitions(options?:{signal?:AbortSignal}): Promise<CardDefinition[]> {
+  return (await fetchPublishedCardRecords(options?.signal)).map(cardRecordToDefinition);
 }
 
 /** Admin-only AI test pool: PUBLISHED plus DRAFT, never DISABLED. */
-export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
+export async function fetchAiTestCardDefinitions(options?:{signal?:AbortSignal}): Promise<CardDefinition[]> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-  const response = await fetch(`${apiBase}/admin/cards`, { credentials: "include" });
+  const response = await fetch(`${apiBase}/admin/cards`, { credentials: "include",signal:options?.signal });
   if (!response.ok) throw new Error("AI 테스트 카드 풀을 불러오지 못했습니다.");
   const body = (await response.json()) as { cards?: PublishedCardRecord[] };
   return (body.cards ?? [])
@@ -354,8 +354,8 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
   };
 }
 
-export async function fetchMinionACardDefinitions(): Promise<CardDefinition[]> {
-  const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/minion-a/cards`, { credentials: 'include' });
+export async function fetchMinionACardDefinitions(options?:{signal?:AbortSignal}): Promise<CardDefinition[]> {
+  const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/minion-a/cards`, { credentials: 'include',signal:options?.signal });
   if (!response.ok) throw new Error('완전 무작위 효과의 전체 카드 목록을 불러오지 못했습니다.');
   const body = await response.json();
   if (!Array.isArray(body.definitions)) throw new Error('전체 카드 목록 형식이 올바르지 않습니다.');

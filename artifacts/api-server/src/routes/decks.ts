@@ -136,38 +136,31 @@ export async function loadUserDeck(userId: string, deckId: string): Promise<Deck
   return deck ?? null;
 }
 
-export async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false, database: Pick<typeof db, "select"> = db): Promise<ResolvedDeck> {
-  const [account] = await database.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  const admin = account?.role === "ADMIN";
-  testAccount ||= admin;
-  const [champion] = deck.championDefinitionId
-    ? await database
-        .select()
-        .from(championsTable)
-        .where(eq(championsTable.id, deck.championDefinitionId))
-        .limit(1)
-    : [undefined];
-
-  const uniqueCardIds = [...new Set(deck.cardDefinitionIds)];
-  const cards = uniqueCardIds.length
-    ? await database
-        .select()
-        .from(cardsTable)
-        .where(inArray(cardsTable.id, uniqueCardIds))
-    : [];
-  const cardById = new Map(cards.map((card) => [card.id, card]));
-  const [ownedCardRows, ownedChampionRows] = await Promise.all([
-    uniqueCardIds.length
-      ? database.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
-        .from(userCardCollectionsTable)
-        .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`))
-      : [],
-    champion
-      ? database.select({ id: userChampionCollectionsTable.championDefinitionId })
-        .from(userChampionCollectionsTable)
-        .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)))
-      : [],
+/** Resolve a catalog in five reads instead of repeating five reads per deck. */
+export async function resolveDecks(decks: DeckRecord[], userId: string, testAccount = false, database: Pick<typeof db, "select"> = db): Promise<ResolvedDeck[]> {
+  if(!decks.length)return [];
+  const cardIds=[...new Set(decks.flatMap(deck=>deck.cardDefinitionIds))];
+  const championIds=[...new Set(decks.map(deck=>deck.championDefinitionId).filter((id):id is string=>Boolean(id)))];
+  const [accounts,cards,champions,ownedCards,ownedChampions]=await Promise.all([
+    database.select({role:usersTable.role}).from(usersTable).where(eq(usersTable.id,userId)).limit(1),
+    cardIds.length?database.select().from(cardsTable).where(inArray(cardsTable.id,cardIds)):[] as CardRecord[],
+    championIds.length?database.select().from(championsTable).where(inArray(championsTable.id,championIds)):[] as ChampionRecord[],
+    cardIds.length?database.select({id:userCardCollectionsTable.cardDefinitionId,quantity:userCardCollectionsTable.quantity}).from(userCardCollectionsTable).where(and(eq(userCardCollectionsTable.userId,userId),inArray(userCardCollectionsTable.cardDefinitionId,cardIds),sql`${userCardCollectionsTable.quantity} > 0`)):[] as Array<{id:string;quantity:number}>,
+    championIds.length?database.select({id:userChampionCollectionsTable.championDefinitionId}).from(userChampionCollectionsTable).where(and(eq(userChampionCollectionsTable.userId,userId),inArray(userChampionCollectionsTable.championDefinitionId,championIds),eq(userChampionCollectionsTable.owned,true))):[] as Array<{id:string}>,
   ]);
+  const admin=accounts[0]?.role==='ADMIN';
+  const byId=new Map(champions.map(champion=>[champion.id,champion]));
+  return decks.map(deck=>{
+    const ids=new Set(deck.cardDefinitionIds);
+    return resolveDeckRows(deck,testAccount||admin,admin,byId.get(deck.championDefinitionId??''),cards.filter(card=>ids.has(card.id)),ownedCards,ownedChampions.filter(row=>row.id===deck.championDefinitionId));
+  });
+}
+export async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false, database: Pick<typeof db, "select"> = db): Promise<ResolvedDeck> {
+  return (await resolveDecks([deck],userId,testAccount,database))[0]!;
+}
+function resolveDeckRows(deck:DeckRecord,testAccount:boolean,admin:boolean,champion:ChampionRecord|undefined,cards:CardRecord[],ownedCardRows:Array<{id:string;quantity:number}>,ownedChampionRows:Array<{id:string}>):ResolvedDeck {
+  const uniqueCardIds = [...new Set(deck.cardDefinitionIds)];
+  const cardById = new Map(cards.map(card=>[card.id,card]));
   const ownedCardIds = new Set(ownedCardRows.map((row) => row.id));
   const ownedCardQuantities = new Map(ownedCardRows.map((row) => [row.id, row.quantity]));
   if (testAccount) {
@@ -409,7 +402,15 @@ router.get("/", async (request, response): Promise<void> => {
     .where(and(eq(decksTable.userId, user.id), isNull(decksTable.deletedAt)))
     .orderBy(asc(decksTable.createdAt));
   response.setHeader("Cache-Control", "no-store");
-  response.json({ decks: await Promise.all(decks.map((deck) => resolveDeck(deck, user.id, isTestAccountUser(user)))) });
+  response.json({ decks: await resolveDecks(decks, user.id, isTestAccountUser(user)) });
+});
+
+/** Match entry needs only the authoritative selected deck, not every saved deck. */
+router.get("/selected",async(request,response):Promise<void>=>{
+  const user=requireUser(request,response);if(!user)return;
+  const selected=await db.select().from(decksTable).where(and(eq(decksTable.userId,user.id),eq(decksTable.isSelected,true),isNull(decksTable.deletedAt))).orderBy(asc(decksTable.createdAt));
+  response.setHeader('Cache-Control','no-store');
+  response.json({decks:await resolveDecks(selected,user.id,isTestAccountUser(user))});
 });
 
 router.get("/options", async (request, response): Promise<void> => {

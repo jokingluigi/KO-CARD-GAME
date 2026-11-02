@@ -11,9 +11,10 @@ type AiMatchSetupProps = {
   starting?: boolean;
   onStart: (deckId: string) => void;
   onBack: () => void;
+  onRetry?:()=>void;
 };
 
-export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting = false }: AiMatchSetupProps) {
+export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, onRetry, starting = false }: AiMatchSetupProps) {
   const shelf=useShelf();
   const validDecks = decks?.filter((deck) => deck.isValid) ?? [];
   const validAIDecks = aiDecks?.filter((deck) => deck.isValid && deck.enabled) ?? [];
@@ -36,7 +37,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting 
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-neutral-400">준비한 덱으로 연습하세요. 상대는 시작할 때 무작위로 결정됩니다.</p>
         </div>
 
-        {error && <div className="mx-auto mb-5 flex w-full max-w-3xl items-center gap-3 rounded-lg border border-red-900/70 bg-red-950/30 px-4 py-3 text-sm text-red-200"><ShieldAlert className="h-5 w-5 shrink-0" aria-hidden="true" /><span>{error}</span></div>}
+        {error && <div className="mx-auto mb-5 flex w-full max-w-3xl items-center gap-3 rounded-lg border border-red-900/70 bg-red-950/30 px-4 py-3 text-sm text-red-200"><ShieldAlert className="h-5 w-5 shrink-0" aria-hidden="true" /><span>{error}</span>{onRetry&&<button type="button" className="min-h-11 shrink-0 border border-amber-600 px-3" onClick={onRetry}>다시 시도</button>}</div>}
 
         {decks === null || aiDecks === null ? (
           <div className="mx-auto w-full max-w-2xl rounded-xl border border-neutral-800 bg-neutral-950 p-8 text-center text-sm text-neutral-400">내 덱과 AI 덱을 불러오는 중입니다…</div>

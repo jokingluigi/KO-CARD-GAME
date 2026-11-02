@@ -209,9 +209,9 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   return definition;
 }
 
-export async function fetchPublishedChampions(): Promise<ChampionDefinition[]> {
+export async function fetchPublishedChampions(options?:{signal?:AbortSignal}): Promise<ChampionDefinition[]> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-  const response = await fetch(`${apiBase}/champions`);
+  const response = await fetch(`${apiBase}/champions`,{signal:options?.signal});
   if (!response.ok) return [];
   const body = await response.json() as { champions?: PublishedChampionRecord[] };
   // Preserve authorized draft champions returned by the account-scoped API.
@@ -220,9 +220,9 @@ export async function fetchPublishedChampions(): Promise<ChampionDefinition[]> {
 }
 
 /** Admin-only AI test pool: PUBLISHED plus DRAFT, never DISABLED. */
-export async function fetchAiTestChampions(): Promise<ChampionDefinition[]> {
+export async function fetchAiTestChampions(options?:{signal?:AbortSignal}): Promise<ChampionDefinition[]> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-  const response = await fetch(`${apiBase}/admin/champions`, { credentials: "include" });
+  const response = await fetch(`${apiBase}/admin/champions`, { credentials: "include",signal:options?.signal });
   if (!response.ok) throw new Error("AI 테스트 Champion 풀을 불러오지 못했습니다.");
   const body = (await response.json()) as { champions?: PublishedChampionRecord[] };
   return (body.champions ?? [])

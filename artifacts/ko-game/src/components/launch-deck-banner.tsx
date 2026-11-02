@@ -286,6 +286,7 @@ export function LaunchDeckBanner({
           )}
         </div>
         <div className="ko-launch-banner__copy">
+          <div className="ko-launch-banner__details">
           <p className="text-xs text-amber-200">
             {kind === "READY"
               ? "현재 출전 중"
@@ -335,6 +336,8 @@ export function LaunchDeckBanner({
               <li>3 AI 연습</li>
             </ol>
           )}
+          </div>
+          <div className="ko-launch-banner__actions">
           <button
             ref={trigger}
             type="button"
@@ -357,6 +360,7 @@ export function LaunchDeckBanner({
               덱 수정
             </button>
           )}
+          </div>
         </div>
       </aside>
       <Dialog

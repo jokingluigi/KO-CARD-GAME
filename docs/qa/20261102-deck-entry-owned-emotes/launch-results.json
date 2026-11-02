@@ -1,0 +1,162 @@
+[
+  {
+    "viewport": {
+      "width": 360,
+      "height": 640
+    },
+    "path": "/",
+    "button": {
+      "width": 64,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 360,
+      "height": 640
+    },
+    "path": "/online",
+    "button": {
+      "width": 71,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "path": "/",
+    "button": {
+      "width": 64,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "path": "/online",
+    "button": {
+      "width": 71,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "path": "/",
+    "button": {
+      "width": 64,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "path": "/online",
+    "button": {
+      "width": 71,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "path": "/",
+    "button": {
+      "width": 64,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "path": "/online",
+    "button": {
+      "width": 71,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "path": "/",
+    "button": {
+      "width": 64,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "path": "/online",
+    "button": {
+      "width": 71,
+      "height": 44,
+      "inside": true,
+      "hit": true
+    },
+    "dialogOpened": true
+  },
+  {
+    "variant": "missing",
+    "path": "/",
+    "allActionsVisible": true
+  },
+  {
+    "variant": "missing",
+    "path": "/online",
+    "allActionsVisible": true
+  },
+  {
+    "variant": "invalid",
+    "path": "/",
+    "allActionsVisible": true
+  },
+  {
+    "variant": "invalid",
+    "path": "/online",
+    "allActionsVisible": true
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "kind": "two Chromium mobile emulations using actual local Draft HTTP APIs",
+  "results": [
+    {
+      "name": "Draft PvP both browsers use persisted seat-specific skins and different opaque card backs",
+      "status": "PASS"
+    },
+    {
+      "name": "Draft image emote ACK and existing polling deliver A to both screens once",
+      "status": "PASS"
+    },
+    {
+      "name": "Draft opponent image emote is delivered through the same independent transport",
+      "status": "PASS"
+    },
+    {
+      "name": "Draft reload restores frozen equipment despite unequip after room creation; mobile fits",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": []
+}

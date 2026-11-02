@@ -1126,6 +1126,7 @@ test("cosmetic snapshots and image emotes also use the real public Draft PvP tra
  {id:'cos-emote-b',type:'IMAGE_EMOTE',name:'드래프트 이모티콘 B',targetId:null,imageAssets:{art:assetB}}];
  await database.insert(schema.cosmeticItemsTable).values(items);
  for(const item of items){const userId=item.id.endsWith('-b')?'cos-b':'cos-a';await database.insert(schema.userCosmeticsTable).values({userId,cosmeticId:item.id});await equipCosmetic(userId,item.type==='CHAMPION_SKIN'?'champion:'+item.targetId:item.type==='CARD_BACK'?'back':'emote:1',item.id);}
+ await database.insert(schema.cosmeticItemsTable).values({id:'cos-owned-only',type:'IMAGE_EMOTE',name:'미장착 보유 이모티콘',imageAssets:{art:assetA}});await database.insert(schema.userCosmeticsTable).values({userId:'cos-a',cosmeticId:'cos-owned-only'});
  const created=await request('cos-a','/draft/sessions','POST',{mode:'PVP'});assert.equal(created.status,201,JSON.stringify(created.body));
  const id=created.body.id;
  // Warm the first player's catalog cache before JOIN; second-player cosmetics
@@ -1139,7 +1140,7 @@ test("cosmetic snapshots and image emotes also use the real public Draft PvP tra
  const a=(await request('cos-a',`/draft/sessions/${id}/battle`)).body,b=(await request('cos-b',`/draft/sessions/${id}/battle`)).body;
  assert.equal(a.type,'MATCH_SNAPSHOT');assert.equal(b.type,'MATCH_SNAPSHOT');assert.deepEqual(a.cosmetics,b.cosmetics);assert.equal(a.cosmetics.PLAYER_ONE.cardBack.id,'cos-back-a');assert.equal(a.cosmetics.PLAYER_TWO.cardBack.id,'cos-back-b');assert.equal(a.state.players[1].hand.hidden,true);assert.equal(b.state.players[0].hand.hidden,true);
  const before=await stored(id);
- const packet={slot:1,requestId:'cosmetic-draft-event'};
+ const packet={itemId:'cos-owned-only',requestId:'cosmetic-draft-event'};
  const sent=await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',packet);assert.equal(sent.status,200,JSON.stringify(sent.body));assert.equal(sent.body.event.imageUrl,assetA);
  assert.equal((await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',packet)).body.event,null);
  assert.equal((await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',{slot:2,requestId:'unowned'})).body.event,null);

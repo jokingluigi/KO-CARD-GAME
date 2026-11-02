@@ -1,0 +1,25 @@
+✔ HTTP login/session and EPIC collection/options serialize correctly (251.338882ms)
+✔ HTTP deck POST/PATCH n9 x1 (31.544321ms)
+✔ HTTP deck POST/PATCH n9 x2 (30.5913ms)
+✔ HTTP deck POST/PATCH n9 x3 (27.739023ms)
+✔ HTTP deck POST/PATCH n9 x4 (24.802283ms)
+✔ HTTP deck POST/PATCH e0 x1 (27.094719ms)
+✔ HTTP deck POST/PATCH e0 x2 (25.669898ms)
+✔ HTTP deck POST/PATCH e0 x3 (16.432604ms)
+✔ HTTP deck POST/PATCH l0 x1 (24.740722ms)
+✔ HTTP deck POST/PATCH l0 x2 (14.588903ms)
+✔ HTTP legend totals, mixed save/load, unauthorized calls and direct bypass rejected (79.245898ms)
+✔ HTTP Admin EPIC create/edit/relogin/read and non-admin denial (74.140424ms)
+✔ HTTP EPIC pack grant and retry are atomic/idempotent (33.105042ms)
+✔ HTTP AI deck and PvP match creation/join accept EPIC catalog (78.951953ms)
+✔ HTTP Admin EPIC pack configuration, publication and forced preview persist (31.727012ms)
+✔ AI completes 100 varied deterministic full matches through legal engine actions (8412.249773ms)
+✔ AI choice is stable when opponent hand contents change but hidden-zone size stays constant (31.390556ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15431.264217

@@ -1,3 +1,4 @@
+import {ownedImageEmote} from './owned-image-emote';
 import { db, draftSessionsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import type { DraftSnapshot } from "@workspace/game-engine";
@@ -24,15 +25,13 @@ export async function sendDraftCosmeticEmote(
   id: string,
   body: unknown,
 ) {
-  const input = body as { requestId?: unknown; slot?: unknown } | null;
+  const input = body as { requestId?: unknown; slot?: unknown;itemId?:unknown } | null;
   if (
     !input ||
     typeof input.requestId !== "string" ||
     !input.requestId.trim() ||
     input.requestId.length > 128 ||
-    !Number.isInteger(input.slot) ||
-    Number(input.slot) < 1 ||
-    Number(input.slot) > 4
+    !((typeof input.itemId==='string'&&input.itemId.trim()&&input.itemId.length<=256&&input.slot===undefined)||(input.itemId===undefined&&Number.isInteger(input.slot)&&Number(input.slot)>=1&&Number(input.slot)<=4))
   )
     throw new CosmeticError(400, "이모티콘 요청을 확인해 주세요.");
   if (channels.get(id)?.maySend(userId, input.requestId) === false) return null;
@@ -59,14 +58,7 @@ export async function sendDraftCosmeticEmote(
   if (row.phase !== "BATTLE" || row.status === "FINISHED")
     throw new CosmeticError(409, "진행 중인 전투가 없습니다.");
   const playerId = seat === 0 ? "PLAYER_ONE" : "PLAYER_TWO";
-  return channel(id).send({
-    matchId: id,
-    userId,
-    playerId,
-    requestId: input.requestId,
-    slot: Number(input.slot),
-    loadout: {
-      emotes: (seat === 0 ? row.firstEmotes : row.secondEmotes) ?? [],
-    },
-  });
+  const itemId=typeof input.itemId==='string'?input.itemId:(seat===0?row.firstEmotes:row.secondEmotes)?.[Number(input.slot)-1]?.id;
+  if(!itemId)return null;
+  return channel(id).resolveAndSend({matchId:id,userId,playerId,requestId:input.requestId},()=>ownedImageEmote(userId,itemId));
 }

@@ -28,7 +28,7 @@ export function isOnlineClientMessage(value: unknown): value is OnlineClientMess
     case "RESYNC":
       return isNonEmptyString(value.matchId);
     case "IMAGE_EMOTE":
-      return isNonEmptyString(value.matchId) && isNonEmptyString(value.requestId,128) && Number.isInteger(value.slot) && Number(value.slot)>=1 && Number(value.slot)<=4;
+      return isNonEmptyString(value.matchId) && isNonEmptyString(value.requestId,128) && ((isNonEmptyString(value.itemId,256)&&value.slot===undefined)||(value.itemId===undefined&&Number.isInteger(value.slot)&&Number(value.slot)>=1&&Number(value.slot)<=4));
     case "MATCH_ACTION":
       return isNonEmptyString(value.matchId) &&
         isNonEmptyString(value.requestId, 128) &&

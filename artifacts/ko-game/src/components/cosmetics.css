@@ -207,3 +207,12 @@
 
 .cosmetics .cosmetic-default-grant {display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;}
 .cosmetics .cosmetic-default-grant input {width:20px;height:20px;min-height:20px;padding:0;flex:none;accent-color:#dcc06c;}
+
+.cosmetic-emote-picker--owned{display:flex;flex-direction:column;gap:8px;width:min(320px,calc(100vw - 16px));max-height:min(420px,calc(100dvh - 16px));overflow:hidden;color:#eee;box-shadow:0 8px 32px #000a;}
+.cosmetic-emote-picker--owned input:not([type=checkbox]){min-height:44px;width:100%;border:1px solid #6f5c33;background:#090909;padding:8px;}
+.cosmetic-owned-emotes{min-height:0;flex:1 1 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-height:min(240px,calc(100dvh - 160px));overflow-y:auto;overscroll-behavior:contain;}
+.cosmetic-owned-emotes button{width:100%;min-width:44px;height:76px;min-height:44px;border:1px solid #5c4d2c;padding:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.cosmetic-owned-emotes img{width:44px;height:44px;object-fit:contain;}.cosmetic-owned-emotes span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;}
+.cosmetic-emote-picker--owned .cosmetic-emote-wide{width:100%;height:44px;min-height:44px;border:1px solid #8b773e;}
+
+.cosmetic-emote-picker--owned>strong,.cosmetic-emote-picker--owned>input,.cosmetic-emote-picker--owned>label,.cosmetic-emote-picker--owned>.cosmetic-emote-wide{flex-shrink:0;}

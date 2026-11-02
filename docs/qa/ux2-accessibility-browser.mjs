@@ -129,6 +129,7 @@ async function setup(p, { missing = false, invalid = false } = {}) {
     else if (path.endsWith("/card-frames")) json = data["card-frames"];
     else if (path.endsWith("/decks/options"))
       json = { cards, champions, isTestAccount: true };
+    else if(path.endsWith("/decks/selected"))json={decks:decks.filter(d=>d.isSelected)};
     else if (path.endsWith("/decks")) json = { decks };
     else if (path.endsWith("/select")) {
       writes.push(path);

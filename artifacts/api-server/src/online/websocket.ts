@@ -282,7 +282,7 @@ async function handleMessage(
   }
 
   if(message.type === "IMAGE_EMOTE"){
-    if(isPrimaryConnection(runtime,connection))sendImageEmote(runtime,connection.userId,message.requestId,message.slot);
+    if(isPrimaryConnection(runtime,connection)){try{await sendImageEmote(runtime,connection.userId,message.requestId,message.itemId??message.slot!);}catch{send(socket,{type:'ERROR',code:'IMAGE_EMOTE_UNAVAILABLE',message:'이모티콘 보유 정보를 확인하지 못했습니다.'});}}
     return;
   }
   try {

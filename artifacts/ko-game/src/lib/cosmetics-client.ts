@@ -74,8 +74,8 @@ export async function cosmeticsRequest<T>(
     init?.signal?.removeEventListener("abort", abort);
   }
 }
-export const fetchCosmetics = () =>
-  cosmeticsRequest<CosmeticInventory>("/cosmetics");
+export const fetchCosmetics = (options?:{signal?:AbortSignal}) =>
+  cosmeticsRequest<CosmeticInventory>("/cosmetics",{signal:options?.signal});
 export async function optionalCosmetics() {
   try {
     return (await fetchCosmetics()).loadout;

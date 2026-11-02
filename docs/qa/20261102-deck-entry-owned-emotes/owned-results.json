@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "moreThanFourUnequipped": true,
+      "bothPvpClientsReceived": true,
+      "privateOwnershipPreserved": true,
+      "defaultImmediatelyAvailable": true,
+      "rotationFits": true,
+      "noEquipmentMutation": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "moreThanFourUnequipped": true,
+      "bothPvpClientsReceived": true,
+      "privateOwnershipPreserved": true,
+      "defaultImmediatelyAvailable": true,
+      "rotationFits": true,
+      "noEquipmentMutation": true
+    }
+  ],
+  "errors": []
+}

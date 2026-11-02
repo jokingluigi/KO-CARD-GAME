@@ -1,0 +1,12 @@
+✔ slow deck GET is retried once and the actual selected response is preserved (31.728787ms)
+✔ unavailable deck GET terminates after two bounded attempts without returning a fake empty deck (20.451512ms)
+✔ server recovery is retried for reads; auth and validation failures are not retried (1.357862ms)
+✔ cancellation prevents a second request and malformed responses are not valid empty decks (0.700248ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 155.301359

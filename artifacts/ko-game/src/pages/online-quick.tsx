@@ -26,7 +26,7 @@ const connectionCopy: Record<OnlineLobbyConnectionState, string> = {
 
 function QuickMatchPage() {
   const [, navigate] = useLocation();
-  const { decks, error: decksError } = useOnlineDecks();
+  const { decks, error: decksError, retry:retryDecks } = useOnlineDecks();
   const selectedDeckMeta=useRef<{id:string;name:string}|null>(null);
   const client = getOnlineLobbyClient();
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
@@ -150,7 +150,7 @@ function QuickMatchPage() {
     >
       {decksError ? (
         <div className="rounded-lg border border-red-900/70 bg-red-950/20 p-5 text-sm text-red-200" data-testid="status-online-decks-error">
-          {decksError}
+          <p>{decksError}</p><button type="button" className="mt-3 min-h-11 border border-amber-600 px-4 text-amber-200" onClick={retryDecks}>다시 시도</button>
         </div>
       ) : decks === null ? (
         <div className="grid gap-3 md:grid-cols-2" data-testid="status-online-decks-loading">

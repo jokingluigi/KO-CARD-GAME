@@ -309,7 +309,7 @@ export function AdminCosmetics() {
               </label>
               <p className="text-xs leading-5 text-neutral-400">
                 활성 이모티콘을 기존·신규 유저에게 자동 지급합니다. 꾸미기
-                목록을 열면 지급되며, 장착 슬롯은 바꾸지 않습니다. 옵션을 꺼도
+                목록을 열면 지급되며, 장착 없이 전투에서 사용할 수 있습니다. 옵션을 꺼도
                 이미 지급된 보유 기록은 유지됩니다.
               </p>
             </fieldset>

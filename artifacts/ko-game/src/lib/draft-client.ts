@@ -215,7 +215,7 @@ export class DraftBattleClient {
   send(message: OnlineLobbyClientMessage): boolean {
     if(message.type==='IMAGE_EMOTE'){
       if(this.matchId!==message.matchId)return false;
-      void draftRequest<{event:ImageEmoteEvent|null}>(`/sessions/${message.matchId}/image-emotes`,'POST',{requestId:message.requestId,slot:message.slot}).then(result=>{if(result.event)this.imageEmote(result.event);}).catch(()=>this.emit({type:'ERROR',code:'IMAGE_EMOTE_UNAVAILABLE',message:'이미지 이모티콘을 전송하지 못했습니다.'}));
+      void draftRequest<{event:ImageEmoteEvent|null}>(`/sessions/${message.matchId}/image-emotes`,'POST',{requestId:message.requestId,...(message.itemId?{itemId:message.itemId}:{slot:message.slot})}).then(result=>{if(result.event)this.imageEmote(result.event);}).catch(()=>this.emit({type:'ERROR',code:'IMAGE_EMOTE_UNAVAILABLE',message:'이미지 이모티콘을 전송하지 못했습니다.'}));
       return true;
     }
     if (message.type === "SUBSCRIBE" || message.type === "RESYNC") {

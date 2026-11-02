@@ -1,0 +1,7 @@
+{
+  "serverHadSelectedDeck": true,
+  "deckRequestDelayedMs": 12500,
+  "timeoutDisplayed": true,
+  "retryButtonCount": 0,
+  "afterErrorAutoClear": "출전 덱이 없어요. 덱 편집기에서 사용할 덱을 지정하세요."
+}

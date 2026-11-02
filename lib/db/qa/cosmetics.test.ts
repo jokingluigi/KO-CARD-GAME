@@ -1259,6 +1259,39 @@ test("default emotes: validated admin option, existing/new owners, persistence, 
  if(previousFourth)await equipCosmetic('player-b','emote:4',previousFourth);
 });
 
+test('selected deck endpoint isolates users and batch resolution remains five reads for many decks',async()=>{
+ const {resolveDecks}=await import('../../../artifacts/api-server/src/routes/decks');
+ const base=(await database.select().from(schema.decksTable).where(eq(schema.decksTable.id,'deck-player-a')))[0]!;
+ const rows=Array.from({length:40},(_,i)=>({...base,id:'batch-deck-'+i,name:'Batched '+i,isSelected:i===0}));
+ await database.update(schema.decksTable).set({isSelected:false}).where(eq(schema.decksTable.userId,'player-a'));
+ await database.insert(schema.decksTable).values(rows);
+ let reads=0;const counting={select:(...args:any[])=>{reads++;return (database.select as any)(...args);}};
+ const resolved=await resolveDecks(rows,'player-a',false,counting as any);assert.equal(reads,5);assert.equal(resolved.length,40);assert.ok(resolved.every(d=>d.cards.length===base.cardDefinitionIds.length));
+ const selected=await api('/decks/selected','player-a');assert.equal(selected.status,200);assert.deepEqual(selected.body.decks.map((d:any)=>d.id),['batch-deck-0']);
+ const other=await api('/decks/selected','player-b');assert.ok(other.body.decks.every((d:any)=>!d.id.startsWith('batch-deck')));
+ assert.equal((await api('/decks/selected','anonymous')).status,401);
+ await database.update(schema.decksTable).set({deletedAt:new Date()}).where(eq(schema.decksTable.id,'batch-deck-0'));assert.equal((await api('/decks/selected','player-a')).body.decks.length,0);
+ await database.delete(schema.decksTable).where(sql`${schema.decksTable.id} LIKE 'batch-deck-%'`);await database.update(schema.decksTable).set({isSelected:true}).where(eq(schema.decksTable.id,'deck-player-a'));
+});
+
+test('unequipped owned image emotes broadcast by ID; unowned/disabled items and client artwork cannot bypass ownership',async()=>{
+ const {ownedImageEmote}=await import('../../../artifacts/api-server/src/lib/owned-image-emote');
+ const made=await api(prefix+'/items','admin','POST',{type:'IMAGE_EMOTE',name:'보유만으로 전송',description:'',targetId:null,imageAssets:{art:uploaded},isActive:true,sortOrder:0});assert.equal(made.status,201);const item=made.body.item;
+ await api(prefix+'/users/player-a/grants','admin','POST',{cosmeticId:item.id,action:'GRANT'});
+ assert.equal((await database.select().from(schema.equippedCosmeticsTable).where(eq(schema.equippedCosmeticsTable.cosmeticId,item.id))).length,0);
+ assert.equal(await ownedImageEmote('player-b',item.id),null);assert.equal(await ownedImageEmote('player-a',registered.CARD_BACK.id),null);
+ const {WebSocket}=require('ws'),sockets:any[]=[],messages:any[][]=[[],[]];
+ for(let i=0;i<2;i++){const ws=new WebSocket(origin.replace('http:','ws:')+'/api/online-matches/ws',{headers:{cookie:cookies[i?'player-b':'player-a']}});sockets.push(ws);ws.on('message',(b:Buffer)=>messages[i]!.push(JSON.parse(b.toString())));await new Promise(r=>ws.once('open',r));ws.send(JSON.stringify({type:'SUBSCRIBE',matchId:runtime.matchId}));}
+ const wait=async(check:()=>boolean)=>{const until=Date.now()+5000;while(!check()){if(Date.now()>until)throw Error('owned-emote websocket timeout');await new Promise(r=>setTimeout(r,20));}};
+ await wait(()=>messages.every(m=>m.some(v=>v.type==='MATCH_SNAPSHOT')));
+ const state=JSON.stringify(runtime.state),version=runtime.version;
+ sockets[0].send(JSON.stringify({type:'IMAGE_EMOTE',matchId:runtime.matchId,requestId:'owned-only',itemId:item.id,imageUrl:'https://forged.invalid/image.png'}));
+ await wait(()=>messages.every(m=>m.some(v=>v.requestId==='owned-only')));for(const m of messages)assert.equal(m.find(v=>v.requestId==='owned-only').imageUrl,uploaded);
+ sockets[1].send(JSON.stringify({type:'IMAGE_EMOTE',matchId:runtime.matchId,requestId:'not-owned',itemId:item.id}));await new Promise(r=>setTimeout(r,100));assert.ok(messages.every(m=>!m.some(v=>v.requestId==='not-owned')));
+ await api(prefix+'/items/'+item.id,'admin','PATCH',{...item,isActive:false});assert.equal(await ownedImageEmote('player-a',item.id),null);
+ assert.equal(JSON.stringify(runtime.state),state);assert.equal(runtime.version,version);for(const ws of sockets)ws.close();
+});
+
 // Reuse this isolated database for the existing pack transaction regression.
 await import("../../../artifacts/api-server/src/routes/packs.test");
 

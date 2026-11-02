@@ -79,13 +79,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return await response.json() as T;
 }
 
-export function fetchAIDecks(testDeckId?: string | null): Promise<{
+export function fetchAIDecks(testDeckId?: string | null, options?:{signal?:AbortSignal}): Promise<{
   decks: AIDeck[];
   extraCards: Array<Parameters<typeof import("@/game/cards/published-cards").cardRecordToDefinition>[0]>;
   extraChampions: Array<Parameters<typeof import("@/game/champions/published-champions").championRecordToDefinition>[0]>;
 }> {
   const query = testDeckId ? `?testDeckId=${encodeURIComponent(testDeckId)}` : "";
-  return request(`/ai-decks${query}`);
+  return request(`/ai-decks${query}`,{signal:options?.signal});
 }
 
 export function fetchAdminAIDecks(): Promise<{ decks: AIDeck[] }> {

@@ -54,7 +54,7 @@ export type OnlineMatchMessage =
 export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage | {type:'SITE_PRESENCE';otherUsersOnline:boolean};
 
 export type OnlineLobbyClientMessage =
- | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot:number}
+ | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot?:number;itemId?:string}
   | { type: "JOIN_QUICK_QUEUE"; deckId: string }
   | { type: "LEAVE_QUICK_QUEUE" }
   | { type: "CREATE_PRIVATE_ROOM"; deckId: string }

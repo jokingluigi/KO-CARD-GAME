@@ -61,7 +61,7 @@ function RoomMember({
 
 function FriendlyMatchPage() {
   const [, navigate] = useLocation();
-  const { decks, error: decksError } = useOnlineDecks();
+  const { decks, error: decksError, retry:retryDecks } = useOnlineDecks();
   const selectedDeckMeta=useRef<{id:string;name:string}|null>(null);
   const client = getOnlineLobbyClient();
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
@@ -207,7 +207,7 @@ function FriendlyMatchPage() {
       status={<span className={`mt-2 inline-flex items-center gap-1.5 text-[0.62rem] font-black ${connection === "open" ? "text-emerald-400" : "text-neutral-500"}`} data-testid="status-online-connection">{connection === "open" ? "SERVER CONNECTED" : "SERVER UNAVAILABLE"}</span>}
     >
       {decksError ? (
-        <div className="rounded-lg border border-red-900/70 bg-red-950/20 p-5 text-sm text-red-200" data-testid="status-online-decks-error">{decksError}</div>
+        <div className="rounded-lg border border-red-900/70 bg-red-950/20 p-5 text-sm text-red-200" data-testid="status-online-decks-error"><p>{decksError}</p><button type="button" className="mt-3 min-h-11 border border-amber-600 px-4 text-amber-200" onClick={retryDecks}>다시 시도</button></div>
       ) : decks === null ? (
         <div className="h-48 animate-pulse rounded-lg bg-neutral-900" data-testid="status-online-decks-loading" />
       ) : room ? (

@@ -142,16 +142,16 @@ export function OnlineAuthGate({ children }: { children: (user: AuthUser) => Rea
 export function useOnlineDecks() {
   const [decks, setDecks] = useState<Deck[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt,setAttempt]=useState(0);
+  const retry=useCallback(()=>setAttempt(x=>x+1),[]);
   useEffect(() => {
-    let active = true;
-    fetchDecks()
-      .then((value) => active && setDecks(value))
-      .catch((reason) => active && setError(reason instanceof Error ? reason.message : "덱을 불러오지 못했습니다."));
-    return () => {
-      active = false;
-    };
-  }, []);
-  return { decks, error };
+    const controller=new AbortController();setError(null);setDecks(null);
+    fetchDecks({signal:controller.signal})
+      .then(value=>{if(!controller.signal.aborted)setDecks(value);})
+      .catch(reason=>{if(!controller.signal.aborted)setError(reason instanceof Error?reason.message:'덱을 불러오지 못했습니다.');});
+    return ()=>controller.abort();
+  }, [attempt]);
+  return { decks, error, retry };
 }
 
 export function useAvailableDeckSelection(

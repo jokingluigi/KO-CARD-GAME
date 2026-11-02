@@ -1,3 +1,4 @@
+import {readDeckList,type DeckReadOptions} from './deck-read';
 export type DeckCard = {
   keywords?: import('../game/effects/types').CardKeyword[];
   effectConfig?: Record<string, unknown> | null;
@@ -104,14 +105,11 @@ export function fetchDeckOptions(): Promise<DeckOptions> {
   return request<DeckOptions>("/options");
 }
 
-export async function fetchDecks(): Promise<Deck[]> {
-  try {
-    const body = await request<{ decks: Deck[] }>("",{signal:AbortSignal.timeout(12000)});
-    return body.decks;
-  } catch(error) {
-    if(error instanceof Error&&error.name==='TimeoutError')throw new Error('출전 덱 확인 응답이 늦어지고 있어요. 연결을 확인한 뒤 다시 시도해 주세요.');
-    throw error;
-  }
+export function fetchDecks(options?:DeckReadOptions):Promise<Deck[]> {
+  return readDeckList(decksApiBase,options);
+}
+export function fetchSelectedDecks(options?:DeckReadOptions):Promise<Deck[]> {
+  return readDeckList(decksApiBase+'/selected',options);
 }
 
 export function saveDeck(payload: {
