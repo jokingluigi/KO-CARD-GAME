@@ -206,6 +206,7 @@ try {
    await p.goto(qaOrigin+path);
    const banner=p.getByTestId('launch-deck-banner');await banner.getByText('출전 검증 덱',{exact:true}).waitFor();
    const button=banner.getByRole('button',{name:'덱 변경',exact:true});await button.waitFor();
+   await button.click({trial:true});
    const geometry=await button.evaluate(n=>{const r=n.getBoundingClientRect(),a=n.closest('aside').getBoundingClientRect();return {width:r.width,height:r.height,inside:r.top>=a.top&&r.bottom<=a.bottom&&r.left>=a.left&&r.right<=a.right,hit:n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};});
    assert.ok(geometry.inside&&geometry.hit,JSON.stringify({width,height,path,geometry}));assert.ok(geometry.width>=44&&geometry.height>=44);
    await p.screenshot({path:`${out}/${path==='/'?'home':'battle'}-${width}.png`});await button.click();const picker=p.getByRole('dialog',{name:'출전 덱 선택'});await picker.waitFor();await picker.locator('article').filter({hasText:'첫 번째 덱'}).getByRole('button',{name:'이 덱 사용',exact:true}).click();await picker.waitFor({state:'hidden'});await banner.getByText('첫 번째 덱',{exact:true}).waitFor();assert.equal(x.writes.length,1);assert.equal(x.decks.find(d=>d.isSelected).id,'other');
