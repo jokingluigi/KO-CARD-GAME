@@ -1,3 +1,4 @@
+import {GameGuideDialogTrigger} from './game-guide/game-guide-dialog';
 import {useBattleEventCaption} from "./player-ux/use-battle-event-caption";
 import {AttackForecast,LocalActionFeedback,useBattleContextGuide} from './player-ux/battle-decision-tools';
 import {TargetSelectionFocus} from "./player-ux/target-selection-focus";
@@ -1507,6 +1508,7 @@ export function GameStatePreview({
                        className="w-full rounded border border-amber-600 bg-amber-950/40 px-3 py-2 text-xs font-black text-amber-200">
                        경기 튜토리얼
                      </button>
+                     <GameGuideDialogTrigger/>
                       {onReturnToAdmin && (
                         <button
                           type="button"
@@ -1959,6 +1961,8 @@ function HandCard({
          countdownRemaining={card.countdownRemaining}
          countdownResolved={card.countdownResolved}
        isChampionToken={card.isChampionToken}
+                      isToken={card.isToken}
+                      isSilenceImmune={card.isSilenceImmune}
        highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}
       tabIndex={0}
@@ -2136,6 +2140,8 @@ function BoardSlot({
          countdownRemaining={card.countdownRemaining}
          countdownResolved={card.countdownResolved}
           isChampionToken={card.isChampionToken}
+                      isToken={card.isToken}
+                      isSilenceImmune={card.isSilenceImmune}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
           containerRef={cardRef}
          onClick={() => onClick(card.instanceId)}
@@ -2280,6 +2286,8 @@ function GraveyardModal({
                       countdownRemaining={card.countdownRemaining}
                       countdownResolved={card.countdownResolved}
                       isChampionToken={card.isChampionToken}
+                      isToken={card.isToken}
+                      isSilenceImmune={card.isSilenceImmune}
                       size="board"
                       className="w-full cursor-pointer bg-black"
                       tabIndex={0}

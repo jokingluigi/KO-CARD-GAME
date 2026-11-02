@@ -1,3 +1,5 @@
+import {cardSilenceProtection} from '../lib/card-protection-display';
+import {SilenceImmunityNotice} from './silence-immunity-notice';
 import {matchTurnNumber} from "@workspace/game-engine/rules";
 import {useCosmeticImage} from './cosmetic-battle';
 import { CardRulesText } from './card-rules-text';
@@ -392,6 +394,8 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
          countdownRemaining={card.countdownRemaining}
          countdownResolved={card.countdownResolved}
          isChampionToken={card.isChampionToken}
+         isToken={card.isToken}
+         isSilenceImmune={card.isSilenceImmune}
       />
       </FullCardArtwork>
       <div className="grid grid-cols-3 gap-2">
@@ -421,6 +425,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           </div>
         )}
       </InspectorSection>
+      <SilenceImmunityNotice {...cardSilenceProtection(card,definition)}/>
       {tags.length > 0 && (
         <InspectorSection title="태그" tone="cyan">
           <div className="flex flex-wrap gap-2">

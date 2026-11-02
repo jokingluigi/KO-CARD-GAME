@@ -1,3 +1,6 @@
+import {cardSilenceProtection} from '../lib/card-protection-display';
+import {getCardDefinition} from '../game/cards/test-cards';
+import {SilenceImmunityNotice} from './silence-immunity-notice';
 import {RelatedCards} from "./player-tools/related-cards";
 import {WishButton} from "./player-tools/wishlist";
 import {useDetailFlight} from "./physical-feedback";
@@ -16,6 +19,9 @@ import {
 import { cardTypeLabel, normalizeCardRulesText } from "@/lib/display-labels";
 
 export type CardDetailRecord = {
+  isToken?:boolean;
+  isChampionToken?:boolean;
+  isSilenceImmune?:boolean;
   keywords?: import('../game/effects/types').CardKeyword[];
   effectConfig?: Record<string, unknown> | null;
   id: string;
@@ -91,6 +97,9 @@ export function CardDetailDialog({
               <FullCardArtwork name={card.name} imageUrl={card.imageUrl}>
               <CardRenderer
                 cardId={card.id}
+                isToken={card.isToken}
+                isChampionToken={card.isChampionToken}
+                isSilenceImmune={card.isSilenceImmune}
                 keywords={card.keywords}
                 keywordConfig={card.effectConfig}
                 name={card.name}
@@ -122,6 +131,7 @@ export function CardDetailDialog({
                     </>
                   )}
                 </div>
+                <SilenceImmunityNotice {...cardSilenceProtection(card,getCardDefinition(card.id))}/>
                 {card.tags?.length ? (
                   <div>
                     <p className="text-[10px] font-black tracking-wider text-neutral-500">태그</p>

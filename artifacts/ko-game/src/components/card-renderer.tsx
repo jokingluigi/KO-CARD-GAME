@@ -1,3 +1,6 @@
+import {cardSilenceProtection} from '../lib/card-protection-display';
+import {SILENCE_IMMUNITY_DESCRIPTION} from './silence-immunity-notice';
+import {getCardDefinition} from '../game/cards/test-cards';
 import {rememberCardOrigin} from "./physical-feedback";
 import "./physical-card.css";
 import {useCosmeticImage} from './cosmetic-battle';
@@ -182,6 +185,8 @@ export function CardRenderer({
   countdownResolved = false,
   countdownTurns,
   isChampionToken = false,
+  isToken = false,
+  isSilenceImmune = false,
   onClick,
   onKeyDown,
   tabIndex,
@@ -226,6 +231,8 @@ export function CardRenderer({
   countdownResolved?: boolean;
   countdownTurns?: number;
   isChampionToken?: boolean;
+  isToken?:boolean;
+  isSilenceImmune?:boolean;
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   tabIndex?: number;
@@ -276,7 +283,9 @@ export function CardRenderer({
     setFrameFailed(false);
   }, [frameSettings?.frameUrl, normalizedCardType, normalizedRarity]);
   const frameUrl = frameFailed ? bundledFrameUrl : frameSettings?.frameUrl ?? bundledFrameUrl;
-  const keywordBadges = [
+  const silenceProtection=cardSilenceProtection({rarity,isToken,isChampionToken,isSilenceImmune},cardId?getCardDefinition(cardId):undefined);
+  const keywordBadges: string[] = [
+    ...(silenceProtection.immune?["SILENCE_IMMUNE"]:[]),
     ...visibleRuntimeKeywords,
     ...(isSilenced ? ["SILENCE" as CardKeyword] : []),
     ...(isStunned ? ["STUN" as CardKeyword] : []),
@@ -284,6 +293,7 @@ export function CardRenderer({
   ].filter((keyword, index, all) => all.indexOf(keyword) === index);
   const keywordLabels: Record<string, string> = {
     ...KEYWORD_RULE_LABELS,
+    SILENCE_IMMUNE:"침묵 면역",
     TAUNT: "도발",
     RUSH: "러쉬",
     SURPRISE: "기습",
@@ -486,6 +496,7 @@ export function CardRenderer({
               <span
                 key={keyword}
                  className={`max-w-full rounded border px-0.5 py-0.5 text-[clamp(0.45rem,0.7vw,0.65rem)] font-extrabold leading-none shadow-lg ${
+                  keyword === "SILENCE_IMMUNE" ? "border-amber-200 bg-neutral-950/95 text-amber-100" :
                   keyword === "TAUNT" ? "border-cyan-200 bg-cyan-950/90 text-cyan-100" :
                   keyword === "RUSH" ? "border-amber-200 bg-amber-950/90 text-amber-100" :
                   keyword === "SURPRISE" ? "border-fuchsia-200 bg-fuchsia-950/90 text-fuchsia-100" :
@@ -495,7 +506,7 @@ export function CardRenderer({
                   String(keyword) === "DISABLED" ? "border-slate-200 bg-slate-950/90 text-slate-100" :
                   "border-red-200 bg-red-950/90 text-red-100"
                 }`}
-                title={keywordLabels[keyword] ?? keyword}
+                title={keyword === "SILENCE_IMMUNE" ? SILENCE_IMMUNITY_DESCRIPTION : keywordLabels[keyword] ?? keyword}
               >
                 {keywordLabels[keyword] ?? keyword}
               </span>

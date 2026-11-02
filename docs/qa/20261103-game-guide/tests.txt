@@ -1,0 +1,22 @@
+✔ guide topics are uniquely addressable and include references for content maintenance (1.170986ms)
+✔ search understands unspaced immunity, case and multiple terms without exposing internal source paths (6.372983ms)
+✔ category selection does not erase search intent and deck limits follow canonical constants (0.328707ms)
+✔ champion rarity token keeps text, keywords and buffs on direct and structured silence, owner 0 (25.577482ms)
+✔ champion rarity token keeps text, keywords and buffs on direct and structured silence, owner 1 (3.94697ms)
+✔ ordinary tokens, legendary tokens and non-token champion rarity do not gain silence immunity (8.367854ms)
+✔ old snapshots with false immunity are protected by authoritative definition; no new definition path inferred (0.971009ms)
+✔ leaving board restores intrinsic immunity and direct champion deployment does not overwrite it (23.292014ms)
+✔ combined weakening still reduces attack and stuns, but cannot silence a champion rarity token (6.120913ms)
+✔ silence immunity never grants protection from retirement, destruction or removal (11.148695ms)
+✔ champion rarity token displays innate immunity even in a legacy snapshot with a false flag (10.239371ms)
+✔ ordinary and legendary tokens and non-token champion rarity are not advertised as immune (0.403328ms)
+✔ an explicit runtime immunity remains visible without falsely calling it a champion-token trait (0.189431ms)
+✔ registered token definition supplies identity absent from a static preview record (0.23613ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3344.860904

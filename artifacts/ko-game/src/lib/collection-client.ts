@@ -1,5 +1,8 @@
 import type { CosmeticItem } from "@workspace/cosmetics";
 export type CollectionCard = {
+  isToken?:boolean;
+  isChampionToken?:boolean;
+  isSilenceImmune?:boolean;
   keywords?: import('../game/effects/types').CardKeyword[];
   effectConfig?: Record<string, unknown> | null;
   id: string;

@@ -139,7 +139,7 @@ export function AuthPage({
           </p>
         </header>
 
-        {!loginOnly&&<section className="ko-auth-introduction"><h2>선수 네 명, 챔피언 하나.<br/>다음 한 수로 뒤집는 카드 배틀.</h2><p>선수를 소환하고 고유능력을 활용해 상대 챔피언을 KO시키세요.</p><Link href="/practice" className="ko-surface-action">로그인 없이 직접 배워보기 →</Link><small>연습 결과와 보상은 실제 계정에 반영되지 않아요.</small></section>}
+        {!loginOnly&&<section className="ko-auth-introduction"><h2>선수 네 명, 챔피언 하나.<br/>다음 한 수로 뒤집는 카드 배틀.</h2><p>선수를 소환하고 고유능력을 활용해 상대 챔피언을 KO시키세요.</p><Link href="/practice" className="ko-surface-action">로그인 없이 직접 배워보기 →</Link><Link href="/guide" className="ko-auth-recovery-link">규칙 도움말 먼저 읽기 →</Link><small>연습 결과와 보상은 실제 계정에 반영되지 않아요.</small></section>}
         <div className="mb-7 flex border-b border-neutral-800">
           <button
             type="button"

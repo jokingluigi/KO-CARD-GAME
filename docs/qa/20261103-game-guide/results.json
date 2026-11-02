@@ -1,0 +1,56 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "publicGuide": true,
+    "search": true,
+    "categories": true,
+    "emptyStateRecovery": true,
+    "noOverflow": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "publicGuide": true,
+    "search": true,
+    "categories": true,
+    "emptyStateRecovery": true,
+    "noOverflow": true
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "publicGuide": true,
+    "search": true,
+    "categories": true,
+    "emptyStateRecovery": true,
+    "noOverflow": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "publicGuide": true,
+    "search": true,
+    "categories": true,
+    "emptyStateRecovery": true,
+    "noOverflow": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "actualExistingMatch": true,
+    "tokenBadge": true,
+    "inspectorRule": true,
+    "inBattleGuide": true,
+    "returnsToMatch": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualExistingMatch": true,
+    "tokenBadge": true,
+    "inspectorRule": true,
+    "inBattleGuide": true,
+    "returnsToMatch": true
+  }
+]

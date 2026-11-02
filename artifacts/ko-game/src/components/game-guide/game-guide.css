@@ -1,0 +1,169 @@
+.ko-guide {
+  color: #eee5d4;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.ko-guide-search > label {
+  display: block;
+  margin-bottom: 8px;
+  color: #dbd3c3;
+  font-size: 13px;
+}
+.ko-guide-search > div {
+  position: relative;
+}
+.ko-guide-search input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #ffffff35;
+  border-radius: 10px;
+  background: #ffffff05;
+  color: #fff;
+  padding: 12px 52px 12px 14px;
+  font-size: 16px;
+}
+.ko-guide-search button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  min-width: 48px;
+  min-height: 48px;
+}
+.ko-guide-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.ko-guide button,
+.ko-guide summary {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+.ko-guide-categories button,
+.ko-guide-shortcuts button,
+.ko-guide-empty button {
+  padding: 8px 14px;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #c9c1b1;
+}
+.ko-guide-categories button[aria-pressed="true"] {
+  border-color: #d8be81;
+  background: #d8be811a;
+  color: #f2dba4;
+}
+.ko-guide-shortcuts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #ffffff15;
+}
+.ko-guide-shortcuts > span {
+  font-size: 12px;
+  color: #aaa69c;
+  margin-right: 8px;
+}
+.ko-guide-count {
+  font-size: 12px;
+  color: #aaa69c;
+  margin: 16px 0;
+}
+.ko-guide-entries {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.ko-guide-entries details {
+  min-width: 0;
+  border: 1px solid #ffffff20;
+  border-radius: 10px;
+  background: #ffffff03;
+}
+.ko-guide-entries summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-size: 14px;
+  color: #eee5d4;
+}
+.ko-guide-entries details[open] {
+  border-color: #c5aa6b80;
+}
+.ko-guide-entries details > div {
+  padding: 0 18px 18px;
+  color: #cbc5b9;
+  overflow-wrap: anywhere;
+}
+.ko-guide-entries p {
+  margin: 8px 0;
+}
+.ko-guide-example {
+  border-left: 2px solid #d8be81;
+  padding: 8px 12px;
+  background: #d8be8108;
+}
+.ko-guide-example strong {
+  display: block;
+  color: #e7d09d;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.ko-guide-empty {
+  padding: 24px;
+  border: 1px dashed #ffffff30;
+  border-radius: 10px;
+}
+.ko-guide-empty p {
+  margin: 12px 0;
+}
+.ko-guide-footer,
+.ko-guide-battle-note {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #aaa69c;
+  margin: 20px 0;
+}
+.ko-guide-battle-note {
+  color: #f3d399;
+  border-left: 2px solid #c5aa6b;
+  padding-left: 12px;
+}
+.ko-guide :is(input, button, summary):focus-visible {
+  outline: 2px solid #e8ce93;
+  outline-offset: 3px;
+}
+.ko-silence-immunity-notice {
+  border: 1px solid #d8be8150;
+  border-radius: 8px;
+  background: #d8be810a;
+  padding: 12px;
+  color: #e0d5bd;
+  line-height: 1.7;
+  font-size: 14px;
+}
+.ko-silence-immunity-notice strong {
+  display: block;
+  color: #f2d99e;
+  margin-bottom: 4px;
+}
+.ko-silence-immunity-notice p {
+  margin: 0;
+}
+@media (min-width: 1000px) {
+  .ko-guide-entries {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.ko-guide-practice-link {
+  white-space: nowrap;
+}
+.ko-guide-search input::-webkit-search-cancel-button,
+.ko-guide-search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
