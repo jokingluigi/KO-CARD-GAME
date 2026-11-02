@@ -30,3 +30,11 @@
 ## 소스
 
 `ko-game/src/pages/cosmetics.tsx`, 신규 `components/wardrobe.css`, `components/cosmetic-battle.tsx`, `components/cosmetics.css`, `components/game-state-preview.tsx`, `components/cosmetic-preview.tsx`, 격리 QA 스크립트. 공유 preview의 새 크기 인자는 이 화면에서만 사용하며 관리자 기본 크기는 유지한다. 서버/DB 스키마/전투 엔진/상품·확률·보상 정책 변경 없음.
+
+## 운영 반영
+
+기존 상시 배포 승인에 따라 프런트 소스 `16cd558ba29962d72a6f2b3de35db1609c601920`를 운영에 반영했다. live, health 200, JS/CSS 121개를 로컬 운영 빌드와 SHA-256 대조했다. 점검 설정은 배포 전후 false로 유지했다. API 변경이 없어 서버는 다시 배포하지 않았다. main 병합·운영 DB 수동 변경 없음. 배포 전 점검 상태 GET의 첫 30초 확인은 시간 초과되어 재확인 후 정상 응답 상태에서 진행했다.
+
+운영 주소의 실제 번들에서 390×844·1440×1000의 새 목록·선택 상세·불투명 모바일 다이얼로그·넘침 없음을 확인했다. 운영 번들 AI 경로/엔진 390×844·1440×900에서도 말풍선과 만료를 확인했다. 계정·보유 목록·전투 시작 API 및 WS는 격리 응답이며 운영 쓰기를 전송하지 않았다. 이미지 미리보기에는 프로젝트의 기존 원화를 브라우저에서 제공했다. 실제 운영 스킨 생성/장착을 수행한 결과가 아니다. ignoreHTTPSErrors를 사용했으므로 TLS 검사 결과로 간주하지 않는다.
+
+[배포 기록](20261102-wardrobe-emote-front-deployment.json) · [운영 파일 화면 검사](20261102-wardrobe-emote/deployed-gallery-review-results.json) · [운영 파일 말풍선 검사](20261102-wardrobe-emote/deployed-ai-results.json) · [운영 파일 모바일 화면](20261102-wardrobe-emote/deployed-gallery-champions-390.png)

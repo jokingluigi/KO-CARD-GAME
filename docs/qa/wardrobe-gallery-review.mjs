@@ -1,12 +1,20 @@
 /** Read-only inventory fixture, existing project illustrations, actual wardrobe page. */
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { chromium } from "./black-gold-playwright.mjs";
-const fixture = JSON.parse(
-    await readFile("qa-results/cosmetics/fixture.json", "utf8"),
-  ),
-  origin = process.env.KO_COSMETICS_FRONTEND;
-assert.equal(new URL(origin).hostname, "127.0.0.1");
+const live = process.env.KO_WARDROBE_LIVE === "1";
+const fixture = live
+  ? null
+  : JSON.parse(await readFile("qa-results/cosmetics/fixture.json", "utf8"));
+const origin = live
+  ? "https://ko-card-game-vr69.onrender.com"
+  : process.env.KO_COSMETICS_FRONTEND;
+assert.ok(live || new URL(origin).hostname === "127.0.0.1");
+const output = live
+  ? "qa-results/wardrobe-emote-live"
+  : "qa-results/wardrobe-emote";
+await mkdir(output, { recursive: true });
+const blockedWrites = [];
 const data = JSON.parse(
   await readFile("artifacts/ko-game/qa/art-direction-data.json", "utf8"),
 );
@@ -67,16 +75,45 @@ const inventory = {
   },
 };
 const browser = await chromium.launch(),
-  results = [];
+  results = [],
+  errors = [];
 try {
   for (const [width, height] of [
     [390, 844],
     [1440, 1000],
   ]) {
-    const c = await browser.newContext({ viewport: { width, height } });
-    const [name, ...value] = fixture.cookies["player-a"].split("=");
-    await c.addCookies([{ name, value: value.join("="), url: origin }]);
+    const c = await browser.newContext({
+      viewport: { width, height },
+      ignoreHTTPSErrors: live,
+    });
+    if (fixture) {
+      const [name, ...value] = fixture.cookies["player-a"].split("=");
+      await c.addCookies([{ name, value: value.join("="), url: origin }]);
+    } else
+      await c.route("**/api/**", (r) => {
+        const path = new URL(r.request().url()).pathname;
+        if (r.request().method() !== "GET") {
+          blockedWrites.push(path);
+          return r.abort();
+        }
+        let json = {};
+        if (path.endsWith("/auth/me"))
+          json = {
+            authenticated: true,
+            user: {
+              id: "isolated-wardrobe-view",
+              nickname: "화면 검증",
+              role: "USER",
+            },
+          };
+        else if (path.endsWith("/server-status"))
+          json = { enabled: false, allowed: true };
+        else if (path.endsWith("/cosmetics")) json = inventory;
+        else if (path.endsWith("/card-frames")) json = data["card-frames"];
+        return r.fulfill({ json });
+      });
     const p = await c.newPage();
+    p.on("pageerror", (e) => errors.push(e.message));
     await p.route("**/api/cosmetics", (r) => r.fulfill({ json: inventory }));
     await p.route("**/api/cosmetics/equipment", (r) => r.abort());
     await p.route("**/wardrobe-review/*", async (r) => {
@@ -95,7 +132,7 @@ try {
         Promise.all(ns.map((n) => n.decode().catch(() => {}))),
       );
     await p.screenshot({
-      path: `qa-results/wardrobe-emote/gallery-champions-${width}.png`,
+      path: `${output}/gallery-champions-${width}.png`,
       fullPage: true,
       animations: "disabled",
     });
@@ -134,7 +171,7 @@ try {
       );
       assert.equal(surface.opacity, "1");
       await p.screenshot({
-        path: `qa-results/wardrobe-emote/champion-detail-${width}.png`,
+        path: `${output}/champion-detail-${width}.png`,
         animations: "disabled",
       });
       await detail.getByRole("button", { name: "닫기", exact: true }).click();
@@ -148,7 +185,7 @@ try {
         Promise.all(ns.map((n) => n.decode().catch(() => {}))),
       );
     await p.screenshot({
-      path: `qa-results/wardrobe-emote/gallery-cards-${width}.png`,
+      path: `${output}/gallery-cards-${width}.png`,
       fullPage: true,
       animations: "disabled",
     });
@@ -161,13 +198,16 @@ try {
       width,
       height,
       readOnlyInventoryFixture: true,
+      deployedBundle: live,
+      productionWritesSent: 0,
       existingIllustrations: true,
       noHorizontalOverflow: true,
     });
     await c.close();
   }
+  assert.deepEqual(errors, []);
   await writeFile(
-    "qa-results/wardrobe-emote/gallery-review-results.json",
+    output + "/gallery-review-results.json",
     JSON.stringify(results, null, 2),
   );
   console.log(JSON.stringify(results));

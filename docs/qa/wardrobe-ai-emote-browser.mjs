@@ -55,14 +55,23 @@ const art =
 const liveContent = process.env.KO_QA_HOME_MAIN_CONTENT
   ? JSON.parse(await readFile(process.env.KO_QA_HOME_MAIN_CONTENT, "utf8"))
   : null;
-const qaOrigin=process.env.KO_QA_ORIGIN??"http://127.0.0.1:5186";
-assert.ok(["http://127.0.0.1:5186","https://ko-card-game-vr69.onrender.com"].includes(qaOrigin));
+const qaOrigin = process.env.KO_QA_ORIGIN ?? "http://127.0.0.1:5186";
+assert.ok(
+  ["http://127.0.0.1:5186", "https://ko-card-game-vr69.onrender.com"].includes(
+    qaOrigin,
+  ),
+);
 const b = await chromium.launch(),
-  out = process.env.KO_QA_OUT??"qa-results/wardrobe-ai-emote",
+  out = process.env.KO_QA_OUT ?? "qa-results/wardrobe-ai-emote",
   results = [];
 await mkdir(out, { recursive: true });
-async function setup(p, { missing = false, invalid = false, scenario="normal" } = {}) {
- let blocked=scenario==="failure",deckReads=0,selectedReads=0;
+async function setup(
+  p,
+  { missing = false, invalid = false, scenario = "normal" } = {},
+) {
+  let blocked = scenario === "failure",
+    deckReads = 0,
+    selectedReads = 0;
   let decks = [
       makeDeck("other", "첫 번째 덱", false),
       makeDeck("selected", "출전 검증 덱", !missing),
@@ -99,10 +108,23 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
         body: await readFile(process.env.KO_QA_HOME_BACKGROUND),
       });
     }
-    if(q.method()==='GET'&&(path.endsWith('/decks')||path.endsWith('/decks/selected'))){
-      deckReads++;if(path.endsWith('/selected'))selectedReads++;
-      if(blocked)return r.fulfill({status:503,json:{message:'덱 서버 연결이 지연되고 있어요.'}});
-      if(scenario==='slow'&&selectedReads===1&&path.endsWith('/selected'))await new Promise(r=>setTimeout(r,12500));
+    if (
+      q.method() === "GET" &&
+      (path.endsWith("/decks") || path.endsWith("/decks/selected"))
+    ) {
+      deckReads++;
+      if (path.endsWith("/selected")) selectedReads++;
+      if (blocked)
+        return r.fulfill({
+          status: 503,
+          json: { message: "덱 서버 연결이 지연되고 있어요." },
+        });
+      if (
+        scenario === "slow" &&
+        selectedReads === 1 &&
+        path.endsWith("/selected")
+      )
+        await new Promise((r) => setTimeout(r, 12500));
     }
     let json = {};
     if (path.endsWith("/auth/me"))
@@ -126,7 +148,19 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
     else if (path.endsWith("/champions")) json = { champions };
     else if (path.endsWith("/cosmetics"))
       json = {
-        owned: [{ item: skin },{item:{id:"local-owned",type:"IMAGE_EMOTE",name:"보유만 한 이모티콘",imageAssets:{art},isActive:true,sortOrder:1}}],
+        owned: [
+          { item: skin },
+          {
+            item: {
+              id: "local-owned",
+              type: "IMAGE_EMOTE",
+              name: "보유만 한 이모티콘",
+              imageAssets: { art },
+              isActive: true,
+              sortOrder: 1,
+            },
+          },
+        ],
         loadout: {
           version: 1,
           skins: { ["champion:" + champion.id]: skin },
@@ -137,7 +171,8 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
     else if (path.endsWith("/card-frames")) json = data["card-frames"];
     else if (path.endsWith("/decks/options"))
       json = { cards, champions, isTestAccount: true };
-    else if(path.endsWith("/decks/selected"))json={decks:decks.filter(d=>d.isSelected)};
+    else if (path.endsWith("/decks/selected"))
+      json = { decks: decks.filter((d) => d.isSelected) };
     else if (path.endsWith("/decks")) json = { decks };
     else if (path.endsWith("/select")) {
       writes.push(path);
@@ -151,7 +186,15 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
         d.id === id ? { ...d, ...q.postDataJSON() } : d,
       );
       json = { deck: decks.find((d) => d.id === id) };
-    } else if(path.endsWith("/draft"))json={enabled:true,config:{},cards:[],champions:[],poolError:null,currentId:null};
+    } else if (path.endsWith("/draft"))
+      json = {
+        enabled: true,
+        config: {},
+        cards: [],
+        champions: [],
+        poolError: null,
+        currentId: null,
+      };
     else if (path.endsWith("/ai-decks"))
       json = { decks: [ai], extraCards: [], extraChampions: [] };
     else if (path.endsWith("/game-media")) json = { backgrounds: [], bgms: [] };
@@ -176,14 +219,33 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
       state.players.forEach((p) => (p.mulliganUsed = true));
       json = { state, difficulty: "NORMAL" };
     }
-    return r.fulfill({ json }).catch(()=>{});
+    return r.fulfill({ json }).catch(() => {});
   });
   await p.routeWebSocket("**/api/online-matches/ws**", (ws) =>
     ws.onMessage((raw) => {
       const m = JSON.parse(String(raw));
       messages.push(m);
       if (m.type === "PING") ws.send(JSON.stringify({ type: "PONG" }));
-      if(m.type==='CREATE_PRIVATE_ROOM')ws.send(JSON.stringify({type:'PRIVATE_ROOM_CREATED',room:{roomId:'recovered-room',roomCode:'RECOVER',host:{userId:'launch-user',nickname:'QA',deckId:m.deckId,deckName:'출전 검증 덱',championName:champion.name},guest:null,youAreHost:true,canStart:false}}));
+      if (m.type === "CREATE_PRIVATE_ROOM")
+        ws.send(
+          JSON.stringify({
+            type: "PRIVATE_ROOM_CREATED",
+            room: {
+              roomId: "recovered-room",
+              roomCode: "RECOVER",
+              host: {
+                userId: "launch-user",
+                nickname: "QA",
+                deckId: m.deckId,
+                deckName: "출전 검증 덱",
+                championName: champion.name,
+              },
+              guest: null,
+              youAreHost: true,
+              canStart: false,
+            },
+          }),
+        );
       if (m.type === "JOIN_QUICK_QUEUE")
         ws.send(
           JSON.stringify({
@@ -198,8 +260,15 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
     }),
   );
   return {
-    recover(){blocked=false;},
-    get deckReads(){return deckReads;},get selectedReads(){return selectedReads;},
+    recover() {
+      blocked = false;
+    },
+    get deckReads() {
+      return deckReads;
+    },
+    get selectedReads() {
+      return selectedReads;
+    },
     get decks() {
       return decks;
     },
@@ -208,10 +277,57 @@ async function setup(p, { missing = false, invalid = false, scenario="normal" } 
     messages,
   };
 }
-try{
- for(const [width,height]of[[390,844],[1440,900]]){
-  const p=await b.newPage({viewport:{width,height},reducedMotion:'reduce'}),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());await setup(p,{scenario:'normal'});await p.goto(qaOrigin+'/ai-match');await p.getByTestId('match-intro-overlay').waitFor();await p.getByTestId('match-intro-overlay').waitFor({state:'hidden',timeout:10000});await p.locator('.ko-game-shell').waitFor();
-  await p.getByRole('button',{name:'이미지 이모티콘',exact:true}).click();await p.getByRole('button',{name:'보유만 한 이모티콘',exact:true}).click();const bubble=p.locator('.cosmetic-emote-bubble[data-ready=true]');await bubble.waitFor();await p.screenshot({path:`${out}/ai-${width}.png`});await bubble.waitFor({state:'detached',timeout:3500});assert.deepEqual(errors,[]);results.push({width,height,actualAiRouteAndEngine:true,apiResponsesIsolated:true,ownedEmoteBubble:true,expiry:true});await p.close();
- }
- await writeFile(out+'/results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results));
-}finally{await b.close();}
+try {
+  for (const [width, height] of [
+    [390, 844],
+    [1440, 900],
+  ]) {
+    const p = await b.newPage({
+        viewport: { width, height },
+        ignoreHTTPSErrors: qaOrigin.startsWith("https:"),
+        reducedMotion: "reduce",
+      }),
+      errors = [];
+    p.on("pageerror", (e) => errors.push(e.message));
+    p.on("dialog", (d) => d.accept());
+    await setup(p, { scenario: "normal" });
+    await p.route("**/qa/retro-font/assets/*", async (r) => {
+      const name = new URL(r.request().url()).pathname.split("/").pop();
+      assert.ok(/^champion-[a-z0-9-]+\.png$/.test(name));
+      await r.fulfill({
+        contentType: "image/png",
+        body: await readFile("artifacts/ko-game/qa/retro-font/assets/" + name),
+      });
+    });
+    await p.goto(qaOrigin + "/ai-match");
+    await p.getByTestId("match-intro-overlay").waitFor();
+    await p
+      .getByTestId("match-intro-overlay")
+      .waitFor({ state: "hidden", timeout: 10000 });
+    await p.locator(".ko-game-shell").waitFor();
+    await p
+      .getByRole("button", { name: "이미지 이모티콘", exact: true })
+      .click();
+    await p
+      .getByRole("button", { name: "보유만 한 이모티콘", exact: true })
+      .click();
+    const bubble = p.locator(".cosmetic-emote-bubble[data-ready=true]");
+    await bubble.waitFor();
+    await p.screenshot({ path: `${out}/ai-${width}.png` });
+    await bubble.waitFor({ state: "detached", timeout: 3500 });
+    assert.deepEqual(errors, []);
+    results.push({
+      width,
+      height,
+      actualAiRouteAndEngine: true,
+      apiResponsesIsolated: true,
+      ownedEmoteBubble: true,
+      expiry: true,
+    });
+    await p.close();
+  }
+  await writeFile(out + "/results.json", JSON.stringify(results, null, 2));
+  console.log(JSON.stringify(results));
+} finally {
+  await b.close();
+}

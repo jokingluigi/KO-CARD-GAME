@@ -1,0 +1,20 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "readOnlyInventoryFixture": true,
+    "deployedBundle": true,
+    "productionWritesSent": 0,
+    "existingIllustrations": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 1440,
+    "height": 1000,
+    "readOnlyInventoryFixture": true,
+    "deployedBundle": true,
+    "productionWritesSent": 0,
+    "existingIllustrations": true,
+    "noHorizontalOverflow": true
+  }
+]
