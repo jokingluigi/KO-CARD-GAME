@@ -1,0 +1,32 @@
+✔ authentication: anonymous and ordinary accounts cannot manage or grant cosmetics (119.381309ms)
+✔ actual storage upload: signed PUT, decoded PNG verification, durable serving, invalid types rejected (78.207593ms)
+✔ admin registers all four types, selects real DB targets, rejects unsupported tokens and unsafe assets (74.17726ms)
+✔ idempotent grants, own inventory isolation, authoritative equip and four distinct persistent emote slots (333.072373ms)
+✔ actual session logout/login preserves database equipment (82.162301ms)
+✔ two-user actual PvP start freezes both loadouts without changing card/champion definitions or hidden state (149.191791ms)
+✔ WebSocket image emotes broadcast to both accounts, reject spoofed slots, dedupe and rate limit, leave RNG/turn/state/version untouched (280.507833ms)
+✔ server runtime eviction/recovery restores frozen cosmetics and exact existing combat state (4.873114ms)
+✔ disable preserves ownership, prevents new grants/equipment, original fallback; re-targeting unequips and revocation cascades (204.796386ms)
+✔ slot image fallback and final-definition/controller resolution are independent from original combat definitions (0.389027ms)
+✔ malformed presentation metadata falls back without crashing combat rendering (0.170513ms)
+✔ cosmetic dependency failure or stalled read returns original defaults within a bounded match-start delay (17.442143ms)
+✔ RLS denies direct untrusted SQL clients; schema change is idempotent and original card catalog is untouched (16.665132ms)
+✔ champion skin token set: validated linkage, existing owner, actual single/bulk pack claims, equip/fallback/revoke (263.36217ms)
+✔ all administrator accounts unlock current/new skins; users and non-skin items stay isolated (217.526681ms)
+✔ administrator notice deletion removes public content and rejects user/anonymous requests (32.889922ms)
+✔ cosmetic deletion guards packs, clears ownership/equipment atomically and retains history/images (197.080313ms)
+✔ admin-added deck products and quest seasons delete safely without erasing purchase/quest history (86.47657ms)
+✔ tower catalog deletion supports every editable resource and protects dependencies/published runs (169.094321ms)
+✔ unified catalog preserves pack IDs/owners and supports legacy edit, grant, equip, revoke and guarded delete (246.966087ms)
+✔ skin display settings round-trip through modern/legacy catalog and owned loadouts, with strict bounds (99.073322ms)
+✔ image emote throttling has no per-turn quota and replaces the previous image per player (3.71019ms)
+✔ default emotes: validated admin option, existing/new owners, persistence, equipment, toggles, and pack duplicates (186.466045ms)
+✔ bulk pack opening is atomic and idempotent for isolated fixture inventory (37.023098ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11045.472629

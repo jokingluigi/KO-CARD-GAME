@@ -1,3 +1,4 @@
+import {ensureDefaultEmotes} from "../lib/default-emotes";
 import {validPackRates} from "@workspace/cosmetics";
 import { grantSkinOriginal } from "../lib/skin-original-grant";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
@@ -155,6 +156,8 @@ export async function openPackRequest(
       if (!spent) throw new Error("보유한 팩이 없습니다.");
 
       const openings = await rollPackOpenings(quantity, () => rollPack(pack, tx));
+      if(openings.some(opening=>opening.rewards.some(reward=>reward.rewardType==='IMAGE_EMOTE')))
+        await ensureDefaultEmotes(request.authUser!.id,tx);
       const rolledCardIds = [...new Set(openings.flatMap(({ rewards }) => rewards.flatMap((reward) =>
         reward.rewardType === 'NORMAL_CARD' || reward.rewardType === 'EPIC_CARD' || reward.rewardType === 'LEGENDARY_CARD' || reward.rewardType === 'SKIN' ? [reward.card.id] : [])))];
       const ownedCards = rolledCardIds.length ? await tx.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })

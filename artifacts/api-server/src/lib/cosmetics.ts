@@ -1,3 +1,4 @@
+import {ensureDefaultEmotes} from "./default-emotes";
 import {parseBattleSprite} from "@workspace/cosmetics";
 import { hydrateLegacySkins } from "./legacy-skin-cosmetics";
 import { ensureAdminSkins } from "./admin-skin-access";
@@ -31,6 +32,7 @@ export class CosmeticError extends Error {
 }
 export const cosmeticsWriteLock = sql`SELECT pg_advisory_xact_lock(hashtext('ko-cosmetics-write-v1'))`;
 export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
+  await ensureDefaultEmotes(userId);
   const rows = await db
     .select({
       slot: equips.slot,
@@ -94,6 +96,7 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
   return result;
 }
 export async function listOwnedCosmetics(userId: string) {
+  await ensureDefaultEmotes(userId);
   await ensureAdminSkins(userId);
   await hydrateLegacySkins(userId);
   return db
@@ -110,6 +113,7 @@ export async function equipCosmetic(
 ) {
   if (!/^(back|emote:[1-4]|(?:card|champion):.{1,256})$/.test(slot))
     throw new CosmeticError(400, "장착 슬롯이 올바르지 않습니다.");
+  await ensureDefaultEmotes(userId);
   await ensureAdminSkins(userId);
   await hydrateLegacySkins(userId);
   await db.transaction(async (tx) => {

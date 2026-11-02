@@ -8,7 +8,14 @@ export const COSMETIC_TYPES = [
 export type CosmeticType = (typeof COSMETIC_TYPES)[number];
 export type CosmeticAssets = Partial<
   Record<
-    "art" | "portrait" | "intro" | "awakened" | "__display" | "__battle" | `token:${string}`,
+    | "art"
+    | "portrait"
+    | "intro"
+    | "awakened"
+    | "__display"
+    | "__battle"
+    | "__defaultGrant"
+    | `token:${string}`,
     string
   >
 >;
@@ -24,6 +31,14 @@ export type CosmeticItem = {
   legacySkinId?: string;
   publicationStatus?: "DRAFT" | "PUBLISHED" | "DISABLED";
 };
+/** Catalog policy only; does not affect combat or force an equipment slot. */
+export function isDefaultEmote(
+  item: Pick<CosmeticItem, "type" | "imageAssets">,
+): boolean {
+  return (
+    item.type === "IMAGE_EMOTE" && item.imageAssets?.__defaultGrant === "true"
+  );
+}
 export type CosmeticLoadout = {
   version: 1;
   skins: Record<string, CosmeticItem>;
@@ -193,8 +208,8 @@ export function cosmeticImageSettings(
     ? cosmeticAssetDisplay(item.imageAssets, slot)
     : undefined;
 }
-export * from './battle-sprite';
-export * from './champion-sprite-skin';
+export * from "./battle-sprite";
+export * from "./champion-sprite-skin";
 
-export * from './pack-probabilities';
-export * from './home-menu';
+export * from "./pack-probabilities";
+export * from "./home-menu";

@@ -1,4 +1,4 @@
-import { spriteFrames, parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
+import { isDefaultEmote, spriteFrames, parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
 import {
   legacySkinItem,
   legacySkinId,
@@ -161,6 +161,10 @@ function parseItem(body: unknown, legacy = false) {
     throw new CosmeticError(400, "이미지를 등록해 주세요.");
   const imageAssets: Record<string, string> = {};
   for (const [key, url] of Object.entries(assets)) {
+    if(key==='__defaultGrant'){
+      if(b.type!=='IMAGE_EMOTE'||url!=='true')throw new CosmeticError(400,'기본 지급은 이미지 이모티콘에만 설정할 수 있습니다.');
+      imageAssets[key]='true';continue;
+    }
     if(key==='__battle'){
       const sprite=parseBattleSprite(url);if(b.type!=='CHAMPION_SKIN'||!sprite)throw new CosmeticError(400,'대전 스프라이트 설정을 확인해 주세요.');
       imageAssets[key]=JSON.stringify(sprite);continue;
@@ -191,7 +195,7 @@ function parseItem(body: unknown, legacy = false) {
     throw new CosmeticError(400, "기본 이미지를 등록해 주세요.");
   if (
     b.type !== "CHAMPION_SKIN" &&
-    Object.keys(imageAssets).some((k) => k !== "art" && k !== "__display")
+    Object.keys(imageAssets).some((k) => k !== "art" && k !== "__display" && !(b.type === "IMAGE_EMOTE" && k === "__defaultGrant"))
   )
     throw new CosmeticError(400, "챔피언 전용 이미지 슬롯입니다.");
   return {
@@ -244,7 +248,7 @@ export async function verifyCatalogAssets(
 ) {
   for (const url of new Set(
     Object.entries(assets)
-      .filter(([key]) => key !== "__display")
+      .filter(([key]) => key !== "__display" && key !== "__defaultGrant")
       .flatMap(([key,url])=>key==='__battle'?(parseBattleSprite(url)?spriteFrames(parseBattleSprite(url)!):[]).map(frame=>frame.url):[url]),
   )) {
     if (known.has(url)) continue;
@@ -495,6 +499,8 @@ router.post("/admin/cosmetics/users/:id/grants", async (req, res) => {
         422,
         "관리자 계정은 모든 활성 스킨이 자동 해금되어 개별 회수할 수 없습니다.",
       );
+    if(action==='REVOKE' && item.isActive && isDefaultEmote(item as CosmeticItem))
+      throw new CosmeticError(422,'기본 지급 이모티콘은 개별 회수할 수 없습니다. 먼저 기본 지급 옵션을 해제해 주세요.');
     if (action === "GRANT") {
       if (!item.isActive)
         throw new CosmeticError(422, "비활성 아이템은 지급할 수 없습니다.");

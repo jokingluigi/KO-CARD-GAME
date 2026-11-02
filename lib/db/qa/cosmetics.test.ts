@@ -1221,6 +1221,45 @@ test("image emote throttling has no per-turn quota and replaces the previous ima
 });
 
 // Reuse the isolated database for the existing pack transaction regression.
+test("default emotes: validated admin option, existing/new owners, persistence, equipment, toggles, and pack duplicates",async()=>{
+ const {ensureDefaultEmotes}=await import('../../../artifacts/api-server/src/lib/default-emotes');
+ const itemInput={type:'IMAGE_EMOTE',name:'기본 지급 검증 이모티콘',description:'모든 사용자 기본 지급',targetId:null,imageAssets:{art:uploaded,__defaultGrant:'true'},isActive:true,sortOrder:99};
+ assert.equal((await api(prefix+'/items','player-b','POST',itemInput)).status,403);
+ for(const invalid of [{...itemInput,type:'CARD_BACK'},{...itemInput,imageAssets:{art:uploaded,__defaultGrant:true}},{...itemInput,imageAssets:{__defaultGrant:'true'}}])assert.equal((await api(prefix+'/items','admin','POST',invalid)).status,400);
+ const created=await api(prefix+'/items','admin','POST',itemInput);assert.equal(created.status,201,JSON.stringify(created.body));const item=created.body.item,id=item.id;
+ const before=await loadCosmetics('player-b');
+ const first=await api('/cosmetics','player-b');assert.equal(first.status,200);assert.equal(first.body.owned.filter((o:any)=>o.item.id===id).length,1);
+ assert.equal(first.body.owned.find((o:any)=>o.item.id===id).item.imageAssets.__defaultGrant,'true');assert.deepEqual(first.body.loadout,JSON.parse(JSON.stringify(before)),'grant must not automatically change slots');
+ await Promise.all(Array.from({length:4},()=>ensureDefaultEmotes('player-b')));
+ let rows=await database.select().from(schema.userCosmeticsTable).where(and(eq(schema.userCosmeticsTable.userId,'player-b'),eq(schema.userCosmeticsTable.cosmeticId,id)));assert.equal(rows.length,1);assert.equal(rows[0]!.acquisitionSource,'DEFAULT_EMOTE');
+ const previousFourth=before.emotes[3]?.id??null;
+ assert.equal((await api('/cosmetics/equipment','player-b','PUT',{slot:'emote:4',cosmeticId:id})).status,200);assert.equal((await loadCosmetics('player-b')).emotes[3]?.id,id);
+ assert.equal((await api(prefix+'/users/player-b/grants','admin','POST',{cosmeticId:id,action:'REVOKE'})).status,422);
+ // New accounts need neither a pack nor an explicit admin grant.
+ await database.insert(schema.usersTable).values({id:'default-new',email:'default-new@local.test',nickname:'default-new',passwordHash:hash,role:'USER'});
+ await ensureDefaultEmotes('default-new');assert.equal((await database.select().from(schema.userCosmeticsTable).where(and(eq(schema.userCosmeticsTable.userId,'default-new'),eq(schema.userCosmeticsTable.cosmeticId,id)))).length,1);
+ await ensureDefaultEmotes('no-such-user');
+ const packId='default-emote-pack';await database.insert(schema.packDefinitionsTable).values({id:packId,name:'기본 이모티콘 중복 검증',status:'PUBLISHED',cardsPerPack:1,normalRate:0,epicRate:0,legendaryRate:0,championRate:0,skinChance:0,emoteRate:100,emotePool:[id]});
+ await database.insert(schema.userPackInventoryTable).values({userId:'player-a',packDefinitionId:packId,quantity:1});
+ // Simulate opening a pack before the first cosmetics lookup.
+ await database.delete(schema.userCosmeticsTable).where(and(eq(schema.userCosmeticsTable.userId,'player-a'),eq(schema.userCosmeticsTable.cosmeticId,id)));
+ const opened=await fetch(origin+'/api/packs/'+packId+'/open',{method:'POST',headers:{cookie:cookies['player-a'],'Content-Type':'application/json','Idempotency-Key':'default-emote-pack-first'},body:'{}'});const reward=await opened.json();assert.equal(opened.status,200,JSON.stringify(reward));assert.equal(reward.rewards[0].alreadyOwned,true);
+ assert.equal((await database.select().from(schema.userCosmeticsTable).where(and(eq(schema.userCosmeticsTable.userId,'player-a'),eq(schema.userCosmeticsTable.cosmeticId,id))))[0]!.acquisitionSource,'DEFAULT_EMOTE');
+ // Turning the policy off preserves previous gifts, but a later revoke stays revoked.
+ assert.equal((await api(prefix+'/items/'+id,'admin','PATCH',{...item,imageAssets:{art:uploaded}})).status,200);
+ assert.ok((await api('/cosmetics','player-b')).body.owned.some((o:any)=>o.item.id===id));
+ assert.equal((await api(prefix+'/users/player-b/grants','admin','POST',{cosmeticId:id,action:'REVOKE'})).status,200);assert.ok(!(await api('/cosmetics','player-b')).body.owned.some((o:any)=>o.item.id===id));
+ // Inactive defaults neither regrant nor remain usable; enabling restores the entitlement.
+ assert.equal((await api(prefix+'/items/'+id,'admin','PATCH',{...item,isActive:false})).status,200);assert.ok(!(await api('/cosmetics','player-b')).body.owned.some((o:any)=>o.item.id===id));
+ assert.equal((await api('/cosmetics/equipment','player-b','PUT',{slot:'emote:4',cosmeticId:id})).status,403);
+ assert.equal((await api(prefix+'/items/'+id,'admin','PATCH',item)).status,200);assert.ok((await api('/cosmetics','player-b')).body.owned.some((o:any)=>o.item.id===id));
+ // Restore shared fixture equipment/policy for the unrelated regressions and browser run.
+ await database.update(schema.packDefinitionsTable).set({emotePool:[],deletedAt:new Date()}).where(eq(schema.packDefinitionsTable.id,packId));
+ assert.equal((await api(prefix+'/items/'+id,'admin','DELETE')).status,200);
+ if(previousFourth)await equipCosmetic('player-b','emote:4',previousFourth);
+});
+
+// Reuse this isolated database for the existing pack transaction regression.
 await import("../../../artifacts/api-server/src/routes/packs.test");
 
 // Shared only by isolated database regression suites, never application code.

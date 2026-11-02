@@ -204,3 +204,6 @@
     row-gap: 0;
   }
 }
+
+.cosmetics .cosmetic-default-grant {display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;}
+.cosmetics .cosmetic-default-grant input {width:20px;height:20px;min-height:20px;padding:0;flex:none;accent-color:#dcc06c;}

@@ -3,6 +3,7 @@ import { ImageDisplaySlider } from "./image-display-slider";
 import { useEffect, useState } from "react";
 import {
   COSMETIC_TYPES,
+  isDefaultEmote,
   championSkinArtwork,
   cosmeticAssetDisplay,
   parseCosmeticDisplay,
@@ -247,6 +248,7 @@ export function AdminCosmetics() {
                   }}
                 >
                   {i.name} · {labels[i.type]}
+                  {isDefaultEmote(i) ? " · 기본 지급" : ""}
                   {i.publicationStatus === "DRAFT"
                     ? " · 미공개"
                     : i.isActive
@@ -288,6 +290,30 @@ export function AdminCosmetics() {
               ))}
             </select>
           </label>
+          {form.type === "IMAGE_EMOTE" && (
+            <fieldset className="rounded border border-amber-800/60 p-3">
+              <label className="cosmetic-default-grant">
+                <input
+                  type="checkbox"
+                  aria-label="이모티콘 기본 지급"
+                  checked={isDefaultEmote(form)}
+                  disabled={busy}
+                  onChange={(e) => {
+                    const imageAssets = { ...form.imageAssets };
+                    if (e.target.checked) imageAssets.__defaultGrant = "true";
+                    else delete imageAssets.__defaultGrant;
+                    setForm({ ...form, imageAssets });
+                  }}
+                />
+                기본 지급
+              </label>
+              <p className="text-xs leading-5 text-neutral-400">
+                활성 이모티콘을 기존·신규 유저에게 자동 지급합니다. 꾸미기
+                목록을 열면 지급되며, 장착 슬롯은 바꾸지 않습니다. 옵션을 꺼도
+                이미 지급된 보유 기록은 유지됩니다.
+              </p>
+            </fieldset>
+          )}
           {(form.type === "CARD_SKIN" || form.type === "CHAMPION_SKIN") && (
             <>
               <input
@@ -395,7 +421,24 @@ export function AdminCosmetics() {
             </p>
           )}
           <div className="cosmetics-assets">
-            {form.type==='CHAMPION_SKIN'&&<div className="border border-neutral-700 p-4"><strong>대전 스프라이트</strong><p className="my-2 text-sm text-neutral-400">이 스킨의 스프라이트는 큰 전용 작업 화면에서 관리합니다.</p>{form.id?<a className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200" href={`/admin/battle-sprites?target=${encodeURIComponent('skin:'+form.id)}`}>스프라이트 전용 관리 열기</a>:<p>스킨을 먼저 저장해 주세요.</p>}</div>}
+            {form.type === "CHAMPION_SKIN" && (
+              <div className="border border-neutral-700 p-4">
+                <strong>대전 스프라이트</strong>
+                <p className="my-2 text-sm text-neutral-400">
+                  이 스킨의 스프라이트는 큰 전용 작업 화면에서 관리합니다.
+                </p>
+                {form.id ? (
+                  <a
+                    className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200"
+                    href={`/admin/battle-sprites?target=${encodeURIComponent("skin:" + form.id)}`}
+                  >
+                    스프라이트 전용 관리 열기
+                  </a>
+                ) : (
+                  <p>스킨을 먼저 저장해 주세요.</p>
+                )}
+              </div>
+            )}
             {(form.type === "CHAMPION_SKIN"
               ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])]
               : ["art"]

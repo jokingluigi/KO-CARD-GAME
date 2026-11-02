@@ -1,0 +1,30 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "adminCheckbox": true,
+    "uploadSaveReentry": true,
+    "existingUserAutoGrant": true,
+    "noAutoEquip": true,
+    "userEquipPersists": true,
+    "flagOffPreservesGift": true,
+    "revokeAfterOffPersists": true,
+    "emotesOnly": true,
+    "min44Label": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "adminCheckbox": true,
+    "uploadSaveReentry": true,
+    "existingUserAutoGrant": true,
+    "noAutoEquip": true,
+    "userEquipPersists": true,
+    "flagOffPreservesGift": true,
+    "revokeAfterOffPersists": true,
+    "emotesOnly": true,
+    "min44Label": true,
+    "errors": []
+  }
+]
