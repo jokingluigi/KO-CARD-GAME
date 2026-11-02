@@ -216,3 +216,24 @@
 .cosmetic-emote-picker--owned .cosmetic-emote-wide{width:100%;height:44px;min-height:44px;border:1px solid #8b773e;}
 
 .cosmetic-emote-picker--owned>strong,.cosmetic-emote-picker--owned>input,.cosmetic-emote-picker--owned>label,.cosmetic-emote-picker--owned>.cosmetic-emote-wide{flex-shrink:0;}
+
+/* Emotes are speech, not floating HUD stickers. No input surface moves with them. */
+.cosmetic-emote-overlay.cosmetic-emote-bubble{padding:9px;background:#eee7d9;border:1px solid #fff6df;border-radius:14px;box-shadow:0 5px 14px #0007;opacity:0;transform-origin:0 40%;isolation:isolate}
+.cosmetic-emote-bubble[data-tail=right]{transform-origin:100% 40%}
+.cosmetic-emote-bubble:after{content:"";position:absolute;top:32%;left:-9px;width:14px;height:16px;background:#eee7d9;clip-path:polygon(100% 0,100% 100%,0 75%);z-index:-1}
+.cosmetic-emote-bubble[data-tail=right]:after{left:auto;right:-9px;transform:scaleX(-1)}
+.cosmetic-emote-bubble .cosmetic-emote-image{display:block;width:100%;height:100%;object-fit:contain;filter:none;animation:none;border-radius:5px}
+.cosmetic-emote-bubble[data-ready=true]{animation:champion-emote-speech var(--emote-lifetime,2000ms) both}
+@keyframes champion-emote-speech{0%{opacity:0;transform:scale(.82)}9%{opacity:1;transform:scale(1.035)}16%,84%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.94)}}
+.cosmetic-emote-bubble[data-reduced-motion=true][data-ready=true]{animation-name:champion-emote-fade}
+@keyframes champion-emote-fade{0%{opacity:0}10%,84%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.cosmetic-emote-bubble[data-ready=true]{animation-name:champion-emote-fade}}
+
+.cosmetic-emote-picker--owned{border-color:#746342;background:#14151a;border-radius:10px;padding:12px;gap:10px}
+.cosmetic-emote-picker--owned>strong{padding:0 0 8px;border-bottom:1px solid #ffffff18;font-size:13px;color:#e3ce9d}
+.cosmetic-emote-picker--owned .cosmetic-owned-emotes{gap:8px;scrollbar-width:thin;scrollbar-color:#746342 transparent}
+.cosmetic-owned-emotes button{border-color:#ffffff12;border-radius:5px;background:#ffffff04;transition:background .12s,border-color .12s}
+.cosmetic-owned-emotes button:focus-visible{outline:2px solid #eed397;outline-offset:-2px}
+.cosmetic-emote-picker--owned input:not([type=checkbox]){border-radius:4px;border-color:#ffffff28;background:#090a0d}
+.cosmetic-emote-picker--owned .cosmetic-emote-wide{border-radius:4px;border-color:#ffffff30;color:#ccc2aa;font-size:12px}
+@media(hover:hover){.cosmetic-owned-emotes button:hover{border-color:#d7bd80;background:#d7bd8015}}

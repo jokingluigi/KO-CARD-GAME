@@ -1,0 +1,16 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "readOnlyInventoryFixture": true,
+    "existingIllustrations": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 1440,
+    "height": 1000,
+    "readOnlyInventoryFixture": true,
+    "existingIllustrations": true,
+    "noHorizontalOverflow": true
+  }
+]

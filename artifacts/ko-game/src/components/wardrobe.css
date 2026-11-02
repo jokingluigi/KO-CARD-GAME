@@ -1,0 +1,589 @@
+.ko-wardrobe {
+  --wardrobe-ink: #0c0d10;
+  --wardrobe-gold: #d7bd80;
+  --wardrobe-muted: #a9a69d;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: 24px clamp(16px, 4vw, 56px) 64px;
+  color: #eeeae0;
+  background: radial-gradient(ellipse at 85% 0%, #b9a16a0c, transparent 55%);
+  font-size: 14px;
+}
+.ko-wardrobe button,
+.ko-wardrobe input,
+.ko-wardrobe select,
+.ko-wardrobe-sheet button {
+  font: inherit;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+.ko-wardrobe button:focus-visible,
+.ko-wardrobe input:focus-visible,
+.ko-wardrobe select:focus-visible,
+.ko-wardrobe-sheet button:focus-visible {
+  outline: 2px solid #f0d896;
+  outline-offset: 3px;
+}
+.ko-wardrobe button:disabled,
+.ko-wardrobe-sheet button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ko-wardrobe__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  color: var(--wardrobe-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.ko-wardrobe__back {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #d9d3c5;
+  padding-right: 16px;
+}
+.ko-wardrobe__intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0 32px;
+}
+.ko-wardrobe__intro > div > p:first-child {
+  font-size: 12px;
+  color: #d7bd80;
+  margin-bottom: 10px;
+}
+.ko-wardrobe__intro h1 {
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.ko-wardrobe__intro h1 > span {
+  color: #d7bd80;
+  padding-left: 4px;
+}
+.ko-wardrobe__intro h1 + p {
+  color: #a9a69d;
+  margin-top: 14px;
+  line-height: 1.7;
+  max-width: 360px;
+}
+.ko-wardrobe__total {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 10px;
+  align-items: center;
+  color: #d7bd80;
+  text-align: right;
+}
+.ko-wardrobe__total strong {
+  font-size: 30px;
+  font-weight: 400;
+}
+.ko-wardrobe__total > span {
+  grid-column: 1/-1;
+  color: #a9a69d;
+  font-size: 11px;
+}
+.ko-wardrobe__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid #ffffff20;
+  margin-bottom: 24px;
+  gap: 4px;
+}
+.ko-wardrobe__tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 8px;
+  color: #a9a69d;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.ko-wardrobe__tabs button[aria-pressed="true"] {
+  color: #f0dfb5;
+  border-color: #d7bd80;
+}
+.ko-wardrobe__tabs button > span {
+  font-size: 11px;
+  color: #a9a69d;
+}
+.ko-wardrobe__toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ko-wardrobe__search {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #ffffff30;
+  color: #a9a69d;
+  padding-left: 4px;
+}
+.ko-wardrobe__search input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  color: #eeeae0;
+  padding: 8px 0;
+  outline-offset: 0;
+}
+.ko-wardrobe__toolbar select,
+.ko-wardrobe__toolbar > button {
+  border: 1px solid #ffffff20;
+  background: #111216;
+  color: #c2bdb0;
+  border-radius: 5px;
+  padding: 8px 12px;
+}
+.ko-wardrobe__toolbar > button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ko-wardrobe__toolbar > button[aria-pressed="true"] {
+  border-color: #d7bd80;
+  color: #f0dfb5;
+}
+.ko-wardrobe__hint {
+  font-size: 12px;
+  color: #a9a69d;
+  line-height: 1.7;
+  margin: 14px 0 20px;
+  max-width: 680px;
+}
+.ko-wardrobe__notice {
+  height: 0;
+  overflow: hidden;
+}
+.ko-wardrobe__notice.is-visible {
+  height: auto;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-left: 2px solid #d7bd80;
+  background: #d7bd800a;
+  color: #f0dfb5;
+  line-height: 1.7;
+  font-size: 13px;
+}
+.ko-wardrobe__message {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-left: 2px solid #c68b70;
+  background: #37251e;
+  color: #f7ddcf;
+  line-height: 1.7;
+}
+.ko-wardrobe__message button {
+  border-bottom: 1px solid currentColor;
+  padding-inline: 8px;
+}
+.ko-wardrobe__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 36px;
+  align-items: start;
+}
+.ko-wardrobe__collection {
+  min-width: 0;
+}
+.ko-wardrobe__section-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0 20px;
+}
+.ko-wardrobe__section-label h2 {
+  font-size: 15px;
+  font-weight: 400;
+}
+.ko-wardrobe__section-label > span {
+  font-size: 11px;
+  color: #a9a69d;
+}
+.ko-wardrobe__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 24px 16px;
+}
+.ko-wardrobe__tile {
+  min-width: 0;
+}
+.ko-wardrobe__tile > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  transition: transform 0.16s;
+}
+.ko-wardrobe__thumbnail {
+  height: 210px;
+  position: relative;
+  border: 1px solid #ffffff14;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #15161b;
+  transition:
+    border-color 0.16s,
+    background 0.16s;
+}
+.ko-wardrobe__tile > button[aria-pressed="true"] .ko-wardrobe__thumbnail {
+  border-color: #d7bd80;
+  background: #26231d;
+}
+.ko-wardrobe__tile > button[aria-pressed="true"] .ko-wardrobe__tile-copy h3 {
+  color: #ecd69f;
+}
+.ko-wardrobe__tile-copy {
+  position: relative;
+  padding: 12px 20px 0 0;
+}
+.ko-wardrobe__tile-copy h3 {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.ko-wardrobe__tile-copy > span {
+  display: block;
+  color: #a9a69d;
+  font-size: 11px;
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.ko-wardrobe__tile-copy > svg {
+  position: absolute;
+  right: 0;
+  top: 16px;
+  color: #857857;
+}
+.ko-wardrobe__equipped {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #17180ff0;
+  color: #eddda9;
+  border: 1px solid #bca56760;
+  border-radius: 3px;
+  font-size: 10px;
+  padding: 4px 6px;
+}
+.ko-wardrobe__equipped.is-disabled {
+  background: #222;
+  color: #aaa;
+  border-color: #666;
+}
+.ko-wardrobe__grid.is-emotes {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+.is-emotes .ko-wardrobe__thumbnail {
+  height: 130px;
+  padding: 16px;
+  background: #14151a;
+}
+.ko-wardrobe__detail {
+  position: sticky;
+  top: 24px;
+  padding-left: 28px;
+  border-left: 1px solid #ffffff16;
+  min-width: 0;
+}
+.ko-wardrobe__stage {
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse at 50% 80%, #c9ad6a17, transparent 65%), #14151a;
+  border-radius: 8px;
+  min-width: 0;
+}
+.ko-wardrobe__stage.is-emote {
+  display: grid;
+  place-items: center;
+  min-height: 250px;
+}
+.ko-wardrobe__stage.is-emote > div {
+  width: 130px;
+  padding: 14px;
+  background: #eae2d3;
+  border: 1px solid #f9f4ea;
+  border-radius: 14px 14px 14px 3px;
+  box-shadow: 0 8px 20px #0005;
+}
+.ko-wardrobe__stage.is-emote > div > div:first-child {
+  height: 100px;
+}
+.ko-wardrobe__selection-copy {
+  padding: 24px 0 0;
+}
+.ko-wardrobe__eyebrow {
+  font-size: 11px;
+  color: #d7bd80;
+  letter-spacing: 0.06em;
+}
+.ko-wardrobe__selection-copy h2 {
+  font-size: 23px;
+  line-height: 1.4;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.ko-wardrobe__target {
+  font-size: 13px;
+  color: #bfb6a1;
+}
+.ko-wardrobe__description {
+  margin: 16px 0 24px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #c5c0b5;
+  white-space: pre-wrap;
+}
+.ko-wardrobe__apply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+.ko-wardrobe__apply > button {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 5px;
+  color: #bfb6a1;
+  border: 1px solid #ffffff20;
+}
+.ko-wardrobe__apply .ko-wardrobe__primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #dbc183;
+  color: #171510;
+  border: 1px solid #e9d49f;
+}
+.ko-wardrobe__apply .ko-wardrobe__primary:disabled {
+  opacity: 1;
+  background: #29291f;
+  color: #c2b88e;
+  border-color: #615a3e;
+}
+.ko-wardrobe__availability {
+  margin: 20px 0 0;
+  color: #e1cd9e;
+  font-size: 13px;
+  padding: 12px 0;
+  border-top: 1px solid #ffffff16;
+}
+.ko-wardrobe__secondary {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 20px;
+}
+.ko-wardrobe__secondary > button,
+.ko-wardrobe__secondary > span > button {
+  width: 100%;
+  padding: 10px 12px;
+  min-height: 44px;
+  font-size: 12px;
+  border: 1px solid #ffffff20;
+  border-radius: 4px;
+  background: transparent;
+  color: #bfb6a1;
+  text-align: center;
+}
+.ko-wardrobe__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 48px 16px;
+  color: #a9a69d;
+  text-align: center;
+  line-height: 1.8;
+  min-height: 250px;
+}
+.ko-wardrobe__empty h3 {
+  color: #eeeae0;
+}
+.ko-wardrobe__empty button {
+  color: #eddda9;
+  min-height: 44px;
+  border-bottom: 1px solid #a58c50;
+}
+.ko-game-dialog.ko-wardrobe-sheet {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #111216;
+  color: #eeeae0;
+  border: 1px solid #655a40;
+  border-radius: 10px;
+  padding: 24px;
+}
+.ko-wardrobe-sheet .ko-wardrobe__stage {
+  margin-top: 8px;
+}
+.ko-wardrobe-sheet .ko-wardrobe__selection-copy {
+  padding-top: 20px;
+}
+.ko-wardrobe-sheet .ko-wardrobe__message {
+  font-size: 12px;
+}
+@media (hover: hover) {
+  .ko-wardrobe__tile > button:hover {
+    transform: translateY(-3px);
+  }
+  .ko-wardrobe__tile > button:hover .ko-wardrobe__thumbnail {
+    border-color: #b8a37590;
+  }
+  .ko-wardrobe__tabs button:hover {
+    color: #e8dab7;
+  }
+}
+@media (max-width: 999px) {
+  .ko-wardrobe__layout {
+    display: block;
+  }
+  .ko-wardrobe__grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  .ko-wardrobe__thumbnail {
+    height: 230px;
+  }
+}
+@media (max-width: 600px) {
+  .ko-wardrobe {
+    padding: 14px 16px 40px;
+  }
+  .ko-wardrobe__header {
+    margin-bottom: 18px;
+  }
+  .ko-wardrobe__intro {
+    padding: 4px 0 24px;
+    gap: 16px;
+  }
+  .ko-wardrobe__intro h1 + p {
+    font-size: 12px;
+    max-width: 240px;
+  }
+  .ko-wardrobe__total strong {
+    font-size: 25px;
+  }
+  .ko-wardrobe__total svg {
+    display: none;
+  }
+  .ko-wardrobe__total {
+    display: block;
+    min-width: 55px;
+  }
+  .ko-wardrobe__total span {
+    display: block;
+    margin-top: 5px;
+    font-size: 10px;
+  }
+  .ko-wardrobe__tabs {
+    margin-bottom: 18px;
+  }
+  .ko-wardrobe__tabs button {
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px 2px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .ko-wardrobe__toolbar {
+    gap: 8px;
+  }
+  .ko-wardrobe__search {
+    flex-basis: 100%;
+  }
+  .ko-wardrobe__toolbar select,
+  .ko-wardrobe__toolbar > button {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .ko-wardrobe__hint {
+    font-size: 11px;
+    margin: 12px 0 18px;
+  }
+  .ko-wardrobe__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 12px;
+  }
+  .ko-wardrobe__thumbnail {
+    height: 200px;
+  }
+  .ko-wardrobe__grid.is-emotes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 10px;
+  }
+  .is-emotes .ko-wardrobe__thumbnail {
+    height: 102px;
+    padding: 12px;
+  }
+  .is-emotes .ko-wardrobe__tile-copy {
+    padding-right: 0;
+  }
+  .is-emotes .ko-wardrobe__tile-copy > svg {
+    display: none;
+  }
+  .ko-wardrobe__tile-copy h3 {
+    font-size: 12px;
+  }
+  .ko-wardrobe__tile-copy > span {
+    font-size: 10px;
+  }
+  .ko-wardrobe__equipped {
+    left: 5px;
+    top: 5px;
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+  .ko-wardrobe-sheet {
+    padding: 22px 18px;
+  }
+  .ko-wardrobe__stage {
+    padding: 20px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ko-wardrobe * {
+    transition: none !important;
+  }
+  .ko-wardrobe__tile > button:hover {
+    transform: none;
+  }
+}
+
+.ko-wardrobe-sheet .ko-game-dialog-close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}

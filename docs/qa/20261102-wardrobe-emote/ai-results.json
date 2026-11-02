@@ -1,0 +1,18 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualAiRouteAndEngine": true,
+    "apiResponsesIsolated": true,
+    "ownedEmoteBubble": true,
+    "expiry": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualAiRouteAndEngine": true,
+    "apiResponsesIsolated": true,
+    "ownedEmoteBubble": true,
+    "expiry": true
+  }
+]

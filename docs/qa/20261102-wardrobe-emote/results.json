@@ -1,0 +1,62 @@
+{
+  "results": [
+    {
+      "viewport": {
+        "width": 360,
+        "height": 740
+      },
+      "wardrobeNoOverflow": true,
+      "actualEquipAndReload": true,
+      "searchAndEquippedFilter": true,
+      "cardPreviewPreserved": true,
+      "emoteNeedsNoEquipment": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "wardrobeNoOverflow": true,
+      "actualEquipAndReload": true,
+      "searchAndEquippedFilter": true,
+      "cardPreviewPreserved": true,
+      "emoteNeedsNoEquipment": true
+    },
+    {
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "wardrobeNoOverflow": true,
+      "actualEquipAndReload": true,
+      "searchAndEquippedFilter": true,
+      "cardPreviewPreserved": true,
+      "emoteNeedsNoEquipment": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "wardrobeNoOverflow": true,
+      "actualEquipAndReload": true,
+      "searchAndEquippedFilter": true,
+      "cardPreviewPreserved": true,
+      "emoteNeedsNoEquipment": true
+    },
+    {
+      "failedEquipKeepsSelection": true,
+      "errorVisibleInMobileSheet": true
+    },
+    {
+      "actualPvpBothClients": true,
+      "anchorAndTail": true,
+      "timedExit": true,
+      "noInputInterception": true,
+      "resizeDuringEvent": true,
+      "hideOpponent": true,
+      "reducedMotion": true
+    }
+  ],
+  "errors": []
+}

@@ -10,11 +10,13 @@ export function CosmeticPreview({
   cards = [],
   champions = [],
   compact = false,
+  artworkHeight,
 }: {
   item: CosmeticItem;
   cards?: CosmeticCardPreview[];
   champions?: CosmeticChampionPreview[];
   compact?: boolean;
+  artworkHeight?: number;
 }) {
   const tokenAssets =
     item.type === "CHAMPION_SKIN"
@@ -33,7 +35,7 @@ export function CosmeticPreview({
       <CardRenderer
         name={card.name}
         cardType={card.cardType ?? "WRESTLER"}
-        artworkDisplayOverride={cosmeticAssetDisplay(item.imageAssets,"art")}
+        artworkDisplayOverride={cosmeticAssetDisplay(item.imageAssets, "art")}
         cost={card.cost}
         attack={card.attack}
         health={card.health}
@@ -48,6 +50,11 @@ export function CosmeticPreview({
   return (
     <div className={paired ? "grid grid-cols-2 items-start gap-2" : undefined}>
       <div
+        style={
+          item.type !== "CARD_BACK" && artworkHeight
+            ? { height: artworkHeight }
+            : undefined
+        }
         className={
           item.type === "CARD_BACK"
             ? "mx-auto aspect-[5/7] w-32 border border-amber-700"
@@ -66,7 +73,16 @@ export function CosmeticPreview({
           fallbackSrc={target?.imageUrl}
           alt={item.name}
           className="h-full w-full"
-          displayOverride={cosmeticAssetDisplay(item.imageAssets,item.imageAssets.art ? "art" : item.imageAssets.portrait ? "portrait" : item.imageAssets.intro ? "intro" : "awakened")}
+          displayOverride={cosmeticAssetDisplay(
+            item.imageAssets,
+            item.imageAssets.art
+              ? "art"
+              : item.imageAssets.portrait
+                ? "portrait"
+                : item.imageAssets.intro
+                  ? "intro"
+                  : "awakened",
+          )}
           imageDisplayMode="CONTAIN"
         />
       </div>
@@ -74,7 +90,7 @@ export function CosmeticPreview({
         <div key={key} className={paired ? "text-center" : "mt-2 text-center"}>
           <CardArtwork
             src={url}
-            displayOverride={cosmeticAssetDisplay(item.imageAssets,key)}
+            displayOverride={cosmeticAssetDisplay(item.imageAssets, key)}
             alt="세트 포함 토큰 스킨"
             className={paired ? "mx-auto h-32 w-full" : "mx-auto h-40 w-28"}
             imageDisplayMode="CONTAIN"

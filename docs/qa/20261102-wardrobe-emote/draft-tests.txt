@@ -1,0 +1,26 @@
+✔ admin-only API and default OFF, pool validation and persistent ON (304.70661ms)
+✔ card selection exclusion is admin-only and preserves cards and other draft settings (70.246488ms)
+✔ no published techniques can enable and finish draft selection with frozen wrestler fallback (353.584558ms)
+✔ AI draft persists offers, guards illegal/stale/duplicate commands and does not grant cards (579.585842ms)
+✔ PvP joins before selection, hides opponent picks, timers and worker recover after disconnect (346.10415ms)
+✔ OFF persists existing drafts and prevents operations; re-enable restores identical offers (81.262827ms)
+✔ five full AI draft matches execute legal actions through HTTP and reach terminal rewards (4450.179473ms)
+✔ additive draft migration is repeatable and preserves ON settings, sessions and original decks (39.096608ms)
+✔ Draft 2.0 HTTP saves reroll/lock/special/mutation and transfers exact copies to authoritative battle (395.148688ms)
+✔ both PvP participants mutate separate copies and reconnect to the same authoritative battle (686.890888ms)
+✔ crafting caps at 3/2/1 and maximum/bulk disassembly preserves playable copies (206.042802ms)
+✔ same-version battle polling returns only authenticated presence without changing gameplay/version (195.164642ms)
+✔ stale version and cache loss recover a full sanitized battle before subsequent heartbeats (56.104992ms)
+✔ expired presence bypasses the light response, commits forfeit and never duplicates rewards (65.547284ms)
+✔ upload bursts run one bounded cleanup; live and Tower-referenced images are never removed (72.421901ms)
+✔ deadline worker recovers an AI mulligan and persisted AI turn without client polling (308.068752ms)
+✔ reinitializing the draft worker does not create duplicate process timers (0.618417ms)
+✔ cosmetic snapshots and image emotes also use the real public Draft PvP transport without changing combat (371.298077ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 43506.065879

@@ -33,6 +33,7 @@ for(const [width,height] of [[390,844],[1440,900]]){
  await a.p.getByRole('button',{name:'이미지 이모티콘',exact:true}).click();await panel.getByRole('button',{name:privateItem.name,exact:true}).waitFor();
  await a.p.setViewportSize({width:844,height:390});rect=await panel.boundingBox();assert.ok(rect.x>=0&&rect.y>=0&&rect.x+rect.width<=845&&rect.y+rect.height<=391,JSON.stringify(rect));
  await a.p.goto(origin+'/cosmetics');await a.p.getByRole('button',{name:'이모티콘',exact:true}).click();
+ await a.p.getByRole('button',{name:privateItem.name+' 자세히 보기',exact:true}).click();
  await a.p.getByText('대전에서 바로 사용 가능',{exact:true}).first().waitFor();assert.equal(await a.p.getByRole('button',{name:/장착 · 슬롯/}).count(),0);
  const after=await a.c.request.get(origin+'/api/cosmetics').then(r=>r.json());assert.deepEqual(after.loadout,inventory.loadout);
  results.push({width,height,moreThanFourUnequipped:true,bothPvpClientsReceived:true,privateOwnershipPreserved:true,defaultImmediatelyAvailable:true,rotationFits:true,noEquipmentMutation:true});await a.c.close();await b.c.close();
