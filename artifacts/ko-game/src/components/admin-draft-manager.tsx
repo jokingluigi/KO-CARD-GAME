@@ -1,3 +1,4 @@
+import { ArrowRight, Bot, Swords } from "lucide-react";
 import { MatchRecapPanel } from "./match-recap-panel";
 import { DraftReadyPanel } from "./draft-ready-panel";
 import { KEYWORD_LABELS } from "./alt-inspector-utils";
@@ -179,8 +180,20 @@ export function AdminDraftManager({
     );
   }
   return (
-    <section className="min-w-0 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section
+      className={
+        administration
+          ? "min-w-0 space-y-4"
+          : "ko-draft-player min-w-0 space-y-4"
+      }
+    >
+      <div
+        className={
+          !administration && !view
+            ? "sr-only"
+            : "flex flex-wrap items-center justify-between gap-3"
+        }
+      >
         <div>
           <h2 className="text-xl font-black">드래프트 모드</h2>
           <p className="mt-1 text-sm text-neutral-400">
@@ -210,16 +223,92 @@ export function AdminDraftManager({
           {error}
         </p>
       )}
-      {administration && settings && <aside className="border-y border-neutral-800 py-3 text-sm text-neutral-400">운영 설정과 전투 테스트를 구분해 사용하세요. 카드 풀·선택 규칙은 아래 설정에서 저장하고, 테스트는 기존 드래프트 엔진으로 실행합니다.</aside>}
+      {!administration && error && (
+        <button
+          type="button"
+          className="ko-surface-action"
+          disabled={busy}
+          onClick={() => void run(load)}
+        >
+          다시 확인
+        </button>
+      )}
+      {administration && settings && (
+        <aside className="border-y border-neutral-800 py-3 text-sm text-neutral-400">
+          운영 설정과 전투 테스트를 구분해 사용하세요. 카드 풀·선택 규칙은 아래
+          설정에서 저장하고, 테스트는 기존 드래프트 엔진으로 실행합니다.
+        </aside>
+      )}
       {settings?.poolError && (
         <p className="break-words text-amber-300">{settings.poolError}</p>
       )}
-      {!settings && <p>드래프트 설정을 불러오는 중…</p>}
+      {!settings && !error && <p role="status">드래프트 정보를 불러오는 중…</p>}
       {settings?.enabled && !view && (
-        <div className="ko-online-panel flex flex-wrap gap-3 rounded-xl p-6">
+        <div
+          className={
+            administration
+              ? "ko-online-panel flex flex-wrap gap-3 rounded-xl p-6"
+              : "ko-draft-entry"
+          }
+        >
+          {!administration && (
+            <>
+              <div className="ko-draft-entry__art" aria-hidden="true">
+                {[0, 1, 2].map((n) => (
+                  <div className="ko-draft-entry__card" key={n}>
+                    {settings.cards.filter(
+                      (c) =>
+                        c.imageUrl &&
+                        !(settings.config?.excludedCardIds ?? []).includes(
+                          c.id,
+                        ),
+                    )[n]?.imageUrl ? (
+                      <img
+                        src={
+                          settings.cards.filter(
+                            (c) =>
+                              c.imageUrl &&
+                              !(
+                                settings.config?.excludedCardIds ?? []
+                              ).includes(c.id),
+                          )[n].imageUrl!
+                        }
+                        alt=""
+                      />
+                    ) : (
+                      <>
+                        <span>KO</span>
+                        <small>{["CHAMPION", "DRAFT", "BATTLE"][n]}</small>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="ko-draft-entry__copy">
+                <p>매번 다른 선택, 새로운 한 경기</p>
+                <h2>
+                  고르는 순간부터
+                  <br />
+                  전략이 시작돼요.
+                </h2>
+                <ol>
+                  <li>
+                    <span>01</span>챔피언 선택
+                  </li>
+                  <li>
+                    <span>02</span>25장 덱 편성
+                  </li>
+                  <li>
+                    <span>03</span>한 번의 대전
+                  </li>
+                </ol>
+              </div>
+            </>
+          )}
           <button
             disabled={busy || Boolean(settings.poolError)}
-            className={button}
+            aria-label="AI 드래프트 시작"
+            className={administration ? button : "ko-draft-entry__mode"}
             onClick={() =>
               void run(async () =>
                 setView(
@@ -230,23 +319,50 @@ export function AdminDraftManager({
               )
             }
           >
-            AI 드래프트 시작
+            {administration ? (
+              "AI 드래프트 시작"
+            ) : (
+              <>
+                <Bot size={23} />
+                <span>
+                  <strong>AI 드래프트 시작</strong>
+                  <small>선택을 익히며 한 경기 플레이</small>
+                </span>
+                <ArrowRight size={17} />
+              </>
+            )}
           </button>
           <button
             disabled={busy || Boolean(settings.poolError)}
-            className={button}
+            aria-label="빠른 대전"
+            className={administration ? button : "ko-draft-entry__mode"}
             onClick={() =>
               void run(async () =>
                 setView(await draftRequest<DraftView>("/matchmaking", "POST")),
               )
             }
           >
-            빠른 대전
+            {administration ? (
+              "빠른 대전"
+            ) : (
+              <>
+                <Swords size={23} />
+                <span>
+                  <strong>빠른 대전</strong>
+                  <small>상대와 함께 선택하고 겨루기</small>
+                </span>
+                <ArrowRight size={17} />
+              </>
+            )}
           </button>
         </div>
       )}
       {!settings?.enabled && settings && (
-        <p className="text-neutral-400">드래프트 모드는 현재 OFF 상태입니다.</p>
+        <p className="ko-surface-message text-neutral-400">
+          {administration
+            ? "드래프트 모드는 현재 OFF 상태입니다."
+            : "지금은 드래프트 대전을 준비 중이에요. 대전 모드에서 다른 경기를 선택할 수 있어요."}
+        </p>
       )}
       {administration && settings && (
         <>
@@ -347,7 +463,16 @@ export function AdminDraftManager({
             </button>
           </div>
           {view.phase === "WAITING" ? (
-            <div className="ko-online-panel rounded-xl px-6 py-10 text-center" role="status"><div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-neutral-800 border-t-amber-400" /><h3 className="mt-5 text-xl font-black">상대를 찾고 있습니다</h3><p className="mt-3 text-sm leading-6 text-neutral-400">매칭되면 챔피언과 카드를 선택합니다.</p></div>
+            <div
+              className="ko-online-panel rounded-xl px-6 py-10 text-center"
+              role="status"
+            >
+              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-neutral-800 border-t-amber-400" />
+              <h3 className="mt-5 text-xl font-black">상대를 찾고 있습니다</h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                매칭되면 챔피언과 카드를 선택합니다.
+              </p>
+            </div>
           ) : (
             <>
               <div className="flex flex-wrap gap-3">
@@ -527,7 +652,13 @@ export function AdminDraftManager({
                   })}
                 </div>
               )}
-              {own && own.deck.length === 25 && view.phase === "DRAFT" && <DraftReadyPanel view={view} busy={busy} onReady={() => void run(() => command("READY"))} />}
+              {own && own.deck.length === 25 && view.phase === "DRAFT" && (
+                <DraftReadyPanel
+                  view={view}
+                  busy={busy}
+                  onReady={() => void run(() => command("READY"))}
+                />
+              )}
               {own && (
                 <div className="ko-online-panel rounded-xl p-5 sm:p-6">
                   <h3 className="font-black">

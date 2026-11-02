@@ -1,0 +1,16 @@
+✔ bulk quantity presets never exceed pack inventory (1.239898ms)
+✔ bulk opening enforces the server's safe integer quantity range (0.132957ms)
+✔ an unresolved open blocks a different quantity or pack until reconciled (0.436327ms)
+✔ a committed response lost to the network stays locked to the original request (0.155691ms)
+✔ unresolved intentions survive reload in user-scoped session storage (0.284852ms)
+✔ only definitive no-commit responses clear an opening intention (0.123213ms)
+✔ bulk results aggregate duplicate card rewards without merging different reward types (0.257161ms)
+✔ bulk emote summaries group by cosmetic ID without mixing skins or other emotes (0.162801ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 178.775225

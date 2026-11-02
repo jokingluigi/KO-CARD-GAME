@@ -1,94 +1,299 @@
-import {MotionNumber} from "@/components/presentation-motion";
-import { useEffect, useState } from "react";
-import { ArrowLeft, CalendarCheck2, Check } from "lucide-react";
-import { useLocation } from "wouter";
-import { claimAttendance, fetchAttendance, fetchRewardCatalogs, type AttendanceData, type RewardCatalogChampion, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
-import { ROUTES } from "@/lib/routes";
-import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
-
+import { useEffect, useRef, useState } from "react";
+import { CalendarCheck2, Check, LockKeyhole } from "lucide-react";
+import {
+  claimAttendance,
+  fetchAttendance,
+  fetchRewardCatalogs,
+  type AttendanceData,
+} from "@/lib/rewards-client";
+import {
+  CollectionActionAnimation,
+  type CollectionActionScene,
+} from "@/components/collection-action-animation";
+import { MotionNumber } from "@/components/presentation-motion";
+import {
+  GamePageHeader,
+  REWARD_PAGE_LINKS,
+  SurfaceEmpty,
+} from "@/components/game-page-header";
+import {
+  RewardDisplay,
+  type RewardCatalogs,
+} from "@/components/reward-display";
 export default function AttendancePage() {
-  const [, navigate] = useLocation();
-  const [lastBalance,setLastBalance]=useState<number|null>(null);
-  const [data, setData] = useState<AttendanceData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
-  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; champions: RewardCatalogChampion[]; packs: RewardCatalogPack[] }>({ cards: [], champions: [], packs: [] });
-
+  const [data, setData] = useState<AttendanceData | null>(null),
+    [loading, setLoading] = useState(true),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState(""),
+    [lastBalance, setLastBalance] = useState<number | null>(null),
+    [scene, setScene] = useState<CollectionActionScene | null>(null),
+    [catalog, setCatalog] = useState<RewardCatalogs>({
+      cards: [],
+      champions: [],
+      packs: [],
+    });
+  const mounted = useRef(false),
+    claiming = useRef(false),
+    generation = useRef(0),
+    request = useRef<AbortController | null>(null);
   async function load() {
+    if (claiming.current) return;
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    const revision = ++generation.current;
     setLoading(true);
+    setError("");
     try {
-      const [nextData, nextCatalog] = await Promise.all([fetchAttendance(), fetchRewardCatalogs()]);
-      setData(nextData);
-      setCatalog(nextCatalog);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "출석 보드를 불러오지 못했습니다."); } finally { setLoading(false); }
+      const next = await fetchAttendance({ signal: controller.signal });
+      if (mounted.current && revision === generation.current) setData(next);
+    } catch (e) {
+      if (mounted.current && !controller.signal.aborted)
+        setError(
+          e instanceof Error ? e.message : "출석 정보를 불러오지 못했어요.",
+        );
+    } finally {
+      if (mounted.current && revision === generation.current) setLoading(false);
+    }
   }
-  useEffect(() => { void load(); }, []);
-
+  useEffect(() => {
+    mounted.current = true;
+    void load();
+    void fetchRewardCatalogs()
+      .then((next) => {
+        if (mounted.current) setCatalog(next);
+      })
+      .catch(() => {});
+    return () => {
+      mounted.current = false;
+      request.current?.abort();
+    };
+  }, []);
   async function claim() {
-    if (busy || data?.definitions.find((day) => day.state === "AVAILABLE") === undefined) return;
+    const day = data?.definitions.find((d) => d.state === "AVAILABLE");
+    if (claiming.current || !day || loading) return;
+    claiming.current = true;
     setBusy(true);
+    setError("");
+    setMessage("");
+    request.current?.abort();
+    ++generation.current;
     try {
       const result = await claimAttendance();
-      if(result.reward)setLastBalance(result.reward.balanceAfter);
+      if (!mounted.current) return;
       setData(result.attendance);
-      const claimed = data?.definitions.find((day) => day.state === "AVAILABLE");
-      setMessage(result.alreadyClaimed ? "오늘 출석은 이미 완료했습니다." : claimed ? rewardText(claimed) : "출석 보상을 받았습니다.");
-      if (!result.alreadyClaimed && claimed) {
-        const item = claimed.rewardType === "CARD"
-          ? catalog.cards.find((card) => card.id === claimed.rewardTargetId)
-          : claimed.rewardType === "CHAMPION" ? catalog.champions.find(c=>c.id===claimed.rewardTargetId) : claimed.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === claimed.rewardTargetId) : undefined;
-        setRewardScene({ id: Date.now(), kind: "REWARD", name: item?.name ?? (claimed.rewardType === "CURRENCY" ? `${claimed.rewardAmount.toLocaleString()} 크레딧` : "출석 보상"), imageUrl: item?.imageUrl });
-      }
-    } catch (error) { setMessage(error instanceof Error ? error.message : "출석 보상을 받을 수 없습니다."); } finally { setBusy(false); }
-  }
-
-  function rewardText(day: AttendanceData["definitions"][number]) {
-    if (day.rewardType === "CARD") return `카드 ${catalog.cards.find((card) => card.id === day.rewardTargetId)?.name ?? "보상 카드"} ×${day.rewardAmount}을 받았습니다.`;
-    if (day.rewardType === "CHAMPION") return `챔피언 ${catalog.champions.find(c=>c.id===day.rewardTargetId)?.name ?? "보상 챔피언"}을 받았습니다.`;
-    if (day.rewardType === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === day.rewardTargetId)?.name ?? "보상 팩"} ×${day.rewardAmount}을 받았습니다.`;
-    return `${day.rewardAmount.toLocaleString()} 크레딧을 받았습니다.`;
-  }
-
-  function rewardLabel(day: AttendanceData["definitions"][number]) {
-    if (day.rewardType === "CARD" || day.rewardType === "CHAMPION" || day.rewardType === "PACK") {
-      const item = day.rewardType === "CARD"
-        ? catalog.cards.find((card) => card.id === day.rewardTargetId)
-        : day.rewardType === "CHAMPION" ? catalog.champions.find(c=>c.id===day.rewardTargetId) : catalog.packs.find((pack) => pack.id === day.rewardTargetId);
-      return (
-        <span className="flex min-h-12 items-center justify-center gap-2 text-left">
-          {item?.imageUrl ? (
-            <img src={item.imageUrl} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
-          ) : (
-            <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-neutral-800 text-[9px] font-black text-neutral-400">
-              {day.rewardType}
-            </span>
-          )}
-          <span className="min-w-0 truncate">{day.rewardType === "CARD" ? "카드" : day.rewardType === "CHAMPION" ? "챔피언" : "팩"} · {item?.name ?? day.rewardTargetId ?? "알 수 없음"} ×{day.rewardAmount}</span>
-        </span>
+      if (result.reward) setLastBalance(result.reward.balanceAfter);
+      setMessage(
+        result.alreadyClaimed
+          ? "오늘 출석은 이미 완료했어요."
+          : "출석 보상을 받았어요. 다음 대전도 준비해 볼까요?",
       );
+      if (!result.alreadyClaimed) {
+        const item =
+          day.rewardType === "CARD"
+            ? catalog.cards.find((c) => c.id === day.rewardTargetId)
+            : day.rewardType === "CHAMPION"
+              ? catalog.champions.find((c) => c.id === day.rewardTargetId)
+              : catalog.packs.find((c) => c.id === day.rewardTargetId);
+        setScene({
+          id: Date.now(),
+          kind: "REWARD",
+          name:
+            item?.name ??
+            (day.rewardType === "CURRENCY"
+              ? `${day.rewardAmount.toLocaleString()} 크레딧`
+              : "출석 보상"),
+          imageUrl: item?.imageUrl,
+        });
+      }
+    } catch (e) {
+      if (mounted.current)
+        setError(
+          e instanceof Error ? e.message : "출석 보상을 받을 수 없어요.",
+        );
+    } finally {
+      claiming.current = false;
+      if (mounted.current) setBusy(false);
     }
-    return `+${day.rewardAmount.toLocaleString()} 크레딧`;
   }
-
+  const today = data?.definitions.find((d) => d.state === "AVAILABLE"),
+    claimed =
+      data?.definitions.filter((d) => d.state === "CLAIMED").length ?? 0;
+  const claimedToday = Boolean(
+    data?.claims?.some((c) => c.claimDate === data.today),
+  );
+  const allClaimed = Boolean(
+    data?.definitions.length &&
+    data.definitions.every((d) => d.state === "CLAIMED"),
+  );
+  const settledLabel = claimedToday
+    ? "오늘 출석 완료"
+    : allClaimed
+      ? "모든 출석 보상 수령 완료"
+      : "지금 받을 수 있는 보상이 없어요";
   return (
-    <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-6 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
-        <header className="mb-6 flex items-end justify-between gap-4 border-b border-neutral-800 pb-5"><div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">ATTENDANCE BOARD</p><h1 className="mt-2 text-3xl font-black">출석 보드</h1><p className="mt-2 text-sm text-neutral-500">오늘: {data?.today ?? "—"}</p></div><CalendarCheck2 className="h-9 w-9 text-amber-400" /></header>
-        {lastBalance!==null&&<p data-ui-balance data-ui-mount-motion data-ui-motion-state={`SUCCESS:${lastBalance}`} className="mb-4 border-l-2 border-amber-700 px-3 py-2 text-sm text-amber-100">수령 후 보유 크레딧 <MotionNumber value={lastBalance} format={n=>n.toLocaleString()}/></p>}
-        {message && <p role="status" className="mb-5 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
-        {loading ? <p className="rounded border border-neutral-800 p-8 text-center text-neutral-500">출석 보드를 불러오는 중...</p> : !data || data.definitions.length === 0 ? <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">등록된 출석 보상이 없습니다.</p> : (
-          <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-               {data.definitions.map((day) => <article key={day.dayIndex} data-ui-motion-state={`${day.state==="CLAIMED"?"SUCCESS":day.state==="AVAILABLE"?"ACTIVE":""}:${day.dayIndex}`} className={`rounded-xl border p-4 text-center ${day.state === "AVAILABLE" ? "border-amber-400 bg-amber-950/30" : day.state === "CLAIMED" ? "border-emerald-800 bg-emerald-950/20" : "border-neutral-800 bg-black/30"}`}><p className="text-[10px] font-black tracking-[0.2em] text-neutral-500">DAY</p><p className="mt-1 text-2xl font-black">{day.dayIndex}</p><p className="mt-3 text-sm font-black text-amber-200">{rewardLabel(day)}</p>{day.state === "CLAIMED" && <Check className="mx-auto mt-3 h-4 w-4 text-emerald-400" />}</article>)}
+    <main className="ko-experience-page ko-player-page">
+      <div className="ko-page-content">
+        <GamePageHeader
+          eyebrow="ATTENDANCE"
+          title="출석 보드"
+          description="하루 한 번, 다음 경기를 위한 작은 선물."
+          links={REWARD_PAGE_LINKS}
+          aside={
+            <div className="ko-surface-stat">
+              <strong>
+                {data ? claimed : "—"}
+                <small> / {data?.definitions.length ?? "—"}</small>
+              </strong>
+              <span>누적 수령</span>
             </div>
-            <button type="button" data-ui-motion-state={busy?"PENDING":data.definitions.some(d=>d.state==="AVAILABLE")?"ACTIVE":"SUCCESS"} disabled={busy || !data.definitions.some((day) => day.state === "AVAILABLE")} onClick={() => void claim()} className="mt-6 w-full rounded bg-amber-400 px-5 py-3.5 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-40">{busy ? "처리 중..." : data.definitions.some((day) => day.state === "AVAILABLE") ? "오늘 출석하고 보상 받기" : "오늘 출석 완료"}</button>
+          }
+        />
+        {error && (
+          <div className="ko-surface-message is-error" role="alert">
+            {error}
+            <button
+              type="button"
+              disabled={loading || busy}
+              onClick={() => void load()}
+            >
+              다시 확인
+            </button>
+          </div>
+        )}
+        {message && (
+          <p className="ko-surface-message" role="status">
+            {message}
+          </p>
+        )}
+        {lastBalance !== null && (
+          <p className="ko-surface-message" data-ui-balance>
+            보유 크레딧{" "}
+            <MotionNumber
+              value={lastBalance}
+              format={(n) => n.toLocaleString()}
+            />
+          </p>
+        )}
+        {loading && !data ? (
+          <SurfaceEmpty title="출석 보드를 준비하고 있어요">
+            오늘의 출석 상태를 확인하고 있어요.
+          </SurfaceEmpty>
+        ) : data && data.definitions.length > 0 ? (
+          <>
+            <section className="ko-reward-today" aria-label="오늘의 출석 보상">
+              <div className="ko-reward-today__copy">
+                <p>
+                  {today
+                    ? `DAY ${today.dayIndex} / 오늘 받을 수 있어요`
+                    : claimedToday
+                      ? "오늘의 출석을 확인했어요"
+                      : "출석 보상 현황"}
+                </p>
+                {today ? (
+                  <RewardDisplay reward={today} catalog={catalog} large />
+                ) : (
+                  <div className="flex items-center gap-4">
+                    {claimedToday || allClaimed ? (
+                      <CalendarCheck2 size={32} className="text-amber-200" />
+                    ) : (
+                      <LockKeyhole size={30} className="text-amber-200" />
+                    )}
+                    <h2 className="text-xl">{settledLabel}</h2>
+                  </div>
+                )}
+              </div>
+              <div className="ko-reward-today__action">
+                <p>
+                  {data.today}
+                  {today
+                    ? " · 오늘 받을 보상을 먼저 챙기세요."
+                    : claimedToday
+                      ? " · 다음 출석 보상도 이곳에서 확인하세요."
+                      : " · 등록된 보상과 수령 상태를 확인하세요."}
+                </p>
+                <button
+                  type="button"
+                  className="ko-surface-primary"
+                  disabled={busy || loading || !today}
+                  onClick={() => void claim()}
+                >
+                  {busy ? (
+                    "보상 확인 중…"
+                  ) : today ? (
+                    "오늘 출석하고 보상 받기"
+                  ) : (
+                    <>
+                      {claimedToday || allClaimed ? (
+                        <Check size={16} />
+                      ) : (
+                        <LockKeyhole size={16} />
+                      )}
+                      {settledLabel}
+                    </>
+                  )}
+                </button>
+              </div>
+            </section>
+            <div className="ko-reward-section-title">
+              <h2>이어지는 출석 여정</h2>
+              <span>보상은 등록된 순서대로 표시돼요</span>
+            </div>
+            <div className="ko-attendance-track">
+              {data.definitions.map((day) => (
+                <article
+                  key={day.dayIndex}
+                  className="ko-attendance-day"
+                  data-state={day.state}
+                  aria-label={`${day.dayIndex}일차 · ${day.state === "CLAIMED" ? "수령 완료" : day.state === "AVAILABLE" ? "오늘 수령 가능" : "다음 보상"}`}
+                >
+                  <div className="ko-attendance-day__number">
+                    <span>DAY</span>
+                    <strong>{String(day.dayIndex).padStart(2, "0")}</strong>
+                  </div>
+                  <RewardDisplay reward={day} catalog={catalog} />
+                  <p className="ko-attendance-day__state">
+                    {day.state === "CLAIMED" ? (
+                      <>
+                        <Check size={12} />
+                        수령 완료
+                      </>
+                    ) : day.state === "AVAILABLE" ? (
+                      "오늘의 보상"
+                    ) : (
+                      <>
+                        <LockKeyhole size={11} />
+                        다음 보상
+                      </>
+                    )}
+                  </p>
+                </article>
+              ))}
+            </div>
+            <p className="ko-reward-footnote">
+              수령 가능한 보상은 ‘오늘의 보상’으로 표시돼요. 이미 받은 보상은
+              다시 지급되지 않아요.
+            </p>
           </>
+        ) : (
+          !error && (
+            <SurfaceEmpty
+              title="출석 보상을 준비 중이에요"
+              href="/daily-quests"
+              label="퀘스트 보러 가기"
+            >
+              등록된 보상이 생기면 이곳에서 확인할 수 있어요.
+            </SurfaceEmpty>
+          )
         )}
       </div>
-      {rewardScene && <CollectionActionAnimation scene={rewardScene} onComplete={() => setRewardScene(null)} />}
+      {scene && (
+        <CollectionActionAnimation
+          scene={scene}
+          onComplete={() => setScene(null)}
+        />
+      )}
     </main>
   );
 }

@@ -1,0 +1,30 @@
+✔ administrator and player authentication is enforced including differently cased routes (147.60815ms)
+✔ actual signed image upload validates format, bytes and persists reusable representative asset (97.181197ms)
+✔ valid 25-card product references existing definitions, survives reload, supports editing and ordering (58.808067ms)
+✔ invalid size, duplicates, rarity limits, tokens, unknown IDs and unpublished defaults are rejected (103.575067ms)
+✔ unpublished sales require explicit administrator setting, champion inclusion requires a real target (52.053517ms)
+✔ purchase atomically deducts authoritative price, grants exact card shortages, saves an editable playable deck and receipt (135.278408ms)
+✔ partially owned and sufficient copies are topped up without deleting or multiplying existing cards (26.524767ms)
+✔ insufficient balance and unowned champion selections fail with no partial grant or receipt (51.209923ms)
+✔ champion-inclusive product explicitly grants its champion and creates a usable deck (49.975914ms)
+✔ concurrent requests and later retries charge once and preserve one durable ownership receipt (78.556443ms)
+✔ database failure after grant and deck creation rolls back currency, cards, champion, deck and receipt together (80.060452ms)
+✔ current price is used, disabled catalog blocks new purchases but existing retry remains idempotent (89.800966ms)
+✔ changed or deleted live definitions invalidate a sale; disable works even with broken references (52.612256ms)
+✔ many existing decks are preserved, purchase creates another deck instead of overwriting any slot (54.671388ms)
+✔ refresh and real logout/login preserve card collection, equipped deck and receipt (125.112994ms)
+✔ purchased deck enters actual PvP match server, mulligan and accepted card-play path (4973.583329ms)
+✔ legacy pack listing and purchase remain operational with the same currency ledger and inventory (22.681783ms)
+✔ additive migration can be reapplied and RLS prevents direct public data access (9.653936ms)
+✔ deleting a purchased deck leaves acquired cards and permanent receipt intact, without a retry granting again (70.819421ms)
+✔ two different products share the existing wallet lock and cannot jointly overspend (51.989647ms)
+✔ a newly unpublished recommended champion is not leaked or sold without the explicit flag (42.793061ms)
+✔ exact SQL migration creates fresh tables, reapplies without data loss and rolls back inside an isolated schema (21.528675ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 51243.577109

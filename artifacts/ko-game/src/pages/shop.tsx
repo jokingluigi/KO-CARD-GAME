@@ -1,4 +1,10 @@
 import {
+  GamePageHeader,
+  SHOP_PAGE_LINKS,
+  SurfaceEmpty,
+} from "@/components/game-page-header";
+import { PackCover } from "@/components/pack-cover";
+import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -8,7 +14,7 @@ import { prefersReducedMotion } from "@/components/presentation-config";
 import { MotionNumber } from "@/components/presentation-motion";
 import { ShopDecks } from "@/components/shop-decks";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Coins, Gift, ShoppingBag } from "lucide-react";
+import { Coins } from "lucide-react";
 import {
   fetchShop,
   purchaseShopListing,
@@ -34,6 +40,7 @@ export default function ShopPage() {
   const [message, setMessage] = useState("상점을 불러오는 중...");
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(
     null,
   );
@@ -59,13 +66,17 @@ export default function ShopPage() {
 
   useEffect(() => {
     refresh()
-      .then(() => setMessage(""))
+      .then(() => {
+        setMessage("");
+        setLoadError(false);
+      })
       .catch((error: Error) => {
         if (error.message.includes("로그인이 필요합니다")) {
           navigate(ROUTES.MAIN_MENU);
           return;
         }
         setMessage(error.message);
+        setLoadError(true);
       });
   }, [navigate]);
 
@@ -137,46 +148,35 @@ export default function ShopPage() {
   }
 
   return (
-    <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-7 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigate(ROUTES.MAIN_MENU)}
-            className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" /> 메인 메뉴
-          </button>
-          <div className="flex items-center gap-2 rounded-full border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-sm font-black text-amber-200">
-            <Coins className="h-4 w-4 text-amber-400" />{" "}
-            {isTestAccount ? (
-              "∞"
-            ) : (
-              <MotionNumber
-                value={currency}
-                format={(n) => n.toLocaleString()}
-              />
-            )}{" "}
-            {currencyDisplayName}
-          </div>
-        </div>
-        <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">
-          <div>
-            <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">
-              KO SHOP
-            </p>
-            <h1 className="mt-2 text-3xl font-black">상점</h1>
-            <p className="mt-2 text-sm text-neutral-500">
-              크레딧으로 카드팩과 완성 덱을 구매합니다.
-            </p>
-          </div>
-          <ShoppingBag className="h-8 w-8 text-amber-400" />
-        </header>
-        <nav aria-label="상점 카테고리" className="mb-6 flex gap-3">
+    <main className="ko-experience-page ko-player-page">
+      <div className="ko-page-content">
+        <GamePageHeader
+          eyebrow="KO MARKET"
+          title="상점"
+          description="새로운 선수를 영입하고, 다음 덱의 가능성을 열어보세요."
+          links={SHOP_PAGE_LINKS}
+          aside={
+            <div className="ko-market-balance">
+              <span>보유 재화</span>
+              <strong>
+                {isTestAccount ? (
+                  "∞"
+                ) : (
+                  <MotionNumber
+                    value={currency}
+                    format={(n) => n.toLocaleString()}
+                  />
+                )}
+              </strong>
+              <small>{currencyDisplayName}</small>
+            </div>
+          }
+        />
+        <nav aria-label="상점 카테고리" className="ko-surface-tabs">
           <button
             type="button"
             aria-pressed={category === "PACK"}
-            className="min-h-11 rounded border border-amber-800 px-5 aria-pressed:bg-amber-400 aria-pressed:text-black"
+            className=""
             onClick={() => setCategory("PACK")}
           >
             카드팩
@@ -184,7 +184,7 @@ export default function ShopPage() {
           <button
             type="button"
             aria-pressed={category === "DECK"}
-            className="min-h-11 rounded border border-amber-800 px-5 aria-pressed:bg-amber-400 aria-pressed:text-black"
+            className=""
             onClick={() => setCategory("DECK")}
           >
             완성 덱
@@ -199,8 +199,35 @@ export default function ShopPage() {
         ) : (
           <>
             {message && (
-              <p className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+              <p
+                role={loadError ? "alert" : "status"}
+                className={
+                  "ko-surface-message " + (loadError ? "is-error" : "")
+                }
+              >
                 {message}
+                {loadError && (
+                  <button
+                    type="button"
+                    disabled={Boolean(purchasingId)}
+                    onClick={() => {
+                      setMessage("상점을 다시 확인하고 있어요…");
+                      setLoadError(false);
+                      void refresh()
+                        .then(() => setMessage(""))
+                        .catch((e) => {
+                          setMessage(
+                            e instanceof Error
+                              ? e.message
+                              : "상점을 불러오지 못했어요.",
+                          );
+                          setLoadError(true);
+                        });
+                    }}
+                  >
+                    다시 확인
+                  </button>
+                )}
               </p>
             )}
             {success && (
@@ -214,11 +241,15 @@ export default function ShopPage() {
               </p>
             )}
             {!message && !hasListings && (
-              <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">
-                현재 판매 중인 카드팩이 없습니다.
-              </div>
+              <SurfaceEmpty
+                title="다음 상품을 준비 중이에요"
+                href="/packs"
+                label="내 팩 확인"
+              >
+                보유한 팩이 있다면 지금 열어볼 수 있어요.
+              </SurfaceEmpty>
             )}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="ko-market-grid">
               {listings.map((listing) => {
                 const quantity = quantities[listing.id] ?? 1;
                 const total = listing.price * quantity;
@@ -234,26 +265,19 @@ export default function ShopPage() {
                           ? "ACTIVE"
                           : ""
                     }
-                    className="overflow-hidden rounded-xl border border-neutral-800 bg-black/40"
+                    className="ko-market-item"
                   >
-                    <div className="flex min-h-40 items-center justify-center bg-gradient-to-br from-amber-950/50 to-neutral-950 p-5">
-                      {listing.pack.imageUrl ? (
-                        <img
-                          src={listing.pack.imageUrl}
-                          alt=""
-                          className="max-h-36 rounded object-contain"
-                        />
-                      ) : (
-                        <Gift className="h-16 w-16 text-amber-400/80" />
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <div className="flex items-start justify-between gap-3">
+                    <PackCover
+                      src={listing.imageUrl || listing.pack.imageUrl}
+                      name={listing.name || listing.pack.name}
+                    />
+                    <div className="ko-market-item__copy">
+                      <div className="ko-market-item__title">
                         <div>
                           <h2 className="font-black">
                             {listing.name || listing.pack.name}
                           </h2>
-                          <p className="mt-1 text-sm text-neutral-500">
+                          <p className="ko-market-item__description">
                             {listing.description ||
                               listing.pack.description ||
                               "KO 카드팩"}
@@ -263,11 +287,11 @@ export default function ShopPage() {
                           보유 ×{listing.ownedQuantity}
                         </span>
                       </div>
-                      <p className="mt-4 text-xs text-neutral-400">
+                      <p className="ko-market-item__meta">
                         {listing.pack.name} · 팩 {listing.packQuantity}개 ·{" "}
                         {listing.pack.cardsPerPack}장
                       </p>
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <div className="ko-market-item__quantity ko-market-item__controls">
                         <label
                           htmlFor={`purchase-${listing.id}`}
                           className="text-sm font-bold text-neutral-300"
@@ -315,14 +339,14 @@ export default function ShopPage() {
                           </button>
                         ))}
                       </div>
-                      <p className="mt-2 text-sm text-amber-200">
+                      <p className="ko-market-item__price">
                         팩 {listing.packQuantity * quantity}개 · 총{" "}
                         {total.toLocaleString()} {currencyDisplayName}
                       </p>
                       <button
                         type="button"
                         onClick={() => setSelectedListing(listing)}
-                        className="mt-5 w-full rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-200 transition hover:border-amber-500 hover:text-amber-300"
+                        className="ko-market-item__link"
                       >
                         구성품 및 확률 보기
                       </button>
@@ -334,14 +358,14 @@ export default function ShopPage() {
                           purchaseOrigin.current = event.currentTarget;
                           void handlePurchase(listing);
                         }}
-                        className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="ko-surface-primary"
                       >
                         <Coins className="h-4 w-4" />{" "}
                         {busy
                           ? "구매 중..."
                           : canAfford
                             ? `${quantity}묶음 구매 · ${total.toLocaleString()} ${currencyDisplayName}`
-                            : "크레딧 부족"}
+                            : `${(total - currency).toLocaleString()} ${currencyDisplayName} 부족`}
                       </button>
                     </div>
                   </article>
@@ -350,7 +374,7 @@ export default function ShopPage() {
             </div>
           </>
         )}
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="ko-market-footer">
           <button
             type="button"
             onClick={() => navigate(ROUTES.PACKS)}

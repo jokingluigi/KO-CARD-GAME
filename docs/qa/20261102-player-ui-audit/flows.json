@@ -1,0 +1,89 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "attendanceSingleClaimAndReload": true,
+    "questSingleClaimAndSeason": true,
+    "bonusClaim": true,
+    "purchaseConfirmCancelAndExactQuantity": true,
+    "sixUnifiedPackRates": true,
+    "bulkOpenReceiptKey": true,
+    "notebookFilterAndConfirmedRemoval": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "attendanceSingleClaimAndReload": true,
+    "questSingleClaimAndSeason": true,
+    "bonusClaim": true,
+    "purchaseConfirmCancelAndExactQuantity": true,
+    "sixUnifiedPackRates": true,
+    "bulkOpenReceiptKey": true,
+    "notebookFilterAndConfirmedRemoval": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "attendanceSingleClaimAndReload": true,
+    "questSingleClaimAndSeason": true,
+    "bonusClaim": true,
+    "purchaseConfirmCancelAndExactQuantity": true,
+    "sixUnifiedPackRates": true,
+    "bulkOpenReceiptKey": true,
+    "notebookFilterAndConfirmedRemoval": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 1000,
+    "attendanceSingleClaimAndReload": true,
+    "questSingleClaimAndSeason": true,
+    "bonusClaim": true,
+    "purchaseConfirmCancelAndExactQuantity": true,
+    "sixUnifiedPackRates": true,
+    "bulkOpenReceiptKey": true,
+    "notebookFilterAndConfirmedRemoval": true,
+    "errors": []
+  },
+  {
+    "path": "/attendance",
+    "readFailureRetry": true
+  },
+  {
+    "path": "/daily-quests",
+    "readFailureRetry": true
+  },
+  {
+    "path": "/shop",
+    "readFailureRetry": true
+  },
+  {
+    "path": "/packs",
+    "readFailureRetry": true
+  },
+  {
+    "path": "/attendance",
+    "emptyStateAndNextAction": true
+  },
+  {
+    "path": "/daily-quests",
+    "emptyStateAndNextAction": true
+  },
+  {
+    "path": "/shop",
+    "emptyStateAndNextAction": true
+  },
+  {
+    "path": "/packs",
+    "emptyStateAndNextAction": true
+  },
+  {
+    "path": "/player-notebook",
+    "emptyStateAndNextAction": true
+  },
+  {
+    "attendanceUnavailableDoesNotClaimCompleted": true
+  }
+]

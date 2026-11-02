@@ -1,55 +1,121 @@
-import {MotionNumber} from "@/components/presentation-motion";
-import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
-import { useLocation } from "wouter";
-import { fetchDailyQuests, claimDailyQuest, claimDailyCompletionBonus, type DailyCompletionBonus, fetchRewardCatalogs, type DailyQuest, type RewardCatalogChampion, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
-import { ROUTES } from "@/lib/routes";
-import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
+import { MotionNumber } from "@/components/presentation-motion";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, ListChecks } from "lucide-react";
+import {
+  fetchDailyQuests,
+  claimDailyQuest,
+  claimDailyCompletionBonus,
+  type DailyCompletionBonus,
+  fetchRewardCatalogs,
+  type DailyQuest,
+  type RewardCatalogChampion,
+  type RewardCatalogCard,
+  type RewardCatalogPack,
+} from "@/lib/rewards-client";
+import {
+  CollectionActionAnimation,
+  type CollectionActionScene,
+} from "@/components/collection-action-animation";
 
-type RewardSummary=Pick<DailyQuest,"rewardType"|"rewardAmount"|"rewardTargetId"|"platform">;
+import {
+  GamePageHeader,
+  REWARD_PAGE_LINKS,
+  SurfaceEmpty,
+} from "@/components/game-page-header";
+import {
+  RewardDisplay,
+  type RewardCatalogs,
+} from "@/components/reward-display";
+
+type RewardSummary = Pick<
+  DailyQuest,
+  "rewardType" | "rewardAmount" | "rewardTargetId" | "platform"
+>;
 
 function objectiveLabel(objective: string) {
-  return ({
-    PLAY_MATCH: "경기 플레이",
-    PLAY_DRAFT_MATCH: "드래프트 대전 완료",
-    WIN_MATCH: "경기 승리", LOSS_MATCH:"경기 패배", WRESTLER_PLAYED:"선수 사용", CARD_RETIRED:"선수 리타이어", CARD_DESTROYED:"선수 파괴", CHAMPION_ABILITY_USED:"챔피언 고유 능력", FUSION:"합체",
-    CARD_PLAYED: "카드 플레이",
-    TECHNIQUE_PLAYED: "Technique 사용",
-    ATTACK_DECLARED: "공격 선언",
-    DAMAGE_DEALT: "피해 주기",
-  } as Record<string, string>)[objective] ?? objective;
+  return (
+    (
+      {
+        PLAY_MATCH: "경기 플레이",
+        PLAY_DRAFT_MATCH: "드래프트 대전 완료",
+        WIN_MATCH: "경기 승리",
+        LOSS_MATCH: "경기 패배",
+        WRESTLER_PLAYED: "선수 사용",
+        CARD_RETIRED: "선수 리타이어",
+        CARD_DESTROYED: "선수 파괴",
+        CHAMPION_ABILITY_USED: "챔피언 고유 능력",
+        FUSION: "합체",
+        CARD_PLAYED: "카드 플레이",
+        TECHNIQUE_PLAYED: "주문 사용",
+        ATTACK_DECLARED: "공격 선언",
+        DAMAGE_DEALT: "피해 주기",
+      } as Record<string, string>
+    )[objective] ?? objective
+  );
 }
 
 export default function DailyQuestsPage() {
-  const [, navigate] = useLocation();
-  const [lastBalance,setLastBalance]=useState<number|null>(null);
-  const [tab,setTab] = useState<"DAILY"|"SEASON">("DAILY");
-  const [seasons,setSeasons] = useState<Array<{id:string;name:string;endsAt:string}>>([]);
-  const [timezone,setTimezone] = useState("Asia/Seoul");
-  const [completionBonus,setCompletionBonus]=useState<DailyCompletionBonus|null>(null);
+  const [lastBalance, setLastBalance] = useState<number | null>(null);
+  const [tab, setTab] = useState<"DAILY" | "SEASON">("DAILY");
+  const [seasons, setSeasons] = useState<
+    Array<{ id: string; name: string; endsAt: string }>
+  >([]);
+  const [timezone, setTimezone] = useState("Asia/Seoul");
+  const [completionBonus, setCompletionBonus] =
+    useState<DailyCompletionBonus | null>(null);
   const [quests, setQuests] = useState<DailyQuest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
-  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; champions: RewardCatalogChampion[]; packs: RewardCatalogPack[] }>({ cards: [], champions: [], packs: [] });
+  const [error, setError] = useState("");
+  const mounted = useRef(false),
+    pending = useRef(false),
+    generation = useRef(0),
+    readController = useRef<AbortController | null>(null);
+  const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(
+    null,
+  );
+  const [catalog, setCatalog] = useState<{
+    cards: RewardCatalogCard[];
+    champions: RewardCatalogChampion[];
+    packs: RewardCatalogPack[];
+  }>({ cards: [], champions: [], packs: [] });
 
   async function load() {
+    if (pending.current) return;
+    readController.current?.abort();
+    const controller = new AbortController();
+    readController.current = controller;
+    const revision = ++generation.current;
     setLoading(true);
+    setError("");
     try {
       // Reward artwork must not block progress or claiming.
-      void fetchRewardCatalogs().then(setCatalog).catch(() => {});
-      const result = await fetchDailyQuests();
-      setQuests(result.assignments);setCompletionBonus(result.completionBonus??null);
-      setSeasons(result.seasons??[]);setTimezone(result.timezone??"Asia/Seoul");
+      void fetchRewardCatalogs()
+        .then((value) => {
+          if (mounted.current) setCatalog(value);
+        })
+        .catch(() => {});
+      const result = await fetchDailyQuests({ signal: controller.signal });
+      if (!mounted.current || revision !== generation.current) return;
+      setQuests(result.assignments);
+      setCompletionBonus(result.completionBonus ?? null);
+      setSeasons(result.seasons ?? []);
+      setTimezone(result.timezone ?? "Asia/Seoul");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "일일 퀘스트를 불러오지 못했습니다.");
+      if (mounted.current && !controller.signal.aborted)
+        setError(
+          error instanceof Error
+            ? error.message
+            : "일일 퀘스트를 불러오지 못했습니다.",
+        );
     } finally {
-      setLoading(false);
+      if (mounted.current && revision === generation.current) setLoading(false);
     }
   }
 
   useEffect(() => {
+    mounted.current = true;
     const refreshWhenVisible = () => {
       if (document.visibilityState === "visible") void load();
     };
@@ -57,115 +123,358 @@ export default function DailyQuestsPage() {
     document.addEventListener("visibilitychange", refreshWhenVisible);
     window.addEventListener("focus", refreshWhenVisible);
     return () => {
+      mounted.current = false;
+      readController.current?.abort();
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       window.removeEventListener("focus", refreshWhenVisible);
     };
   }, []);
 
   async function claim(quest: DailyQuest) {
-    if (quest.status !== "COMPLETED" || busyId) return;
+    if (quest.status !== "COMPLETED" || pending.current) return;
+    pending.current = true;
+    readController.current?.abort();
+    ++generation.current;
+    setError("");
+    setMessage("");
     setBusyId(quest.id);
     try {
       const result = await claimDailyQuest(quest.id);
-      if(result.reward)setLastBalance(result.reward.balanceAfter);
-      setQuests((current) => current.map((item) => item.id === quest.id ? result.assignment : item));
-      setMessage(result.alreadyClaimed ? "이미 받은 보상입니다." : rewardLabel(result.assignment));
+      if (!mounted.current) return;
+      if (result.reward) setLastBalance(result.reward.balanceAfter);
+      setQuests((current) =>
+        current.map((item) =>
+          item.id === quest.id ? result.assignment : item,
+        ),
+      );
+      setMessage(
+        result.alreadyClaimed
+          ? "이미 받은 보상입니다."
+          : rewardLabel(result.assignment),
+      );
       if (!result.alreadyClaimed) {
         const reward = result.assignment;
-        const item = reward.rewardType === "CARD"
-          ? catalog.cards.find((card) => card.id === reward.rewardTargetId)
-          : reward.rewardType === "CHAMPION" ? catalog.champions.find(c => c.id === reward.rewardTargetId) : reward.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === reward.rewardTargetId) : undefined;
-        setRewardScene({ id: Date.now(), kind: "REWARD", name: item?.name ?? (reward.rewardType === "CURRENCY" ? `${reward.rewardAmount.toLocaleString()} 크레딧` : "퀘스트 보상"), imageUrl: item?.imageUrl });
+        const item =
+          reward.rewardType === "CARD"
+            ? catalog.cards.find((card) => card.id === reward.rewardTargetId)
+            : reward.rewardType === "CHAMPION"
+              ? catalog.champions.find((c) => c.id === reward.rewardTargetId)
+              : reward.rewardType === "PACK"
+                ? catalog.packs.find(
+                    (pack) => pack.id === reward.rewardTargetId,
+                  )
+                : undefined;
+        setRewardScene({
+          id: Date.now(),
+          kind: "REWARD",
+          name:
+            item?.name ??
+            (reward.rewardType === "CURRENCY"
+              ? `${reward.rewardAmount.toLocaleString()} 크레딧`
+              : "퀘스트 보상"),
+          imageUrl: item?.imageUrl,
+        });
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "보상을 받을 수 없습니다.");
+      if (mounted.current)
+        setError(
+          error instanceof Error ? error.message : "보상을 받을 수 없습니다.",
+        );
     } finally {
-      setBusyId(null);
+      pending.current = false;
+      if (mounted.current) {
+        setBusyId(null);
+        setLoading(false);
+      }
     }
   }
 
-  async function claimBonus(){
-    if(completionBonus?.status!=="COMPLETED"||busyId)return;
+  async function claimBonus() {
+    if (completionBonus?.status !== "COMPLETED" || pending.current) return;
+    pending.current = true;
+    readController.current?.abort();
+    ++generation.current;
+    setError("");
+    setMessage("");
     setBusyId("completion-bonus");
-    try{
-      const result=await claimDailyCompletionBonus();setCompletionBonus(result.bonus);
-      setMessage(result.alreadyClaimed?"이미 받은 보상입니다.":rewardLabel(result.bonus));
-      if(!result.alreadyClaimed)setRewardScene({id:Date.now(),kind:"REWARD",name:rewardLabel(result.bonus)});
-    }catch(error){setMessage(error instanceof Error?error.message:"추가 보상을 받을 수 없습니다.");}
-    finally{setBusyId(null);}
+    try {
+      const result = await claimDailyCompletionBonus();
+      if (!mounted.current) return;
+      setCompletionBonus(result.bonus);
+      setMessage(
+        result.alreadyClaimed
+          ? "이미 받은 보상입니다."
+          : rewardLabel(result.bonus),
+      );
+      if (!result.alreadyClaimed)
+        setRewardScene({
+          id: Date.now(),
+          kind: "REWARD",
+          name: rewardLabel(result.bonus),
+        });
+    } catch (error) {
+      if (mounted.current)
+        setError(
+          error instanceof Error
+            ? error.message
+            : "추가 보상을 받을 수 없습니다.",
+        );
+    } finally {
+      pending.current = false;
+      if (mounted.current) {
+        setBusyId(null);
+        setLoading(false);
+      }
+    }
   }
 
   function rewardLabel(quest: RewardSummary): string {
-    if ((quest.platform?.rewards.length??0)>1) return quest.platform!.rewards.map(r=>rewardLabel({...quest,...r,platform:undefined})).join(" + ");
-    if (quest.rewardType === "CARD") return `카드 ${catalog.cards.find((card) => card.id === quest.rewardTargetId)?.name ?? "보상 카드"} ×${quest.rewardAmount}을 받았습니다.`;
-    if (quest.rewardType === "CHAMPION") return `챔피언 ${catalog.champions.find(c=>c.id===quest.rewardTargetId)?.name ?? "보상 챔피언"}을 받았습니다.`;
-    if (quest.rewardType === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === quest.rewardTargetId)?.name ?? "보상 팩"} ×${quest.rewardAmount}을 받았습니다.`;
+    if ((quest.platform?.rewards.length ?? 0) > 1)
+      return quest
+        .platform!.rewards.map((r) =>
+          rewardLabel({ ...quest, ...r, platform: undefined }),
+        )
+        .join(" + ");
+    if (quest.rewardType === "CARD")
+      return `카드 ${catalog.cards.find((card) => card.id === quest.rewardTargetId)?.name ?? "보상 카드"} ×${quest.rewardAmount}을 받았습니다.`;
+    if (quest.rewardType === "CHAMPION")
+      return `챔피언 ${catalog.champions.find((c) => c.id === quest.rewardTargetId)?.name ?? "보상 챔피언"}을 받았습니다.`;
+    if (quest.rewardType === "PACK")
+      return `팩 ${catalog.packs.find((pack) => pack.id === quest.rewardTargetId)?.name ?? "보상 팩"} ×${quest.rewardAmount}을 받았습니다.`;
     return `${quest.rewardAmount.toLocaleString()} 크레딧을 받았습니다.`;
   }
 
-  function rewardDisplay(quest: RewardSummary): React.ReactNode {
-    if ((quest.platform?.rewards.length??0)>1) return <span className="flex flex-col gap-2">{quest.platform!.rewards.map((r,i)=><span key={i}>{rewardDisplay({...quest,...r,platform:undefined})}</span>)}</span>;
-    if (quest.rewardType === "CARD" || quest.rewardType === "CHAMPION" || quest.rewardType === "PACK") {
-      const item = quest.rewardType === "CARD"
-        ? catalog.cards.find((card) => card.id === quest.rewardTargetId)
-        : quest.rewardType === "CHAMPION" ? catalog.champions.find(c=>c.id===quest.rewardTargetId) : catalog.packs.find((pack) => pack.id === quest.rewardTargetId);
-      return (
-        <span className="flex min-w-0 items-center gap-2">
-          {item?.imageUrl ? (
-            <img src={item.imageUrl} alt="" className="h-9 w-9 shrink-0 rounded object-cover" />
-          ) : (
-            <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-neutral-800 text-[10px] font-black text-neutral-400">
-              {quest.rewardType}
+  const shown = quests.filter(
+    (q) => (q.platform?.questType ?? "DAILY") === tab,
+  );
+  const ready = shown.filter((q) => q.status === "COMPLETED").length,
+    claimed = shown.filter((q) => q.status === "CLAIMED").length;
+  const bonusCard = tab === "DAILY" &&
+    !loading &&
+    completionBonus &&
+    (completionBonus.enabled || completionBonus.status === "CLAIMED") && (
+      <section
+        className="ko-reward-today"
+        aria-label="일일 퀘스트 3개 완료 보상"
+      >
+        <div className="ko-reward-today__copy">
+          <p>오늘의 마무리 / 일일 퀘스트 3개 완료 보상</p>
+          <QuestReward reward={completionBonus} catalog={catalog} />
+          <div className="ko-quest-entry__progress">
+            <progress
+              aria-label="일일 퀘스트 완료 보상 진행도"
+              value={completionBonus.progress}
+              max={completionBonus.targetValue}
+            />
+            <span>
+              {completionBonus.progress} / {completionBonus.targetValue}
             </span>
-          )}
-          <span className="truncate">{quest.rewardType === "CARD" ? "카드" : quest.rewardType === "CHAMPION" ? "챔피언" : "팩"} · {item?.name ?? (quest.rewardTargetId === "champion-minion-a" ? "챔피언 미니언 A" : quest.rewardTargetId) ?? "알 수 없음"} ×{quest.rewardAmount}</span>
-        </span>
-      );
-    }
-    return `+${quest.rewardAmount.toLocaleString()} 크레딧`;
-  }
-
+          </div>
+        </div>
+        <div className="ko-reward-today__action">
+          <p>개별 보상 수령과 무관하게 달성 · 하루 1회</p>
+          <button
+            type="button"
+            data-testid="button-claim-daily-completion-bonus"
+            className="ko-surface-primary"
+            disabled={completionBonus.status !== "COMPLETED" || Boolean(busyId)}
+            onClick={() => void claimBonus()}
+          >
+            {busyId === "completion-bonus"
+              ? "보상 확인 중…"
+              : completionBonus.status === "CLAIMED"
+                ? "수령 완료"
+                : completionBonus.status === "COMPLETED"
+                  ? "추가 보상 받기"
+                  : `목표 ${Math.max(0, completionBonus.targetValue - completionBonus.progress)}개 더 완료`}
+          </button>
+        </div>
+      </section>
+    );
   return (
-    <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
-      <div className="mx-auto max-w-4xl">
-        <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-6 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
-        <header className="mb-6 border-b border-neutral-800 pb-5">
-          <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">DAILY / SEASON QUESTS</p>
-          <h1 className="mt-2 text-3xl font-black">퀘스트</h1>
-          <p className="mt-2 text-sm text-neutral-500">일일 퀘스트는 하루 동안 고정됩니다. 드래프트 도전자 진행도는 날짜가 바뀌어도 유지됩니다.</p>
-        </header>
-        {!loading && <section className="ko-quest-summary" aria-label="퀘스트 현황"><div><strong>{quests.filter(q => (q.platform?.questType ?? "DAILY") === tab && q.status === "COMPLETED").length}</strong><span>받을 수 있는 보상</span></div><div><strong>{quests.filter(q => (q.platform?.questType ?? "DAILY") === tab && q.status === "CLAIMED").length}</strong><span>수령 완료</span></div></section>}
-        {lastBalance!==null&&<p data-ui-balance data-ui-mount-motion data-ui-motion-state={`SUCCESS:${lastBalance}`} className="mb-4 border-l-2 border-amber-700 px-3 py-2 text-sm text-amber-100">수령 후 보유 크레딧 <MotionNumber value={lastBalance} format={n=>n.toLocaleString()}/></p>}
-        {message && <p role="status" className="mb-5 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
-        <nav className="mb-5 flex gap-3" aria-label="퀘스트 종류">{(["DAILY","SEASON"] as const).map(t=><button key={t} onClick={()=>setTab(t)} className={"min-h-11 border px-4 py-2 font-bold "+(tab===t?"border-amber-500 bg-amber-400 text-black":"border-neutral-700 text-neutral-300")}>{t==="DAILY"?"일일 퀘스트":"시즌 퀘스트"}</button>)}</nav>
-        <p className="mb-4 text-xs text-neutral-400">일일 초기화: {timezone} 00:00 · 시즌 진행도는 날짜가 바뀌어도 유지됩니다.</p>
-        {tab==="DAILY"&&!loading&&completionBonus&&(completionBonus.enabled||completionBonus.status==="CLAIMED")&&<section aria-label="일일 퀘스트 3개 완료 보상" className="mb-5 space-y-3 border border-amber-700 bg-black/40 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-black text-amber-200">일일 퀘스트 3개 완료 보상</h2><span>{completionBonus.progress} / {completionBonus.targetValue}</span></div>
-          <p className="text-xs text-neutral-400">{completionBonus.date} · 개별 보상 수령과 무관하게 일일 퀘스트 3개 달성 · 하루 1회</p>
-          <progress className="w-full accent-amber-400" value={completionBonus.progress} max={completionBonus.targetValue}/>
-          <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm font-bold text-amber-200">{rewardDisplay(completionBonus)}</span><button type="button" data-testid="button-claim-daily-completion-bonus" data-ui-motion-state={busyId==="completion-bonus"?"PENDING":completionBonus.status==="CLAIMED"?"SUCCESS":""} disabled={completionBonus.status!=="COMPLETED"||Boolean(busyId)} onClick={()=>void claimBonus()} className="min-h-11 rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{completionBonus.status==="CLAIMED"?"수령 완료":completionBonus.status==="COMPLETED"?"추가 보상 받기":"진행 중"}</button></div>
-        </section>}
-        {loading ? <p className="rounded border border-neutral-800 p-8 text-center text-neutral-500">퀘스트를 불러오는 중...</p> : quests.filter(q=>(q.platform?.questType??"DAILY")===tab).length === 0 ? <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">이 분류에 진행 중인 퀘스트가 없습니다.</p> : (
-          <div className="grid gap-4 md:grid-cols-3">
-            {quests.filter(q=>(q.platform?.questType??"DAILY")===tab).map((quest) => {
-              const percent = Math.min(100, Math.round((quest.progress / quest.targetValue) * 100));
+    <main className="ko-experience-page ko-player-page">
+      <div className="ko-page-content">
+        <GamePageHeader
+          eyebrow="QUEST JOURNAL"
+          title="퀘스트"
+          description="다음 목표를 확인하고, 플레이로 보상을 채워보세요."
+          links={REWARD_PAGE_LINKS}
+        />
+        {error && (
+          <div role="alert" className="ko-surface-message is-error">
+            {error}
+            <button
+              type="button"
+              disabled={loading || Boolean(busyId)}
+              onClick={() => void load()}
+            >
+              다시 확인
+            </button>
+          </div>
+        )}
+        {message && (
+          <p role="status" className="ko-surface-message">
+            {message}
+          </p>
+        )}
+        {lastBalance !== null && (
+          <p className="ko-surface-message" data-ui-balance>
+            보유 크레딧{" "}
+            <MotionNumber
+              value={lastBalance}
+              format={(n) => n.toLocaleString()}
+            />
+          </p>
+        )}
+        <nav className="ko-surface-tabs" aria-label="퀘스트 종류">
+          {(["DAILY", "SEASON"] as const).map((t) => (
+            <button
+              type="button"
+              key={t}
+              aria-pressed={tab === t}
+              onClick={() => setTab(t)}
+            >
+              {t === "DAILY" ? "일일 퀘스트" : "시즌 퀘스트"}
+            </button>
+          ))}
+        </nav>
+        {!loading && (
+          <section className="ko-quest-availability" aria-label="퀘스트 현황">
+            <div>
+              <strong>{ready}</strong>
+              <span>받을 수 있는 보상</span>
+            </div>
+            <div>
+              <strong>{claimed}</strong>
+              <span>수령 완료</span>
+            </div>
+          </section>
+        )}
+        <p className="ko-quest-reset">
+          일일 초기화 · {timezone} 00:00 / 시즌 진행도는 날짜가 바뀌어도
+          유지돼요.
+        </p>
+        {completionBonus?.status === "COMPLETED" && bonusCard}
+        {loading && !quests.length ? (
+          <SurfaceEmpty title="목표를 확인하고 있어요">
+            진행도와 보상을 불러오는 중이에요.
+          </SurfaceEmpty>
+        ) : !shown.length && !error ? (
+          <SurfaceEmpty
+            title="이 분류의 목표를 준비 중이에요"
+            href="/online"
+            label="대전 모드로"
+          >
+            새로운 퀘스트가 등록되면 여기에 표시돼요.
+          </SurfaceEmpty>
+        ) : (
+          <div className="ko-quest-list">
+            {shown.map((quest) => {
+              const progress = Math.max(
+                0,
+                Math.min(quest.targetValue, quest.progress),
+              );
               return (
-                <article key={quest.id} data-ui-motion-state={`${quest.status==="CLAIMED"?"SUCCESS":quest.status==="COMPLETED"?"ACTIVE":""}:${quest.id}`} className="rounded-xl border border-neutral-800 bg-black/40 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div><p className="text-[10px] font-black tracking-[0.2em] text-primary">{quest.assignmentDate === "LIFETIME" ? "상시 퀘스트 · 1회 한정" : `QUEST ${quest.slot + 1}`}</p><h2 className="mt-2 font-black text-white">{quest.title}</h2>{quest.platform?.questType==="SEASON"&&<p className="mt-1 text-xs text-neutral-400">{seasons.find(s=>s.id===quest.platform?.seasonId)?.name} · 종료 {new Date(seasons.find(s=>s.id===quest.platform?.seasonId)?.endsAt??"").toLocaleDateString("ko-KR")}</p>}</div>
-                    {quest.status === "CLAIMED" ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /> : <ListChecks className="h-5 w-5 shrink-0 text-amber-400" />}
+                <article
+                  className="ko-quest-entry"
+                  key={quest.id}
+                  data-state={quest.status}
+                >
+                  <div className="ko-quest-entry__icon">
+                    {quest.status === "CLAIMED" ? (
+                      <CheckCircle2 size={19} />
+                    ) : (
+                      <ListChecks size={19} />
+                    )}
                   </div>
-                  <p className="mt-4 min-h-12 text-sm leading-6 text-neutral-400">{quest.description}</p>
-                  <p className="mt-4 text-xs font-bold text-neutral-300">{objectiveLabel(quest.objectiveType)} · {quest.progress}/{quest.targetValue}</p>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${percent}%` }} /></div>
-                    <div className="mt-5 flex items-center justify-between gap-3"><span className="text-sm font-black text-amber-200">{rewardDisplay(quest)}</span><button type="button" data-ui-motion-state={busyId===quest.id?"PENDING":""} disabled={quest.status !== "COMPLETED" || Boolean(busyId)} onClick={() => void claim(quest)} className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-40">{quest.status === "CLAIMED" ? "수령 완료" : quest.status === "COMPLETED" ? "보상 받기" : "진행 중"}</button></div>
+                  <div>
+                    <p className="ko-quest-entry__eyebrow">
+                      {quest.assignmentDate === "LIFETIME"
+                        ? "상시 / 1회 한정"
+                        : quest.status === "CLAIMED"
+                          ? "수령 완료"
+                          : quest.status === "COMPLETED"
+                            ? "완료 / 보상을 받을 수 있어요"
+                            : `QUEST ${quest.slot + 1}`}
+                    </p>
+                    <h2>{quest.title}</h2>
+                    {quest.platform?.questType === "SEASON" && (
+                      <p className="ko-quest-entry__description">
+                        {seasons.find((s) => s.id === quest.platform?.seasonId)
+                          ?.name ?? "시즌 퀘스트"}
+                        {(() => {
+                          const end = seasons.find(
+                            (s) => s.id === quest.platform?.seasonId,
+                          )?.endsAt;
+                          return end && Number.isFinite(new Date(end).getTime())
+                            ? ` · 종료 ${new Date(end).toLocaleDateString("ko-KR")}`
+                            : " · 일정 확인 중";
+                        })()}
+                      </p>
+                    )}
+                    <p className="ko-quest-entry__description">
+                      {quest.description}
+                    </p>
+                    <div className="ko-quest-entry__progress">
+                      <progress
+                        aria-label={`${quest.title} 진행도`}
+                        max={Math.max(1, quest.targetValue)}
+                        value={progress}
+                      />
+                      <span>
+                        {quest.progress} / {quest.targetValue}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[10px] text-neutral-500">
+                      {objectiveLabel(quest.objectiveType)}
+                    </p>
+                  </div>
+                  <div className="ko-quest-entry__reward">
+                    <QuestReward reward={quest} catalog={catalog} />
+                    <button
+                      type="button"
+                      disabled={quest.status !== "COMPLETED" || Boolean(busyId)}
+                      onClick={() => void claim(quest)}
+                    >
+                      {busyId === quest.id
+                        ? "보상 확인 중…"
+                        : quest.status === "CLAIMED"
+                          ? "수령 완료"
+                          : quest.status === "COMPLETED"
+                            ? "보상 받기"
+                            : "진행 중"}
+                    </button>
+                  </div>
                 </article>
               );
             })}
           </div>
         )}
+        {completionBonus?.status !== "COMPLETED" && bonusCard}
       </div>
-      {rewardScene && <CollectionActionAnimation scene={rewardScene} onComplete={() => setRewardScene(null)} />}
+      {rewardScene && (
+        <CollectionActionAnimation
+          scene={rewardScene}
+          onComplete={() => setRewardScene(null)}
+        />
+      )}
     </main>
+  );
+}
+function QuestReward({
+  reward,
+  catalog,
+}: {
+  reward: RewardSummary;
+  catalog: RewardCatalogs;
+}) {
+  return reward.platform?.rewards.length ? (
+    <span className="ko-quest-reward-stack">
+      {reward.platform.rewards.map((r, i) => (
+        <RewardDisplay key={i} reward={r} catalog={catalog} />
+      ))}
+    </span>
+  ) : (
+    <RewardDisplay reward={reward} catalog={catalog} />
   );
 }

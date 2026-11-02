@@ -1,0 +1,16 @@
+✔ admin-only configuration; existing and fresh ordinary accounts initialize without quest rows (632.115596ms)
+✔ diagnostics are read-only, validation rejects invalid data and KST midnight resets (60.39177ms)
+✔ ordinary AI HTTP play progresses daily+season independently; claims cannot cross ownership (837.46099ms)
+✔ season ten wins via authenticated AI replay persists across days and pays one pack only (907.50358ms)
+✔ snapshot immutability, late season distribution, disable and archive preserve all user history (183.072603ms)
+✔ one trusted event advances daily+season; filters, two same-type rewards and rollback are safe (472.697946ms)
+✔ PvP authenticated action persists one event for the actor only and retry cannot repeat progress (178.479588ms)
+✔ clean browser profiles: admin editor saves and ordinary users see/claim through real API (17558.491538ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 29542.355712

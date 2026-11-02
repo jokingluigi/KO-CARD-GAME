@@ -204,10 +204,8 @@ try {
       await p.locator("#deck-name").fill("구매 덱 자유 편집");
       await p.getByRole("button", { name: "전략 저장", exact: true }).click();
       await p.getByText("전략을 저장했습니다.", { exact: true }).waitFor();
-      await p
-        .getByRole("button", { name: "대표 덱 선택", exact: true })
-        .click();
-      await p.getByText("대표 덱을 변경했습니다.", { exact: true }).waitFor();
+      await p.getByTestId("button-select-deck").click();
+      await p.getByText("출전 덱을 변경했습니다.", { exact: true }).waitFor();
       await shot(p, "deck-editor");
       await p.reload();
       assert.equal(
@@ -265,8 +263,7 @@ try {
     async () => {
       const p = a.page;
       await p.goto(origin + "/ai-match");
-      await p.getByRole("button", { name: "매치 시작", exact: true }).waitFor();
-      await p.getByRole("button", { name: "매치 시작", exact: true }).click();
+      await p.getByTestId("match-intro-overlay").waitFor({ timeout: 30000 });
       await p
         .getByRole("button", { name: "이미지 이모티콘", exact: true })
         .waitFor({ timeout: 30000 });
@@ -321,6 +318,61 @@ try {
           .status,
         200,
       );
+    },
+  );
+  await check(
+    "actual attendance claims once even when reward artwork catalogs fail",
+    async () => {
+      const made = await api(admin.page, "/admin/rewards/attendance", "POST", {
+        dayIndex: 1,
+        rewardType: "CURRENCY",
+        rewardAmount: 123,
+        rewardTargetId: null,
+        enabled: true,
+      });
+      assert.equal(made.status, 201);
+      const p = a.page;
+      await p.route("**/api/packs", (r) =>
+        r.fulfill({
+          status: 503,
+          json: { message: "QA artwork catalog failure" },
+        }),
+      );
+      const before = (await api(p, "/shop")).body.currencyBalance,
+        history = (await api(p, "/attendance")).body.claims.length;
+      let sends = 0;
+      p.on("request", (r) => {
+        if (
+          r.method() === "POST" &&
+          new URL(r.url()).pathname === "/api/attendance/claim"
+        )
+          sends++;
+      });
+      await p.goto(origin + "/attendance");
+      const button = p.getByRole("button", {
+        name: "오늘 출석하고 보상 받기",
+        exact: true,
+      });
+      await button.waitFor();
+      await button.evaluate((n) => {
+        n.click();
+        n.click();
+      });
+      await p
+        .getByRole("button", { name: "오늘 출석 완료", exact: true })
+        .waitFor();
+      assert.equal(sends, 1);
+      assert.equal((await api(p, "/shop")).body.currencyBalance, before + 123);
+      assert.equal(
+        (await api(p, "/attendance")).body.claims.length,
+        history + 1,
+      );
+      await p.reload();
+      await p
+        .getByRole("button", { name: "오늘 출석 완료", exact: true })
+        .waitFor();
+      await shot(p, "attendance-real");
+      await p.unroute("**/api/packs");
     },
   );
   assert.deepEqual(errors, []);
