@@ -1,0 +1,87 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "scenario": "slow",
+    "actualVsAndBattle": true,
+    "selectedDeckPreserved": true,
+    "onlySelectedDeckRead": true,
+    "matchStartedOnce": true,
+    "localOwnedEmote": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scenario": "failure",
+    "actualVsAndBattle": true,
+    "selectedDeckPreserved": true,
+    "onlySelectedDeckRead": true,
+    "matchStartedOnce": true,
+    "localOwnedEmote": false,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "quick",
+    "retryFromReadFailure": true,
+    "actualQueueOrRoom": true,
+    "noDuplicateStart": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "friendly",
+    "retryFromReadFailure": true,
+    "actualQueueOrRoom": true,
+    "noDuplicateStart": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "scenario": "slow",
+    "actualVsAndBattle": true,
+    "selectedDeckPreserved": true,
+    "onlySelectedDeckRead": true,
+    "matchStartedOnce": true,
+    "localOwnedEmote": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "scenario": "failure",
+    "actualVsAndBattle": true,
+    "selectedDeckPreserved": true,
+    "onlySelectedDeckRead": true,
+    "matchStartedOnce": true,
+    "localOwnedEmote": false,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "quick",
+    "retryFromReadFailure": true,
+    "actualQueueOrRoom": true,
+    "noDuplicateStart": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "friendly",
+    "retryFromReadFailure": true,
+    "actualQueueOrRoom": true,
+    "noDuplicateStart": true,
+    "errors": []
+  },
+  {
+    "mode": "draft",
+    "entryAvailable": true,
+    "noSavedDeckDependency": true
+  }
+]

@@ -202,14 +202,14 @@ async function setup(p, { missing = false, invalid = false } = {}) {
 try {
  for(const [width,height] of [[360,640],[390,844],[412,915],[844,390],[1440,900]]){
   for(const path of ['/','/online']){
-   const p=await b.newPage({viewport:{width,height},ignoreHTTPSErrors:qaOrigin.startsWith('https:')});const errors=[];p.on('pageerror',e=>errors.push(e.message));await setup(p);
+   const p=await b.newPage({viewport:{width,height},ignoreHTTPSErrors:qaOrigin.startsWith('https:')});const errors=[];p.on('pageerror',e=>errors.push(e.message));const x=await setup(p);
    await p.goto(qaOrigin+path);
    const banner=p.getByTestId('launch-deck-banner');await banner.getByText('출전 검증 덱',{exact:true}).waitFor();
    const button=banner.getByRole('button',{name:'덱 변경',exact:true});await button.waitFor();
    const geometry=await button.evaluate(n=>{const r=n.getBoundingClientRect(),a=n.closest('aside').getBoundingClientRect();return {width:r.width,height:r.height,inside:r.top>=a.top&&r.bottom<=a.bottom&&r.left>=a.left&&r.right<=a.right,hit:n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};});
    assert.ok(geometry.inside&&geometry.hit,JSON.stringify({width,height,path,geometry}));assert.ok(geometry.width>=44&&geometry.height>=44);
-   await p.screenshot({path:`${out}/${path==='/'?'home':'battle'}-${width}.png`});await button.click();await p.getByRole('dialog',{name:'출전 덱 선택'}).waitFor();
-   assert.deepEqual(errors,[]);results.push({viewport:{width,height},ignoreHTTPSErrors:qaOrigin.startsWith('https:'),path,button:geometry,dialogOpened:true});await p.close();
+   await p.screenshot({path:`${out}/${path==='/'?'home':'battle'}-${width}.png`});await button.click();const picker=p.getByRole('dialog',{name:'출전 덱 선택'});await picker.waitFor();await picker.locator('article').filter({hasText:'첫 번째 덱'}).getByRole('button',{name:'이 덱 사용',exact:true}).click();await picker.waitFor({state:'hidden'});await banner.getByText('첫 번째 덱',{exact:true}).waitFor();assert.equal(x.writes.length,1);assert.equal(x.decks.find(d=>d.isSelected).id,'other');
+   assert.deepEqual(errors,[]);results.push({viewport:{width,height},ignoreHTTPSErrors:qaOrigin.startsWith('https:'),path,button:geometry,dialogOpened:true,selectionChangedOnce:true});await p.close();
   }
  }
 
@@ -217,6 +217,10 @@ try {
   const p=await b.newPage({viewport:{width:360,height:640},ignoreHTTPSErrors:qaOrigin.startsWith('https:')});await setup(p,{[variant]:true});await p.goto(qaOrigin+path);const banner=p.getByTestId('launch-deck-banner');await banner.locator('button').first().waitFor();await p.waitForTimeout(300);
   for(const button of await banner.locator('button').all()){const g=await button.evaluate(n=>{const r=n.getBoundingClientRect(),a=n.closest('aside').getBoundingClientRect();return {inside:r.top>=a.top&&r.bottom<=a.bottom,hit:n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};});assert.ok(g.inside&&g.hit,JSON.stringify({variant,path,text:await button.textContent(),g}));}
   results.push({variant,path,allActionsVisible:true});await p.close();
+ }
+
+ for(const height of [320,390]){
+  const p=await b.newPage({viewport:{width:844,height},ignoreHTTPSErrors:qaOrigin.startsWith('https:')});await setup(p);await p.route('**/qa/retro-font/assets/champion-*',r=>r.abort());await p.goto(qaOrigin);const banner=p.getByTestId('launch-deck-banner');await banner.getByText('그림을 불러오지 못했어요.',{exact:false}).waitFor();const action=banner.getByRole('button',{name:'덱 변경',exact:true});const inside=await action.evaluate(n=>{const r=n.getBoundingClientRect(),a=n.closest('aside').getBoundingClientRect();return r.top>=a.top&&r.bottom<=a.bottom&&r.bottom<=innerHeight&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));});assert.ok(inside);await action.click();await p.getByRole('dialog',{name:'출전 덱 선택'}).waitFor();results.push({viewport:{width:844,height},artFailed:true,actionVisibleAndOperable:true});await p.close();
  }
  await writeFile(`${out}/results.json`,JSON.stringify(results,null,2));console.log(JSON.stringify(results));
 }finally{await b.close();}

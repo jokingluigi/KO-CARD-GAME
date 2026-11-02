@@ -4,6 +4,7 @@
       "width": 360,
       "height": 640
     },
+    "ignoreHTTPSErrors": false,
     "path": "/",
     "button": {
       "width": 64,
@@ -11,13 +12,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 360,
       "height": 640
     },
+    "ignoreHTTPSErrors": false,
     "path": "/online",
     "button": {
       "width": 71,
@@ -25,13 +28,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 390,
       "height": 844
     },
+    "ignoreHTTPSErrors": false,
     "path": "/",
     "button": {
       "width": 64,
@@ -39,13 +44,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 390,
       "height": 844
     },
+    "ignoreHTTPSErrors": false,
     "path": "/online",
     "button": {
       "width": 71,
@@ -53,13 +60,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 412,
       "height": 915
     },
+    "ignoreHTTPSErrors": false,
     "path": "/",
     "button": {
       "width": 64,
@@ -67,13 +76,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 412,
       "height": 915
     },
+    "ignoreHTTPSErrors": false,
     "path": "/online",
     "button": {
       "width": 71,
@@ -81,13 +92,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 844,
       "height": 390
     },
+    "ignoreHTTPSErrors": false,
     "path": "/",
     "button": {
       "width": 64,
@@ -95,13 +108,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 844,
       "height": 390
     },
+    "ignoreHTTPSErrors": false,
     "path": "/online",
     "button": {
       "width": 71,
@@ -109,13 +124,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 1440,
       "height": 900
     },
+    "ignoreHTTPSErrors": false,
     "path": "/",
     "button": {
       "width": 64,
@@ -123,13 +140,15 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "viewport": {
       "width": 1440,
       "height": 900
     },
+    "ignoreHTTPSErrors": false,
     "path": "/online",
     "button": {
       "width": 71,
@@ -137,7 +156,8 @@
       "inside": true,
       "hit": true
     },
-    "dialogOpened": true
+    "dialogOpened": true,
+    "selectionChangedOnce": true
   },
   {
     "variant": "missing",
@@ -158,5 +178,21 @@
     "variant": "invalid",
     "path": "/online",
     "allActionsVisible": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 320
+    },
+    "artFailed": true,
+    "actionVisibleAndOperable": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "artFailed": true,
+    "actionVisibleAndOperable": true
   }
 ]

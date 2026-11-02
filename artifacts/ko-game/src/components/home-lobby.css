@@ -542,3 +542,10 @@ main.ko-home-lobby.ko-main-menu .ko-main-menu__user {flex-direction:column;align
 @media(min-width:1200px) and (min-height:760px){.ko-home-lobby {--home-content-gap:24px;}}
 @media(max-width:767px) and (max-height:650px) and (orientation:portrait){.ko-home-lobby {--home-content-gap:4px;}}
 @media(max-height:450px) and (orientation:landscape){.ko-home-lobby {--home-content-gap:6px;}}
+/* A failed poster is a text fallback, so landscape must size to its content too. */
+@media(max-height:450px) and (orientation:landscape){
+ .ko-home-lobby.ko-main-menu .ko-launch-banner--empty{bottom:auto;height:auto;min-height:0;max-height:none}
+ .ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__details .ko-home-deck-summary{display:none}
+ .ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-home-launch-status{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+ .ko-home-lobby.ko-main-menu .ko-launch-banner--empty .ko-launch-banner__actions{align-self:stretch}
+}
