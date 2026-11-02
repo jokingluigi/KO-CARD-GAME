@@ -1,0 +1,12 @@
+{
+  "deployedBundle": true,
+  "checkboxDisplayedAndToggles": true,
+  "emotesOnly": true,
+  "accountAndCatalogIntercepted": true,
+  "productionWritesSent": 0,
+  "blockedRequests": [
+    "/api/online-matches/ws-ticket",
+    "/api/online-matches/ws-ticket"
+  ],
+  "errors": []
+}

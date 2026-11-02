@@ -1,0 +1,11 @@
+{
+  "commit": "3886a7456779d4abe2ee39c96b39c97ca42a2113",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbjvqns9v7es73b9noog",
+  "status": "live",
+  "liveCommit": "3886a7456779d4abe2ee39c96b39c97ca42a2113",
+  "healthStatus": 200,
+  "backgroundPlacementField": true,
+  "existingCenteredPlacement": true,
+  "maintenanceEnabled": false
+}

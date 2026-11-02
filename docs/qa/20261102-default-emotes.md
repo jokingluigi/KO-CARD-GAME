@@ -34,3 +34,11 @@
 ## 변경 파일
 
 `lib/cosmetics/src/index.ts`, `api-server/src/lib/default-emotes.ts`, `api-server/src/lib/cosmetics.ts`, `api-server/src/routes/cosmetics.ts`, `api-server/src/routes/packs.ts`, `ko-game/src/components/admin-cosmetics.tsx`, `ko-game/src/components/cosmetics.css`, `ko-game/src/pages/cosmetics.tsx`, 격리 DB/API 검사와 브라우저 검사.
+
+## 배포 확인
+
+기존 상시 배포 승인에 따라 소스 `3886a7456779d4abe2ee39c96b39c97ca42a2113`를 API→프런트 순으로 배포했다. 두 서비스 모두 해당 소스로 live, health 200. 프런트 JS/CSS 119개를 로컬 운영 빌드와 SHA-256 대조했다. 점검 설정은 배포 전후 false로 유지했고 main 병합은 하지 않았다.
+
+운영 주소의 실제 관리자 번들에서 기본 지급 체크·해제와 다른 유형 미노출을 확인했다. 인증·카탈로그 응답은 검증용으로 격리했으며 모든 쓰기 요청을 차단했다(접속 상태용 ws-ticket 시도도 차단). 운영 아이템 설정/유저 보유 기록에는 쓰지 않았다. 브라우저의 ignoreHTTPSErrors 사용으로 TLS 검증 결과로 간주하지 않는다.
+
+[API 배포](20261102-default-emotes-api-deployment.json) · [프런트 배포](20261102-default-emotes-front-deployment.json) · [운영 번들 검사](20261102-default-emotes/deployed-browser.json)
