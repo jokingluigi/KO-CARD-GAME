@@ -593,3 +593,24 @@
 @media (max-width:650px) {
   .ko-decks :is(input,select,textarea) { font-size:16px; }
 }
+.ko-deck-delete-dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  border: 1px solid #665538;
+  border-radius: 18px;
+  background: #141310;
+  color: #f4ecdc;
+  box-shadow: 0 24px 80px #000b;
+}
+.ko-deck-delete-dialog p { color: #c9c0af; line-height: 1.8; }
+.ko-deck-delete-dialog button { min-height: 44px; border-radius: 8px; }
+.ko-deck-delete-dialog strong { color: #f5d890; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .ko-deck-delete-dialog { animation: none !important; }
+}
+.ko-decks fieldset:disabled button { cursor: wait; }
+.ko-empty-reset { min-height: 44px; margin-top: 16px; padding: 8px 18px; border: 1px solid #8d743f; border-radius: 10px; color: #f2d58a; background: #d9b34f0d; }
+.ko-empty-reset:hover { background: #d9b34f1a; }
+.ko-loading-recovery { margin-top: 20px; padding-top: 16px; border-top: 1px solid #75634266; }
+.ko-loading-recovery button { min-height: 44px; margin-top: 16px; }

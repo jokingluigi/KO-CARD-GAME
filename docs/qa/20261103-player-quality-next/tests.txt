@@ -1,0 +1,29 @@
+✔ one request, preserves payload and server validation, supports no-content (33.156981ms)
+✔ deadline includes fetch and never automatically resubmits a mutation (6.702556ms)
+✔ response body stalls are bounded, read errors remain retryable without claiming a write (6.432224ms)
+✔ cancellation before dispatch sends nothing (0.968696ms)
+✔ malformed success and server failure never report a mutation as definitely unsuccessful (1.036176ms)
+✔ only account-selected valid deck launches, never the first available deck (0.956318ms)
+✔ explicit rematch is honored only if it still exists and is valid; no fallback (0.186877ms)
+✔ recognizes browser and bundler asset failures (1.085429ms)
+✔ does not classify application or business errors as asset failures (0.281898ms)
+✔ unowned published card offers craft instead of deck add (1.994747ms)
+✔ owned card remains addable but owned-copy limits still apply (0.297752ms)
+✔ legendary duplicate and total limits remain enforced (0.156632ms)
+✔ tokens cannot be added and full deck remains protected (0.258002ms)
+✔ ownership remains immutable while deck count and availability are derived (0.277251ms)
+✔ a single owned copy cannot be added twice and full decks stay blocked (3.589081ms)
+✔ AI-style cards without ownership limits do not borrow player counts (0.289849ms)
+✔ draft card can be added only by its owner or an administrator (0.180868ms)
+✔ existing normal cards are legal at the owned limit; adding one more is disabled (2.411695ms)
+✔ legendary equality is legal, while a second copy exceeds the separate duplicate rule (0.406042ms)
+✔ a 25-card owned deck allows exactly three distinct legendaries, not four or 24/26 cards (0.358621ms)
+✔ saved and live errors for the same card are not repeated, and real errors identify the card (0.494853ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2706.510377

@@ -1,4 +1,5 @@
 import {reportClientFailure} from '@/lib/client-diagnostics';
+import {isScreenAssetFailure} from '@/lib/screen-recovery';
 import {
   Component,
   type ComponentType,
@@ -40,14 +41,17 @@ function toError(value: unknown): Error {
 function readDiagnosticId(){try{return sessionStorage.getItem('ko-last-diagnostic')??'확인 중';}catch{return '저장할 수 없음';}}
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
+  const assetFailure = isScreenAssetFailure(error);
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-neutral-950 p-6">
       <div className="ko-state-panel text-center">
         <h1 className="text-xl text-amber-100">
-          화면을 표시하지 못했어요
+          {assetFailure ? '화면 파일을 다시 불러와 주세요' : '화면을 표시하지 못했어요'}
         </h1>
         <p className="mt-2 text-sm text-neutral-300">
-          다시 시도해 주세요. 문제가 반복되면 발생한 모드와 직전 행동을 알려주세요.
+          {assetFailure
+            ? '업데이트되었거나 연결이 끊겨 화면 파일을 불러오지 못했어요. 현재 주소를 새로 불러오면 다시 확인할 수 있어요.'
+            : '다시 시도해 주세요. 문제가 반복되면 발생한 모드와 직전 행동을 알려주세요.'}
         </p>
         <p className="mt-3 break-all text-xs text-neutral-400">오류 확인 코드: {readDiagnosticId()}</p>
         <a href={import.meta.env.BASE_URL} className="ko-surface-back">메인 메뉴로 돌아가기</a>
@@ -59,10 +63,10 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
         ) : null}
         <button
           type="button"
-          onClick={resetError}
+          onClick={assetFailure ? () => window.location.reload() : resetError}
           className="ko-experience-action"
         >
-          다시 시도
+          {assetFailure ? '화면 다시 불러오기' : '다시 시도'}
         </button>
       </div>
     </div>

@@ -1,3 +1,7 @@
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { CatalogPagination } from '@/components/catalog-pagination';
 import {prefersReducedMotion} from "@/components/presentation-config";
 import "@/components/player-ux/player-ux.css";
@@ -258,6 +262,12 @@ export default function Decks() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
+  const mutationLock = useRef(false);
+  const [deleteTarget, setDeleteTarget] = useState<{id:string; name:string} | null>(null);
+  const deleteTrigger = useRef<HTMLElement | null>(null);
+  const errorRegion = useRef<HTMLDivElement | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [championPickerOpen, setChampionPickerOpen] = useState(false);
@@ -286,7 +296,24 @@ export default function Decks() {
   const [craftNotice, setCraftNotice] = useState("");
   const [craftScene, setCraftScene] = useState<CollectionActionScene | null>(null);
   const craftRequestGeneration = useRef(0);
-  const deleteConfirmationOpenRef = useRef(false);
+  useEffect(() => {
+    if (!errorMessage) return;
+    const frame = requestAnimationFrame(() => {
+      errorRegion.current?.focus({preventScroll:true});
+      errorRegion.current?.scrollIntoView({block:"nearest",behavior:"instant"});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [errorMessage]);
+  function beginMutation() {
+    if (mutationLock.current) return false;
+    mutationLock.current = true;
+    setIsMutating(true);
+    return true;
+  }
+  function endMutation() {
+    mutationLock.current = false;
+    setIsMutating(false);
+  }
 
   const checkAuthentication = useCallback(() => {
     const generation = ++authRequestGeneration.current;
@@ -331,6 +358,7 @@ export default function Decks() {
     if (authStatus !== "authenticated") return;
     let cancelled = false;
     setIsLoading(true);
+    setLoadFailed(false);
     Promise.all([fetchDeckOptions(), fetchDecks()])
       .then(([nextOptions, nextDecks]) => {
         if (cancelled) return;
@@ -350,6 +378,7 @@ export default function Decks() {
       })
       .catch((error: unknown) => {
         if (!cancelled) {
+          setLoadFailed(true);
           setErrorMessage(error instanceof Error ? error.message : "덱 정보를 불러오지 못했습니다.");
         }
       })
@@ -359,14 +388,14 @@ export default function Decks() {
     return () => {
       cancelled = true;
     };
-  }, [authStatus]);
+  }, [authStatus, loadAttempt]);
 
   const editingDeck = decks.find((deck) => deck.id === editingId) ?? null;
   const currentDraft={editingId,name:deckName,championId,cards:cardIds};
   const baseline={editingId:editingDeck?.id??null,name:editingDeck?.name??EMPTY_DECK_NAME,championId:editingDeck?.championDefinitionId??null,cards:editingDeck?.cardDefinitionIds??[]};
   const dirty=!sameDraft(currentDraft,baseline);
   const recovery=useDeckRecovery(authUser?.id,authStatus==='authenticated'&&!isLoading,currentDraft,dirty);
-  const changeEditor=(action:()=>void)=>{if(!dirty||window.confirm('저장하지 않은 변경이 있어요. 다른 덱으로 이동할까요?'))action();};
+  const changeEditor=(action:()=>void)=>{if(mutationLock.current)return;if(!dirty||window.confirm('저장하지 않은 변경이 있어요. 다른 덱으로 이동할까요?'))action();};
   const cardById = useMemo(() => {
     const map = new Map<string, DeckCard>();
     editingDeck?.cards.forEach((card) => map.set(card.id, card));
@@ -522,6 +551,7 @@ export default function Decks() {
   useEffect(()=>{if(!changedCard)return;const timer=setTimeout(()=>setChangedCard(null),650);return()=>clearTimeout(timer);},[changedCard]);
 
   function addCard(card: DeckCard) {
+    if (mutationLock.current) return;
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
     if (cardIds.length >= DECK_SIZE || (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken || reason || ownershipReason) {
@@ -611,6 +641,7 @@ export default function Decks() {
   }
 
   function removeCard(id: string) {
+    if (mutationLock.current) return;
     if(!cardIds.includes(id))return;
     setChangedCard({id,kind:"remove"});
     flyBetween(document.querySelector(`[data-testid="row-selected-card-${CSS.escape(id)}"]`),document.querySelector(`[data-testid="card-collection-${CSS.escape(id)}"]`),true);
@@ -623,12 +654,13 @@ export default function Decks() {
   }
 
   async function handleSave() {
+    if (mutationLock.current) return;
     const trimmedName = deckName.trim();
     if (!trimmedName) {
       setErrorMessage("덱 이름을 입력해주세요.");
       return;
     }
-    setIsMutating(true);
+    if (!beginMutation()) return;
     setErrorMessage("");
     setStatusMessage("");
     try {
@@ -646,56 +678,53 @@ export default function Decks() {
     } catch (error: unknown) {
       setErrorMessage(error instanceof Error ? error.message : "덱을 저장하지 못했습니다.");
     } finally {
-      setIsMutating(false);
+      endMutation();
     }
   }
 
   async function handleSelect() {
     if (!editingId || !isValidForSelection) return;
     if(dirty){setErrorMessage("변경 사항을 먼저 저장한 뒤 출전 덱으로 지정해 주세요.");return;}
-    setIsMutating(true);
+    if (!beginMutation()) return;
     setErrorMessage("");
     setStatusMessage("");
     try {
       const result = await selectDeck(editingId);
       if (!result.deck) throw new Error("서버가 선택된 덱을 반환하지 않았습니다.");
-      const refreshedDecks = await fetchDecks();
-      setDecks(refreshedDecks);
-      const selected = refreshedDecks.find((deck) => deck.id === result.deck?.id) ?? result.deck;
-      openDeck(selected);
+      const selected = result.deck;
+      setDecks(current => replaceDeck(current.map(deck => ({...deck, isSelected:false})), {...selected,isSelected:true}));
+      openDeck({...selected,isSelected:true});
       setStatusMessage("출전 덱을 변경했습니다.");
     } catch (error: unknown) {
       setErrorMessage(error instanceof Error ? error.message : "출전 덱을 변경하지 못했습니다.");
     } finally {
-      setIsMutating(false);
+      endMutation();
     }
   }
 
-  async function handleDelete() {
-    if (!editingId) return;
-    if (deleteConfirmationOpenRef.current || isMutating) return;
-    deleteConfirmationOpenRef.current = true;
-    const targetName = deckName || "이 덱";
-    let confirmed = false;
-    try {
-      confirmed = window.confirm(`"${targetName}" 덱을 삭제하시겠습니까?`);
-    } finally {
-      deleteConfirmationOpenRef.current = false;
-    }
-    if (!confirmed) return;
-    setIsMutating(true);
+  function handleDelete() {
+    if (!editingId || mutationLock.current) return;
+    deleteTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setDeleteTarget({id:editingId,name:deckName || "이 덱"});
+  }
+
+  async function confirmDelete() {
+    const target = deleteTarget;
+    if (!target || !beginMutation()) return;
+    setDeleteTarget(null);
     setErrorMessage("");
     setStatusMessage("");
     try {
-      await deleteDeck(editingId);
-      const nextDecks = await fetchDecks();
-      setDecks(nextDecks);
+      await deleteDeck(target.id);
+      setDecks(current => current.filter(deck => deck.id !== target.id));
+      recovery.discard();
       createDraft();
-      setStatusMessage("덱을 삭제했습니다.");
+      setStatusMessage("덱을 삭제했습니다. 보유 카드는 그대로 유지돼요.");
+      requestAnimationFrame(() => document.getElementById("deck-name")?.focus());
     } catch (error: unknown) {
       setErrorMessage(error instanceof Error ? error.message : "덱을 삭제하지 못했습니다.");
     } finally {
-      setIsMutating(false);
+      endMutation();
     }
   }
 
@@ -736,34 +765,23 @@ export default function Decks() {
         </header>
 
         {errorMessage && (
-          <div className="ko-decks__error mt-4 flex items-center justify-between gap-4" role="alert" data-testid="status-decks-error">
+          <div ref={errorRegion} tabIndex={-1} className="ko-decks__error mt-4 flex flex-wrap items-center justify-between gap-4" role="alert" data-testid="status-decks-error">
             <span>{errorMessage}</span>
-            <button
+            {loadFailed && <button
               type="button"
               className="ko-decks__mini-button shrink-0"
               data-testid="button-retry-decks"
-              onClick={() => {
-                setErrorMessage("");
-                setAuthStatus(previous => previous === "error" ? "error" : "checking");
-                fetchCurrentUser()
-                  .then((result) => {
-                    setAuthUser(result.authenticated ? result.user : null);
-                    setAuthStatus(result.authenticated ? "authenticated" : "unauthenticated");
-                  })
-                  .catch((error) => {
-                    setAuthStatus("error");
-                    setErrorMessage(error instanceof Error ? error.message : "인증 상태를 확인하지 못했습니다.");
-                  });
-              }}
+              onClick={() => {setErrorMessage("");setLoadAttempt(value=>value+1);}}
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-              다시 시도
-            </button>
+              목록 다시 불러오기
+            </button>}
           </div>
         )}
 
-        {recovery.recovery&&<section className="my-3 border border-amber-700 p-3 text-sm" role="status"><p>이 계정의 저장하지 않은 덱 편집이 있어요: {recovery.recovery.name}</p><button className="min-h-11 px-3 underline" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);setEditorCollapsed(false);recovery.acknowledge();}}>임시 편집 복구</button><button className="min-h-11 px-3" onClick={recovery.discard}>임시 편집 삭제</button></section>}
+        {recovery.recovery&&<section className="my-3 border border-amber-700 p-3 text-sm" role="status"><p>이 계정의 저장하지 않은 덱 편집이 있어요: {recovery.recovery.name}</p><button disabled={isMutating} className="min-h-11 px-3 underline" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);setEditorCollapsed(false);recovery.acknowledge();}}>임시 편집 복구</button><button disabled={isMutating} className="min-h-11 px-3" onClick={recovery.discard}>임시 편집 삭제</button></section>}
         {dirty&&<p className="my-2 text-sm text-amber-200" role="status">저장하지 않은 변경 · {recovery.error?'임시 보관 실패 — 나가기 전에 저장하세요.':recovery.stored?'이 브라우저에 임시 보관됨':'임시 보관 준비 중'}</p>}
+        <fieldset disabled={isMutating} className="contents" aria-label="덱 구성" aria-busy={isMutating}>
         <nav className="ko-workspace-nav" aria-label="덱 편집 작업 이동">
           <button type="button" aria-pressed={workspace==='decks'} onClick={()=>setWorkspace('decks')}>내 덱</button><button type="button" aria-pressed={workspace==='cards'} onClick={()=>setWorkspace('cards')}>카드 찾기</button><button type="button" aria-pressed={workspace==='editor'} onClick={()=>{setWorkspace('editor');setEditorCollapsed(false);}}>현재 덱 · {cardIds.length}/25</button>
         </nav>
@@ -858,6 +876,7 @@ export default function Decks() {
                 <Search className="mx-auto h-7 w-7 text-[#8f6d37]" aria-hidden="true" />
                 <h2 className="mt-3">카드가 없습니다</h2>
                 <p>검색어 또는 필터를 바꿔보세요.</p>
+                {(search || filter!=="ALL" || favoritesOnly || Object.values(catalogFilters).some(value=>value!=="ALL")) && <button type="button" className="ko-decks__mini-button mx-auto mt-4" onClick={()=>{setSearch("");setFilter("ALL");setFavoritesOnly(false);setCatalogFilters({...EMPTY_CATALOG_FILTERS});requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('[data-testid="input-card-search"]')?.focus());}}>검색·필터 초기화</button>}
               </div>
             ) : (
               <div className="ko-decks__card-grid" data-testid="grid-card-collection">
@@ -1094,7 +1113,26 @@ export default function Decks() {
             {statusMessage && <p className="px-[18px] pb-3 text-center text-[0.68rem] font-bold text-[#d5b25b]" role="status" data-testid="status-decks-success" data-ui-mount-motion data-ui-motion-state={`SUCCESS:${statusMessage}`}>{statusMessage}</p>}
           </section>
         </div>
+        </fieldset>
       </div>
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={open=>{if(!open)setDeleteTarget(null);}}>
+        <AlertDialogContent className="ko-deck-delete-dialog" onCloseAutoFocus={event=>{
+          event.preventDefault();
+          if(deleteTrigger.current?.isConnected)deleteTrigger.current.focus({preventScroll:true});
+          else document.getElementById("deck-name")?.focus({preventScroll:true});
+        }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 덱을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteTarget?.name}</strong> 덱 구성이 삭제돼요. 보유 카드와 스킨은 그대로 유지되지만, 삭제한 덱 구성은 되돌릴 수 없어요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>계속 보관</AlertDialogCancel>
+            <AlertDialogAction onClick={()=>void confirmDelete()} className="bg-red-950 text-red-100 hover:bg-red-900">덱 삭제</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <CardDetailDialog
         card={detailCard}
         open={Boolean(detailCard)}

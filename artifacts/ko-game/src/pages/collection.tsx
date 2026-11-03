@@ -8,7 +8,7 @@ import {WishlistArrivals} from "@/components/player-tools/wishlist";
 import {MotionNumber} from "@/components/presentation-motion";
 import {useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
-import { useEffect, useMemo, useState, useRef, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, Star, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
@@ -398,7 +398,15 @@ export default function CollectionPage() {
             </section>
 
              {(tab === "cards" ? filteredCards : filteredCraftableCards).length === 0 ? (
-               <EmptyState title={tab === "cards" ? (collection.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
+               <EmptyState title={tab === "cards" ? (catalogCards.length ? "조건에 맞는 카드가 없습니다." : "아직 표시할 카드가 없습니다.") : "조건에 맞는 제작 카드가 없습니다."}>
+                 {(search || cardType!=="ALL" || favoritesOnly || Object.values(catalogFilters).some(value=>value!=="ALL")) && <>
+                   <p className="mt-2 text-neutral-400">검색어와 분류를 초기화해 전체 목록을 확인하세요.</p>
+                   <button type="button" className="ko-empty-reset" onClick={()=>{
+                     setSearch("");setCardType("ALL");setFavoritesOnly(false);setCatalogFilters({...EMPTY_CATALOG_FILTERS});
+                     requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('input[aria-label="카드 이름 검색"]')?.focus());
+                   }}>검색·필터 초기화</button>
+                 </>}
+               </EmptyState>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
                {(tab === "cards" ? filteredCards : filteredCraftableCards).slice((catalogPage-1)*12,catalogPage*12).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
@@ -619,6 +627,6 @@ function CollectionLoading() {
   );
 }
 
-function EmptyState({ title }: { title: string }) {
-  return <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">{title}</div>;
+function EmptyState({ title, children }: { title: string; children?:ReactNode }) {
+  return <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-12 text-center text-sm text-neutral-300" role="status"><p>{title}</p>{children}</div>;
 }
