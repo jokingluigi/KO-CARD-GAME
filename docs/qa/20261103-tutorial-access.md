@@ -24,3 +24,10 @@ The API was deployed at commit `466b722934ccbd71e960002cec152d7fac6874b6` and re
 
 ## Deployed UI follow-up
 The deployed public rulebook passed on 390×844, 844×390 and 1440×900 without account/catalog fixtures or production writes. An initial deployed-home fixture check caught overflow before web fonts completed loading at 320×568. Added short-screen hero compaction and medium-small screen spacing reserve, and made measurements explicitly await font settlement. Both the normal-font and deliberately blocked-font seven-viewport suites now pass locally; the final frontend receipt and deployed fixture results record the follow-up release.
+
+## Final live verification
+- API source: `466b722934ccbd71e960002cec152d7fac6874b6`; frontend source with small-screen follow-up: `760754f9c75c040d8991ddf5f98bc154d550cf87`. Both Render deployments are live at the requested commits.
+- All 136 frontend JS/CSS files match SHA-256 hashes of the revision-aligned local production build. Health 200; maintenance remains false, unchanged.
+- Actual deployed frontend, isolated account/catalog responses: all 7 viewport checks pass with normal fonts and again with web fonts deliberately blocked (14 viewport passes). These confirm deployed UI assets and interactions; authentication responses here are fixtures, not a live signed-in account test.
+- The public live rulebook was additionally tested without those fixtures at 3 viewport sizes. No production writes were sent during browser QA.
+- No new/manual production migration, no main merge. Optional email recovery and journal sync remain unavailable pending separate setup, as confirmed above.
