@@ -1,3 +1,4 @@
+import {useTutorialAutoReward} from "@/components/tutorial/tutorial-rewards";
 import {fetchTutorialCatalog} from '@/components/tutorial/tutorial-client';
 import { LESSONS, lessonUnavailable, createTutorialLesson, tutorialGoal, tutorialActionAllowed, type LessonId, type TutorialCatalog } from '@/components/tutorial/lesson-engine';
 import { TutorialMenu, TutorialCoach, readTutorialProgress, saveTutorialProgress } from '@/components/tutorial/lesson-ui';
@@ -1006,6 +1007,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }, [turnKey, gameState.status, gameplayReady, isTutorial]);
 
   const practiceGoal=isTutorial&&tutorialLesson&&practiceCatalog?tutorialGoal(tutorialLesson,gameState,practiceCatalog,tutorialCancelled):null;
+  useTutorialAutoReward(authUser?.id,isTutorial&&tutorialLesson&&practiceGoal?.complete?{lessonId:tutorialLesson,gameId:gameState.gameId,actions:tutorialActionsRef.current}:undefined);
   useEffect(()=>{
     if(!isTutorial||!tutorialLesson||!practiceGoal?.complete||!authUser)return;
     saveTutorialProgress(authUser.id,tutorialLesson);setPracticeCompleted(readTutorialProgress(authUser.id));

@@ -11,6 +11,25 @@ function checkedStatus(value:Status):Status {
 }
 const root=(import.meta.env.BASE_URL??'/').replace(/\/$/,'')+'/api/tutorial';
 const key=(account:string,id:LessonId)=>`ko-tutorial-proof-v1:${account}:${id}`;
+const knownClaims=new Set<string>();
+function rememberClaims(account:string,status:Status){for(const lesson of status.lessons)if(lesson.claimed)knownClaims.add(account+':'+lesson.id);if(knownClaims.size>128)knownClaims.clear();}
+const settlements=new Map<string,Promise<{status:Status}>>();
+function settleProof(account:string,proof:TutorialProof,retry=false){
+ const identity=account+':'+proof.gameId;
+ if(!retry&&settlements.has(identity))return settlements.get(identity)!;
+ try{localStorage.setItem(key(account,proof.lessonId),JSON.stringify(proof));}catch{}
+ const promise=requestJson<{status:Status}>(root+'/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(proof)},{label:'튜토리얼 보상'}).then(result=>{const status=checkedStatus(result.status);rememberClaims(account,status);return {...result,status};});
+ settlements.set(identity,promise);
+ if(settlements.size>32)settlements.delete(settlements.keys().next().value!);
+ return promise;
+}
+/** Completion settlement is independent of dialog visibility and its animation. */
+export function useTutorialAutoReward(accountId:string|undefined,proof:TutorialProof|undefined){
+ useEffect(()=>{
+  if(!accountId||accountId.startsWith('guest-')||!proof||knownClaims.has(accountId+':'+proof.lessonId))return;
+  void settleProof(accountId,proof).catch(()=>{}); // Pending proof + panel provide explicit recovery.
+ },[accountId,proof?.gameId]);
+}
 function pendingProofs(account:string){
  const pending:TutorialProof[]=[];
  for(const lesson of LESSONS)try{const p=JSON.parse(localStorage.getItem(key(account,lesson.id))??'null');if(p?.lessonId===lesson.id&&typeof p.gameId==='string'&&Array.isArray(p.actions))pending.push(p);}catch{}
@@ -28,10 +47,11 @@ export function TutorialRewardsPanel({accountId,proof}:{accountId?:string;proof?
   const run=async()=>{
    try{
     let next=checkedStatus(await requestJson<Status>(root+'/status',{}, {label:'튜토리얼 보상 확인'}));
+    rememberClaims(accountId,next);
     const proofs=proof?[proof]:recover?pendingProofs(accountId):[];
     for(const p of proofs){
      if(!next.lessons.some(l=>l.id===p.lessonId&&l.claimed)){
-      const result=await requestJson<{status:Status}>(root+'/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)},{label:'튜토리얼 보상'});
+      const result=await settleProof(accountId,p,attempt>0);
       next=checkedStatus(result.status);
      }
      try{localStorage.removeItem(key(accountId,p.lessonId));}catch{}

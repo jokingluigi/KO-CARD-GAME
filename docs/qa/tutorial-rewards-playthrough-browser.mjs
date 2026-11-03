@@ -39,6 +39,7 @@ try {
   ]) {
     const context = await browser.newContext({
       viewport: { width, height },
+      ignoreHTTPSErrors:true,
       isMobile: width === 390,
       hasTouch: width === 390,
       reducedMotion: width === 390 ? "no-preference" : "reduce",
@@ -48,7 +49,7 @@ try {
     });
     const p = await context.newPage(),
       errors = [],
-      writes = [];
+      writes = [],earlyClaims=[];
     p.on("pageerror", (e) => errors.push(e.message));
     p.on("dialog", (d) => d.accept());
     await p.addInitScript(() => {
@@ -60,6 +61,7 @@ try {
       const req = r.request(),
         path = new URL(req.url()).pathname;
       if(path.startsWith('/api/tutorial/')){
+        if(path.endsWith('/claim'))earlyClaims.push({lessonId:req.postDataJSON().lessonId,beforeSuccessDialog:await p.locator('[role=dialog][data-state=open]').getByRole('heading',{name:'실습 성공',exact:true}).count()===0});
         const upstream=await fetch(rewardFixture.origin+path,{method:req.method(),headers:{Cookie:rewardFixture.cookie,'Content-Type':'application/json'},...(req.method()!=='GET'?{body:req.postData()}: {})});
         const body=await upstream.text();
         if(path.endsWith('/claim')&&!lostReply&&upstream.ok){lostReply=true;return r.fulfill({status:503,json:{message:'보상 응답을 잃었어요. 같은 완료 기록으로 다시 확인하세요.'}});}
@@ -294,7 +296,10 @@ try {
         await video.path(),
         out + "/tutorial-mobile-playthrough.webm",
       );
+    assert.ok(earlyClaims.every(c=>c.beforeSuccessDialog));
+    if(width===390)assert.equal(earlyClaims.length,6);
     results.push({
+      settlementBeforeResultDialog:true,firstCompletionClaims:earlyClaims.length,
       actualServerValidatedRewards:true,lostReplyRecovered:lostReply,
       width,
       height,
