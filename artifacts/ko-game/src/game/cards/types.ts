@@ -19,17 +19,20 @@ export function normalizeCardRarity(value?: unknown): CardRarity {
 
 export function allowedCardRarities(cardType: 'WRESTLER' | 'TECHNIQUE'): CardRarity[] {
   return cardType === 'TECHNIQUE'
-    ? ['EPIC', 'TOKEN']
+    ? ['EPIC', 'CHAMPION', 'TOKEN']
     : ['NORMAL', 'EPIC', 'LEGENDARY', 'CHAMPION', 'TOKEN'];
 }
 
 export function normalizeCardRarityForType(
   cardType: 'WRESTLER' | 'TECHNIQUE' | undefined,
   value?: unknown,
+  tokenFlags?: { isToken?: boolean; isChampionToken?: boolean },
 ): CardRarity {
   const rarity = normalizeCardRarity(value);
-  if (cardType === 'TECHNIQUE' && rarity !== 'TOKEN') {
-    return 'EPIC';
+  if (cardType === 'TECHNIQUE') {
+    // An explicitly selected champion grade also applies to generated spells.
+    if (rarity === 'CHAMPION') return rarity;
+    return rarity === 'TOKEN' || tokenFlags?.isToken || tokenFlags?.isChampionToken ? 'TOKEN' : 'EPIC';
   }
   return rarity;
 }

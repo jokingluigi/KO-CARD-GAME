@@ -14,7 +14,7 @@ export function CardCatalogFilters({ cards, value, onChange, children, label="�
   const costs = [...new Set(cards.map(card => card.cost))].sort((a,b) => a-b);
   const controls: [keyof CatalogFilters, string, [string,string][]][] = [
     ['ownership', '보유 여부', [['ALL','전체 보유 상태'],['OWNED','보유'],['UNOWNED','미보유']]],
-    ['rarity', '등급', [['ALL','전체 등급'],['NORMAL','일반'],['EPIC','에픽'],['LEGENDARY','레전더리']]],
+    ['rarity', '등급', [['ALL','전체 등급'],['NORMAL','일반'],['EPIC','에픽'],['LEGENDARY','레전더리'],['CHAMPION','챔피언']]],
     ['tag', '태그', [['ALL','전체 태그'], ...tags.map(tag => [tag,tag] as [string,string])]],
     ['cost', '코스트', [['ALL','전체 코스트'], ...costs.map(cost => [String(cost),String(cost)] as [string,string])]],
   ];

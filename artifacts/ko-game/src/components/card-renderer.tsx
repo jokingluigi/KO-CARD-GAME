@@ -256,9 +256,9 @@ export function CardRenderer({
   const countdownValue = countdownRemaining ?? configuredCountdownTurns({countdownTurns:countdownTurns ?? keywordConfig?.countdownTurns ?? getCardDefinitions().find(card=>card.name===name)?.effectConfig?.countdownTurns});
   const armoredRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
   const displayRulesText = visibleRuntimeKeywords.includes('COUNTDOWN') ? armoredRulesText.replace(/카운트다운(?:\s*\(\d+\)|\s+\d+\s*턴)?/g, `카운트다운(${countdownValue})`) : armoredRulesText;
-  const normalizedRarity = isChampionToken
-    ? cardType === "TECHNIQUE" ? "TOKEN" : "CHAMPION"
-    : normalizeCardRarityForType(cardType, rarity);
+  const normalizedRarity = isChampionToken && cardType !== "TECHNIQUE"
+    ? "CHAMPION"
+    : normalizeCardRarityForType(cardType, rarity, { isChampionToken });
   const normalizedCardType = cardType ?? "WRESTLER";
   // Content coordinates are canonical for every WRESTLER frame. Only the
   // frame artwork changes by rarity; frame offsets remain independent.

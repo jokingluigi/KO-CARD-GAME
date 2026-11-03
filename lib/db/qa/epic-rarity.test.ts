@@ -123,11 +123,11 @@ test('AI exceptions, test deck and actual engine match start retain EPIC',async(
  assert.deepEqual(validateDeckCounts({cardCount:24,legendaryCount:0,championCount:1}),['INVALID_CARD_COUNT']);
 });
 
-test('technique grades normalize to EPIC/TOKEN in admin, runtime and idempotent migration', async()=>{
- assert.deepEqual(allowedCardRarities('TECHNIQUE'),['EPIC','TOKEN']);
+test('technique grades preserve CHAMPION in admin/runtime; legacy migration remains idempotent', async()=>{
+ assert.deepEqual(allowedCardRarities('TECHNIQUE'),['EPIC','CHAMPION','TOKEN']);
  const base={name:'Technique grade QA',cardType:'TECHNIQUE',cost:1,attack:0,health:0,text:'unchanged',isToken:false,isChampionToken:false,keywords:[],tags:[],effectConfig:{},status:'DRAFT'};
  for(const rarity of ['NORMAL','EPIC','LEGENDARY','CHAMPION','TOKEN'] as const){
-  const expected=rarity==='TOKEN'?'TOKEN':'EPIC';
+  const expected=rarity==='TOKEN'?'TOKEN':rarity==='CHAMPION'?'CHAMPION':'EPIC';
   assert.equal(admin.parseCardInput({...base,rarity})?.rarity,expected);
   assert.equal(normalizeCardRarityForType('TECHNIQUE',rarity),expected);
   assert.equal(cardRecordToDefinition({...base,id:'qa',rarity} as never).rarity,expected);
@@ -151,4 +151,17 @@ test('technique grades normalize to EPIC/TOKEN in admin, runtime and idempotent 
  assert.deepEqual((await database.select().from(schema.cardsTable)).filter(c=>c.cardType==='WRESTLER'),wrestlersBefore);
  assert.deepEqual(await database.select().from(schema.decksTable),decksBefore);
  assert.deepEqual(await database.select().from(schema.packDefinitionsTable),packsBefore);
+});
+
+// The historical migration above is not reapplied by this feature. New authoring
+// preserves the explicit grade without changing token ownership/deck restrictions.
+test('champion spells preserve grade, token flags and effect through save/edit/runtime',async()=>{
+ const base={name:'Champion spell QA',cardType:'TECHNIQUE',rarity:'CHAMPION',cost:2,attack:0,health:0,text:'카드 1장을 뽑습니다.',isToken:false,isChampionToken:false,keywords:[],tags:[],effectId:'STRUCTURED_EFFECTS_V1',effectConfig:{effects:[{trigger:'ACTIVE',action:'DRAW',values:{amount:1}}]},status:'DRAFT'};
+ for(const flags of [{isToken:false,isChampionToken:false},{isToken:true,isChampionToken:false},{isToken:true,isChampionToken:true}]){
+  const input=admin.parseCardInput({...base,...flags});assert.ok(input);assert.equal(input.rarity,'CHAMPION');
+  const [saved]=await database.insert(schema.cardsTable).values({...input,id:'champion-spell-'+Number(flags.isToken)+Number(flags.isChampionToken)}).returning();
+  const edited=admin.parseCardInput({...saved,name:saved.name+' edited'});assert.equal(edited?.rarity,'CHAMPION');
+  const runtime=cardRecordToDefinition(saved as never);assert.equal(runtime.cardType,'TECHNIQUE');assert.equal(runtime.rarity,'CHAMPION');assert.equal(runtime.isToken,flags.isToken);assert.equal(runtime.isChampionToken,flags.isChampionToken);assert.ok(runtime.abilities.length);
+  assert.deepEqual(saved.effectConfig,base.effectConfig);
+ }
 });

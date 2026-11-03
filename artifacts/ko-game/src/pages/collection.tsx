@@ -33,7 +33,7 @@ type CardSort = "COST" | "NAME" | "RARITY";
 type CollectionLoadState = "loading" | "ready" | "error";
 
 function rarityLabel(rarity: string) {
-  return rarity === "EPIC" ? "EPIC" : rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
+  return rarity === "CHAMPION" ? "CHAMPION" : rarity === "EPIC" ? "EPIC" : rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
 }
 
 function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = false, favorite = false, onFavorite }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean; unlimited?: boolean; favorite?: boolean; onFavorite: () => void }) {
@@ -70,7 +70,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
           rulesText={card.text}
           imageUrl={card.imageUrl}
           artworkLoading="lazy"
-          rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY"}
+          rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
           imageDisplaySettings={{
             imageDisplayMode: card.imageDisplayMode,
             imageScale: card.imageScale,
@@ -209,7 +209,7 @@ export default function CollectionPage() {
       })
       .sort((left, right) => {
         if (sort === "NAME") return left.name.localeCompare(right.name, "ko");
-        if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
+        if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY", "CHAMPION", "TOKEN"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY", "CHAMPION", "TOKEN"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
   }, [cardType, catalogCards, catalogFilters, search, sort, favorites, favoritesOnly]);
@@ -225,7 +225,7 @@ export default function CollectionPage() {
       })
       .sort((left, right) => {
         if (sort === "NAME") return left.name.localeCompare(right.name, "ko");
-        if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
+        if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY", "CHAMPION", "TOKEN"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY", "CHAMPION", "TOKEN"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
   }, [cardType, collection?.craftableCards, catalogFilters, search, sort, favorites, favoritesOnly]);

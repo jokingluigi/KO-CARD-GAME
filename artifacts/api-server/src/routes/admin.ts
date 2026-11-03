@@ -657,9 +657,9 @@ export function parseCardInput(value: unknown): CardInput | null {
   const requestedRarity = CARD_RARITIES.includes(input.rarity as (typeof CARD_RARITIES)[number])
     ? input.rarity as (typeof CARD_RARITIES)[number]
     : "NORMAL";
-  const rarity = normalizeCardRarityForType(cardType,
-    cardType === "TECHNIQUE" && (input.isToken === true || input.isChampionToken === true)
-      ? "TOKEN" : requestedRarity);
+  const rarity = normalizeCardRarityForType(cardType, requestedRarity, {
+    isToken: input.isToken === true, isChampionToken: input.isChampionToken === true,
+  });
   const explicitEffectId =
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()

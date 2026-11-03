@@ -394,9 +394,9 @@ export function AdminCardManager({
   useEffect(() => {
     if (previewCardType !== "TECHNIQUE") return;
     const rarity = form.getValues("rarity");
-    const next = normalizeCardRarityForType("TECHNIQUE", preview.isToken || preview.isChampionToken ? "TOKEN" : rarity);
+    const next = normalizeCardRarityForType("TECHNIQUE", rarity, preview);
     if (rarity !== next) form.setValue("rarity", next, { shouldDirty: true });
-  }, [form, previewCardType, preview.isToken, preview.isChampionToken]);
+  }, [form, previewCardType, preview.rarity, preview.isToken, preview.isChampionToken]);
 
   const loadCards = useCallback(async () => {
     setIsLoading(true);
@@ -527,7 +527,7 @@ export function AdminCardManager({
     form.reset({
       name: card.name,
       cardType: card.cardType,
-      rarity: normalizeCardRarityForType(card.cardType, card.cardType === "TECHNIQUE" && (card.isToken || card.isChampionToken) ? "TOKEN" : card.rarity),
+      rarity: normalizeCardRarityForType(card.cardType, card.rarity, card),
       cost: card.cost,
       attack: card.attack,
       health: card.health,
@@ -1042,7 +1042,7 @@ export function AdminCardManager({
         </label>
         <select value={cardType} onChange={(event) => {
           setCardType(event.target.value);
-          if (event.target.value === "TECHNIQUE" && rarity !== "EPIC" && rarity !== "TOKEN") setRarity("");
+          if (event.target.value === "TECHNIQUE" && rarity && !allowedCardRarities("TECHNIQUE").includes(rarity as CardRarity)) setRarity("");
         }} data-testid="select-card-type" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 종류</option>
           <option value="WRESTLER">선수</option>
