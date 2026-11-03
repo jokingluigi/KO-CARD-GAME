@@ -1,0 +1,696 @@
+{
+  "commit": "0a38b6f93b0256fee3485cacb2203a8094385d44",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbkplqrncjis73f0iilg",
+  "status": "live",
+  "liveCommit": "0a38b6f93b0256fee3485cacb2203a8094385d44",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-KvOyrAO2.js",
+    "/assets/index-Bvmm5eEX.css"
+  ],
+  "assets": [
+    {
+      "file": "account-recovery-BvmIxmOQ.js",
+      "sha256": "0293607a2ea5966b614f2e811f01b85fdf82d79be3e5cec591455bc94b25c3b2",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-B2RlV69A.css",
+      "sha256": "0c7d4501983239021f7b73267ab351777f973012396e1976c418bad686bbf527",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-CPinNkDn.js",
+      "sha256": "ba492ee87175f6d6be2e5ed9d5a2c4d048c3fa020f22b870c84c8e1b72a9b3cf",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-ai-deck-manager-Bt2uB8zk.js",
+      "sha256": "5e6218028808882a7998a8d3020a8eca2c0586bdf753ff8cff3c4911b581057e",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-BUAmiLrS.css",
+      "sha256": "0b476854ccec7ea740289f013553fec790bb0dd14ef3b65dacec8343c7272350",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-R6fCdYBS.js",
+      "sha256": "cc2479ecdc90ba076e90d6a69663f25793d4a49a983581baa7eef30ffcd0112a",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-card-frame-manager-DLTrtqFn.js",
+      "sha256": "d9693b5af27ed7ab1ba4d5cdc317c9d02bcf9fd02d86105864639eae6cf87d81",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-card-manager-Bm7J3T3J.js",
+      "sha256": "281ca0a7d0358e9afe056c6222cf3b887c735eb598ec6774b0a9259fc08a1567",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-champion-manager-DsEyjDjF.js",
+      "sha256": "24c3ecf6ba3d4b42c81634c1000e3742e57722f945e9925cf089b079c06c8fa5",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-dashboard-mnyY6v7e.js",
+      "sha256": "a37bc6fb6b055b3bf16d9fd23aeb9d7a3c7405e1cf303c88d6bb74850b853fff",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-draft-manager-BTqBRYGC.js",
+      "sha256": "6076154d50f62993f05379af969a77713f3b3c49be792847eb53b70c7a3d1230",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-effect-config-Gt-Njatk.js",
+      "sha256": "7215f33cf8bde1badf800a9034be410f181bdf6f54474493b901c9655a39b8bb",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-game-media-manager-C0LW6dNP.js",
+      "sha256": "b09ea2c8bb2b8a8125393bfaa3cedafc4a93a2fa7d24749530c1c9b291e07790",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-list-controls-Bewsr0qh.js",
+      "sha256": "fdc1ecf8002f27c6145654546a14356b50d7b9754d3a6eda46ad869aea7461e1",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-notices-manager-ByBV-UH9.js",
+      "sha256": "62700f8c4a90a415bc3503e8b071ac7b80303189b3cc41f15459389f7f878a14",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-pack-manager-CPFSjd0o.js",
+      "sha256": "5223634e07598f66e0a69f22e4ec1b679490b8727a2497591045a66de14ef7f4",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-prism-manager-ClQGpitA.js",
+      "sha256": "87d966e95e95a986323c9d2b8c9d757cf7451c4bb7538f9c79eb509723f3b1d1",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-quest-manager-BJ-p2uSM.js",
+      "sha256": "6517a7f0e146e680ea51135d019069f63aa14a0c0be24b1e3a3e354d6046a6d5",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-rewards-manager-C_8oGQlP.js",
+      "sha256": "d6ad10be598e4d7f2b598982c0e968fea56ace540f7310a473f9eb5b96757193",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-shop-manager-BTqtv4Jx.js",
+      "sha256": "f99187eaf234de16da5cdfced162e8c24645a151d34311a96641f434c6ec4a46",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-tag-manager-DB0VqvVX.js",
+      "sha256": "945dd76dbd6532ee50caeb00c001a94af046b0db1095ba26c71c8917bd97e8a3",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-tower-manager-4UxK77et.js",
+      "sha256": "b65a1a3feaf2acceb1b8d0a318874ef6e7b65292f5e85afad76f495274d14626",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-tower-test-DpAZpbDq.js",
+      "sha256": "b97a99cd71679324116b62751abad7ab4204cd8df9e9fc732bb63fda7db3d811",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-usage-statistics-BlB5V07q.js",
+      "sha256": "bcead8e5639ad0a146879bb73a478bc77abb2a3a7a21f998119af56b1f35e52f",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-usage-statistics-zIUkQJsY.css",
+      "sha256": "ad212c88bda436530f682d61521f47d0e5c0f7d9e045ddf5fd9638f9d598d140",
+      "matchesLocal": true
+    },
+    {
+      "file": "ai-decks-client-DAPVSya8.js",
+      "sha256": "64a9ad9dbf39775dc64f1cd035bc086c7fbd0a13aba84fae6b95bba2f1daa135",
+      "matchesLocal": true
+    },
+    {
+      "file": "alt-inspector-hd7Hdu1K.js",
+      "sha256": "8c0a3fdcdc8e64226b434a2e4fb7b77722b58933cc67cf91882cc10ed5723e78",
+      "matchesLocal": true
+    },
+    {
+      "file": "alt-inspector-utils-BHRq88xE.js",
+      "sha256": "abe6467e0f3aa25a1c2dc8b0cbc900e3c101923129c6a0daa9cc9e754223f60b",
+      "matchesLocal": true
+    },
+    {
+      "file": "arrow-left-PCqoyn-G.js",
+      "sha256": "a70a34bcccc9cdfde867583fdc5d8928f3224595e76812927b2b8037cd0e1f52",
+      "matchesLocal": true
+    },
+    {
+      "file": "attendance-Bz0oPJEd.js",
+      "sha256": "2e592801813daebab5762cce9aba5be3edde5e4f3555169beb365f178017af5a",
+      "matchesLocal": true
+    },
+    {
+      "file": "battle-mode-button-Cg6_GT_-.css",
+      "sha256": "ab3c2c9a7fdbddb4d3856d115aff3210faa61ebb3306582848f1cf5a18888056",
+      "matchesLocal": true
+    },
+    {
+      "file": "battle-mode-button-CvSmv3sX.js",
+      "sha256": "fd2a21070dfa1729a9298057a4acd2d880240611766010fb3166476de9b71894",
+      "matchesLocal": true
+    },
+    {
+      "file": "bot-CJhi777m.js",
+      "sha256": "147589e069204b2039ca6d6790b20fc2ff43aa24698d14c369f6c285da0c716f",
+      "matchesLocal": true
+    },
+    {
+      "file": "calendar-check-2-LczdfFnu.js",
+      "sha256": "d12141abdf85748cd63c3c2187d84f73b341e5917a62f4c69aa684aaeae49995",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-artwork-hPVSCe-t.js",
+      "sha256": "524bf12f79ad12fdecde36b522c0adb94bb294a542f7b911e61b14f761e6fa55",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-catalog-filters-CqiFedal.js",
+      "sha256": "b586532f6ef4efa4689ec67f50283331744004155a3c2fe2eb6eb08723724173",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-detail-dialog-DDtKsOiY.js",
+      "sha256": "56ca5788963d3939fcf481aa43c6f1b62f69fad1a8d63e72030fd8d492aea74b",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-renderer-CA3dN5nx.css",
+      "sha256": "70adfda193708f6b129a319fda3205cfc49fc9c7372d3bdf8375415772dc9434",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-renderer-DMUyNYYY.js",
+      "sha256": "0205e14096f91e9389783a6f87b490def2eb97af3c783b98d6bab148ead10eed",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-BuHPU4vu.css",
+      "sha256": "a0fd7d1885b86dfd4991d46bafb760cbdc7aa466ab3690c6f46b9a2552c139f1",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-CgoIfvjm.js",
+      "sha256": "2578194ef343138aee265a4a52d07bd60ee283935f0cec543fed4060e3bae473",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-Btp78bx-.js",
+      "sha256": "0ae1b810bdce0c3deaba12c36a0205cb36f4e5224cb03d30575b31eb42d83e66",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-C9MeIlrk.css",
+      "sha256": "f7c3e147da31c039680ac6e1fe9f13e5ad8e3af97c41a9cb97a26cb9c0e0fb7b",
+      "matchesLocal": true
+    },
+    {
+      "file": "check-CYZyvKDr.js",
+      "sha256": "17521c1e01ac377352cc40a72babc373b6fe2db4e294441e2f9978d738274253",
+      "matchesLocal": true
+    },
+    {
+      "file": "chevron-down-BwuVs6e3.js",
+      "sha256": "d03fb8f1dd6527ca82e5997208c2ecaeec56d1158f863bbc8a85b4cf6e7f5927",
+      "matchesLocal": true
+    },
+    {
+      "file": "chevron-right-DleAZKrp.js",
+      "sha256": "dc81b8b54a1c4fdc3633b04dc684f3b437aaeee1bf01e8bd4f02460b3aee036d",
+      "matchesLocal": true
+    },
+    {
+      "file": "circle-check-BkuJSPZg.js",
+      "sha256": "65a15527e6945cc91c9c460562325b91089dd565e4133f291a882e03e220bde5",
+      "matchesLocal": true
+    },
+    {
+      "file": "coins-sJptIJX9.js",
+      "sha256": "c3b647d4795be3d0fa4df2a89b3eb70fceb4ba9a90c5cfb7677f1a9395f2945e",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-TWdKFGVI.js",
+      "sha256": "b2528a08e416e8c81822066a949e690f8c3fe683237b638e6a285d2617a2441f",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-client-CAsaeg3B.js",
+      "sha256": "06008c88a358386446ba625c3a234a0c29b89f6f715bf9cf73f8330c1c845c72",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-tGUxlaLB.js",
+      "sha256": "12dd80751bed356220169f62510701c5d46e80287152c3a7a43c039fca5ede5b",
+      "matchesLocal": true
+    },
+    {
+      "file": "combat-settings-bwRtuvg4.js",
+      "sha256": "a88f879a6d4fbac077541d358f6f5b736bcbf623111cef9d88428cad53cb8d04",
+      "matchesLocal": true
+    },
+    {
+      "file": "configured-effects-BKr797GN.js",
+      "sha256": "f7f7c0635ec1eb343d1aa052ac46ea0381b30da34331d3282d6d4485fd93e6bd",
+      "matchesLocal": true
+    },
+    {
+      "file": "constants-CaTSQrtd.js",
+      "sha256": "46cc7ef63ed9a963dc05febebc81660be0b2c2391671b2fde62ed27865f29f43",
+      "matchesLocal": true
+    },
+    {
+      "file": "copy-Degm1qPI.js",
+      "sha256": "de933a70998c6a2729c7aa0cd08215bb10f9259e18df5175de285bfa568c44f9",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetic-preview-DjM9TFxV.js",
+      "sha256": "23785ecb4f08a3a02b5879c23204256ed70eb3f7d70e7fafa20b9d07cda004ef",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-8oip41O_.css",
+      "sha256": "646e10c9ee1ff11577406d8b21d96c3ebf3ed248cafa79e0635dac43da2926a7",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-Cc1ffqXH.js",
+      "sha256": "0598b9dfd93c91f5d0e6686d678d388209bbbafc030c180f46600686191870ce",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-66zOa0Vm.js",
+      "sha256": "4345a988756a79af614bf362438b77507a77c27c43b1c13fb82ff60809bae5d0",
+      "matchesLocal": true
+    },
+    {
+      "file": "daily-quests-CNCg9ef8.js",
+      "sha256": "6208c6f0ddc8a4632b6a481ebebd89978978db28dbe413d8ba97547df6f74e90",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-D_c9cuF2.js",
+      "sha256": "b9bc3251e9462d63783aee2618d0de2aeaaaeeecb12420e3f7c0a047760afa67",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-9a290D_n.js",
+      "sha256": "55b362ba4be9b4be2e72e26815b6ca485c42f25ee69981114933a87804e43966",
+      "matchesLocal": true
+    },
+    {
+      "file": "dialog-GdtzaIUJ.js",
+      "sha256": "d7a309d261afe2543120f96d79c1db51724ab7b71ce94fd19ec243c35e85fdca",
+      "matchesLocal": true
+    },
+    {
+      "file": "direct-champion-COKCt3Sc.js",
+      "sha256": "46bea285aa6953aa61e45c773f8bdd30a47a322d1ef84c29560ef707cf392ecf",
+      "matchesLocal": true
+    },
+    {
+      "file": "display-labels-CKIrqrCl.js",
+      "sha256": "5a9f17fce710a440ff2c5f91bbd7b2a05aea51c24eb520a0bfd1894065530475",
+      "matchesLocal": true
+    },
+    {
+      "file": "draft-Cac3xVTd.css",
+      "sha256": "1f38a69ec1c708293bdd1f96c0826faf427b7bee4fbda34b0ee24cabe30a5636",
+      "matchesLocal": true
+    },
+    {
+      "file": "draft-RW1pY_a4.js",
+      "sha256": "4aa8575cbb06b96c777d4fc645fdce734781e773e54d62f2213ff95643faef0b",
+      "matchesLocal": true
+    },
+    {
+      "file": "draft-client-9m3MMnfs.js",
+      "sha256": "214dd319827d619a9d6ca11c23e6066c464faa80ac036362dc8dab019c9fc829",
+      "matchesLocal": true
+    },
+    {
+      "file": "effects-CBebDYix.js",
+      "sha256": "44f8fdd4e652e708c2852aa5e5f95c82f211b4435be73004d7bcf29b700a463a",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-guide-BPxGQUUH.css",
+      "sha256": "1434a66c0d1caa3c61634d0683e3b3e06d2aff2e06fb968f4cf5956564d35a83",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-guide-C2Snvv6t.js",
+      "sha256": "319f69dd229a444c103fe930f39d9aea855de540641e8025d8757d5ab3391b61",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-guide-content-DfrmdPha.js",
+      "sha256": "7b7ab3de7c44eade2ed450e5571c01476b72a1852081f5ca164b5a21b666ac4b",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-page-header-Bqu-c6f7.css",
+      "sha256": "0e517f5556e471e44010c01ed63c42ddf1452db63d30b931ac1dca8999917ff1",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-page-header-CvmrOiKB.js",
+      "sha256": "40ca12e771d138124bfc8c347ced3e137f8d837d7da7779569b3dd3ccbc51389",
+      "matchesLocal": true
+    },
+    {
+      "file": "home-BC8De8u1.css",
+      "sha256": "a235f2b32882c0483827a09243d7d04321cc7b59e5d2562b42273b337ee09f9c",
+      "matchesLocal": true
+    },
+    {
+      "file": "home-Gf5MuFqe.js",
+      "sha256": "edbb1e5a3bdd4e01ceb94fd24c694e53d9de3638da07ebc16b497248619fdd38",
+      "matchesLocal": true
+    },
+    {
+      "file": "image-plus-DsufWC4x.js",
+      "sha256": "3a487c765019902ecdf81641b5d419d3f36efbcc5072176121dc897b74047c95",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-0pJihu0A.js",
+      "sha256": "97fa86bbc480ce38cbf9a34870953eb917a6a1c23215a12e44056320dc3a8183",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-Bvmm5eEX.css",
+      "sha256": "8a0c50962c4475ca42407c3e9174f38ffc507d20b6c5da70df9943b05eb15340",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-CmzsmusN.js",
+      "sha256": "ffa4fa027eae1fbfbc2cb8c93055e479e0ae902a0452fb3c7467edebf14a570b",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-KvOyrAO2.js",
+      "sha256": "53b3b7767d6f27a0dc7af2649a41882cc6d75a1bc10a6ff052dad53be5484ecc",
+      "matchesLocal": true
+    },
+    {
+      "file": "launch-deck-banner-Xp09gmYW.js",
+      "sha256": "547d0ce2954e2ce75dc771f96bf5e99c8c021cad868c27385b5ca5fb41afc00d",
+      "matchesLocal": true
+    },
+    {
+      "file": "launch-deck-dczHW_Aj.js",
+      "sha256": "1cf87632be81c3fec34c45321db5d61ea2f5bf2c8fe43717512eae8b6e80ceca",
+      "matchesLocal": true
+    },
+    {
+      "file": "loader-circle-DqIApSYn.js",
+      "sha256": "17005e0959a0a003d7022b40226b65d5e8ef1bf2a48a53f01da681f7ef233195",
+      "matchesLocal": true
+    },
+    {
+      "file": "log-out-Bzvoyz5N.js",
+      "sha256": "29a8f11fda6c5afcdc295b6246a2ce288a767dbc028c140c39d729f1a0d41f0f",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-recap-panel-JE55ZMnh.js",
+      "sha256": "32bbf91634948179efce3c2e1e34bb7703bcb66c7ee9599952a7be15a7f859de",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-C0NmNirX.js",
+      "sha256": "d3e0979e91df8a25923818d16b5f0ca1107d7fbb2412a28aa54caff17c6a7bf4",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-D0mgniYK.css",
+      "sha256": "c6f583a7a8cb86febd7db3d3b79a70bab00c496b0c2d95da73f58462556128ce",
+      "matchesLocal": true
+    },
+    {
+      "file": "not-found-qH6Usj9Z.js",
+      "sha256": "0ec4c86118fe2d0eb19d649f1377315e7018ea382a906229b576d7075633fe46",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-BNIDShBc.css",
+      "sha256": "de760ebe2a93741564b376eeb89f82a4eb61772cea752d7a0b87c37d44176b44",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-FLjdaqtL.js",
+      "sha256": "971e3535a9124fcd847c79c89e25c223c30996c7dec91418a1bccb63a9dba54f",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-friendly-W2cEMunp.js",
+      "sha256": "092c488693c0362997dc5faeb065d146eb9487e77dc374b748dd91f888cbda7f",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-game-state-Wmaos2DX.js",
+      "sha256": "d533df6de82385f523a4584ba3578ce5d86938fa7bebd360c66cd2694a2ab9ea",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-lobby-ui-DHCbQijj.js",
+      "sha256": "2190bdc2b15d2ec7fb834454c315869af223b95091127f3f21662ca0dbdfee29",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-match-V6Vso8NL.js",
+      "sha256": "39333422f4c5db5d7c76b180dd638e1761a54169a8e83c99393b4f1a52ea1b5f",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-match-intro-BfPpEPdc.css",
+      "sha256": "7445242c3aa5c0dbd4807a7d568d7b7cd616a584121615ce2d1b5cb34ebb6425",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-match-intro-CzFNUwsT.js",
+      "sha256": "1e1eed22cb3f09521f2663a1903805ea0767d457e79e1784e34807152a0564ca",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-quick-Ctc9xB0I.js",
+      "sha256": "e6344c595874162b310bd4afca1a7589c3d0cfd6ad13ac278fc1131b1d1bd9c0",
+      "matchesLocal": true
+    },
+    {
+      "file": "pack-detail-dialog-C3SIX8HS.js",
+      "sha256": "00701403cd08a42662fb8c8f3734fa12f0df89f1febb0699fa39d09569faadd5",
+      "matchesLocal": true
+    },
+    {
+      "file": "pack-opening-BCKCUMqv.js",
+      "sha256": "21a8edd09cd83a70e628274f1500958cd1789da79efca08ddfe9fa328c54232f",
+      "matchesLocal": true
+    },
+    {
+      "file": "pack-probabilities-REvKwi_I.js",
+      "sha256": "b5086e3118b2a83f91d25194948982406403e4997833454c64b9954d91709f29",
+      "matchesLocal": true
+    },
+    {
+      "file": "package-Dc9mUYJv.js",
+      "sha256": "1fd53b0c2a8f41541c95eb183af4fe9ad9e98d7f23ba94228cb768dd0d55917b",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-DBW7aiil.js",
+      "sha256": "c49c180273690232952d2c72514bbaffad78b62273948ace07153058adf1f7ac",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-notebook-B5Ndv3Tu.js",
+      "sha256": "9ee1a0f80b97a6247433b9175c7c19188f2099745b1f4bac2a2af0d7daae9b35",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-ux-6Sji1bxz.css",
+      "sha256": "29e72b4d7b9d09364a679ae24103283e8552403d392c8f549df54268a28a212c",
+      "matchesLocal": true
+    },
+    {
+      "file": "plus-DpjbKB5i.js",
+      "sha256": "ee73bc423d8fcb95ceb45e46fb8f684e31768e1c5d7a6dc228f72905a9d51356",
+      "matchesLocal": true
+    },
+    {
+      "file": "power-5Z2d3X81.js",
+      "sha256": "b6bc83d518e546d4948b2c45e95071b6149354c61fe3c89d5400b924008d9280",
+      "matchesLocal": true
+    },
+    {
+      "file": "presentation-motion-C52N2K_Q.js",
+      "sha256": "c16091c179d4f6b9b8ae977299bb9525ebd95752ada8ca2a5c019be9045851e9",
+      "matchesLocal": true
+    },
+    {
+      "file": "published-champions-DlvHdtiS.js",
+      "sha256": "29b41757f3da8169478b2adeafd68accdae7a4dea90e6997cbc8692097260848",
+      "matchesLocal": true
+    },
+    {
+      "file": "refresh-cw-aJ4OhNQG.js",
+      "sha256": "e2ae835b3b362df124626cefbe71516252e85cb3ae4ccf6873a17c80da5ede0e",
+      "matchesLocal": true
+    },
+    {
+      "file": "reward-display-CvpTYDvg.js",
+      "sha256": "849cf771da60e1825360df6ef36afb08d918b429c49defc5219ba2fba0462861",
+      "matchesLocal": true
+    },
+    {
+      "file": "rewards-client-Bwl2g33P.js",
+      "sha256": "eb6efeb9c7639a2fd2007d200eeb8d8e1813512a5bd6766c316eacbe3097ceed",
+      "matchesLocal": true
+    },
+    {
+      "file": "rotate-ccw-DaEid3Or.js",
+      "sha256": "9d6e6e64f4da98c8a2b2978fe15ecd376e91299bb0d5ebe1591dd984721aa3e3",
+      "matchesLocal": true
+    },
+    {
+      "file": "routes-B2uPogcz.js",
+      "sha256": "99a3d58f3cecc82256897c0441a289e506e023dc78524a3e9d2780192b47f3d1",
+      "matchesLocal": true
+    },
+    {
+      "file": "save-C_hpz0Ke.js",
+      "sha256": "8f9881d6e4a083c8fdbf1b7a4fdd33e40a72ad39cf2556e31d107c2a75da0f50",
+      "matchesLocal": true
+    },
+    {
+      "file": "screen-impact-CQR_j4-B.js",
+      "sha256": "33958c0d46295264a3a7a2e87bef3ded77b6c49242f0ff37e542e2bf3229969c",
+      "matchesLocal": true
+    },
+    {
+      "file": "screen-impact-CpHhjk4D.css",
+      "sha256": "dd48dea2abeaffd2c5c226fafd35c0e5de15f775a5f0f4b6b7f528f5c821b2fd",
+      "matchesLocal": true
+    },
+    {
+      "file": "search-DGyEHdtv.js",
+      "sha256": "4b31dc556cee96f86e1abec61ede78372962fdc654f75dd4eb70637a1c6e8f20",
+      "matchesLocal": true
+    },
+    {
+      "file": "settings-B8yghT4A.js",
+      "sha256": "3ac5cf73fb7e691e397b75a0eec849b8630ac847980dc7cf03533053d0203cdc",
+      "matchesLocal": true
+    },
+    {
+      "file": "shelf-BOus-rxE.js",
+      "sha256": "b8a2fbe62236a6fcd97cf3e630496830fd632f47124017e6d3c0f2cb246c6f3b",
+      "matchesLocal": true
+    },
+    {
+      "file": "shield-B-3tkliY.js",
+      "sha256": "ff5902e1fdaac7f1ab50b3ee1bc3e3e184b62a00093995908ea160cab96059d5",
+      "matchesLocal": true
+    },
+    {
+      "file": "shop-C0mefXFk.js",
+      "sha256": "79e826ec76552208b3c3a8271b1ec05852178bc87b31a97523ec5a9cfef0c366",
+      "matchesLocal": true
+    },
+    {
+      "file": "shop-deck-detail-BZWDSMAt.js",
+      "sha256": "1d5b72227803c9234caedee8b4342f12b67570dcf062ee1f33e6b6d8553b9cbc",
+      "matchesLocal": true
+    },
+    {
+      "file": "skin-battle-preview-cLqeg3t3.js",
+      "sha256": "d43c5080129a9a704b19c8c789ee5f02ac97a44bfb49bf06cc7d21df8a9000ee",
+      "matchesLocal": true
+    },
+    {
+      "file": "sparkles-DjMXveq5.js",
+      "sha256": "96186dbd656cb6c8f17399fa3f08fcd8d1fab218ff1f5933d433af1e8f97c972",
+      "matchesLocal": true
+    },
+    {
+      "file": "square-D8LlKvYo.js",
+      "sha256": "6bf2f594d3ad36aefbb1bffdf230021953b79bab893870bdc9ab23df8c951219",
+      "matchesLocal": true
+    },
+    {
+      "file": "star-De9z5H3u.js",
+      "sha256": "051f30e93db1da7ffba7c639dab08ddd557f7bb9f546b1a2e9c63d611bc78c3c",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-BKM2Fjti.js",
+      "sha256": "ee20b50063145bcb94ed5b93041180f70e1353918f0a6b929362d036db8ed58f",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-dialogue-view-BakyHeVD.js",
+      "sha256": "970c63fd49a5817f2239c8567f8532932c7e55cbf1362f2ed21bdf0110f8ab98",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-sandbox-BOmlpJlG.js",
+      "sha256": "d55acfcd76667d6a1e7dea7ec265aacba7b4f93bf64a268918ceece8b412d395",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-vanilla-WE7zpbUS.js",
+      "sha256": "049e3c1b6230a833802af1c5c4583f1aca53256db7c50759ffbe518b60b33e7d",
+      "matchesLocal": true
+    },
+    {
+      "file": "trash-2-CXaFa8Au.js",
+      "sha256": "bb39963d19e219babb8298885c9900b01e7b599095263a2b5fbc95ece60a6cda",
+      "matchesLocal": true
+    },
+    {
+      "file": "triangle-alert-DBw6DBBG.js",
+      "sha256": "6b7265fce13dd2fa3aeb1654de53a662e42b7a801efe5a376641511d177da2ce",
+      "matchesLocal": true
+    },
+    {
+      "file": "types-B5zwr2pG.js",
+      "sha256": "f58794a9426b495a9abba37610d2b6fc12611bfe614fea34c2fa8af3beedf0ef",
+      "matchesLocal": true
+    },
+    {
+      "file": "types-CAU2Fpa2.js",
+      "sha256": "a51280fb94cb29fc080941789c62c584a5ba3c8abde3897066c3757edbb9e6ad",
+      "matchesLocal": true
+    },
+    {
+      "file": "upload-D4vPB7Um.js",
+      "sha256": "29381b10bfaf54e11f872974fa36b7952aab05305895760927b146cd7ec29152",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200,
+  "maintenanceEnabled": false
+}

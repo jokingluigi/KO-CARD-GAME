@@ -1,0 +1,45 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "initialReadRetry": true,
+    "saveFailureKeepsDraft": true,
+    "saveLocksEditingAndDuplicates": true,
+    "selectSuccessDoesNotNeedListRead": true,
+    "deleteCancelFocusAnd44px": true,
+    "deleteSuccessDoesNotNeedListRead": true,
+    "deckAndCollectionReset": true,
+    "pageErrors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "initialReadRetry": true,
+    "saveFailureKeepsDraft": true,
+    "saveLocksEditingAndDuplicates": true,
+    "selectSuccessDoesNotNeedListRead": true,
+    "deleteCancelFocusAnd44px": true,
+    "deleteSuccessDoesNotNeedListRead": true,
+    "deckAndCollectionReset": true,
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "initialReadRetry": true,
+    "saveFailureKeepsDraft": true,
+    "saveLocksEditingAndDuplicates": true,
+    "selectSuccessDoesNotNeedListRead": true,
+    "deleteCancelFocusAnd44px": true,
+    "deleteSuccessDoesNotNeedListRead": true,
+    "deckAndCollectionReset": true,
+    "pageErrors": []
+  },
+  {
+    "rejectedScreenImportReloadRecovers": true
+  },
+  {
+    "slowScreenOffersReadReloadAfter10Seconds": true,
+    "lateImportStillOpensNormally": true
+  }
+]
