@@ -1,3 +1,4 @@
+import tutorialRouter from "./tutorial";
 import playerJournalRouter from './player-journal';
 import clientDiagnosticsRouter from './client-diagnostics';
 import adminHomeMenuRouter from "./admin-home-menu";
@@ -75,6 +76,7 @@ router.use("/admin/ai-decks", adminAiDecksRouter);
 router.use("/online-matches", onlineMatchesRouter);
 router.use("/daily-quests", dailyQuestsRouter);
 router.use("/attendance", attendanceRouter);
+router.use("/tutorial", tutorialRouter);
 router.use("/admin/rewards", adminRewardsRouter);
 router.use("/admin/quests", adminQuestsRouter);
 router.use("/admin/notices", adminNoticesRouter);

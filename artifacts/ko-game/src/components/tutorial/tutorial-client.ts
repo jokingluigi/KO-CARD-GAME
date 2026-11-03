@@ -7,6 +7,11 @@ function convert(data:CatalogData){if(!Array.isArray(data.cards)||!Array.isArray
 export async function fetchTutorialCatalog(signal:AbortSignal){
  const root=import.meta.env.BASE_URL.replace(/\/$/,'');
  try{
+  const response=await fetch(root+'/api/tutorial/catalog',{signal:AbortSignal.any([signal,AbortSignal.timeout(3500)]),cache:'no-store'});
+  if(response.ok){const {catalog}=await response.json();if(catalog&&Array.isArray(catalog.cards)&&Array.isArray(catalog.champions)&&LESSONS.every(l=>!lessonUnavailable(catalog,l.id)))return catalog as ReturnType<typeof tutorialCatalog>&{practiceSource:'PINNED'};}
+ }catch(error){if(signal.aborted)throw error;}
+
+ try{
   const liveSignal=AbortSignal.any([signal,AbortSignal.timeout(3500)]);
   const [a,b]=await Promise.all([fetch(root+'/api/cards',{signal:liveSignal}),fetch(root+'/api/champions',{signal:liveSignal})]);
   if(!a.ok||!b.ok)throw Error('catalog');const [cards,champions]=await Promise.all([a.json(),b.json()]);const catalog=convert({cards:cards.cards,champions:champions.champions});

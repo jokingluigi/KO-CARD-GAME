@@ -1,6 +1,7 @@
 import './components/product-experience.css';
 import {installClientDiagnostics} from '@/lib/client-diagnostics';
 import {InterfaceMotionBridge} from "@/components/motion/interface-motion";
+import {InterfacePressBridge} from "@/components/motion/interface-press";
 import {ReadingAccessibilityBridge} from "@/components/player-ux/reading-accessibility";
 import { GameNavigation } from '@/components/game-navigation';
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
@@ -51,6 +52,7 @@ function Router() {
     <RoutedErrorBoundary>
       <SitePresenceBridge />
       <InterfaceMotionBridge/>
+      <InterfacePressBridge/>
       <ReadingAccessibilityBridge/>
       <GameNavigation />
       <Suspense fallback={<GameLoading />}><Switch>

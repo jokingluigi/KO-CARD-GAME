@@ -1216,7 +1216,7 @@ export function GameStatePreview({
                   <div data-resource="gold" className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
-                      <span key={opp.currentGold} className="presentation-stat-change">{opp.currentGold}</span> / {opponentMaxGold}
+                      <MotionNumber value={opp.currentGold} /> / {opponentMaxGold}
                     </div>
                   </div>
                   {!blackGold && <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
@@ -1233,7 +1233,7 @@ export function GameStatePreview({
                   className="ko-opponent-quest"
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
-                    퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
+                    퀘스트 {opp.champion.questCompleted ? '완료' : <><MotionNumber value={opp.champion.questProgress} />/{opp.champion.quest.requiredProgress}</>}
                      <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,opp.champion.questProgress/Math.max(1,opp.champion.quest.requiredProgress)))})`}} /></span>
                     <AwakeningStatus champion={opp.champion} />
                     {!opp.champion.questCompleted && opp.champion.questProgress === opp.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}
@@ -1719,7 +1719,7 @@ export function GameStatePreview({
                 <div data-resource="gold" className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
                   <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
-                      <span key={me.currentGold} className="presentation-stat-change">{me.currentGold}</span> / {myMaxGold}
+                      <MotionNumber value={me.currentGold} /> / {myMaxGold}
                    </div>
                 </div>
                 {!blackGold && <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
@@ -1734,7 +1734,7 @@ export function GameStatePreview({
                {me.champion?.quest && (
                  <Inspectable className="ko-player-quest" content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
-                     퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
+                     퀘스트 {me.champion.questCompleted ? '완료' : <><MotionNumber value={me.champion.questProgress} />/{me.champion.quest.requiredProgress}</>}
                      <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,me.champion.questProgress/Math.max(1,me.champion.quest.requiredProgress)))})`}} /></span>
                      <AwakeningStatus champion={me.champion} />
                      {!me.champion.questCompleted && me.champion.questProgress === me.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}

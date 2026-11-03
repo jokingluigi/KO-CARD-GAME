@@ -1,0 +1,61 @@
+[
+  {
+    "actualServerValidatedRewards": true,
+    "lostReplyRecovered": true,
+    "width": 390,
+    "height": 844,
+    "sixLessonsCompletedThroughActualUi": true,
+    "noOwnedDeckRequired": true,
+    "wrongActionGuard": true,
+    "cancelThenCommit": true,
+    "actualActiveAndQuest": true,
+    "progressPersists": true,
+    "newLessonResets": true,
+    "rotationAndNoScroll": true,
+    "actualDragAfterRotation": "touch",
+    "productionWritesSent": 0,
+    "blockedPresenceRequests": 10,
+    "errors": []
+  },
+  {
+    "actualServerValidatedRewards": true,
+    "lostReplyRecovered": true,
+    "width": 740,
+    "height": 360,
+    "sixLessonsCompletedThroughActualUi": true,
+    "noOwnedDeckRequired": true,
+    "wrongActionGuard": true,
+    "cancelThenCommit": true,
+    "actualActiveAndQuest": true,
+    "progressPersists": true,
+    "newLessonResets": true,
+    "rotationAndNoScroll": true,
+    "actualDragAfterRotation": "mouse",
+    "productionWritesSent": 0,
+    "blockedPresenceRequests": 9,
+    "errors": []
+  },
+  {
+    "actualServerValidatedRewards": true,
+    "lostReplyRecovered": true,
+    "width": 1440,
+    "height": 900,
+    "sixLessonsCompletedThroughActualUi": true,
+    "noOwnedDeckRequired": true,
+    "wrongActionGuard": true,
+    "cancelThenCommit": true,
+    "actualActiveAndQuest": true,
+    "progressPersists": true,
+    "newLessonResets": true,
+    "rotationAndNoScroll": true,
+    "actualDragAfterRotation": "mouse",
+    "productionWritesSent": 0,
+    "blockedPresenceRequests": 9,
+    "errors": []
+  },
+  {
+    "normalPacks": 18,
+    "guaranteedChampionPacks": 1,
+    "grantRecords": 7
+  }
+]

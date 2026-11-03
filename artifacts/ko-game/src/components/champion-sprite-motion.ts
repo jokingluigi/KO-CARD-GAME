@@ -175,7 +175,11 @@ export function motionFrames(
     ...pose(x, y, r, scale, bright),
     offset,
     easing:
-      m.preset === "MECHANICAL" ? "linear" : "cubic-bezier(.22,.68,.35,1)",
+      m.preset === "MECHANICAL" ? "linear"
+        : damagePose ? "cubic-bezier(.22,.68,.35,1)"
+        : offset === 0 ? "cubic-bezier(.42,0,.7,.55)"
+        : offset >= .5 ? "cubic-bezier(.16,1,.3,1)"
+        : "cubic-bezier(.12,.75,.28,1)",
   });
   const rebound = m.rebound;
   if (cue.kind === "HIT" || cue.kind === "HEAVY_HIT") {

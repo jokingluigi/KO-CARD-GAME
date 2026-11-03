@@ -129,3 +129,6 @@ export * from './tower/v2';
 
 export * from './tower/effects';
 export {selectAIOpponentDeck} from './ai-deck-selection';
+
+export { LESSONS, tutorialCatalog, lessonUnavailable, createTutorialLesson, tutorialGoal, tutorialActionAllowed } from "./tutorial";
+export type { LessonId, TutorialCatalog, TutorialGoal } from "./tutorial";

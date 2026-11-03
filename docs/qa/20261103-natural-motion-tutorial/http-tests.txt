@@ -1,0 +1,14 @@
+✔ status advertises exact 3 per lesson and 1 completion pack; unauthenticated claim rejected (6869.514921ms)
+✔ forged flags, empty/incomplete actions, unknown lessons and another actor grant nothing (39.081733ms)
+✔ same lesson concurrent replay and response retry give exactly three normal packs (154.180712ms)
+✔ real six lesson replays yield normal packs 18 and one guaranteed champion pack, once (203.742447ms)
+✔ admin config refuses a mixed pack as guaranteed champion and does not re-grant after config save (38.922037ms)
+✔ earned champion pack actually opens as a champion unlock (15.692187ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9236.912807

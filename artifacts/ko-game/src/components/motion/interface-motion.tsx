@@ -21,7 +21,8 @@ export function InterfaceMotionBridge() {
     previous.current = path;
     const direction = interfaceDirection(before, path),
       running = new Map<Element, Animation>(),
-      seen = new WeakMap<Element, string>();
+      seen = new WeakMap<Element, string>(),
+      staged = new WeakSet<Element>();
     let frame = 0,
       entered: Element | null = null;
     const reduced = () => prefersReducedMotion();
@@ -93,6 +94,24 @@ export function InterfaceMotionBridge() {
                 i * 35,
               ),
             );
+      }
+      // Stage each panel once per route, so polling never replays entrances.
+      if (main && interfaceRoute(path)) {
+        const panels = main.querySelectorAll<HTMLElement>(
+          ".ko-page-content > section,.ko-page-content > nav,.ko-page-content > .grid,.ko-settings-panel,.ko-decks__columns > aside,.ko-decks__columns > section,.ko-wardrobe__layout,.ko-mode-deck,.ko-battle-mode-grid,.ko-home-launch,.ko-home-learning,.ko-main-menu__notice",
+        );
+        let index = 0;
+        panels.forEach(node => {
+          if (staged.has(node)) return;
+          const r = node.getBoundingClientRect();
+          if (!r.width || !r.height || r.top > innerHeight || r.bottom < 0) return;
+          staged.add(node);
+          play(node, reduced()
+            ? [{opacity:.85},{opacity:1}]
+            : [{opacity:.5,translate:"0px 8px"},{opacity:1,translate:"0px 0px"}],
+            240, Math.min(index++ * 24, 96));
+          node.dataset.uiEntrance = path;
+        });
       }
       root
         .querySelectorAll<HTMLElement>(

@@ -15,17 +15,39 @@ export function flyBetween(from:Element|null|undefined,to:Element|null|undefined
 }
 /** Keyed FLIP keeps retained search results in place instead of replaying entrances. */
 export function useGridReflow(root:RefObject<HTMLElement|null>,signature:unknown){
- const previous=useRef(new Map<string,DOMRect>()),motions=useRef<Animation[]>([]);
+ const previous=useRef(new Map<string,DOMRect>()),motions=useRef(new Map<HTMLElement,Animation>()),viewport=useRef('');
  useLayoutEffect(()=>{
-  motions.current.forEach(a=>a.cancel());motions.current=[];
-  const next=new Map<string,DOMRect>();
+  const visual=new Map<string,{x:number;y:number}>();
   root.current?.querySelectorAll<HTMLElement>('[data-motion-key]').forEach(n=>{
-   const id=n.dataset.motionKey!,r=n.getBoundingClientRect(),old=previous.current.get(id);next.set(id,r);
-   if(old&&!prefersReducedMotion()&&Math.hypot(old.x-r.x,old.y-r.y)>1)try{motions.current.push(n.animate([{translate:`${old.x-r.x}px ${old.y-r.y}px`},{translate:'0px 0px'}],{duration:180,easing:'ease-out'}));}catch{}
-  });previous.current=next;
+   const old=previous.current.get(n.dataset.motionKey!);
+   if(!old)return;
+   const offset=motions.current.has(n)?getComputedStyle(n).translate.split(/\s+/).map(Number.parseFloat):[0,0];
+   visual.set(n.dataset.motionKey!,{x:old.x+(Number.isFinite(offset[0])?offset[0]:0),y:old.y+(Number.isFinite(offset[1])?offset[1]:0)});
+  });
+  motions.current.forEach(a=>a.cancel());motions.current.clear();
+  const next=new Map<string,DOMRect>(),size=`${innerWidth}x${innerHeight}`;
+  root.current?.querySelectorAll<HTMLElement>('[data-motion-key]').forEach(n=>{
+   const id=n.dataset.motionKey!,r=n.getBoundingClientRect(),old=visual.get(id);next.set(id,new DOMRect(r.x+scrollX,r.y+scrollY,r.width,r.height));
+   if(prefersReducedMotion()||!r.width||!r.height||r.bottom<0||r.top>innerHeight||(viewport.current&&viewport.current!==size))return;
+   const dx=old?old.x-r.x-scrollX:0,dy=old?old.y-r.y-scrollY:0;
+   const moved=old&&Math.hypot(dx,dy)>1;
+   if(!moved&&(!previous.current.size||old))return;
+   const local=moved&&Math.abs(dx)<innerWidth*.7&&Math.abs(dy)<innerHeight*.7;
+   try{
+    const animation=n.animate(local?[{translate:`${dx}px ${dy}px`},{translate:'0px 0px'}]:[{opacity:.35,translate:'0px 5px'},{opacity:1,translate:'0px 0px'}],{duration:local?240:160,easing:'cubic-bezier(.2,.8,.2,1)'});
+    motions.current.set(n,animation);
+    animation.finished.catch(()=>{}).finally(()=>{if(motions.current.get(n)===animation)motions.current.delete(n);});
+   }catch{}
+  });previous.current=next;viewport.current=size;
  },[signature,root]);
- useEffect(()=>()=>motions.current.forEach(a=>a.cancel()),[]);
+ useEffect(()=>{
+  const stop=()=>{motions.current.forEach(a=>a.cancel());motions.current.clear();};
+  const hidden=()=>{if(document.hidden)stop();};
+  window.addEventListener('ko-combat-preferences',stop);document.addEventListener('visibilitychange',hidden);
+  return()=>{stop();window.removeEventListener('ko-combat-preferences',stop);document.removeEventListener('visibilitychange',hidden);};
+ },[]);
 }
+
 let origin:{node:HTMLElement;rect:DOMRect;at:number}|undefined;
 let originExpiry:ReturnType<typeof setTimeout>|undefined;
 export function rememberCardOrigin(node:HTMLElement){if(originExpiry)clearTimeout(originExpiry);origin={node,rect:node.getBoundingClientRect(),at:performance.now()};originExpiry=setTimeout(()=>{origin=undefined;},1500);}

@@ -518,3 +518,8 @@
 .ko-attack-drag-ghost { transform-origin:center; filter:drop-shadow(0 8px 5px #000b); }
 .ko-attack-drag-ghost * { pointer-events:none !important; }
 [data-attack-drag-source="true"] { opacity:.35; }
+
+/* Quest progress uses the confirmed value; the meter catches up visually only. */
+.ko-quest-meter i { transition:transform 280ms cubic-bezier(.2,.8,.2,1); }
+html[data-ui-reduced="true"] .ko-quest-meter i { transition:none; }
+@media(prefers-reduced-motion:reduce) { .ko-quest-meter i { transition:none; } }

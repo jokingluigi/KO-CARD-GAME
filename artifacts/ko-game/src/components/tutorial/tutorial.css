@@ -253,3 +253,12 @@
   .ko-board-cards {
   min-width: 188px;
 }
+
+.ko-tutorial-rewards { margin:16px 0; padding:16px; border:1px solid #88713e; border-radius:12px; background:#17150ff0; color:#dfd5bf; font-size:13px; line-height:1.7; }
+.ko-tutorial-rewards__head { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; color:#f3d789; }
+.ko-tutorial-rewards p { margin:8px 0; }
+.ko-tutorial-rewards :is(button,a,summary) { min-height:44px; display:inline-flex; align-items:center; padding:8px 12px; border-radius:8px; color:#f0d38c; }
+.ko-tutorial-rewards button { border:1px solid #8a733f; }
+.ko-tutorial-rewards button:disabled { opacity:.5; }
+.ko-tutorial-rewards li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 12px; padding:8px 0; border-bottom:1px solid #ffffff12; }
+.ko-tutorial-rewards li span { color:#b6aa91; }

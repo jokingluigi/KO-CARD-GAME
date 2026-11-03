@@ -21,6 +21,9 @@ const routes = [
   "/daily-quests",
   "/attendance",
   "/player-notebook",
+  "/settings",
+  "/guide",
+  "/account-recovery",
 ];
 export function interfaceRoute(path: string) {
   return routes.includes(path.split("?")[0]);

@@ -46,11 +46,13 @@ export function BattleCardDrag(props: Props) {
       slot: number | null;
       started: boolean;
       lastX: number;
+      tilt: number;
     };
     let gesture: Gesture | null = null,
       suppressUntil = 0;
     const returns = new Map<HTMLElement, HTMLDivElement>();
     const timers = new Set<ReturnType<typeof setTimeout>>();
+    const returnFrames = new Set<number>();
     const clearMarks = () => {
       for (const node of latest.current.slots.current.values()) {
         delete node.dataset.dragValid;
@@ -77,28 +79,39 @@ export function BattleCardDrag(props: Props) {
         const ghost = g.ghost;
         returns.set(ghost, g.node);
         g.node.dataset.dragReturning = "true";
-        const r = g.node.getBoundingClientRect();
-        try {
-          ghost.animate?.(
-            [
-              { transform: ghost.style.transform },
-              { transform: `translate3d(${r.left}px,${r.top}px,0)` },
-            ],
-            {
-              duration: 160,
-              easing: "cubic-bezier(.16,1,.3,1)",
-              fill: "forwards",
-            },
-          );
-        } catch {
-          /* Timed cleanup still restores the hand. */
-        }
-        const timer = setTimeout(() => {
-          timers.delete(timer);
+        // The selected hand card is still settling when cancellation commits.
+        // Follow its live rectangle instead of flying to an obsolete selected pose.
+        const start = new DOMMatrixReadOnly(getComputedStyle(ghost).transform);
+        const startX = start.m41, startY = start.m42;
+        const startScale = Math.hypot(start.m11,start.m12);
+        const startAngle = Math.atan2(start.m12,start.m11)*180/Math.PI;
+        const began = performance.now();
+        const finish = () => {
           if (!returns.delete(ghost)) return;
           ghost.remove();
           delete g.node.dataset.dragReturning;
-        }, 180);
+        };
+        const step = () => {
+          if (!returns.has(ghost)) return;
+          if (!g.node.isConnected || prefersReducedMotion()) {finish();return;}
+          const r = g.node.getBoundingClientRect();
+          const t = Math.min(1,(performance.now()-began)/220),ease=1-Math.pow(1-t,3);
+          const targetX=r.left+(r.width-g.source.width)/2;
+          const targetY=r.top+(r.height-g.source.height)/2;
+          const x=startX+(targetX-startX)*ease;
+          const y=startY+(targetY-startY)*ease-Math.sin(Math.PI*t)*Math.min(12,Math.hypot(r.left-startX,r.top-startY)*.03);
+          const targetScale=r.width/Math.max(1,g.source.width);
+          ghost.style.transform=`translate3d(${x}px,${y}px,0) rotate(${startAngle*(1-ease)}deg) scale(${startScale+(targetScale-startScale)*ease})`;
+          ghost.style.boxShadow=`0 ${12*(1-ease)}px ${10*(1-ease)}px #0008`;
+          if(t>=1){finish();return;}
+          schedule();
+        };
+        const schedule = () => {
+          const frame=requestAnimationFrame(()=>{returnFrames.delete(frame);step();});
+          returnFrames.add(frame);
+        };
+        schedule();
+        const timer=setTimeout(()=>{timers.delete(timer);finish();},280);
         timers.add(timer);
       } else g.ghost?.remove();
     };
@@ -132,6 +145,7 @@ export function BattleCardDrag(props: Props) {
         startX: e.clientX,
         startY: e.clientY,
         lastX: e.clientX,
+        tilt: 0,
         offsetX: e.clientX - r.left,
         offsetY: e.clientY - r.top,
         source: rectSnapshot(r),
@@ -210,6 +224,7 @@ export function BattleCardDrag(props: Props) {
       const tilt = prefersReducedMotion()
         ? 0
         : Math.max(-5, Math.min(5, (e.clientX - g.lastX) * 0.24));
+      g.tilt = prefersReducedMotion() ? 0 : g.tilt * .55 + tilt * .45;
       const lift = Math.min(24,Math.abs(dy)*.08);
       g.ghost!.style.boxShadow = `0 ${8+lift}px ${6+lift*.4}px #0008`;
       g.lastX = e.clientX;
@@ -221,7 +236,7 @@ export function BattleCardDrag(props: Props) {
           0,
           Math.min(innerHeight - g.source.height, e.clientY - g.offsetY),
         );
-      g.ghost!.style.transform = `translate3d(${x}px,${y}px,0) rotate(${tilt}deg) scale(1.025)`;
+      g.ghost!.style.transform = `translate3d(${x}px,${y}px,0) rotate(${g.tilt}deg) scale(${prefersReducedMotion()?1:1.025})`;
     };
     const up = (e: PointerEvent) => {
       const g = gesture;
@@ -301,6 +316,7 @@ export function BattleCardDrag(props: Props) {
       clean();
       returns.forEach((source,ghost) => {ghost.remove();delete source.dataset.dragReturning;});
       timers.forEach(clearTimeout);
+      returnFrames.forEach(cancelAnimationFrame);
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointermove", move, true);
       document.removeEventListener("pointerup", up, true);

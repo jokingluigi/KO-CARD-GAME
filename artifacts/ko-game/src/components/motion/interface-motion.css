@@ -82,3 +82,45 @@ html[data-ui-reduced="true"] .ko-game-dialog,
 html[data-ui-reduced="true"] .ko-purchase-overlay {
   animation: none !important;
 }
+
+/* Button face compresses without moving its outer hit area. */
+[data-ui-pressed="true"] {
+  box-shadow: inset 0 3px 7px #0008, inset 0 0 0 1px #e7ce9866 !important;
+  filter: brightness(.93);
+}
+[data-ui-pressed] > :is(svg,span) {
+  translate: 0 1px;
+  scale: .98;
+}
+:is(.ko-player-page,.ko-main-menu,.ko-decks,.ko-game-dialog,.ko-game-confirm,.ko-mode-hub) :is(button,a,summary) > :is(svg,span) {
+  transition-property: color,opacity,translate,scale;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(.2,.8,.2,1);
+}
+/* Radix retains closed content until these short exit animations finish. */
+:is(.ko-game-dialog,.ko-game-confirm)[data-state="open"] {
+  animation: ko-dialog-settle-in 220ms cubic-bezier(.16,1,.3,1) both;
+}
+:is(.ko-game-dialog,.ko-game-confirm)[data-state="closed"] {
+  animation: ko-dialog-settle-out 130ms ease-in both;
+}
+@keyframes ko-dialog-settle-in {
+  from { opacity:0; transform:translateY(10px) scale(.985); }
+  70% { opacity:1; }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes ko-dialog-settle-out {
+  from { opacity:1; transform:translateY(0) scale(1); }
+  to { opacity:0; transform:translateY(5px) scale(.99); }
+}
+html[data-ui-reduced="true"] :is(.ko-game-dialog,.ko-game-confirm),
+html[data-ui-reduced="true"] :is(button,a,summary) > :is(svg,span) {
+  animation:none !important;
+  transition:none !important;
+}
+html[data-ui-reduced="true"] [data-ui-pressed] > :is(svg,span) { translate:none;scale:none; }
+@media(prefers-reduced-motion:reduce) {
+  :is(.ko-game-dialog,.ko-game-confirm) { animation:none !important; }
+  :is(button,a,summary) > :is(svg,span) { transition:none !important; }
+  [data-ui-pressed] > :is(svg,span) { translate:none;scale:none; }
+}

@@ -1,0 +1,7 @@
+{
+  "actualAdminForm": true,
+  "isolatedServerSaveAndReentry": true,
+  "normalPack": "normal-pack",
+  "championPack": "champion-pack",
+  "productionWrites": 0
+}

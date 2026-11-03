@@ -1,3 +1,4 @@
+import { MotionNumber } from "./presentation-motion";
 import {HomePacksShortcut} from "./home-packs-shortcut";
 import type {HomeLaunchStatus} from "./launch-deck-banner";
 import {HomeBackgroundImage} from "./home-background-image";
@@ -227,7 +228,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
                   <DropdownMenuItem className="min-h-11 gap-2" disabled={logoutPending} onSelect={()=>void attemptLogout()}><LogOut aria-hidden="true" className="h-4 w-4"/>{logoutPending?"로그아웃 중…":"로그아웃"}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <div className="ko-home-wallet" aria-label="보유 재화"><span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span><span className="text-violet-300">일반 프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span><span className="text-rose-200">챔피언 프리즘 {user.isTestAccount ? "∞" : user.championPrismBalance.toLocaleString()}</span></div>
+              <div className="ko-home-wallet" aria-label="보유 재화"><span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : <MotionNumber value={user.currencyBalance} format={n=>n.toLocaleString()} />}</span><span className="text-violet-300">일반 프리즘 {user.isTestAccount ? "∞" : <MotionNumber value={user.prismBalance} format={n=>n.toLocaleString()} />}</span><span className="text-rose-200">챔피언 프리즘 {user.isTestAccount ? "∞" : <MotionNumber value={user.championPrismBalance} format={n=>n.toLocaleString()} />}</span></div>
               {user.isTestAccount&&<span className="ko-main-menu__test-badge" title="테스트 계정 · 전체 카드/챔피언 · 재화 무제한">TEST ACCOUNT</span>}
             </div>
           )}

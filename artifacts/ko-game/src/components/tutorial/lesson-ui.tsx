@@ -1,3 +1,4 @@
+import {TutorialRewardsPanel,type TutorialProof} from "./tutorial-rewards";
 import { useEffect, useState } from "react";
 import { GameGuideDialogTrigger } from "../game-guide/game-guide-dialog";
 import {
@@ -34,6 +35,7 @@ export function saveTutorialProgress(account: string, id: LessonId) {
   } catch {}
 }
 export function TutorialMenu({
+  accountId,
   catalog,
   error,
   completed,
@@ -42,6 +44,7 @@ export function TutorialMenu({
   onRetry,
   onDeckEdit,
 }: {
+  accountId?:string;
   catalog: TutorialCatalog | null;
   error: string | null;
   completed: LessonId[];
@@ -63,9 +66,10 @@ export function TutorialMenu({
         </header>
         <aside>
           기존 카드로 준비한 연습 상황이에요. 카드가 없어도 시작할 수 있고, 내
-          덱·재화·전적은 바뀌지 않아요. 연습 상대는 공격하지 않으며 제한 시간도
+          덱·전적은 바뀌지 않으며, 최초 실습 완료 보상은 계정에 지급돼요. 연습 상대는 공격하지 않으며 제한 시간도
           없어요.
         </aside>
+        <TutorialRewardsPanel accountId={accountId}/>
         {catalog?.practiceSource === "PINNED" && (
           <p role="status">
             검증된 연습용 카드 구성을 사용하고 있어요. 실전의 최신 카드 구성과
@@ -111,7 +115,7 @@ export function TutorialMenu({
           inBattle={false}
         />
         <footer>
-          <p>완료 표시는 이 기기에 저장돼요. 언제든 다시 연습할 수 있어요.</p>
+          <p>연습 표시는 이 기기에, 보상 지급 기록은 계정에 저장돼요. 이전에 연습만 마쳤다면 다시 완료해 보상을 받으세요.</p>
           <div>
             <button onClick={onDeckEdit}>내 덱 준비하기</button>
             <button onClick={onBack}>메인 메뉴</button>
@@ -122,6 +126,7 @@ export function TutorialMenu({
   );
 }
 export function TutorialCoach({
+  accountId, rewardProof,
   id,
   goal,
   setup,
@@ -131,6 +136,8 @@ export function TutorialCoach({
   onCourses,
   onNext,
 }: {
+  accountId?:string;
+  rewardProof?:TutorialProof;
   id: LessonId;
   goal: TutorialGoal;
   setup: string;
@@ -193,6 +200,7 @@ export function TutorialCoach({
               ? "버튼만 누른 것이 아니라 실제 전투 판정으로 목표를 달성했어요."
               : setup}
           </DialogDescription>
+          {goal.complete&&<TutorialRewardsPanel accountId={accountId} proof={rewardProof}/>}
           {!goal.complete ? (
             <>
               <h2>{goal.title}</h2>
