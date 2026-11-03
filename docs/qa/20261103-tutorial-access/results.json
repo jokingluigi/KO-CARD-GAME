@@ -5,24 +5,24 @@
     "targets": [
       {
         "label": "튜토리얼카드로 직접 배우기→",
-        "top": 413,
-        "bottom": 469.59375,
+        "top": 393,
+        "bottom": 449.59375,
         "width": 144,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "게임 규칙판정 · 챔피언 토큰→",
-        "top": 413,
-        "bottom": 469.59375,
+        "top": 393,
+        "bottom": 449.59375,
         "width": 144,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
-        "top": 521.59375,
-        "bottom": 565.59375,
+        "top": 501.59375,
+        "bottom": 545.59375,
         "width": 267,
         "height": 44,
         "hit": true
@@ -42,24 +42,24 @@
     "targets": [
       {
         "label": "튜토리얼카드로 직접 배우기→",
-        "top": 413,
-        "bottom": 469.59375,
+        "top": 393,
+        "bottom": 449.59375,
         "width": 164,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "게임 규칙판정 · 챔피언 토큰→",
-        "top": 413,
-        "bottom": 469.59375,
+        "top": 393,
+        "bottom": 449.59375,
         "width": 164,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
-        "top": 521.59375,
-        "bottom": 565.59375,
+        "top": 501.59375,
+        "bottom": 545.59375,
         "width": 267,
         "height": 44,
         "hit": true
@@ -79,24 +79,24 @@
     "targets": [
       {
         "label": "튜토리얼카드로 직접 배우기→",
-        "top": 561,
-        "bottom": 617.59375,
+        "top": 541,
+        "bottom": 597.59375,
         "width": 164,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "게임 규칙판정 · 챔피언 토큰→",
-        "top": 561,
-        "bottom": 617.59375,
+        "top": 541,
+        "bottom": 597.59375,
         "width": 164,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
-        "top": 689.59375,
-        "bottom": 733.59375,
+        "top": 661.59375,
+        "bottom": 705.59375,
         "width": 267,
         "height": 44,
         "hit": true
@@ -116,24 +116,24 @@
     "targets": [
       {
         "label": "튜토리얼카드로 직접 배우기→",
-        "top": 491,
-        "bottom": 547.59375,
+        "top": 471,
+        "bottom": 527.59375,
         "width": 171.5,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "게임 규칙판정 · 챔피언 토큰→",
-        "top": 491,
-        "bottom": 547.59375,
+        "top": 471,
+        "bottom": 527.59375,
         "width": 171.5,
         "height": 56.59375,
         "hit": true
       },
       {
         "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
-        "top": 619.59375,
-        "bottom": 663.59375,
+        "top": 591.59375,
+        "bottom": 635.59375,
         "width": 267,
         "height": 44,
         "hit": true

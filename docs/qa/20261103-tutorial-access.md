@@ -18,3 +18,9 @@
 
 ## Evidence and limits
 Screenshots and test outputs: [20261103-tutorial-access](20261103-tutorial-access/). Browser tests use isolated account/catalog fixtures; they do not establish real-user login, live matchmaking, purchase or cross-device sync success. No manual production DB changes or main merge. Deployment receipt is recorded separately after live verification.
+
+## Production deployment constraints
+The API was deployed at commit `466b722934ccbd71e960002cec152d7fac6874b6` and returned health 200. Live capability checks report `emailRecovery: false`, `journalSync: false`. These optional services remain pending because email configuration / reviewed storage migration have not been activated. Local records continue to work; missing storage does not trigger a manual production migration. See deployment receipts for the final frontend verification.
+
+## Deployed UI follow-up
+The deployed public rulebook passed on 390×844, 844×390 and 1440×900 without account/catalog fixtures or production writes. An initial deployed-home fixture check caught overflow before web fonts completed loading at 320×568. Added short-screen hero compaction and medium-small screen spacing reserve, and made measurements explicitly await font settlement. Both the normal-font and deliberately blocked-font seven-viewport suites now pass locally; the final frontend receipt and deployed fixture results record the follow-up release.

@@ -29,8 +29,10 @@ try {
     p.on("pageerror", (e) => errors.push(e.message));
     p.on("dialog", (d) => d.accept());
     await auditSetup(p);
+    if (process.env.KO_QA_BLOCK_FONTS === "1") await p.route("**/*.woff2", route => route.abort());
     await p.goto(origin + "/");
     await p.getByText("출전 검증 덱", { exact: true }).waitFor();
+    await p.evaluate(() => document.fonts.ready);
     const targets = await p
       .locator(".ko-home-learning button,.ko-lobby-more")
       .evaluateAll((nodes) =>
@@ -128,6 +130,7 @@ try {
     );
     await p.goto(origin + "/");
     await p.getByText("출전 검증 덱", { exact: true }).waitFor();
+    await p.evaluate(() => document.fonts.ready);
     await p.getByRole("button", { name: /^게임 규칙/ }).click();
     await p.getByRole("heading", { name: "게임 규칙", exact: true }).waitFor();
     await p.locator(".ko-guide-chapter h2").first().waitFor();

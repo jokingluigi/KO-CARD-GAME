@@ -1,0 +1,32 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "livePublicRules": true,
+    "chapters": 5,
+    "championTokenQuestions": 7,
+    "noHorizontalOverflow": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "livePublicRules": true,
+    "chapters": 5,
+    "championTokenQuestions": 7,
+    "noHorizontalOverflow": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "livePublicRules": true,
+    "chapters": 5,
+    "championTokenQuestions": 7,
+    "noHorizontalOverflow": true,
+    "productionWrites": 0,
+    "errors": []
+  }
+]

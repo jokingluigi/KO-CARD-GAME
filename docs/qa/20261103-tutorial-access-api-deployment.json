@@ -1,0 +1,13 @@
+{
+  "commit": "466b722934ccbd71e960002cec152d7fac6874b6",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbkjqbrncjis73eh9jfg",
+  "status": "live",
+  "liveCommit": "466b722934ccbd71e960002cec152d7fac6874b6",
+  "healthStatus": 200,
+  "recoveryOptions": {
+    "emailRecovery": false,
+    "journalSync": false
+  },
+  "maintenanceEnabled": false
+}
