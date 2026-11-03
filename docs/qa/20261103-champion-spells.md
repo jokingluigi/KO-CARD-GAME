@@ -19,3 +19,9 @@
 - 전체 타입 검사, API 및 프론트엔드 빌드 통과. 실물 모바일·장시간 두 클라이언트 PvP 검증은 이번 범위에 포함하지 않았다.
 
 [테스트 스크립트](champion-spell-browser.mjs) · [화면과 결과](20261103-champion-spells/)
+
+## 배포 확인
+
+- 기능 브랜치 소스 `d2bda32e8771d120b12384ca328ba6114dfc19f9`를 서버 → 화면 순서로 배포했다. 두 서비스 모두 같은 커밋의 live 상태를 확인했다. main 병합과 서비스 브랜치 변경은 없다.
+- 운영 엔트리와 JS/CSS 140개의 SHA-256이 로컬 동일 커밋 빌드와 일치했다. health 정상, 기존 점검 설정 false를 유지했다. [서버 확인](20261103-champion-spells/api-deployment.json), [프론트엔드 확인](20261103-champion-spells/front-deployment.json).
+- 배포용 빌드와 운영 URL에서 모바일/PC 관리자 저장·재진입·프레임 저장·컬렉션 필터·엔진 주문 사용 검사를 각각 다시 통과했다. 인증·카드 편집은 격리 API/DB를 사용해 운영 카드를 수정하지 않았다. [배포 UI 결과](20261103-champion-spells/deployed-results.json), [관리자 화면](20261103-champion-spells/deployed-editor-390.png), [컬렉션 화면](20261103-champion-spells/deployed-collection-390.png).

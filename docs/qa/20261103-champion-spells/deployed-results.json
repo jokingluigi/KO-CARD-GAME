@@ -1,0 +1,32 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "adminSaveAndReentry": true,
+    "championPreview": true,
+    "filterPreserved": true,
+    "collectionChampionFilter": true,
+    "spellFrameSave": true,
+    "effectUnchanged": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "adminSaveAndReentry": true,
+    "championPreview": true,
+    "filterPreserved": true,
+    "collectionChampionFilter": true,
+    "spellFrameSave": true,
+    "effectUnchanged": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "actualSpellEngineCast": true,
+    "goldSpent": 2,
+    "drawnCards": 1,
+    "runtimeRarity": "CHAMPION"
+  }
+]

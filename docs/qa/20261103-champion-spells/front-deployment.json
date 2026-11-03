@@ -1,0 +1,721 @@
+{
+  "commit": "d2bda32e8771d120b12384ca328ba6114dfc19f9",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbkuthp5efls73fof1ng",
+  "status": "live",
+  "liveCommit": "d2bda32e8771d120b12384ca328ba6114dfc19f9",
+  "entryAssets": [
+    "/server-connection.js",
+    "/assets/index-C4az-Pi2.js",
+    "/assets/index-0GgDWf9F.css"
+  ],
+  "assets": [
+    {
+      "file": "rewards-client-Bwl2g33P.js",
+      "sha256": "eb6efeb9c7639a2fd2007d200eeb8d8e1813512a5bd6766c316eacbe3097ceed",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-tag-manager-CS0oTvik.js",
+      "sha256": "5e5e41b95eb4907b8e3f9988bc7d58a7deb00e63c9bf32a306978539913371b2",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-champion-manager-BW3eTok_.js",
+      "sha256": "27c1eb8ef8cb9cb0cb4053982f170ae410d4668769c048ca4cb65272aeec5a89",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-card-manager-KmqoRuQu.js",
+      "sha256": "0d79c26b17d5d8e32038165307f6940e6ac0ecf888acc2c966ecb908edcc1841",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-game-state-Wmaos2DX.js",
+      "sha256": "d533df6de82385f523a4584ba3578ce5d86938fa7bebd360c66cd2694a2ab9ea",
+      "matchesLocal": true
+    },
+    {
+      "file": "shelf-B6eEzlzL.js",
+      "sha256": "ca7dda37222970fdd92a5b81831e9c502c0e3c9cdf9d2b05c4bf63a8733a49c3",
+      "matchesLocal": true
+    },
+    {
+      "file": "power-DmSinji5.js",
+      "sha256": "7659246a72e1004a489a0bd4f1a7cda6854226cbb008a04b843dea33470b40e9",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-notices-manager-CKFlw41z.js",
+      "sha256": "8f0bd0529f10ae02fb83284bd90642ac3a01bc91938deba6022db200e1ba5786",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-dashboard-BA1w1WQH.js",
+      "sha256": "08d90bbf96b296f45872079e0c9ffb4de21d446adef92caaf2b6bfd6a6c74b34",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-shop-manager-ByEVDbTD.js",
+      "sha256": "71502048e3ac22d71d1fd9bf7118c239fc723b38488a4844bef953d02c0b375b",
+      "matchesLocal": true
+    },
+    {
+      "file": "screen-impact-CqCr6qNH.js",
+      "sha256": "0c371287d38fe4795d8caca5fd626729828346a362e57b6596577b7fc27de701",
+      "matchesLocal": true
+    },
+    {
+      "file": "dialog-Bv1aAdhn.js",
+      "sha256": "737414a45d76ccc80cec3d43c22caf2e24f2f4b448b8ee4c1c93f0ccaca04350",
+      "matchesLocal": true
+    },
+    {
+      "file": "chevron-down-11rdpbxN.js",
+      "sha256": "254f5ccb6a1468cac91d83381da5965c9249dd0552a77ef7b46965985443c7d9",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-rewards-manager-DWBPOA7t.js",
+      "sha256": "d8bd5c7ae0fbcffb78d356b99c29c5ffff2f1a9f92f5410fe602b699a3d59b54",
+      "matchesLocal": true
+    },
+    {
+      "file": "launch-deck-banner-BTmux3YN.js",
+      "sha256": "bd729e4a7c3fe035819f1af5eaa87c5bff316fbb731592fb0a29050b8636e6c5",
+      "matchesLocal": true
+    },
+    {
+      "file": "launch-deck-dczHW_Aj.js",
+      "sha256": "1cf87632be81c3fec34c45321db5d61ea2f5bf2c8fe43717512eae8b6e80ceca",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-game-media-manager-DhcVMtuj.js",
+      "sha256": "74227972d6a137ab9ee7b07ca1ab1d018b77b48f750a28c44c7e4c5b2dad170f",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-0pJihu0A.js",
+      "sha256": "97fa86bbc480ce38cbf9a34870953eb917a6a1c23215a12e44056320dc3a8183",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-catalog-filters-DdCTb-De.js",
+      "sha256": "b25e84bb2f3c52b021c59045aef7b3be14601e8be0b8dae405fe0957102166a5",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-CmzsmusN.js",
+      "sha256": "ffa4fa027eae1fbfbc2cb8c93055e479e0ae902a0452fb3c7467edebf14a570b",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-lobby-ui-B1SbnaNF.js",
+      "sha256": "a715f4499beb3a47c8434bd617d473265088a022af8dbbe68ac39d00d9148a6b",
+      "matchesLocal": true
+    },
+    {
+      "file": "skin-battle-preview-Bh5777DH.js",
+      "sha256": "a73baed8f10e471ecf208a28d9d62bcb0f3da2d8546ce42822bddfc8d4f08c30",
+      "matchesLocal": true
+    },
+    {
+      "file": "log-out-ByVBIEQ7.js",
+      "sha256": "20038cedb4035e360b5b9760f42f138a076073b61d496c63d948fb49fc0423d9",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-notebook-1IUt5qZ-.js",
+      "sha256": "171b9b491a28c2bd5b4a08712d21adad1403848d17f86c86277b53790cb05190",
+      "matchesLocal": true
+    },
+    {
+      "file": "draft-client-9m3MMnfs.js",
+      "sha256": "214dd319827d619a9d6ca11c23e6066c464faa80ac036362dc8dab019c9fc829",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-XEne77Ta.js",
+      "sha256": "2f6acbd6a95a61599620fbd8768e55f5077eef560568c9110b95b2275c4bea92",
+      "matchesLocal": true
+    },
+    {
+      "file": "pack-opening-B-q-gNlz.js",
+      "sha256": "2e620170b2aad16be86ae68f64fc2f144f661f1a3368ee338bf69edef0081da3",
+      "matchesLocal": true
+    },
+    {
+      "file": "shop-deck-detail-BtqJx8sR.js",
+      "sha256": "3cf6ece436d9ba4d0091c953984037874548b0cf50b25374b228764bb7192962",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-prism-manager-5SpAvESW.js",
+      "sha256": "58e8f41dd0e6aab7d6ec23811a7b13dabf99c83a80337771a37426c8d0100c35",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-DUOIFyfK.js",
+      "sha256": "cbbfe4b7bd8c2b64f2fe70626f47e3f4853ce692d92f7ee16fbb3c30f75359f5",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-C44PgZgW.js",
+      "sha256": "0d4c187c735eeb14cb2f4860d1277c3ed470d682028cb95debee4d0368c179b4",
+      "matchesLocal": true
+    },
+    {
+      "file": "combat-settings-DRO6Wn4I.js",
+      "sha256": "93d8b2a808959b7dafc84437d45062f097545a6f15c1e14bf419776f4a3b88ee",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetic-preview-C7z_I24U.js",
+      "sha256": "4fe62594e3c36f09525c836f7b952f70c1723e5b1b484a88c40cbd952bc821c7",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-BUEyqPm4.js",
+      "sha256": "aab2cfe28912d57f7b174dfe9e2e45e1ed4f9bd752d77a7697e5f81e520a4688",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-CT9Q2voP.js",
+      "sha256": "1a5c39d9a40dd6fc05e6fd1099c2be17a27737f032b13e024f66e508df506945",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-renderer-3SyU6hwQ.js",
+      "sha256": "bb4a9a4ef596aad5521c1275b1b504e09808b8c8e777988141f2e16549107bfc",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-match-qeSDSVPY.js",
+      "sha256": "567f57f8bce81d04e2b00c0c9ce82592e77c15b90513d6b73247edd4ef2ad747",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-quest-manager-NHhECga9.js",
+      "sha256": "baeffb3e6ecb8197680e6e202daafac1b1ed16d27cc88d4f9db470a486b4b9f7",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-match-intro-Bcab2RqP.js",
+      "sha256": "67e301f1fe00736d3d517d4e4762ba10ec069825342f4bedc44203ff04ed316c",
+      "matchesLocal": true
+    },
+    {
+      "file": "loader-circle-CKMIZzLi.js",
+      "sha256": "e6555afe97b514763f8e5112a678e3d5ee373cccf3f1c3a20082cb59d4cb0acf",
+      "matchesLocal": true
+    },
+    {
+      "file": "triangle-alert-Dsc8LhdX.js",
+      "sha256": "cca51976d5b22b3da145882aa06a976955030e41dc6f3aa05cabb69db6402374",
+      "matchesLocal": true
+    },
+    {
+      "file": "save-V8NZTL7I.js",
+      "sha256": "432e2d04c093f5062338d80d0db60971d79be3c4ac4d5d7020b97eb9f81386b9",
+      "matchesLocal": true
+    },
+    {
+      "file": "create-initial-game-state-D68mlAQ5.js",
+      "sha256": "5bcb910dc4abe987f861e223ce61ed4349e4e1bb67269851f00745eee1bfc463",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-DwC_M8i_.js",
+      "sha256": "862222659efdfb7f91e10bd26ee1ed2bd69f8a6f4274804d01ead629d0701a36",
+      "matchesLocal": true
+    },
+    {
+      "file": "direct-champion-COKCt3Sc.js",
+      "sha256": "46bea285aa6953aa61e45c773f8bdd30a47a322d1ef84c29560ef707cf392ecf",
+      "matchesLocal": true
+    },
+    {
+      "file": "configured-effects-dcXzdYdx.js",
+      "sha256": "1da59f05abfaae30a657b3eb67cda4d11b4b61ca8bc09df53658c581b438f8e0",
+      "matchesLocal": true
+    },
+    {
+      "file": "calendar-check-2-DhCZjNaL.js",
+      "sha256": "ed3870b71a0fcc83ec45b88fbcf27120439218242f19060a9283ae6852c1baf8",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-C4az-Pi2.js",
+      "sha256": "4710680b50596cb626103d2cfc41a51d21c531ee702e7e5af3ffb577c84e6ede",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-friendly-C8LjzmAq.js",
+      "sha256": "dd486ebe0eac7b497977785538cefa5bd68bc0ba6351150d0bd280e2287dfffd",
+      "matchesLocal": true
+    },
+    {
+      "file": "types-C2Y9wVRF.js",
+      "sha256": "4ddc7c57559e02d398f257f71ec7b0a82cec16cbfaa880a1acd3744c056494b1",
+      "matchesLocal": true
+    },
+    {
+      "file": "draft-CYFqQA69.js",
+      "sha256": "8fa8b50b06d749aa90850ea8dc71ee190b8b3c6b8987356afff9cde7c93db072",
+      "matchesLocal": true
+    },
+    {
+      "file": "plus-BdmatPfA.js",
+      "sha256": "526150fcaebcfdbaf45ea719457641169706a0b296fe47c2d05ffc2b9fde6b75",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-card-frame-manager-B_FCLETB.js",
+      "sha256": "525fb520a425f9c09e57caeca402c4eb727887cc2c481cc8a55bc783ff2db4ef",
+      "matchesLocal": true
+    },
+    {
+      "file": "account-recovery-Ci00zBKS.js",
+      "sha256": "0a2d1171fe12856e45de41f6dd8b4b1d718ed0b3c97931d8591b066336e2fc9e",
+      "matchesLocal": true
+    },
+    {
+      "file": "square-Pg9Z0ZBv.js",
+      "sha256": "6b442ad3d03b626456b2f2ceb78cefb5d114b4b27f4a2359311ba18f75293b4a",
+      "matchesLocal": true
+    },
+    {
+      "file": "package-DjFF0Tl7.js",
+      "sha256": "f2fce82c312f890d77e4a6043296e1fdf738a83453d5378dec577d9349ad6044",
+      "matchesLocal": true
+    },
+    {
+      "file": "shop-ChDGExb5.js",
+      "sha256": "16c0ed80e710257879bac112ee908a634570bfdeb9c4cf06bf53fa7c02b015ba",
+      "matchesLocal": true
+    },
+    {
+      "file": "display-labels-CKIrqrCl.js",
+      "sha256": "5a9f17fce710a440ff2c5f91bbd7b2a05aea51c24eb520a0bfd1894065530475",
+      "matchesLocal": true
+    },
+    {
+      "file": "check--JPt3LVI.js",
+      "sha256": "f83130f87173789836e227153db17cd8203c14e82fa17ae878eaa03ba371b3ca",
+      "matchesLocal": true
+    },
+    {
+      "file": "arrow-left-C0rXaZyf.js",
+      "sha256": "083eaee76eb2e30d539f88a8aec4b0ede538de5f271616d06047afe26e8d0d8d",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-artwork-DK_10VM6.js",
+      "sha256": "44a3ff4e66b5a8cff4a4207949cc08c260e3f56f7a1c07e42ed2f7158dd54e2a",
+      "matchesLocal": true
+    },
+    {
+      "file": "battle-mode-button-DSsGZ1WB.js",
+      "sha256": "1dccc3d5747ea654bfbc2fe43c36621b143c15f4db9ccfbbf25115f3ce96c2a8",
+      "matchesLocal": true
+    },
+    {
+      "file": "rotate-ccw-C5AILDyt.js",
+      "sha256": "389fa79899952b05c76dd99c989200f59ed6e03f29d454e7b3218e07674a3ee1",
+      "matchesLocal": true
+    },
+    {
+      "file": "settings-BA0z_rvb.js",
+      "sha256": "e2265e543a74e31a6baf6e8b08ba8534aff099959d377c14f8861dcb483ef53a",
+      "matchesLocal": true
+    },
+    {
+      "file": "constants-qZl7m6Qe.js",
+      "sha256": "3724f5c01400352cdddd538b230be7ca7413dde1a4eed408b59debf8e9e3cbc2",
+      "matchesLocal": true
+    },
+    {
+      "file": "upload-BZzR86e2.js",
+      "sha256": "c623a78af67c7880e6b199d5b51687e208bb827905b8f4b81387e2721f745985",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-ai-deck-manager-BFgri-wS.js",
+      "sha256": "e8aaf6722f38cb3d9727ec4249293ad4e964ab6d1b4522c04699889b0fc3a237",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-list-controls-Ch0om_Wn.js",
+      "sha256": "8039e73c4a177b3ba586662cef2acc59ecec5cbe52460ac3d7e9e51b92396cbc",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-recap-panel-0CAMWK22.js",
+      "sha256": "85cbe422fabd0fb0198b0f90d82d84a58bf95c1a474ba971e8600a12e2dc596e",
+      "matchesLocal": true
+    },
+    {
+      "file": "star-BUQGtkgy.js",
+      "sha256": "65c1c314e85ef42b02d46b105c14cbc32d8c4f501b530dbb3d1d3e06cd9f5f8e",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-draft-manager-Cjel-KBQ.js",
+      "sha256": "e3bed412b61ec99de8c88dd52bc2e28e56dbba5d63346369b595ff80cf88f5c5",
+      "matchesLocal": true
+    },
+    {
+      "file": "effect-engine-CwiLKbEL.js",
+      "sha256": "e3e0fc2055514cae8cdd557bcec9e90bbec0e3842d079a0783f668df637e03fb",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-tower-manager-NKFrEHKw.js",
+      "sha256": "453cb367a28e458d6230626ad796ca65a73cbf4c7a644eaa26d94054823fcbc7",
+      "matchesLocal": true
+    },
+    {
+      "file": "sparkles-DAyYt5Sv.js",
+      "sha256": "da6bd3274458bbbe3c5f23891b5bd36e8b7c06dc9ac4a176d1a897bc75aa2c82",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-client-BcdtZqYA.js",
+      "sha256": "938d4e1cb49ae3bea9dddca4a3c06abdfe6295ae4f1d950b971e4adb21f29725",
+      "matchesLocal": true
+    },
+    {
+      "file": "not-found-D7iWKnGL.js",
+      "sha256": "3e871ae8b26dd0437079f998eb43bd79ae6a5202bba83177780d431aa944d1a4",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-dialogue-view-CuREPZl8.js",
+      "sha256": "a6422f8b0854fe99d09d0b935ab78e8702cf856ba044d4b60ccab0bee954c284",
+      "matchesLocal": true
+    },
+    {
+      "file": "reward-display-Cfe_tM1s.js",
+      "sha256": "42955c4689afa805350d1c5c630da9118e28d06250059dfce9879ca1c454ce19",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-client-66zOa0Vm.js",
+      "sha256": "4345a988756a79af614bf362438b77507a77c27c43b1c13fb82ff60809bae5d0",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-pack-manager-BKxnUFiF.js",
+      "sha256": "8433e3fad1e1cb9581b810a91549b106d6d8cc3b88e503d2e3433d2efc381b37",
+      "matchesLocal": true
+    },
+    {
+      "file": "search-CZmb-4gn.js",
+      "sha256": "b3282d55e85586d07868a38004a4c1d5f64ee9dabb00d1afcf7911043c4ff913",
+      "matchesLocal": true
+    },
+    {
+      "file": "circle-check-CPM3HBEB.js",
+      "sha256": "45342ad9760c72e42220599d7ed66260b233527a5c4ccbc0a02ebe6f7718af57",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-tower-test-yAD2LpHH.js",
+      "sha256": "52ed8e1a20b7d966e3585ac6ea98619ab4f311b008178923cf876257672bdd92",
+      "matchesLocal": true
+    },
+    {
+      "file": "presentation-motion-BM0uieQT.js",
+      "sha256": "7563988774aedca5efb342622c1486ac36f04669444912560ef6c9654965766f",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-guide-content-CFKZvFFO.js",
+      "sha256": "ed5ec80e11d92e2fad619614cb14aa1b754e4a1ca540cd7556ab69d78411cb1d",
+      "matchesLocal": true
+    },
+    {
+      "file": "ai-decks-client-DAPVSya8.js",
+      "sha256": "64a9ad9dbf39775dc64f1cd035bc086c7fbd0a13aba84fae6b95bba2f1daa135",
+      "matchesLocal": true
+    },
+    {
+      "file": "routes-B2uPogcz.js",
+      "sha256": "99a3d58f3cecc82256897c0441a289e506e023dc78524a3e9d2780192b47f3d1",
+      "matchesLocal": true
+    },
+    {
+      "file": "pack-detail-dialog-DUwI_gRQ.js",
+      "sha256": "33e86815dd24db12027ef249efe225b9adc27b00e85b3e295a72960af863717c",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-effect-config-Czu0ClLV.js",
+      "sha256": "55a5e90f67b5f6f69a450ccaf9e0cae7c7427a76b8516db38e4507c6a80ac68c",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-B5xUUbob.js",
+      "sha256": "558760a4ffb1fab26df7920f9058715bb1285a63cf9f57df1dc95f461d5e2ebe",
+      "matchesLocal": true
+    },
+    {
+      "file": "alt-inspector-BYF76oNw.js",
+      "sha256": "91e3fb1d9005a64ea96367f5f07aadabd6c1692b873ce5668abc0447478113e8",
+      "matchesLocal": true
+    },
+    {
+      "file": "coins-4w7JvzT-.js",
+      "sha256": "9cb5011fddf1853ca8a419ad0ac081320b9a37b74e4c3f64701240c78733c738",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-B7lnvXit.js",
+      "sha256": "cb79739dfdd46d2f5bea4fe316c9937b039f4e3dabfe18b11dd5f52282951d4a",
+      "matchesLocal": true
+    },
+    {
+      "file": "effects-C4APsq4r.js",
+      "sha256": "157fa6cd9540b58a37f1a2fe20216e02d671d5c7694044c97056061870b3ebe2",
+      "matchesLocal": true
+    },
+    {
+      "file": "alt-inspector-utils-CKFQ7F2c.js",
+      "sha256": "1038b74f6a6127c02e55b99396b0a6da5828d206125bc702f5990ef7860a006f",
+      "matchesLocal": true
+    },
+    {
+      "file": "daily-quests-AFLM5nAH.js",
+      "sha256": "a34ac79dad8db1edcc1c247816c25d5ac3aa3f71f5a0957857d3912fe736a195",
+      "matchesLocal": true
+    },
+    {
+      "file": "chevron-right-ae2LZNX6.js",
+      "sha256": "9b3a9e252247b3489d29578a9609f27caed4a17c2d7df6761e02d1959366d4e5",
+      "matchesLocal": true
+    },
+    {
+      "file": "home-BsRSFdKe.js",
+      "sha256": "f43922237e816eb10f0c714eec02c7032bb038df7cd34f59ba1d05f061a96f4e",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-guide-CwW0K3nr.js",
+      "sha256": "d41c389dd71e7a8774309cd7a2a84bf842b9fe9b34db6afb3e60813a90d5b713",
+      "matchesLocal": true
+    },
+    {
+      "file": "published-champions-nzrLxtU8.js",
+      "sha256": "31902048a646bb5afbcbe3d6491cb5506e3f262ec9708a6df18419c1563a6be6",
+      "matchesLocal": true
+    },
+    {
+      "file": "claim-all-rewards-Ckm1mopr.js",
+      "sha256": "b2ae9843abee40d1a7af7a5ec32438b72174d58c875d31436bc7ca6f24144fdb",
+      "matchesLocal": true
+    },
+    {
+      "file": "pack-probabilities-REvKwi_I.js",
+      "sha256": "b5086e3118b2a83f91d25194948982406403e4997833454c64b9954d91709f29",
+      "matchesLocal": true
+    },
+    {
+      "file": "copy-fVi6WMUk.js",
+      "sha256": "02102b4993426ce314ff9ae5b52d561d2c0f616c15edb966fb30556bf112b790",
+      "matchesLocal": true
+    },
+    {
+      "file": "types-B5zwr2pG.js",
+      "sha256": "f58794a9426b495a9abba37610d2b6fc12611bfe614fea34c2fa8af3beedf0ef",
+      "matchesLocal": true
+    },
+    {
+      "file": "bot-DXJz-Ewy.js",
+      "sha256": "fd214a70161c9a6d9ae0616f0b0840782825ba6221f0e46cd14924da301ec068",
+      "matchesLocal": true
+    },
+    {
+      "file": "trash-2-CxWWMDRN.js",
+      "sha256": "26dcdd7529d04cd266e0c42a92ae0488a17f957430c1e085431938c0360d57a2",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-D-TaRRyI.js",
+      "sha256": "d242a3e81a5a8806bc7b084f04a8dc8f8a8681d803e5c1ce05735400133cf431",
+      "matchesLocal": true
+    },
+    {
+      "file": "packs-BmP16wIJ.js",
+      "sha256": "aaa2e513a622f5498dff1c871cfdabfe6076f3cada4dfb23fc2a29832245bc75",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-quick-DCgG5Rh3.js",
+      "sha256": "a2b6b74ea1731966c2301ef578dbf52c908bc79af31a639060c9e712ee8174c9",
+      "matchesLocal": true
+    },
+    {
+      "file": "image-plus-NDvTUlNX.js",
+      "sha256": "e2c71c0307eec50d7e37f28f25d9ea7c96071599cafa3088d42bb868a6076227",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-sandbox-SEmeavYI.js",
+      "sha256": "e13a9c8e0cdf25eec8fd4e5fb164424874b1a63adffdb3f6a7eb972b0247ed11",
+      "matchesLocal": true
+    },
+    {
+      "file": "tower-vanilla-WE7zpbUS.js",
+      "sha256": "049e3c1b6230a833802af1c5c4583f1aca53256db7c50759ffbe518b60b33e7d",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-page-header-BH54l6uc.js",
+      "sha256": "74677b623fd20bce151fd13950a2c83eed6ce2f781890504cc5ef30c9b2ccc37",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-detail-dialog-D_9LTsLe.js",
+      "sha256": "59bfd3c4bcf60c2eff41aee869cdda2b8453df0b98aab16cb15bc95799ad2c4a",
+      "matchesLocal": true
+    },
+    {
+      "file": "attendance-Cfrt60uF.js",
+      "sha256": "df930728d5750d4c1ed8cc0a259c2ed82e3d3f0c79abed14b259e6f490d41dae",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-CNCE1SNi.js",
+      "sha256": "4d30b2c2844e250a7a73075de99c170cc44e4d8f3e5ea844205881f1f3ae5d53",
+      "matchesLocal": true
+    },
+    {
+      "file": "refresh-cw-DZy6G_Fn.js",
+      "sha256": "94a901bb17db17d6cfac18cc02e3f372c9cf73c71cfcdf5eefb17dda47bccdbf",
+      "matchesLocal": true
+    },
+    {
+      "file": "shield-Br3yoHoD.js",
+      "sha256": "8342e04dc8115fe51309f869a8a3b892acc7ee8c39bf6cc38435485d6dad3474",
+      "matchesLocal": true
+    },
+    {
+      "file": "collection-action-animation-DkrCIfz5.js",
+      "sha256": "a517723f7a7b6b44b99db5784f29c48fb4ba08eff2698a167b1a9427b7725164",
+      "matchesLocal": true
+    },
+    {
+      "file": "decks-client-DFJs05uy.js",
+      "sha256": "b8bfe3c299266262c3cf1ca9080cb82fb5e4cf75f49779ad1f715c1ee822e710",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-usage-statistics-CbvD4e3r.js",
+      "sha256": "e171ba5b7ff4547a8f3241f2082984b9705f290b60a74c82f29b6cf53eb0f20b",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-battle-actor-BuHPU4vu.css",
+      "sha256": "a0fd7d1885b86dfd4991d46bafb760cbdc7aa466ab3690c6f46b9a2552c139f1",
+      "matchesLocal": true
+    },
+    {
+      "file": "player-ux-6Sji1bxz.css",
+      "sha256": "29e72b4d7b9d09364a679ae24103283e8552403d392c8f549df54268a28a212c",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-battle-sprites-BUAmiLrS.css",
+      "sha256": "0b476854ccec7ea740289f013553fec790bb0dd14ef3b65dacec8343c7272350",
+      "matchesLocal": true
+    },
+    {
+      "file": "cosmetics-8oip41O_.css",
+      "sha256": "646e10c9ee1ff11577406d8b21d96c3ebf3ed248cafa79e0635dac43da2926a7",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-B2RlV69A.css",
+      "sha256": "0c7d4501983239021f7b73267ab351777f973012396e1976c418bad686bbf527",
+      "matchesLocal": true
+    },
+    {
+      "file": "battle-mode-button-Cg6_GT_-.css",
+      "sha256": "ab3c2c9a7fdbddb4d3856d115aff3210faa61ebb3306582848f1cf5a18888056",
+      "matchesLocal": true
+    },
+    {
+      "file": "champion-sprite-visual-C9MeIlrk.css",
+      "sha256": "f7c3e147da31c039680ac6e1fe9f13e5ad8e3af97c41a9cb97a26cb9c0e0fb7b",
+      "matchesLocal": true
+    },
+    {
+      "file": "admin-usage-statistics-zIUkQJsY.css",
+      "sha256": "ad212c88bda436530f682d61521f47d0e5c0f7d9e045ddf5fd9638f9d598d140",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-page-header-Bqu-c6f7.css",
+      "sha256": "0e517f5556e471e44010c01ed63c42ddf1452db63d30b931ac1dca8999917ff1",
+      "matchesLocal": true
+    },
+    {
+      "file": "draft-Cac3xVTd.css",
+      "sha256": "1f38a69ec1c708293bdd1f96c0826faf427b7bee4fbda34b0ee24cabe30a5636",
+      "matchesLocal": true
+    },
+    {
+      "file": "index-0GgDWf9F.css",
+      "sha256": "2c7b26e1772a89e39b7a968e1f82ec8441cbb0ab496a3b923f08332e690bb309",
+      "matchesLocal": true
+    },
+    {
+      "file": "game-guide-BPxGQUUH.css",
+      "sha256": "1434a66c0d1caa3c61634d0683e3b3e06d2aff2e06fb968f4cf5956564d35a83",
+      "matchesLocal": true
+    },
+    {
+      "file": "card-renderer-CA3dN5nx.css",
+      "sha256": "70adfda193708f6b129a319fda3205cfc49fc9c7372d3bdf8375415772dc9434",
+      "matchesLocal": true
+    },
+    {
+      "file": "claim-all-rewards-CxVY8INY.css",
+      "sha256": "786007b16064d42051906298e85d3fca63440b68c312104bfb0fe0a0986a42d5",
+      "matchesLocal": true
+    },
+    {
+      "file": "screen-impact-CpHhjk4D.css",
+      "sha256": "dd48dea2abeaffd2c5c226fafd35c0e5de15f775a5f0f4b6b7f528f5c821b2fd",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-BNIDShBc.css",
+      "sha256": "de760ebe2a93741564b376eeb89f82a4eb61772cea752d7a0b87c37d44176b44",
+      "matchesLocal": true
+    },
+    {
+      "file": "match-result-overlay-FHhevUOI.css",
+      "sha256": "f672908e65df68525e9800474f03d7b7a94aca7e9716fca0a742b8e89dc5429f",
+      "matchesLocal": true
+    },
+    {
+      "file": "online-match-intro-BfPpEPdc.css",
+      "sha256": "7445242c3aa5c0dbd4807a7d568d7b7cd616a584121615ce2d1b5cb34ebb6425",
+      "matchesLocal": true
+    },
+    {
+      "file": "home-CxDZWsh2.css",
+      "sha256": "ef8347441976056e4146bcd43c109aba3b60190285cd5fdc52a76cbb033e79fd",
+      "matchesLocal": true
+    }
+  ],
+  "healthStatus": 200,
+  "maintenanceEnabled": false,
+  "unauthenticatedRewards": {
+    "GET /api/rewards/available": 401,
+    "POST /api/rewards/claim-all": 401
+  },
+  "productionRewardWrites": 0
+}
