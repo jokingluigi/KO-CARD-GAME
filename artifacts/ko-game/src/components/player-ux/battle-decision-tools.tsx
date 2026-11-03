@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import type { GameState } from "@/game";
 import {
@@ -12,6 +19,87 @@ import {
   FORECAST_LIMITATION,
 } from "./attack-forecast-policy";
 type Nodes = RefObject<Map<string, HTMLDivElement>>;
+/** Fit actual text dimensions, including larger reading settings, inside the viewport. */
+function AnchoredNotice({
+  node,
+  children,
+  testId,
+  className,
+  role,
+}: {
+  node: HTMLElement | null;
+  children: ReactNode;
+  testId: string;
+  className: string;
+  role?: "status";
+}) {
+  const ref = useRef<HTMLElement | null>(null);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    const bubble = ref.current;
+    if (!node || !bubble) return;
+    const place = () => {
+      if (!node.isConnected) {
+        setPosition(null);
+        return;
+      }
+      const anchor = node.getBoundingClientRect(),
+        box = bubble.getBoundingClientRect();
+      const left = Math.max(
+        8,
+        Math.min(
+          innerWidth - box.width - 8,
+          anchor.x + anchor.width / 2 - box.width / 2,
+        ),
+      );
+      const preferred =
+        anchor.top >= box.height + 16
+          ? anchor.top - box.height - 8
+          : anchor.bottom + 8;
+      const top = Math.max(
+        8,
+        Math.min(innerHeight - box.height - 8, preferred),
+      );
+      setPosition((old) =>
+        old?.left === left && old.top === top ? old : { left, top },
+      );
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(bubble);
+    observer.observe(node);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [node, children]);
+  if (!node) return null;
+  return createPortal(
+    <aside
+      ref={ref}
+      role={role}
+      data-testid={testId}
+      className={className}
+      style={{
+        ...position,
+        visibility: position ? "visible" : "hidden",
+        maxWidth: "calc(100vw - 16px)",
+        maxHeight: "calc(100dvh - 16px)",
+        overflow: "hidden",
+      }}
+    >
+      {children}
+    </aside>,
+    document.body,
+  );
+}
+
 export function ForecastText({
   state,
   attackerId,
@@ -22,7 +110,9 @@ export function ForecastText({
   targetId: string;
 }) {
   const x = basicAttackForecast(state, attackerId, targetId);
-  return x ? (
+  return x?.blockedReason ? (
+    <strong>{x.blockedReason}</strong>
+  ) : x ? (
     <>
       <strong>
         기본 피해 {x.damage} · 반격 {x.counter}
@@ -36,6 +126,11 @@ export function ForecastText({
             : "기본 교환 시 대상 리타이어 예상"}
         </span>
       )}
+      {x.warnings.map((warning) => (
+        <span key={warning} className="mt-1 block text-amber-200">
+          {warning}
+        </span>
+      ))}
       {x.selfFalls && (
         <span className="block text-red-200">
           기본 교환 시 내 선수 리타이어 예상
@@ -168,28 +263,29 @@ export function AttackForecast({
           </button>
         </DialogContent>
       </Dialog>
-      {!open &&
-        hover &&
-        createPortal(
-          <aside
-            data-testid="attack-forecast"
-            className="ko-local-feedback pointer-events-none fixed z-[195] w-[212px] border border-amber-700 bg-black/95 p-2 text-xs text-white shadow-lg"
-            style={{ left: hover.x, top: hover.y }}
-          >
-            <p className="mb-1 text-amber-200">
-              {name(hover.id)} · 기본 교환 예상
-            </p>
-            <ForecastText
-              state={state}
-              attackerId={attackerId}
-              targetId={hover.id}
-            />
-            <small className="text-neutral-400">
-              발동 효과 등에 따라 달라질 수 있음
-            </small>
-          </aside>,
-          document.body,
-        )}
+      {!open && hover && (
+        <AnchoredNotice
+          node={
+            hover.id === state.players[1].id
+              ? champion.current
+              : (board.current.get(hover.id) ?? null)
+          }
+          testId="attack-forecast"
+          className="ko-local-feedback pointer-events-none fixed z-[195] w-[240px] border border-amber-700 bg-black/95 p-2 text-xs text-white shadow-lg"
+        >
+          <p className="mb-1 text-amber-200">
+            {name(hover.id)} · 기본 교환 예상
+          </p>
+          <ForecastText
+            state={state}
+            attackerId={attackerId}
+            targetId={hover.id}
+          />
+          <small className="text-neutral-400">
+            발동 효과 등에 따라 달라질 수 있음
+          </small>
+        </AnchoredNotice>
+      )}
     </>
   );
 }
@@ -200,41 +296,18 @@ export function LocalActionFeedback({
   message: string | null;
   node: HTMLElement | null;
 }) {
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  useEffect(() => {
-    if (!message || !node) {
-      setPos(null);
-      return;
-    }
-    const place = () => {
-      const r = node.getBoundingClientRect();
-      setPos({
-        left: Math.max(8, Math.min(innerWidth - 228, r.x + r.width / 2 - 110)),
-        top: r.y > 100 ? r.y - 88 : Math.min(innerHeight - 96, r.bottom + 6),
-      });
-    };
-    place();
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, true);
-    return () => {
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
-    };
-  }, [message, node]);
-  return message && pos
-    ? createPortal(
-        <p
-          role="status"
-          data-testid="local-action-reason"
-          className="pointer-events-none fixed z-[196] w-[220px] border border-amber-700 bg-black/95 p-3 text-sm text-amber-100 shadow-lg"
-          style={pos}
-        >
-          {message}
-        </p>,
-        document.body,
-      )
-    : null;
+  return message && node ? (
+    <AnchoredNotice
+      node={node}
+      testId="local-action-reason"
+      role="status"
+      className="pointer-events-none fixed z-[196] w-[220px] border border-amber-700 bg-black/95 p-3 text-sm text-amber-100 shadow-lg"
+    >
+      {message}
+    </AnchoredNotice>
+  ) : null;
 }
+
 const guideText = {
   SUMMON: "선택한 선수를 빈 아군 슬롯에 놓으세요. 필드 밖에 놓으면 취소돼요.",
   ATTACK:

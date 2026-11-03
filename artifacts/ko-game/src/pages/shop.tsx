@@ -1,3 +1,6 @@
+import {CollectionRequestError} from '@/lib/collection-client';
+import {fetchCurrentUser} from '@/lib/auth-client';
+import {readShopPurchase,storeShopPurchase,clearShopPurchase,type ShopPurchaseIntention} from '@/lib/shop-purchase-recovery';
 import {
   GamePageHeader,
   SHOP_PAGE_LINKS,
@@ -49,7 +52,13 @@ export default function ShopPage() {
   );
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const purchasingRef = useRef(false);
+  const intentionRef=useRef<ShopPurchaseIntention|null>(null);
+  const [purchaseRecovery,setPurchaseRecovery]=useState<ShopPurchaseIntention|null>(null);
+  const [purchaseOwner,setPurchaseOwner]=useState<string|null>(null);
+  const [recoveryBlocked,setRecoveryBlocked]=useState(false);
   const purchaseOrigin = useRef<HTMLButtonElement | null>(null);
+  const recoveryFocus=useRef<HTMLElement|null>(null);
+  const messageFocus=useRef<HTMLParagraphElement|null>(null);
   const rewardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -58,6 +67,13 @@ export default function ShopPage() {
 
   async function refresh() {
     const result = await fetchShop();
+    if(result.purchaseRecovery!==true){setRecoveryBlocked(true);throw new Error('구매 결과 확인 기능을 준비하고 있어요. 잠시 후 상점을 다시 확인해 주세요.');}
+    const owner=result.accountId ?? (await fetchCurrentUser()).user?.id;
+    setPurchaseOwner(owner??null);
+    if(owner){
+      try{const old=readShopPurchase(localStorage,owner);intentionRef.current=old;setPurchaseRecovery(old);setRecoveryBlocked(false);}
+      catch(error){setRecoveryBlocked(true);throw error;}
+    }
     setCurrency(result.currencyBalance);
     setIsTestAccount(result.isTestAccount);
     setCurrencyDisplayName(result.currencyDisplayName);
@@ -80,6 +96,16 @@ export default function ShopPage() {
       });
   }, [navigate]);
 
+  useEffect(()=>{
+    if(!purchaseOwner)return;
+    const changed=(event:StorageEvent)=>{
+      if(event.key!=='ko-shop-purchase:'+purchaseOwner || purchasingRef.current)return;
+      try{const pending=readShopPurchase(localStorage,purchaseOwner);intentionRef.current=pending;setPurchaseRecovery(pending);if(!pending)void refresh().catch(()=>setMessage('최신 보유량을 다시 확인해 주세요.'));}
+      catch(error){setRecoveryBlocked(true);setMessage(error instanceof Error?error.message:'이전 구매 결과를 확인해 주세요.');}
+    };
+    window.addEventListener('storage',changed);return()=>window.removeEventListener('storage',changed);
+  },[purchaseOwner]);
+
   const [pendingPurchase, setPendingPurchase] = useState<{
     listing: ShopListing;
     quantity: number;
@@ -89,8 +115,9 @@ export default function ShopPage() {
   async function handlePurchase(
     listing: ShopListing,
     confirmedQuantity?: number,
+    recovering?:ShopPurchaseIntention,
   ) {
-    if (purchasingRef.current) return;
+    if (purchasingRef.current || !purchaseOwner || recoveryBlocked || (!recovering&&intentionRef.current)) return;
     const quantity = confirmedQuantity ?? quantities[listing.id] ?? 1;
     if (confirmedQuantity === undefined) {
       setMessage("");
@@ -101,8 +128,16 @@ export default function ShopPage() {
     setPurchasingId(listing.id);
     setSuccess("");
     setMessage("");
+    let intention=recovering;
+    let confirmedReceipt:Awaited<ReturnType<typeof purchaseShopListing>>|null=null;
     try {
-      const result = await purchaseShopListing(listing.id, quantity);
+      intention=intention??{accountId:purchaseOwner,listingId:listing.id,quantity,idempotencyKey:crypto.randomUUID()};
+      if(intention.accountId!==purchaseOwner)throw new Error('구매 요청의 로그인 계정이 달라요.');
+      if(!recovering)storeShopPurchase(localStorage,intention);
+      intentionRef.current=intention;setPurchaseRecovery(intention);
+      const result = await purchaseShopListing(listing.id, quantity,intention);
+      confirmedReceipt=result;
+      clearShopPurchase(localStorage,purchaseOwner,intention.idempotencyKey);intentionRef.current=null;setPurchaseRecovery(null);
       setCurrency(result.currencyBalance);
       setPendingPurchase(null);
       setListings((current) =>
@@ -112,7 +147,7 @@ export default function ShopPage() {
             : item,
         ),
       );
-      setSuccess(`팩 ${result.packQuantity}개를 획득했습니다.`);
+      setSuccess(recovering?`이전 구매 결과를 확인했어요. 지급 팩 ${result.packQuantity}개.`:`팩 ${result.packQuantity}개를 획득했습니다.`);
       const scene: CollectionActionScene = {
         id: Date.now(),
         kind: "PACK_PURCHASE",
@@ -127,13 +162,27 @@ export default function ShopPage() {
         prefersReducedMotion() ? 0 : 210,
       );
       toast({
-        title: "구매 완료",
+        title: recovering?"구매 결과 확인 완료":"구매 완료",
         description: `팩 ${result.packQuantity}개를 획득했습니다.`,
       });
+      try{await refresh();}catch{setRecoveryBlocked(true);setLoadError(true);setMessage('구매는 완료됐어요. 새 구매 전에 최신 보유량을 다시 확인해 주세요.');}
     } catch (error) {
+      if(confirmedReceipt){
+        setPendingPurchase(null);setCurrency(confirmedReceipt.currencyBalance);setSuccess(`지급 팩 ${confirmedReceipt.packQuantity}개를 확인했어요.`);
+        try{const pending=readShopPurchase(localStorage,purchaseOwner);intentionRef.current=pending;setPurchaseRecovery(pending);setRecoveryBlocked(false);}catch{setRecoveryBlocked(true);}
+        setMessage('구매는 완료됐어요. 복구 기록을 정리하지 못했으니 같은 구매 확인으로 마무리해 주세요.');
+        return;
+      }
       const message =
-        error instanceof Error ? error.message : "구매에 실패했습니다.";
+        error instanceof Error ? error.message : "구매 결과를 확인하지 못했어요.";
       setMessage(message);
+      setPendingPurchase(null);
+      if(intention && error instanceof CollectionRequestError && [400,404,422].includes(error.status)) {
+        try{clearShopPurchase(localStorage,intention.accountId,intention.idempotencyKey);intentionRef.current=null;setPurchaseRecovery(null);}catch{setRecoveryBlocked(true);}
+      } else if(intentionRef.current) {
+        setPurchaseRecovery(intentionRef.current);
+        setMessage(message+' 같은 구매 확인으로 결과를 복구하세요. 새 구매는 잠시 잠깁니다.');
+      }
       if (message.includes("크레딧이 부족합니다")) {
         toast({
           title: "구매 실패",
@@ -200,6 +249,8 @@ export default function ShopPage() {
           <>
             {message && (
               <p
+                ref={messageFocus}
+                tabIndex={-1}
                 role={loadError ? "alert" : "status"}
                 className={
                   "ko-surface-message " + (loadError ? "is-error" : "")
@@ -230,6 +281,7 @@ export default function ShopPage() {
                 )}
               </p>
             )}
+            {purchaseRecovery&&<section ref={recoveryFocus} tabIndex={-1} className="ko-surface-message" role="status" data-testid="shop-purchase-recovery"><h2 className="font-bold">이전 구매 결과 확인</h2><p>{listings.find(item=>item.id===purchaseRecovery.listingId)?.name??"이전 상품"} · {purchaseRecovery.quantity}묶음</p><p>서버에서 이미 처리됐을 수 있어요. 같은 요청으로 확인하면 재화가 중복 차감되지 않습니다.</p><button type="button" className="ko-surface-action" disabled={Boolean(purchasingId)} onClick={()=>{const item=listings.find(x=>x.id===purchaseRecovery.listingId)??{id:purchaseRecovery.listingId,name:'이전 상품',pack:{name:'이전 상품'}} as ShopListing;void handlePurchase(item,purchaseRecovery.quantity,purchaseRecovery);}}>{purchasingId?'구매 확인 중…':'같은 구매 확인'}</button></section>}
             {success && (
               <p
                 data-ui-mount-motion
@@ -352,7 +404,7 @@ export default function ShopPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={Boolean(purchasingId) || !canAfford}
+                        disabled={Boolean(purchasingId) || !canAfford || !purchaseOwner || Boolean(purchaseRecovery) || recoveryBlocked}
                         data-ui-motion-state={busy ? "PENDING" : ""}
                         onClick={(event) => {
                           purchaseOrigin.current = event.currentTarget;
@@ -403,7 +455,9 @@ export default function ShopPage() {
           overlayClassName="ko-purchase-overlay"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            purchaseOrigin.current?.focus({ preventScroll: true });
+            if(intentionRef.current)recoveryFocus.current?.focus();
+            else if(message)messageFocus.current?.focus();
+            else purchaseOrigin.current?.focus({ preventScroll: true });
           }}
         >
           <DialogTitle>구매 확인</DialogTitle>

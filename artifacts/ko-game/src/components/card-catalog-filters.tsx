@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 export type CatalogFilters = { ownership: 'ALL' | 'OWNED' | 'UNOWNED'; rarity: string; tag: string; cost: string };
 export const EMPTY_CATALOG_FILTERS: CatalogFilters = { ownership: 'ALL', rarity: 'ALL', tag: 'ALL', cost: 'ALL' };
 type CatalogCard = { quantity?: number; rarity: string; tags?: string[]; cost: number };
@@ -8,7 +9,7 @@ export function matchesCatalogFilters(card: CatalogCard, filters: CatalogFilters
     (filters.tag === 'ALL' || (card.tags ?? []).includes(filters.tag)) &&
     (filters.cost === 'ALL' || card.cost === Number(filters.cost));
 }
-export function CardCatalogFilters({ cards, value, onChange }: { cards: CatalogCard[]; value: CatalogFilters; onChange: (value: CatalogFilters) => void }) {
+export function CardCatalogFilters({ cards, value, onChange, children, label="상세 필터" }: { cards: CatalogCard[]; value: CatalogFilters; onChange: (value: CatalogFilters) => void; children?:ReactNode; label?:string }) {
   const tags = [...new Set(cards.flatMap(card => card.tags ?? []).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ko'));
   const costs = [...new Set(cards.map(card => card.cost))].sort((a,b) => a-b);
   const controls: [keyof CatalogFilters, string, [string,string][]][] = [
@@ -18,7 +19,8 @@ export function CardCatalogFilters({ cards, value, onChange }: { cards: CatalogC
     ['cost', '코스트', [['ALL','전체 코스트'], ...costs.map(cost => [String(cost),String(cost)] as [string,string])]],
   ];
   const active = Object.values(value).filter(v=>v!=="ALL").length;
-  return <details className="ko-catalog-filter-disclosure"><summary>상세 필터{active ? ` · ${active}개 적용 중` : ""}</summary><div className="ko-catalog-filters grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="카드 분류">
+  return <details className="ko-catalog-filter-disclosure"><summary>{label}{active ? ` · ${active}개 적용 중` : ""}</summary><div className="ko-catalog-filters grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="카드 분류">
+    {children}
     {controls.map(([key,label,options]) => <label key={key} className="min-w-0 text-xs text-neutral-300">{label}
       <select aria-label={label} value={value[key]} onChange={event => onChange({ ...value, [key]: event.target.value })} className="mt-1 block min-h-11 w-full min-w-0 rounded border border-neutral-700 bg-neutral-950 px-2 text-base text-white">
         {options.map(([id,text]) => <option key={id} value={id}>{text}</option>)}

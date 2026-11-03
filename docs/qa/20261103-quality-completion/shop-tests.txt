@@ -1,0 +1,14 @@
+✔ quantity validation and integer overflow protection (4922.251226ms)
+✔ legacy single purchase and bulk purchase debit once and grant exact multiplied pack count (42.86008ms)
+✔ invalid quantities and insufficient funds leave inventory/balance/history unchanged (51.758546ms)
+✔ concurrent bulk requests cannot overspend; successful debit and inventory remain atomic (17.631036ms)
+✔ keyed purchase survives lost replies, concurrent retry, payload mismatch and listing closure without duplicate grants (71.311461ms)
+✔ a purchase key is scoped to its authenticated account, not shared with another buyer (107.233761ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6773.927129

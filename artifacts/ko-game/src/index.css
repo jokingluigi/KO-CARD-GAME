@@ -2728,3 +2728,5 @@
 }
 .ko-decks__search:focus-within { border-bottom-color: #d9bb7b; }
 .ko-decks__search input { min-height: 28px; }
+/* Direct dialog titles reserve the same space as titles inside DialogHeader. */
+.ko-game-dialog > h2 { padding-right:40px; }

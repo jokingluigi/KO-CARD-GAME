@@ -172,3 +172,17 @@ test("confirmed healing logs use actual totals, link only one proven action and 
   b.events.push({ type: "CARD_PLAYED" });
   assert.equal(observedChampionHealing(a, b)[0].actionIndex, null);
 });
+
+test('forecast includes current public damage limits and explains an allied pre-attack combo without running it',()=>{
+ const s=fixture(),a=s.players[0].board[0]!,b=s.players[1].board[0]!;
+ b.abilities=[{trigger:'BEFORE_DAMAGE',incomingDamageLimitPerTurn:2,effects:[]}];
+ s.events=[{type:'TURN_STARTED',playerId:s.players[0].id},{type:'DAMAGE_DEALT',amount:1,target:{type:'CARD',cardInstanceId:b.instanceId}}];
+ const combo={...a,instanceId:'combo-helper',abilities:[{trigger:'OTHER_ALLY_ATTACK' as const,effects:[]}]};s.players[0].board[1]=combo;
+ const before=JSON.stringify(s),x=basicAttackForecast(s,a.instanceId,b.instanceId)!;assert.equal(x.damage,1);assert.ok(x.warnings.some(w=>w.includes('콤보')));assert.equal(JSON.stringify(s),before);
+});
+test('forecast includes a visible damage aura and does not promise damage to a protected champion',()=>{
+ const s=fixture(),a=s.players[0].board[0]!,b=s.players[1].board[0]!;
+ s.players[0].board[1]={...a,instanceId:'damage-aura',abilities:[{trigger:'ENTER_FIELD',effects:[{type:'STRUCTURED',action:'ADD_DAMAGE_MODIFIER',values:{damageSource:'ALL',amount:2}}]}]};
+ assert.equal(basicAttackForecast(s,a.instanceId,b.instanceId)?.damage,7);
+ b.isChampionToken=true;assert.equal(basicAttackForecast(s,a.instanceId,s.players[1].id)?.damage,0);assert.match(basicAttackForecast(s,a.instanceId,s.players[1].id)?.blockedReason??'',/보호/);
+});

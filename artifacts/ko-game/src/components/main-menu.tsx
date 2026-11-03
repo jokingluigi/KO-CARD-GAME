@@ -25,7 +25,7 @@ type MainMenuProps = {
   onDeckEdit?: () => void;
   onAiMatch?: () => void;
   user?: AuthUser;
-  onLogout?: () => void;
+  onLogout?: () => void | Promise<void>;
   onNicknameChanged?: (user: AuthUser) => void;
 };
 
@@ -100,6 +100,15 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [nicknameSaving, setNicknameSaving] = useState(false);
   const [nicknameError, setNicknameError] = useState("");
+  const [logoutPending,setLogoutPending]=useState(false);
+  const [accountError,setAccountError]=useState("");
+  const logoutLock=useRef(false);
+  async function attemptLogout(){
+    if(logoutLock.current)return;
+    logoutLock.current=true;setLogoutPending(true);setAccountError("");
+    try{await onLogout?.();}catch(error){setAccountError(error instanceof Error?error.message:'로그아웃을 확인하지 못했어요. 다시 시도해 주세요.');}
+    finally{logoutLock.current=false;setLogoutPending(false);}
+  }
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -215,7 +224,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
                 <DropdownMenuContent onCloseAutoFocus={e=>{if(editingNickname)e.preventDefault();}} align="end" className="border-neutral-700 bg-neutral-950 text-neutral-100">
                   <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>{setNicknameDraft(user.nickname);setNicknameError("");setEditingNickname(true);}}><Pencil aria-hidden="true" className="h-4 w-4"/>닉네임 변경</DropdownMenuItem>
                   <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>navigate("/settings")}>계정 · 화면 설정</DropdownMenuItem>
-                  <DropdownMenuItem className="min-h-11 gap-2" onSelect={()=>onLogout?.()}><LogOut aria-hidden="true" className="h-4 w-4"/>로그아웃</DropdownMenuItem>
+                  <DropdownMenuItem className="min-h-11 gap-2" disabled={logoutPending} onSelect={()=>void attemptLogout()}><LogOut aria-hidden="true" className="h-4 w-4"/>{logoutPending?"로그아웃 중…":"로그아웃"}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <div className="ko-home-wallet" aria-label="보유 재화"><span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span><span className="text-violet-300">일반 프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span><span className="text-rose-200">챔피언 프리즘 {user.isTestAccount ? "∞" : user.championPrismBalance.toLocaleString()}</span></div>
@@ -250,6 +259,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           </form></DialogContent></Dialog>
         </header>
 
+        <Dialog open={Boolean(accountError)} onOpenChange={open=>{if(!open)setAccountError("");}}><DialogContent onCloseAutoFocus={event=>{event.preventDefault();accountRef.current?.focus();}} className="border-amber-800 bg-neutral-950 text-white"><DialogHeader><DialogTitle>로그아웃 결과 확인</DialogTitle><DialogDescription className="text-amber-100">{accountError}</DialogDescription></DialogHeader><button type="button" className="min-h-11 rounded border border-amber-600 px-4" onClick={()=>setAccountError("")}>닫기</button></DialogContent></Dialog>
         {mainContent.notices.length > 0 && (
           <section className="ko-main-menu__announcements" aria-label="공지">
             <button type="button" aria-haspopup="dialog" aria-expanded={announcementsOpen} aria-label={`공지 · ${mainContent.notices.length}건`} onClick={openNotices}>

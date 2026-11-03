@@ -586,3 +586,10 @@
     font-size: 11px;
   }
 }
+.ko-decks :is(.ko-decks__back,.ko-decks__secondary-action,.ko-decks__compact-action,[data-testid="select-champion"]) { min-height:44px; }
+.ko-decks .ko-decks__card-action { min-width:44px;min-height:44px;width:44px;height:44px; }
+.ko-decks .ko-decks__search { padding-top:0;padding-bottom:0; }
+.ko-decks .ko-decks__search input { min-height:44px; }
+@media (max-width:650px) {
+  .ko-decks :is(input,select,textarea) { font-size:16px; }
+}

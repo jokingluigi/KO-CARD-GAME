@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchCurrentUser, submitAuth, logout, AuthRequestError } from "./auth-client";
+import { fetchCurrentUser, submitAuth, logout, changeNickname, AuthRequestError } from "./auth-client";
 import { startServerConnection, requestServerStatus } from './startup-client';
 
 const originalFetch = globalThis.fetch;
@@ -141,3 +141,11 @@ test('normal login posts immediately without waiting for a health round trip',as
  assert.equal((await submitAuth('login',{email:account.email,password:'test-only-password'},{onStage:stage=>stages.push(stage)})).id,account.id);
  assert.deepEqual(calls,['/api/auth/login']);assert.deepEqual(stages,['submitting']);
 });
+
+test('refused logout preserves a confirmed session instead of pretending to log out',async()=>{
+ globalThis.fetch=async()=>new Response(JSON.stringify({authenticated:true,user:account}));await fetchCurrentUser();
+ let calls=0;globalThis.fetch=async()=>{calls++;return new Response(JSON.stringify({message:'로그아웃 서버 오류'}),{status:503});};
+ await assert.rejects(logout(),/로그아웃 서버 오류/);assert.equal((await fetchCurrentUser()).user?.id,account.id);assert.equal(calls,1);
+});
+
+test('confirmed nickname changes update navigation cache; failed changes keep the last confirmed name',async()=>{let calls=0;const renamed={...account,nickname:'New QA'};globalThis.fetch=async()=>{calls++;return new Response(JSON.stringify({authenticated:true,user:renamed}));};assert.equal((await changeNickname('New QA')).nickname,'New QA');assert.equal((await fetchCurrentUser()).user?.nickname,'New QA');assert.equal(calls,1);globalThis.fetch=async()=>new Response(JSON.stringify({message:'이미 사용 중인 닉네임입니다.'}),{status:409});await assert.rejects(changeNickname('Duplicate'),/이미 사용/);assert.equal((await fetchCurrentUser()).user?.nickname,'New QA');});

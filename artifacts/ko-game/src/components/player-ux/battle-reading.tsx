@@ -1,3 +1,8 @@
+import {useCosmeticImage} from "../cosmetic-battle";
+import {SilenceImmunityNotice} from '../silence-immunity-notice';
+import {cardSilenceProtection} from '../../lib/card-protection-display';
+import {getActiveCardKeywords} from '../../game/cards/granted-text';
+import {KEYWORD_LABELS} from '../alt-inspector-utils';
 import { getCardRuntimeRulesText } from "../../lib/card-display-state";
 import { useEffect, useState } from "react";
 import type { GameState, CardDefinition } from "@/game";
@@ -18,14 +23,20 @@ export function HandReader({
   definition: (id: string) => CardDefinition | undefined;
 }) {
   const [open, setOpen] = useState(false),
-    [index, setIndex] = useState(0);
+    [selectedId, setSelectedId] = useState<string|null>(null);
   const hand = state.players[0].hand,
-    card = hand[Math.min(index, Math.max(0, hand.length - 1))],
+    index=Math.max(0,hand.findIndex(c=>c.instanceId===selectedId)),
+    card = hand[index],
     def = card ? definition(card.definitionId) : undefined;
+  const cosmetic=useCosmeticImage(card?state.players[0].id:undefined,card?.definitionId,'CARD_SKIN',def?.imageUrl);
+  const protection=cardSilenceProtection(card??{},def);
   useEffect(() => {
     setOpen(false);
-    setIndex(0);
+    setSelectedId(null);
   }, [state.gameId]);
+  useEffect(()=>{
+    if(open&&!hand.some(entry=>entry.instanceId===selectedId))setSelectedId(hand[0]?.instanceId??null);
+  },[open,hand,selectedId]);
   return (
     <>
       <button
@@ -47,23 +58,27 @@ export function HandReader({
           </DialogDescription>
           {card ? (
             <article className="ko-hand-reader">
+                  <h3 className="mb-3 text-xl text-amber-200">
+                    {def?.name ?? "카드"}
+                  </h3>
+              {protection.immune&&<div className="mb-3"><SilenceImmunityNotice {...protection}/></div>}
               <div className="flex items-center gap-3">
                 <CardArtwork
-                  src={def?.imageUrl}
+                  src={cosmetic.src}
+                  fallbackSrc={def?.imageUrl}
+                  displayOverride={cosmetic.display}
                   alt=""
                   className="h-28 w-24 shrink-0"
                   {...def}
                 />
                 <div>
-                  <h3 className="text-xl text-amber-200">
-                    {def?.name ?? "카드"}
-                  </h3>
                   <p>
                     비용 {card.currentCost} · 공격 {card.currentAttack} · 체력{" "}
                     {card.currentHealth}
                   </p>
                 </div>
               </div>
+              {getActiveCardKeywords(card).length>0&&<p className="my-3 text-sm text-amber-200">키워드 · {getActiveCardKeywords(card).map(k=>KEYWORD_LABELS[k]??k).join(' · ')}</p>}
               <div className="ko-readable-content my-4">
                 <CardRulesText
                   text={getCardRuntimeRulesText(
@@ -79,7 +94,7 @@ export function HandReader({
                 <button
                   className="min-h-11 border px-4 disabled:opacity-40"
                   disabled={index === 0}
-                  onClick={() => setIndex(Math.max(0, index - 1))}
+                  onClick={() => setSelectedId(hand[Math.max(0,index-1)]?.instanceId??null)}
                 >
                   이전
                 </button>
@@ -89,7 +104,7 @@ export function HandReader({
                 <button
                   className="min-h-11 border px-4 disabled:opacity-40"
                   disabled={index >= hand.length - 1}
-                  onClick={() => setIndex(index + 1)}
+                  onClick={() => setSelectedId(hand[index+1]?.instanceId??null)}
                 >
                   다음
                 </button>

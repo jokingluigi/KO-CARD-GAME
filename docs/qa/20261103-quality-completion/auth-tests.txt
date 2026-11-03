@@ -1,0 +1,24 @@
+✔ fetchCurrentUser preserves an unauthenticated response (39.811479ms)
+✔ fetchCurrentUser converts a timeout into a recoverable error (6.350501ms)
+✔ fetchCurrentUser surfaces a bounded server error without logging out (1.890021ms)
+✔ login timeout releases the form instead of waiting indefinitely (5.427884ms)
+✔ a late guest response from before login is replaced by current authentication (1.500294ms)
+✔ pending startup authentication obeys the caller deadline instead of blocking for a minute (6.675923ms)
+✔ parallel session restores share one request; a network failure does not cache logout (101.518525ms)
+✔ logout invalidates the navigation cache (0.895918ms)
+✔ a pending server wake never sends credentials; readiness submits exactly once (1.080952ms)
+✔ temporary gateway error retries only health reads, never the login POST (502.761891ms)
+✔ unavailable server times out without posting a password (5.234017ms)
+✔ leaving the form while waking cancels the eventual credential submission (3.253211ms)
+✔ a login POST failure is reported without automatic credential replay (0.548412ms)
+✔ normal login posts immediately without waiting for a health round trip (1.744129ms)
+✔ refused logout preserves a confirmed session instead of pretending to log out (0.904801ms)
+✔ confirmed nickname changes update navigation cache; failed changes keep the last confirmed name (0.952581ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1077.546741

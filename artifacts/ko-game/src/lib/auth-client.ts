@@ -1,3 +1,4 @@
+import { requestJson } from "./client-request";
 import { restoreSession } from "./session-restore";
 import {
   invalidateStartupAuth,
@@ -239,31 +240,18 @@ export function refreshCurrentUser() {
 /** Use only after the server has already revoked the session (e.g. password change). */
 export function clearLocalSession():void{invalidateAuth();publishSession({authenticated:false,user:null},true);}
 export async function logout(): Promise<void> {
+  // A refused or disconnected logout must not falsely show a logged-out screen.
+  await requestJson(`${authApiBase}/logout`,{method:'POST'},{label:'로그아웃'});
   invalidateAuth();
-  await fetch(`${authApiBase}/logout`, {
-    method: "POST",
-    credentials: "include",
-  });
-  publishSession({ authenticated: false, user: null }, true);
+  publishSession({ authenticated:false,user:null },true);
 }
 
 export async function changeNickname(nickname: string): Promise<AuthUser> {
-  invalidateAuth();
-  const response = await fetch(`${authApiBase}/nickname`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nickname }),
-  });
-  if (!response.ok)
-    throw new AuthRequestError(
-      await readResponseMessage(response, "닉네임을 변경하지 못했습니다."),
-      response.status,
-    );
-  const body = (await response.json()) as AuthResponse;
-  if (!body.user)
-    throw new AuthRequestError("로그인 상태를 확인하지 못했습니다.");
-  publishSession(body);
+  const body = await requestJson<AuthResponse>(`${authApiBase}/nickname`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nickname}),
+  },{label:'닉네임 변경'});
+  if(!body.authenticated || !body.user) throw new AuthRequestError('로그인 상태를 확인하지 못했습니다.');
+  invalidateAuth();confirmedAuth={response:body,expiresAt:Date.now()+30000};publishSession(body);
   return body.user;
 }
 

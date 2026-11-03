@@ -69,3 +69,12 @@ html[data-contrast-targets="true"]
   stroke-width: 3;
   stroke-dasharray: 6 3;
 }
+/* Reading preferences must also reach referenced-card dialogs and innate-rule notes. */
+[data-card-rules-dialog] > p,
+.ko-silence-immunity-notice p,
+.ko-guide-entries details > div {
+  font-size: calc(14px * var(--ko-detail-scale));
+  line-height: 1.75;
+}
+
+[data-card-rules-dialog] .ko-readable-content { font-size: calc(16px * var(--ko-detail-scale)); }

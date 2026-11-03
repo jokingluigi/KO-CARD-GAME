@@ -1,3 +1,4 @@
+import { requestJson, ClientRequestError } from "./client-request";
 import type { CosmeticItem } from "@workspace/cosmetics";
 export type CollectionCard = {
   isToken?:boolean;
@@ -122,13 +123,14 @@ export class CollectionRequestError extends Error {
   }
 }
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${base}${path}`, { ...init, credentials: "include", headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers } });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { message?: string };
-    throw new CollectionRequestError(body.message ?? "요청을 처리하지 못했습니다.", response.status);
+  try {
+    return await requestJson<T>(`${base}${path}`, {...init, headers: { ...(init?.body ? {"Content-Type":"application/json"} : {}), ...init?.headers }}, {label: init?.method ? '처리' : '정보 확인'});
+  } catch(error) {
+    if(error instanceof ClientRequestError && error.status && !error.outcomeUnknown) throw new CollectionRequestError(error.message,error.status);
+    throw error;
   }
-  return response.status === 204 ? undefined as T : await response.json() as T;
 }
+
 export const fetchCollection = async () => {
   const result = await request<Collection>("/collection");
   const normalize = (card: CollectionCard) => card.name === '디 오리진'
@@ -303,14 +305,14 @@ export type ShopListing = {
   displayOrder: number;
   pack: Pack;
 };
-export type ShopData = { currencyBalance: number; currencyDisplayName: string; listings: ShopListing[]; isTestAccount: boolean };
+export type ShopData = { accountId?: string; purchaseRecovery?: boolean; currencyBalance: number; currencyDisplayName: string; listings: ShopListing[]; isTestAccount: boolean };
 export const fetchShop = () => request<ShopData>("/shop");
-export const purchaseShopListing = (listingId: string, quantity = 1) => request<{
+export const purchaseShopListing = (listingId: string, quantity = 1, intention?: {idempotencyKey:string;accountId:string}) => request<{
   currencyBalance: number;
   packQuantity: number;
   ownedQuantity: number;
   pack: Pack;
 }>(`/shop/${encodeURIComponent(listingId)}/purchase`, {
   method: "POST",
-  body: JSON.stringify({ quantity }),
+  body: JSON.stringify({ quantity, ...intention }),
 });

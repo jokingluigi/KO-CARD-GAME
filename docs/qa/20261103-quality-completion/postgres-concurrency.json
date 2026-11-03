@@ -1,0 +1,10 @@
+{
+  "database": "isolated local PostgreSQL 17",
+  "concurrentSameKeyRequests": 12,
+  "sameKeyDebits": 1,
+  "sameKeyGrants": 1,
+  "distinctRequests": 8,
+  "finalBalance": 4100,
+  "finalPacks": 18,
+  "quantityConflictStatus": 409
+}

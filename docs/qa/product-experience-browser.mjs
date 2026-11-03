@@ -105,7 +105,7 @@ try {
         }
       }
       if (route === "/collection") {
-        await p.getByRole("button", { name: /초과 카드 일괄 분해/ }).waitFor();
+        await p.locator(".ko-collection-controls").waitFor();
         assert.equal(
           await p.locator(".ko-catalog-filter-disclosure").getAttribute("open"),
           null,

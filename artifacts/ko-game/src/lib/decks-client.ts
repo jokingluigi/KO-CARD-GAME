@@ -1,3 +1,4 @@
+import { requestJson } from "./client-request";
 import {readDeckList,type DeckReadOptions} from './deck-read';
 export type DeckCard = {
   keywords?: import('../game/effects/types').CardKeyword[];
@@ -77,28 +78,10 @@ export type DeckOptions = {
 
 const decksApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/decks`;
 
-async function readMessage(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string };
-    return body.message ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${decksApiBase}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
-  });
-  if (!response.ok) {
-    throw new Error(await readMessage(response, "덱 요청을 처리하지 못했습니다."));
-  }
-  return (await response.json()) as T;
+  return requestJson<T>(`${decksApiBase}${path}`, {...init, headers: {
+    ...(init?.body ? {"Content-Type":"application/json"} : {}), ...init?.headers,
+  }}, {label: init?.method ? '덱 변경' : '덱 정보 확인'});
 }
 
 export function fetchDeckOptions(): Promise<DeckOptions> {

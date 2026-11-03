@@ -350,7 +350,7 @@ export default function CollectionPage() {
            </div><button type="button" className="ko-surface-back" onClick={()=>navigate(ROUTES.DECKS)}>덱 편집으로 →</button></div>}/>
 
 
-        {tab !== 'champions' && <button type="button" disabled={isMutating || excessCount === 0} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-emerald-700 px-4 py-3 font-black text-emerald-300 disabled:opacity-40">초과 카드 일괄 분해 ({excessCount}장)</button>}
+        {tab !== 'champions' && excessCount > 0 && <button type="button" disabled={isMutating} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 disabled:opacity-40">초과 카드 일괄 분해 ({excessCount}장)</button>}
         <Dialog open={bulkConfirm} onOpenChange={open => { if (!isMutating) setBulkConfirm(open); }}>
           <DialogContent className="border-neutral-800 bg-neutral-950 text-white">
             <DialogHeader><DialogTitle>일괄 분해 확인</DialogTitle><DialogDescription>일반 3장, 에픽 2장, 레전더리 1장을 남기고 초과분을 분해합니다. 총 {excessCount}장입니다. 검색·필터와 관계없이 전체 분해 가능한 카드에 적용됩니다.</DialogDescription></DialogHeader>
@@ -375,17 +375,18 @@ export default function CollectionPage() {
         {tab === "cards" || tab === "crafting" ? (
           <>
             <section aria-label="카드 검색 및 필터" className="ko-collection-controls mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
-              <div className="ko-collection-search-row grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+              <div className="ko-collection-search-row grid gap-3">
                 <div className="relative block">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                   <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" aria-label="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-neutral-950 py-2.5 pl-9 pr-9 text-sm text-white outline-none transition focus:border-amber-400" />
                   {search && <button type="button" aria-label="검색어 지우기" style={{translate:"none",transform:"none"}} onClick={() => setSearch("")} className="absolute right-1 top-0 z-10 flex h-11 w-11 items-center justify-center text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>}
                 </div>
+              </div>
+              <CardCatalogFilters label={`필터 · 정렬${cardType!=="ALL"?" · "+(cardType==="WRESTLER"?"선수":"기술"):""}${sort!=="COST"?" · "+(sort==="NAME"?"이름순":"희귀도순"):""}`} cards={catalogCards} value={catalogFilters} onChange={setCatalogFilters}>
                 <FilterSelect label="카드 종류" value={cardType} onChange={(value) => setCardType(value as CardTypeFilter)} options={[["ALL", "전체 종류"], ["WRESTLER", "선수"], ["TECHNIQUE", "기술"]]} />
 
                 <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "비용"], ["NAME", "이름"], ["RARITY", "희귀도"]]} />
-              </div>
-              <CardCatalogFilters cards={catalogCards} value={catalogFilters} onChange={setCatalogFilters} />
+              </CardCatalogFilters>
               <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
                 className={`mt-3 inline-flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-bold ${favoritesOnly ? 'border-amber-400 bg-amber-950/50 text-amber-200' : 'border-neutral-700 text-neutral-300'}`}>
                 <Star className={`h-3.5 w-3.5 ${favoritesOnly ? 'fill-amber-400' : ''}`} /> 즐겨찾기만
@@ -506,7 +507,7 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
   return (
     <label className="relative block">
       <span className="sr-only">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full appearance-none rounded border border-neutral-700 bg-neutral-950 py-2.5 pl-3 pr-8 text-xs font-bold text-neutral-200 outline-none focus:border-amber-400 sm:w-auto">
+      <select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full appearance-none rounded border border-neutral-700 bg-neutral-950 py-2.5 pl-3 pr-8 text-xs font-bold text-neutral-200 outline-none focus:border-amber-400 sm:w-auto">
         {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
       </select>
       <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />

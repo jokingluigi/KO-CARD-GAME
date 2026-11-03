@@ -65,7 +65,7 @@ export function WishlistArrivals({
         .slice(0, 5)
         .map((w) => w.name)
         .join(", ")}{" "}
-      · <a href="/player-notebook">내 기록에서 확인</a>
+      · <a href="/player-notebook" className="inline-flex min-h-11 items-center px-1 underline">내 기록에서 확인</a>
     </p>
   ) : null;
 }

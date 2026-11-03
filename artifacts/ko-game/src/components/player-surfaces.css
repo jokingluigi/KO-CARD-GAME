@@ -1277,3 +1277,5 @@
 .ko-quest-list + .ko-reward-today {
   margin-top: 28px;
 }
+/* Critical controls keep the same minimum hit area on every player screen. */
+.ko-surface-tabs > :is(button,a) { min-width:44px; }

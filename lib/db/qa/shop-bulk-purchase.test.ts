@@ -26,3 +26,29 @@ test('quantity validation and integer overflow protection',()=>{assert.equal(sho
 test('legacy single purchase and bulk purchase debit once and grant exact multiplied pack count',async()=>{let r=await buy({});assert.equal(r.status,200);assert.deepEqual(await r.json().then(b=>[b.currencyBalance,b.packQuantity,b.ownedQuantity]),[1900,2,2]);r=await buy({quantity:5});assert.equal(r.status,200);assert.deepEqual(await r.json().then(b=>[b.currencyBalance,b.packQuantity,b.ownedQuantity]),[1400,10,12]);const tx=await database.select().from(schema.currencyTransactionsTable);assert.equal(tx.length,2);assert.equal(tx[1].amount,-500);assert.equal((tx[1].metadata as {quantity:number}).quantity,5);});
 test('invalid quantities and insufficient funds leave inventory/balance/history unchanged',async()=>{for(const quantity of [0,-1,2.5,101,'5',null])assert.equal((await buy({quantity})).status,422);assert.equal((await buy({quantity:100})).status,422);assert.equal((await database.select().from(schema.usersTable))[0].currencyBalance,1400);assert.equal((await database.select().from(schema.userPackInventoryTable))[0].quantity,12);assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,2);});
 test('concurrent bulk requests cannot overspend; successful debit and inventory remain atomic',async()=>{const results=await Promise.all([buy({quantity:10}),buy({quantity:10})]);assert.deepEqual(results.map(r=>r.status).sort(),[200,422]);assert.equal((await database.select().from(schema.usersTable))[0].currencyBalance,400);assert.equal((await database.select().from(schema.userPackInventoryTable))[0].quantity,32);assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,3);});
+
+test('keyed purchase survives lost replies, concurrent retry, payload mismatch and listing closure without duplicate grants',async()=>{
+ const first=await buy({quantity:1,idempotencyKey:'shop-request-first-0001',accountId:'bulk-shop-qa'});assert.equal(first.status,200);const receipt=await first.json();
+ const count=(await database.select().from(schema.currencyTransactionsTable)).length;
+ for(let i=0;i<2;i++){const replay=await buy({quantity:1,idempotencyKey:'shop-request-first-0001',accountId:'bulk-shop-qa'});assert.equal(replay.status,200);assert.deepEqual(await replay.json(),receipt);}
+ assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,count);
+ assert.equal((await buy({quantity:2,idempotencyKey:'shop-request-first-0001'})).status,409);
+ assert.equal((await buy({quantity:1,idempotencyKey:'shop-request-first-0001',accountId:'another-account'})).status,409);
+ assert.equal((await buy({quantity:1,idempotencyKey:'short'})).status,400);
+ const concurrent=await Promise.all([buy({quantity:1,idempotencyKey:'shop-request-race-0001'}),buy({quantity:1,idempotencyKey:'shop-request-race-0001'})]);assert.deepEqual(concurrent.map(r=>r.status),[200,200]);assert.deepEqual(await concurrent[0].json(),await concurrent[1].json());
+ assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,count+1);
+ await database.update(schema.shopListingsTable).set({enabled:false});
+ const replay=await buy({quantity:1,idempotencyKey:'shop-request-first-0001'});assert.equal(replay.status,200);assert.deepEqual(await replay.json(),receipt);
+ assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,count+1);
+});
+
+test('a purchase key is scoped to its authenticated account, not shared with another buyer',async()=>{
+ const{hashPassword}=await import('../../../artifacts/api-server/src/lib/auth');
+ await database.update(schema.shopListingsTable).set({enabled:true});
+ await database.insert(schema.usersTable).values({id:'second-shop-qa',email:'second-shop@example.invalid',nickname:'Second QA',passwordHash:await hashPassword('Second-Isolated-QA-123'),role:'USER',currencyBalance:500,shopCurrencyStarterGrantedAt:new Date()});
+ const login=await fetch(origin+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'second-shop@example.invalid',password:'Second-Isolated-QA-123'})});assert.equal(login.status,200);const secondCookie=login.headers.get('set-cookie')!.split(';')[0];
+ const before=(await database.select().from(schema.usersTable)).find(u=>u.id==='bulk-shop-qa')!.currencyBalance;
+ const r=await fetch(origin+'/api/shop/listing/purchase',{method:'POST',headers:{Cookie:secondCookie,'Content-Type':'application/json'},body:JSON.stringify({quantity:1,idempotencyKey:'shop-request-first-0001',accountId:'second-shop-qa'})});assert.equal(r.status,200);assert.equal((await r.json()).currencyBalance,400);
+ const users=await database.select().from(schema.usersTable);assert.equal(users.find(u=>u.id==='bulk-shop-qa')!.currencyBalance,before);assert.equal(users.find(u=>u.id==='second-shop-qa')!.currencyBalance,400);
+ assert.equal((await database.select().from(schema.currencyTransactionsTable)).filter(t=>t.userId==='second-shop-qa').length,1);
+});

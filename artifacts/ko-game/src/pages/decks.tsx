@@ -829,7 +829,7 @@ export default function Decks() {
                   type="search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="카드 이름으로 검색"
+                  aria-label="카드 이름으로 검색" placeholder="카드 이름으로 검색"
                   data-testid="input-card-search"
                 />
               </label>

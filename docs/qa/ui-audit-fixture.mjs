@@ -387,6 +387,7 @@ export async function auditSetup(
       json = { packs: empty ? [] : packs };
     else if (path === "/api/shop")
       json = {
+        accountId:"launch-user",purchaseRecovery:true,
         currencyBalance: balance,
         isTestAccount: false,
         currencyDisplayName: "크레딧",

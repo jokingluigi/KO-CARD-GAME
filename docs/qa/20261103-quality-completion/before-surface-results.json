@@ -1,0 +1,131 @@
+{
+  "results": [
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/",
+      "overflow": false,
+      "small": [],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/online",
+      "overflow": false,
+      "small": [],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/decks",
+      "overflow": false,
+      "small": [
+        {
+          "label": "메인 메뉴",
+          "width": 97,
+          "height": 37,
+          "cl": "ko-decks__back"
+        },
+        {
+          "label": "MPG 추가",
+          "width": 36,
+          "height": 36,
+          "cl": "ko-decks__card-action"
+        },
+        {
+          "label": "RM우디르 추가",
+          "width": 36,
+          "height": 36,
+          "cl": "ko-decks__card-action"
+        }
+      ],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/collection",
+      "overflow": false,
+      "small": [],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/cosmetics",
+      "overflow": false,
+      "small": [
+        {
+          "label": "내 기록에서 확인",
+          "width": 107,
+          "height": 15,
+          "cl": ""
+        }
+      ],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/shop",
+      "overflow": false,
+      "small": [
+        {
+          "label": "카드팩",
+          "width": 40,
+          "height": 44,
+          "cl": ""
+        }
+      ],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/packs",
+      "overflow": false,
+      "small": [],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/settings",
+      "overflow": false,
+      "small": [
+        {
+          "label": "소리",
+          "width": 28,
+          "height": 48,
+          "cl": ""
+        },
+        {
+          "label": "계정",
+          "width": 28,
+          "height": 48,
+          "cl": ""
+        }
+      ],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/guide",
+      "overflow": false,
+      "small": [],
+      "unnamed": []
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "path": "/player-notebook",
+      "overflow": false,
+      "small": [],
+      "unnamed": []
+    }
+  ],
+  "errors": []
+}

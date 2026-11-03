@@ -73,7 +73,7 @@ export default function PlayerNotebook() {
         <details className="ko-notebook-storage">
           <summary>이 기록은 어디에 저장되나요?</summary>
           <p>
-            계정에 동기화하고 이 기기에도 보관해요. 오프라인 기록은 연결 후 합쳐져요.
+            기록은 이 기기에 보관해요. 계정 동기화 여부는 아래 상태로 확인하세요. 동기화 준비 중이거나 연결이 끊겨도 이 기기의 기록은 유지돼요.
             유저용 기록이며 공식 순위 전적이 아니에요. 최근 200경기를 보관해요.
           </p>
         </details>
