@@ -3,6 +3,7 @@ import { KEYWORD_DESCRIPTIONS, KEYWORD_LABELS } from "../alt-inspector-utils";
 import {
   GAME_GUIDE,
   GUIDE_CATEGORIES,
+  GUIDE_CHAPTERS,
   searchGuide,
   type GuideCategory,
   type GuideEntry,
@@ -42,6 +43,24 @@ export default function GameGuideContent({
         ?.querySelector<HTMLElement>(`[data-guide-id="${focusId}"]`)
         ?.scrollIntoView({ block: "nearest" });
   }, [focusId]);
+  const renderEntry = (entry: GuideEntry) => (
+    <details
+      key={entry.id}
+      data-guide-id={entry.id}
+      open={query.trim() !== "" || entry.id === focusId ? true : undefined}
+    >
+      <summary>{entry.title}</summary>
+      <div>
+        <p>{entry.answer}</p>
+        {entry.example && (
+          <p className="ko-guide-example">
+            <strong>기억할 점</strong>
+            {entry.example}
+          </p>
+        )}
+      </div>
+    </details>
+  );
   return (
     <div className="ko-guide" ref={root}>
       {inBattle && (
@@ -84,23 +103,34 @@ export default function GameGuideContent({
         ))}
       </nav>
       <div className="ko-guide-shortcuts" aria-label="자주 헷갈리는 규칙">
-        <span>자주 찾는 질문</span>
-        {[
-          ["액티브", "사용 횟수"],
-          ["리타이어", "퇴장 판정"],
-          ["침묵", "침묵 면역"],
-        ].map(([term, label]) => (
-          <button
-            key={term}
-            type="button"
-            onClick={() => {
-              setCategory("all");
-              setQuery(term);
-            }}
-          >
-            {label} →
-          </button>
-        ))}
+        <span>바로 찾기</span>
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("champion");
+            setQuery("");
+          }}
+        >
+          챔피언 토큰 설명 →
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("combat");
+            setQuery("액티브");
+          }}
+        >
+          액티브 사용 횟수 →
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("combat");
+            setQuery("리타이어");
+          }}
+        >
+          퇴장 판정 →
+        </button>
       </div>
       {category === "keywords" && (
         <p className="ko-guide-footer">
@@ -112,28 +142,33 @@ export default function GameGuideContent({
         {entries.length}개 안내{query && ` · “${query}” 검색 결과`}
       </p>
       {entries.length ? (
-        <div className="ko-guide-entries">
-          {entries.map((entry) => (
-            <details
-              key={entry.id}
-              data-guide-id={entry.id}
-              open={
-                query.trim() !== "" || entry.id === focusId ? true : undefined
-              }
-            >
-              <summary>{entry.title}</summary>
-              <div>
-                <p>{entry.answer}</p>
-                {entry.example && (
-                  <p className="ko-guide-example">
-                    <strong>기억할 점</strong>
-                    {entry.example}
-                  </p>
-                )}
-              </div>
-            </details>
-          ))}
-        </div>
+        query.trim() ? (
+          <div className="ko-guide-entries">{entries.map(renderEntry)}</div>
+        ) : (
+          <div className="ko-guide-chapters">
+            {GUIDE_CATEGORIES.filter(
+              ([id]) => id !== "all" && (category === "all" || id === category),
+            ).map(([id]) => {
+              const key = id as Exclude<GuideCategory, "all">;
+              const chapter = GUIDE_CHAPTERS[key];
+              return (
+                <section
+                  key={key}
+                  aria-labelledby={`${searchId}-${key}`}
+                  className="ko-guide-chapter"
+                >
+                  <header>
+                    <h2 id={`${searchId}-${key}`}>{chapter.title}</h2>
+                    <p>{chapter.description}</p>
+                  </header>
+                  <div className="ko-guide-entries">
+                    {entries.filter((e) => e.category === key).map(renderEntry)}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )
       ) : (
         <section className="ko-guide-empty">
           <h2>맞는 안내를 찾지 못했어요.</h2>

@@ -1,3 +1,4 @@
+import { accountFeatureStorage } from "../lib/account-feature-storage";
 import { createHash, randomBytes } from "node:crypto";
 import { Router } from "express";
 import { and, eq, gt, lt } from "drizzle-orm";
@@ -46,8 +47,12 @@ const configured = () => {
     return false;
   }
 };
-router.get("/recovery-options", (_req, res) => {
-  res.json({ emailRecovery: configured() });
+router.get("/recovery-options", async (_req, res) => {
+  const storage = await accountFeatureStorage();
+  res.json({
+    emailRecovery: configured() && storage.recovery,
+    journalSync: storage.journal,
+  });
 });
 router.post("/password/forgot", async (req, res) => {
   if (limited("forgot:" + req.ip)) {
@@ -64,11 +69,19 @@ router.post("/password/forgot", async (req, res) => {
     return;
   }
   if (!configured()) {
+    res.status(503).json({
+      message:
+        "이메일 복구 서비스 준비 중입니다. 로그인할 수 있다면 계정 설정에서 비밀번호를 변경할 수 있어요.",
+    });
+    return;
+  }
+  if (!(await accountFeatureStorage()).recovery) {
     res
       .status(503)
       .json({
+        code: "FEATURE_SETUP_PENDING",
         message:
-          "이메일 복구 서비스 준비 중입니다. 로그인할 수 있다면 계정 설정에서 비밀번호를 변경할 수 있어요.",
+          "이메일 복구 서비스를 준비하고 있어요. 잠시 후 다시 확인해 주세요.",
       });
     return;
   }
@@ -107,13 +120,11 @@ router.post("/password/forgot", async (req, res) => {
             lt(passwordResetTokensTable.expiresAt, new Date()),
           ),
         );
-      await tx
-        .insert(passwordResetTokensTable)
-        .values({
-          tokenHash: digest(token),
-          userId: user.id,
-          expiresAt: new Date(Date.now() + 1800000),
-        });
+      await tx.insert(passwordResetTokensTable).values({
+        tokenHash: digest(token),
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 1800000),
+      });
     });
     void (async () => {
       try {
@@ -165,10 +176,17 @@ router.post("/password/reset", async (req, res) => {
     !isValidPassword(password) ||
     password !== passwordConfirmation
   ) {
+    res.status(400).json({
+      message: "링크와 새 비밀번호(8~128자), 비밀번호 확인을 확인해 주세요.",
+    });
+    return;
+  }
+  if (!(await accountFeatureStorage()).recovery) {
     res
-      .status(400)
+      .status(503)
       .json({
-        message: "링크와 새 비밀번호(8~128자), 비밀번호 확인을 확인해 주세요.",
+        code: "FEATURE_SETUP_PENDING",
+        message: "비밀번호 복구를 준비하고 있어요. 잠시 후 다시 확인해 주세요.",
       });
     return;
   }
@@ -214,12 +232,10 @@ router.post("/password/reset", async (req, res) => {
     return true;
   });
   if (!updated) {
-    res
-      .status(400)
-      .json({
-        message:
-          "만료되었거나 이미 사용한 링크예요. 재설정 메일을 다시 요청하세요.",
-      });
+    res.status(400).json({
+      message:
+        "만료되었거나 이미 사용한 링크예요. 재설정 메일을 다시 요청하세요.",
+    });
     return;
   }
   clearSessionCookie(res);
@@ -247,13 +263,12 @@ router.post("/password/change", async (req, res) => {
     !isValidPassword(password) ||
     password !== passwordConfirmation
   ) {
-    res
-      .status(400)
-      .json({
-        message: "현재 비밀번호와 새 비밀번호(8~128자), 확인을 입력하세요.",
-      });
+    res.status(400).json({
+      message: "현재 비밀번호와 새 비밀번호(8~128자), 확인을 입력하세요.",
+    });
     return;
   }
+  const storage = await accountFeatureStorage();
   const hash = await hashPassword(password);
   const ok = await db.transaction(async (tx) => {
     const [record] = await tx
@@ -271,9 +286,10 @@ router.post("/password/change", async (req, res) => {
       .set({ passwordHash: hash, updatedAt: new Date() })
       .where(eq(usersTable.id, user.id));
     await tx.delete(sessionsTable).where(eq(sessionsTable.userId, user.id));
-    await tx
-      .delete(passwordResetTokensTable)
-      .where(eq(passwordResetTokensTable.userId, user.id));
+    if (storage.recovery)
+      await tx
+        .delete(passwordResetTokensTable)
+        .where(eq(passwordResetTokensTable.userId, user.id));
     return true;
   });
   if (!ok) {

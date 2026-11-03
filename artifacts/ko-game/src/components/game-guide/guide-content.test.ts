@@ -39,3 +39,24 @@ test("category selection does not erase search intent and deck limits follow can
   assert.ok(deck.answer.includes(`카드 ${DECK_SIZE}장`));
   assert.ok(deck.answer.includes(`최대 ${MAX_LEGENDARY_CARDS}장`));
 });
+
+test("champion rules form one dedicated chapter with identity, deployment, protection, space and silence coverage", () => {
+  const entries = GAME_GUIDE.filter((e) => e.category === "champion");
+  assert.equal(entries.length, 7);
+  for (const id of [
+    "champion-token-identity",
+    "champion-token-deploy",
+    "champion-token-protection",
+    "champion-token-space",
+    "champion-token-departure",
+    "silence-immune",
+    "quest",
+  ])
+    assert.ok(entries.some((e) => e.id === id));
+  assert.equal(searchGuide(GAME_GUIDE, "침묵면역", "combat").length, 0);
+  assert.ok(
+    searchGuide(GAME_GUIDE, "침묵면역", "champion").some(
+      (e) => e.id === "silence-immune",
+    ),
+  );
+});

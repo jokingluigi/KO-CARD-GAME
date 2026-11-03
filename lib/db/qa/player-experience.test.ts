@@ -380,3 +380,12 @@ test("anonymous database roles cannot read journals or reset tokens", async () =
     await pg.exec("RESET ROLE");
   }
 });
+
+test('deployment without optional storage preserves password changes and local-only journal fallback', async()=>{
+ await pg.exec('DROP TABLE player_journals; DROP TABLE password_reset_tokens');
+ const cookie=await user('without-storage');
+ const capability=await api('/auth/recovery-options');assert.equal(capability.body.journalSync,false);assert.equal(capability.body.emailRecovery,false);
+ const journal=await api('/journal/sync',cookie,{accountId:'without-storage',wishes:[],matches:[]});assert.equal(journal.status,503);assert.equal(journal.body.code,'FEATURE_SETUP_PENDING');
+ const reset=await api('/auth/password/reset',undefined,{token:'b'.repeat(64),password:'new-password',passwordConfirmation:'new-password'});assert.equal(reset.status,503);assert.equal(reset.body.code,'FEATURE_SETUP_PENDING');
+ const changed=await api('/auth/password/change',cookie,{currentPassword:'old-password',password:'changed-without-storage',passwordConfirmation:'changed-without-storage'});assert.equal(changed.status,200);const [record]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'without-storage'));assert.ok(await verifyPassword('changed-without-storage',record.passwordHash));
+});

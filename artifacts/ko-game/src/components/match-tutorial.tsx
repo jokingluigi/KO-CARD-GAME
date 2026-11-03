@@ -14,7 +14,7 @@ export function MatchTutorial({step,onStepChange,onClose}:{step:number;onStepCha
  const index=Math.max(0,Math.min(MATCH_TUTORIAL_STEPS.length-1,Number.isFinite(step)?Math.trunc(step):0));
  const current=MATCH_TUTORIAL_STEPS[index];
  return <Dialog open onOpenChange={open=>{if(!open)onClose();}}>
-  <DialogContent aria-label="경기 튜토리얼" overlayClassName="!z-[220]" className="!z-[230] w-[calc(100vw-24px)] max-w-sm border-amber-700 bg-neutral-950 text-white">
+  <DialogContent aria-label="빠른 조작 안내" overlayClassName="!z-[220]" className="!z-[230] w-[calc(100vw-24px)] max-w-sm border-amber-700 bg-neutral-950 text-white">
    <p className="text-xs font-bold text-amber-300" role="status">KO CARD GAME · {index+1}/{MATCH_TUTORIAL_STEPS.length}</p>
    <DialogTitle>{current.title}</DialogTitle><DialogDescription className="min-h-20 text-sm leading-6 text-neutral-200">{current.detail}</DialogDescription>
    <nav aria-label="튜토리얼 단계" className="mt-3 flex gap-2">

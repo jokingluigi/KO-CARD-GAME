@@ -30,7 +30,7 @@ type MainMenuProps = {
 };
 
 const menuItems = [
-  {label:"게임 도움말",description:"헷갈리는 규칙과 조작 찾기",icon:BookOpen},
+  {label:"게임 규칙",description:"헷갈리는 규칙과 조작 찾기",icon:BookOpen},
   {
     label: "온라인 매치",
     description: "다른 플레이어와 대결합니다",
@@ -272,15 +272,18 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         <BattleModeButton artwork={mainContent.battleMenuArtwork} onClick={()=>navigate(ROUTES.ONLINE)}/>
         <nav className="ko-home-mode-shortcuts" aria-label="대전 바로 시작"><button type="button" disabled={launchStatus.kind!=="READY"} aria-describedby="home-launch-status" title={launchStatus.reason} onClick={()=>navigate(ROUTES.ONLINE_QUICK)}>빠른 대전 <span>선택 덱으로 시작</span></button><button type="button" disabled={launchStatus.kind!=="READY"} aria-describedby="home-launch-status" title={launchStatus.reason} onClick={()=>onAiMatch?.()}>AI 대전 <span>연습 경기</span></button><button type="button" disabled={!draftEnabled} onClick={()=>navigate('/draft')}>드래프트 <span>{draftEnabled?'카드를 골라 구성':'현재 이용 불가'}</span></button></nav>
         </section>
+        <div className="ko-home-secondary">
         <nav className="ko-lobby-shortcuts" aria-label="덱과 꾸미기"><button type="button" onClick={()=>onDeckEdit?.()}>덱 편집</button><button type="button" onClick={()=>navigate(ROUTES.COLLECTION)}>컬렉션</button><button type="button" onClick={()=>navigate('/cosmetics')}>꾸미기</button></nav>
-        <nav className="ko-home-utility-links" aria-label="학습과 보상"><button type="button" onClick={()=>navigate('/guide')}>배우기 · 도움말</button><button type="button" onClick={()=>navigate('/daily-quests')}>퀘스트</button><button type="button" onClick={()=>navigate('/attendance')}>출석</button><button type="button" onClick={()=>navigate('/packs')}>내 팩</button></nav>
+        <nav className="ko-home-learning" aria-label="튜토리얼과 게임 규칙"><button type="button" className="ko-home-tutorial" onClick={()=>navigate('/tutorial')}><BookOpen aria-hidden="true" size={20}/><span><strong>튜토리얼</strong><small>카드로 직접 배우기</small></span><span aria-hidden="true">→</span></button><button type="button" onClick={()=>navigate('/guide')}><span><strong>게임 규칙</strong><small>판정 · 챔피언 토큰</small></span><span aria-hidden="true">→</span></button></nav>
+        </div>
+        <nav className="ko-home-utility-links" aria-label="보상 바로가기"><button type="button" onClick={()=>navigate('/daily-quests')}>퀘스트</button><button type="button" onClick={()=>navigate('/attendance')}>출석</button><button type="button" onClick={()=>navigate('/packs')}>내 팩</button></nav>
         <button type="button" className="ko-lobby-more" aria-label="보상 · 상점 · 전체 메뉴 ▸" aria-describedby={rewards?.total?'home-reward-count':undefined} onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸{Boolean(rewards?.total)&&<span id="home-reward-count" className="ko-home-reward-count">받을 보상 {rewards!.total}건</span>}</button>
         <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>
         {Boolean(rewards?.total)&&<aside aria-label="수령 가능한 보상" className="ko-home-reward-links">{Boolean(rewards?.quests)&&<button className="min-h-11" type="button" onClick={()=>navigate('/daily-quests')}>퀘스트 보상 {rewards!.quests}건 받으러 가기 ▸</button>}{Boolean(rewards?.attendance)&&<button className="min-h-11" type="button" onClick={()=>navigate('/attendance')}>출석 보상 받으러 가기 ▸</button>}</aside>}
         <HomePacksShortcut accountId={user?.id}/>
         <section aria-label="메인 메뉴" className="ko-main-menu__groups ko-lobby-all-menus">
           {([{ title: "기타", labels: ["타워 모드"] },
-            { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼", "게임 도움말"] },
+            { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼", "게임 규칙"] },
             { title: "보상과 상점", labels: ["일일 퀘스트", "출석 보드", "내 팩", "상점"] }]).map(group => <section key={group.title} aria-label={group.title} className="ko-main-menu__group">
           <h2>{group.title}</h2><div className="ko-main-menu__grid">
           {[...menuItems, {label:"내 기록",description:"덱별 전적과 수집 목표",icon:BookOpen}, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : []), ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].filter(item => group.labels.includes(item.label)).sort((a,b) => group.labels.indexOf(a.label)-group.labels.indexOf(b.label)).map(({ label, description, icon: Icon }, index) => (
@@ -306,7 +309,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
                   onAiMatch?.();
                   return;
                 }
-                if(label === "게임 도움말"){navigate("/guide");return;}
+                if(label === "게임 규칙"){navigate("/guide");return;}
                 if (label === "튜토리얼") {
                   navigate("/tutorial");
                   return;

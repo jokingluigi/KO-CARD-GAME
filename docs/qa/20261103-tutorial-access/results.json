@@ -1,0 +1,261 @@
+[
+  {
+    "width": 320,
+    "height": 568,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 413,
+        "bottom": 469.59375,
+        "width": 144,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 413,
+        "bottom": 469.59375,
+        "width": 144,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 521.59375,
+        "bottom": 565.59375,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  },
+  {
+    "width": 360,
+    "height": 640,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 413,
+        "bottom": 469.59375,
+        "width": 164,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 413,
+        "bottom": 469.59375,
+        "width": 164,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 521.59375,
+        "bottom": 565.59375,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  },
+  {
+    "width": 360,
+    "height": 740,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 561,
+        "bottom": 617.59375,
+        "width": 164,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 561,
+        "bottom": 617.59375,
+        "width": 164,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 689.59375,
+        "bottom": 733.59375,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  },
+  {
+    "width": 375,
+    "height": 667,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 491,
+        "bottom": 547.59375,
+        "width": 171.5,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 491,
+        "bottom": 547.59375,
+        "width": 171.5,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 619.59375,
+        "bottom": 663.59375,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 631.1875,
+        "bottom": 687.78125,
+        "width": 179,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 631.1875,
+        "bottom": 687.78125,
+        "width": 179,
+        "height": 56.59375,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 759.78125,
+        "bottom": 803.78125,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 222,
+        "bottom": 270,
+        "width": 126.390625,
+        "height": 48,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 222,
+        "bottom": 270,
+        "width": 126.40625,
+        "height": 48,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 326,
+        "bottom": 370,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "targets": [
+      {
+        "label": "튜토리얼카드로 직접 배우기→",
+        "top": 661.984375,
+        "bottom": 725.484375,
+        "width": 435,
+        "height": 63.5,
+        "hit": true
+      },
+      {
+        "label": "게임 규칙판정 · 챔피언 토큰→",
+        "top": 661.984375,
+        "bottom": 725.484375,
+        "width": 435,
+        "height": 63.5,
+        "hit": true
+      },
+      {
+        "label": "보상 · 상점 · 전체 메뉴 ▸받을 보상 2건",
+        "top": 817.484375,
+        "bottom": 861.484375,
+        "width": 267,
+        "height": 44,
+        "hit": true
+      }
+    ],
+    "homeFits": true,
+    "oneClickTutorial": true,
+    "sixActualLessons": true,
+    "sharedReferenceDialog": true,
+    "orderedRuleChapters": true,
+    "tokenChapterQuestions": 7,
+    "errors": []
+  }
+]

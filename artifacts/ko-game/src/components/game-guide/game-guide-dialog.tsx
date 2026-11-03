@@ -6,7 +6,13 @@ import {
   DialogDescription,
 } from "../ui/dialog";
 const GameGuideContent = lazy(() => import("./game-guide-content"));
-export function GameGuideDialogTrigger() {
+export function GameGuideDialogTrigger({
+  label = "게임 규칙 · 판정 찾기",
+  inBattle = true,
+}: {
+  label?: string;
+  inBattle?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -15,7 +21,7 @@ export function GameGuideDialogTrigger() {
         className="min-h-11 w-full rounded border border-neutral-600 px-3 py-2 text-xs font-black text-neutral-100"
         onClick={() => setOpen(true)}
       >
-        게임 도움말 · 규칙 찾기
+        {label}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
@@ -23,12 +29,12 @@ export function GameGuideDialogTrigger() {
           overlayClassName="!z-[240]"
           className="!z-[250] max-h-[90dvh] w-[calc(100vw-24px)] max-w-3xl overflow-y-auto border-neutral-700 bg-neutral-950 text-white"
         >
-          <DialogTitle>게임 도움말</DialogTitle>
+          <DialogTitle>게임 규칙</DialogTitle>
           <DialogDescription>
             헷갈리는 판정과 조작을 찾아보세요.
           </DialogDescription>
           <Suspense fallback={<p role="status">도움말을 준비하고 있어요…</p>}>
-            <GameGuideContent inBattle />
+            <GameGuideContent inBattle={inBattle} />
           </Suspense>
           <button
             type="button"

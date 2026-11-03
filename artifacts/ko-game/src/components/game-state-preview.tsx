@@ -1506,7 +1506,7 @@ export function GameStatePreview({
                      {adminTestTools && <section aria-label="관리자 테스트 도구" className="border-b border-amber-800 pb-3" onClick={event=>{if((event.target as HTMLElement).closest('button'))closeSettings();}}>{adminTestTools}</section>}
                      <button type="button" onClick={() => { closeSettings(); setTutorialStep(0); }}
                        className="w-full rounded border border-amber-600 bg-amber-950/40 px-3 py-2 text-xs font-black text-amber-200">
-                       경기 튜토리얼
+                       빠른 조작 안내
                      </button>
                      <GameGuideDialogTrigger/>
                       {onReturnToAdmin && (
@@ -1644,7 +1644,7 @@ export function GameStatePreview({
           )}
           {guidedTutorial && !coachDismissed && state.status === 'IN_PROGRESS' && !canMulligan(state, me.id) && (
             <div className="fixed left-1/2 top-3 z-[140] w-[min(94vw,480px)] -translate-x-1/2 rounded-lg border border-sky-400 bg-slate-950/95 p-3 text-sm text-white shadow-xl" role="status">
-              <div className="flex items-start justify-between gap-3"><strong className="text-sky-300">실전 튜토리얼</strong>
+              <div className="flex items-start justify-between gap-3"><strong className="text-sky-300">실전 조작 힌트</strong>
                 <button type="button" onClick={() => { setCoachDismissed(true); try { localStorage.setItem('ko-match-coach-v1', 'done'); } catch {} }} className="text-xs text-neutral-300">닫기</button></div>
               <p className="mt-1">{coachStage === 4 ? '퀘스트가 진행됐어요! 화면의 퀘스트 표시를 눌러 조건과 보상을 확인해 보세요.'
                 : state.activePlayerId !== state.players[0].id ? '상대의 턴입니다. 다음 턴을 기다려 주세요.'

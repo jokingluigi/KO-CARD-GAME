@@ -86,7 +86,7 @@ export async function queueShelfSync(id:string){
   const account=await fetchCurrentUser();if(account.user?.id!==id){syncMessage(id,'로그인 계정을 다시 확인해 주세요.');return;}
   const local=readShelf(id);
   const r=await fetch((import.meta.env.BASE_URL??'/').replace(/\/$/,'')+'/api/player-journal/sync',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),body:JSON.stringify({accountId:id,wishes:local.wishes,matches:local.matches,removedWishes:local.removedWishes??[]})});
-  if(!r.ok)throw Error('sync');const body=await r.json();
+  if(!r.ok){const failure=await r.json().catch(()=>null);if(failure?.code==='FEATURE_SETUP_PENDING'){syncMessage(id,'이 기기에 보관 중 · 계정 동기화는 준비 중이에요.');return;}throw Error('sync');}const body=await r.json();
   if(!body.document||!Array.isArray(body.document.wishes)||!Array.isArray(body.document.matches))throw Error('format');
   if((await fetchCurrentUser()).user?.id!==id)return;
   localStorage.setItem('ko-player-shelf:'+id,JSON.stringify(mergeShelves(readShelf(id),body.document)));

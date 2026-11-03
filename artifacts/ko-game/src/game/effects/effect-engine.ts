@@ -1060,6 +1060,7 @@ function allCardsWithOwners(state: GameState): Array<{ ownerId: string; card: Ca
 
 function statListenerCards(state: GameState): Array<{ ownerId: string; card: CardInstance }> {
   return state.players.flatMap((player) => [
+    ...player.deck,
     ...player.hand,
     ...player.board.filter((card): card is CardInstance => card !== null),
   ].map((card) => ({ ownerId: player.id, card })));
@@ -3847,7 +3848,7 @@ export function resolveTriggeredAbilities(
       if ((eventOwner === 'SELF') !== (options.eventPlayerId === playerId)) return false;
     }
     if(ability.oncePerTurn && state.consumedNewCardEventKeys?.includes(`trigger-used:${state.turn}:${card.instanceId}:${trigger}`))return false;
-    if (trigger !== 'GAME_START' && trigger !== 'CARD_DRAWN' &&
+    if (trigger !== 'GAME_START' && trigger !== 'CARD_DRAWN' && trigger !== 'STAT_CHANGED' &&
       state.players.some((player) => player.hand.some((entry) => entry.instanceId === card.instanceId)) &&
       ability.condition?.type !== 'SOURCE_IN_HAND' &&
       !('sourceZones' in ability && ability.sourceZones?.includes('HAND'))) return false;
@@ -3904,6 +3905,24 @@ export function resolveTriggeredAbilities(
     const definition=resolveCardDefinition(state,effect.values?.definition,effect.values?.definitionRef,true);
     return !nextStage || !ids || definition?.id !== ids[nextStage];
   });
+  // Stat-growth passives follow their own instance into hand/deck. Historical
+  // definitions encode SELF as BOARD (or HAND+BOARD); resolve only that self
+  // target in its actual zone, leaving other targets and triggers unchanged.
+  if (trigger === 'STAT_CHANGED') {
+    const owner = state.players.find(player => player.id === playerId);
+    const zone = owner?.deck.some(entry => entry.instanceId === card.instanceId) ? 'DECK'
+      : owner?.hand.some(entry => entry.instanceId === card.instanceId) ? 'HAND'
+      : owner?.board.some(entry => entry?.instanceId === card.instanceId) ? 'BOARD' : undefined;
+    if (zone) {
+      for (let index = 0; index < effects.length; index += 1) {
+        const effect = effects[index]!;
+        if (effect.type !== 'STRUCTURED' || effect.target?.selection !== 'SELF' || effect.target.owner !== 'SELF') continue;
+        const zones = effect.target.zones ?? (effect.target.zone ? [effect.target.zone] : []);
+        if (!zones.some(candidate => ['BOARD', 'HAND', 'DECK'].includes(candidate))) continue;
+        effects[index] = { ...effect, target: { ...effect.target, zone, zones: [zone] } };
+      }
+    }
+  }
   if (!effects.length) return state;
   if(abilities.some(ability=>ability.oncePerTurn)) {
     if(!effects.some(effect=>effect.type!=='STRUCTURED'||!effect.target||getValidTargets(state,playerId,card,effect).length>0))return state;

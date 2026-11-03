@@ -1,0 +1,20 @@
+✔ HAND attack gain invokes self bonus once in the same zone (6.767222ms)
+✔ HAND health gain invokes self bonus once in the same zone (0.854055ms)
+✔ DECK attack gain invokes self bonus once in the same zone (0.886603ms)
+✔ DECK health gain invokes self bonus once in the same zone (0.737452ms)
+✔ BOARD attack gain invokes self bonus once in the same zone (0.847205ms)
+✔ BOARD health gain invokes self bonus once in the same zone (0.671405ms)
+✔ both stats increase together triggers a generic passive once; graveyard and disabled abilities do not trigger (2.425913ms)
+✔ legacy HAND+BOARD self effects follow deck instance without mutating definitions (1.150133ms)
+✔ published 만드릴쿤: HAND gain adds exactly +2 each time (0.773515ms)
+✔ published 만드릴쿤: DECK gain adds exactly +2 each time (0.510246ms)
+✔ published 프랑켄슈타인 만드릴쿤: HAND gain adds exactly +2 each time (0.538177ms)
+✔ published 프랑켄슈타인 만드릴쿤: DECK gain adds exactly +2 each time (0.403247ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 857.681054

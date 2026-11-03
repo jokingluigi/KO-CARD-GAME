@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MatchTutorial } from "../match-tutorial";
+import { GameGuideDialogTrigger } from "../game-guide/game-guide-dialog";
 import {
   Dialog,
   DialogContent,
@@ -50,21 +50,28 @@ export function TutorialMenu({
   onRetry: () => void;
   onDeckEdit: () => void;
 }) {
-  const [referenceStep, setReferenceStep] = useState<number | null>(null);
   return (
     <>
       <main className="ko-tutorial-menu">
         <header>
-          <span>KO · 플레이 배우기</span>
+          <span>KO · 튜토리얼</span>
           <h1>직접 배우는 카드 전투</h1>
-          <p>한 번에 한 가지씩, 실제 카드를 움직이며 배워요.</p>
+          <p>
+            실제로 카드를 움직이는 6개 실습이에요. 읽어서 확인할 규칙은 아래
+            게임 규칙 설명에서 찾으세요.
+          </p>
         </header>
         <aside>
           기존 카드로 준비한 연습 상황이에요. 카드가 없어도 시작할 수 있고, 내
           덱·재화·전적은 바뀌지 않아요. 연습 상대는 공격하지 않으며 제한 시간도
           없어요.
         </aside>
-        {catalog?.practiceSource==='PINNED'&&<p role="status">검증된 연습용 카드 구성을 사용하고 있어요. 실전의 최신 카드 구성과 다를 수 있어요.</p>}
+        {catalog?.practiceSource === "PINNED" && (
+          <p role="status">
+            검증된 연습용 카드 구성을 사용하고 있어요. 실전의 최신 카드 구성과
+            다를 수 있어요.
+          </p>
+        )}
         {error ? (
           <div role="alert">
             <p>{error}</p>
@@ -99,8 +106,10 @@ export function TutorialMenu({
             })}
           </ol>
         )}
-        <button onClick={() => setReferenceStep(0)}>규칙 설명 보기</button>
-        <details className="ko-tutorial-next"><summary>실전에서는 무엇을 더 알아야 하나요?</summary><p>첫 손패에서는 초반에 낼 수 있는 비용의 선수를 확보하세요. 러쉬·방어·면역처럼 행동 가능 여부를 바꾸는 키워드는 카드 정보를 길게 눌러 확인하세요. 리타이어·파괴·소멸은 서로 다른 처리이므로 카드 설명을 구별해서 읽으세요.</p><p>한 번에 여러 카드를 바꾸기보다, 경기 후 가장 쓰기 어려웠던 카드부터 점검하세요. 이 안내는 승패 원인을 자동으로 판정한 결과가 아닙니다.</p></details>
+        <GameGuideDialogTrigger
+          label="게임 규칙 설명 · 챔피언 토큰"
+          inBattle={false}
+        />
         <footer>
           <p>완료 표시는 이 기기에 저장돼요. 언제든 다시 연습할 수 있어요.</p>
           <div>
@@ -109,13 +118,6 @@ export function TutorialMenu({
           </div>
         </footer>
       </main>
-      {referenceStep !== null && (
-        <MatchTutorial
-          step={referenceStep}
-          onStepChange={setReferenceStep}
-          onClose={() => setReferenceStep(null)}
-        />
-      )}
     </>
   );
 }

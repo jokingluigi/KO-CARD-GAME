@@ -167,3 +167,36 @@
   -webkit-appearance: none;
   appearance: none;
 }
+.ko-guide-chapters {
+  display: grid;
+  gap: 32px;
+}
+.ko-guide-chapter > header {
+  border-left: 3px solid #d8be81;
+  padding: 2px 0 2px 14px;
+  margin: 0 0 14px;
+}
+.ko-guide-chapter h2 {
+  font-size: 18px;
+  line-height: 1.5;
+  color: #eddbb5;
+}
+.ko-guide-chapter > header p {
+  font-size: 13px;
+  color: #b8b2a5;
+  margin-top: 6px;
+  line-height: 1.8;
+}
+@media (max-width: 650px) {
+  .ko-guide-page .ko-surface-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .ko-guide-page .ko-surface-heading h1 + p {
+    overflow-wrap: anywhere;
+  }
+  .ko-guide-page .ko-surface-heading__aside {
+    max-width: none;
+  }
+}

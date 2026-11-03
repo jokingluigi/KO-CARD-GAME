@@ -1,3 +1,4 @@
+import { accountFeatureStorage } from "../lib/account-feature-storage";
 import { Router } from "express";
 import { db, playerJournalsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -15,16 +16,24 @@ router.post("/sync", async (req, res) => {
     return;
   }
   if (req.body?.accountId !== user.id) {
-    res
-      .status(409)
-      .json({
-        message: "로그인 계정이 변경됐어요. 기록을 다시 불러와 주세요.",
-      });
+    res.status(409).json({
+      message: "로그인 계정이 변경됐어요. 기록을 다시 불러와 주세요.",
+    });
     return;
   }
   const parsed = journalSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "기록 형식을 확인해 주세요." });
+    return;
+  }
+  if (!(await accountFeatureStorage()).journal) {
+    res
+      .status(503)
+      .json({
+        code: "FEATURE_SETUP_PENDING",
+        message:
+          "계정 동기화를 준비하고 있어요. 이 기기의 기록은 계속 보관됩니다.",
+      });
     return;
   }
   const document = await db.transaction(async (tx) => {

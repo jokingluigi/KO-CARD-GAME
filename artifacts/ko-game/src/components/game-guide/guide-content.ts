@@ -6,10 +6,11 @@ import {
 import { BOARD_SIZE, MAX_HAND_SIZE } from "../../game/rules/constants";
 export const GUIDE_CATEGORIES = [
   ["all", "전체"],
-  ["start", "시작 · 덱"],
-  ["combat", "전투 · 판정"],
-  ["keywords", "키워드"],
-  ["account", "보상 · 설정"],
+  ["start", "기본 규칙"],
+  ["combat", "전투 판정"],
+  ["champion", "챔피언·토큰"],
+  ["keywords", "키워드 사전"],
+  ["account", "계정·보상"],
 ] as const;
 export type GuideCategory = (typeof GUIDE_CATEGORIES)[number][0];
 export type GuideEntry = {
@@ -21,8 +22,93 @@ export type GuideEntry = {
   terms?: string;
   source: string;
 };
+export const GUIDE_CHAPTERS: Record<
+  Exclude<GuideCategory, "all">,
+  { title: string; description: string }
+> = {
+  start: {
+    title: "1. 기본 규칙 · 경기 준비",
+    description:
+      "승리 조건부터 덱 구성, 카드 조작까지 처음 시작할 때 필요한 내용입니다.",
+  },
+  combat: {
+    title: "2. 전투 판정",
+    description:
+      "피해·공격·능력 사용·퇴장처럼 실제 경기 결과를 결정하는 규칙입니다.",
+  },
+  champion: {
+    title: "3. 챔피언과 챔피언 토큰",
+    description:
+      "본체와 토큰의 차이, 출전, 본체 보호와 침묵 면역을 한곳에서 확인하세요.",
+  },
+  keywords: {
+    title: "4. 키워드 사전",
+    description: "카드에 적힌 키워드의 기본 뜻을 찾아보는 참고 자료입니다.",
+  },
+  account: {
+    title: "5. 계정 · 수집 · 보상",
+    description: "스킨·이모티콘·재화·기록 등 경기 밖 기능을 안내합니다.",
+  },
+};
 /** Player-facing explanations of existing rules. Do not infer effects from illustrations or animation. */
 export const GAME_GUIDE: GuideEntry[] = [
+  {
+    id: "champion-token-identity",
+    category: "champion",
+    title: "챔피언 본체와 챔피언 토큰 카드는 무엇이 다른가요?",
+    answer:
+      "챔피언 본체는 화면의 초상화와 체력·고유능력을 가진 내 지휘관입니다. 챔피언 토큰 카드는 그와 별도로 필드에 나오는 카드입니다. 필드 칸을 차지하고 자체 공격력·체력·효과를 가집니다. 일반 토큰이나 레전더리 선수와도 구별하세요.",
+    example:
+      "필드의 챔피언 토큰이 퇴장했다고 챔피언 본체의 체력이 함께 0이 되는 것은 아닙니다. 승패는 본체의 체력과 기존 특수 판정을 따릅니다.",
+    terms: "챔피언 등급 CHAMPION 일반 토큰",
+    source: "game/engine/champion-token.ts; game/engine/direct-champion.ts",
+  },
+  {
+    id: "champion-token-deploy",
+    category: "champion",
+    title: "챔피언 토큰은 어떻게 얻고 출전시키나요?",
+    answer:
+      "챔피언에게 연결된 토큰은 해당 챔피언의 능력·퀘스트 보상 등 카드에 적힌 효과로 생성되거나 출전합니다. 모든 챔피언이 같은 조건으로 토큰을 소환하는 것은 아닙니다. 일반 출전 덱에 토큰을 직접 넣는 방식은 아닙니다.",
+    example:
+      "내 챔피언의 고유능력과 퀘스트 보상 설명에서 어떤 카드가 나오는지 확인하세요.",
+    source: "game/engine/champion-token.ts; game/champions/quests.ts",
+  },
+  {
+    id: "champion-token-protection",
+    category: "champion",
+    title: "챔피언 토큰이 있으면 왜 본체를 공격할 수 없나요?",
+    answer:
+      "내 필드에 챔피언 토큰·직접 출전 챔피언 또는 챔피언 등급 카드가 있으면 챔피언 본체가 보호됩니다. 본체를 향한 공격과 효과·피로 피해를 막는 기존 규칙입니다. 토큰이 손패나 묘지에 있는 것만으로는 본체가 보호되지 않습니다.",
+    example:
+      "본체를 지키는 카드가 필드를 떠나고 다른 보호 카드도 없다면 보호가 끝납니다. 토큰 자체의 방어·면역·체력은 별도로 확인하세요.",
+    terms: "보호 PROTECTED 본체 무적",
+    source:
+      "game/engine/direct-champion.ts; game/engine/protection-rules.test.ts",
+  },
+  {
+    id: "champion-token-space",
+    category: "champion",
+    title: "토큰 출전 시 필드가 꽉 차 있으면 어떻게 되나요?",
+    answer:
+      "일반적인 챔피언 직접 출전은 빈칸이 있으면 그곳으로 나옵니다. 빈칸이 없으면 손패로 가고, 손패도 가득 차면 덱 위로 갑니다. 퀘스트 보상으로 출전하는 경우에는 기존 보상 공간 확보·교체 선택 절차를 따릅니다.",
+    example:
+      "공간 처리 중 선택 안내가 나오면 화면에 표시된 유효한 카드를 골라 진행하세요. 다른 소환 효과까지 모두 같은 처리가 된다고 생각하면 안 됩니다.",
+    source:
+      "game/engine/champion-token.ts; game/engine/champion-reward-replacement.ts",
+  },
+  {
+    id: "champion-token-departure",
+    category: "champion",
+    title: "챔피언 토큰은 어떻게 상대하나요?",
+    answer:
+      "침묵 면역은 모든 공격과 퇴장을 막는 무적이 아닙니다. 공격 피해·기절·리타이어·파괴·소멸은 각각의 판정을 따릅니다. 다만 토큰에 방어·면역·회피 같은 다른 보호가 함께 있다면 그 보호를 먼저 확인해야 합니다.",
+    example:
+      "침묵으로 능력을 지우려 하기보다, 그 카드에 실제로 가능한 공격과 효과 대상을 확인하세요.",
+    terms: "제거 처치 약점 무적",
+    source:
+      "game/engine/champion-token-silence.test.ts; game/engine/protection-rules.test.ts",
+  },
+
   {
     id: "gold",
     category: "combat",
@@ -60,7 +146,7 @@ export const GAME_GUIDE: GuideEntry[] = [
 
   {
     id: "win",
-    category: "combat",
+    category: "start",
     title: "어떻게 승리하나요?",
     answer:
       "상대 챔피언의 체력을 0으로 만드는 것이 기본 승리 조건입니다. 항복이나 카드에 적힌 특수 승패 조건도 있으므로 최종 결과는 게임 판정을 따릅니다. 두 챔피언의 체력과 중요한 카드 효과를 함께 확인하세요.",
@@ -100,7 +186,7 @@ export const GAME_GUIDE: GuideEntry[] = [
   },
   {
     id: "summon",
-    category: "combat",
+    category: "start",
     title: "모바일에서 카드 내기와 공격은 어떻게 하나요?",
     answer:
       "손패의 선수를 고른 뒤 내 필드의 빈칸을 누르거나, 손패에서 빈칸으로 드래그합니다. 공격은 내 선수를 고르고 강조된 상대 선수·챔피언을 누르거나 상대에게 드래그합니다. 손패는 좌우로 밀어 다른 카드를 볼 수 있습니다.",
@@ -109,7 +195,7 @@ export const GAME_GUIDE: GuideEntry[] = [
   },
   {
     id: "inspect",
-    category: "combat",
+    category: "start",
     title: "작은 카드의 전체 효과와 관련 카드는 어떻게 보나요?",
     answer:
       "카드의 ⓘ 버튼으로 상세 정보를 여세요. PC에서는 ALT로 정보 모드를 전환할 수 있습니다. 설명에서 밑줄로 표시된 카드명·키워드는 눌러서 추가 정보를 확인할 수 있습니다. 전투에서 효과가 예상과 달랐다면 로그의 실제 처리 결과도 확인하세요.",
@@ -172,7 +258,7 @@ export const GAME_GUIDE: GuideEntry[] = [
   },
   {
     id: "silence-immune",
-    category: "combat",
+    category: "champion",
     title: "챔피언 등급 토큰은 침묵이 안 걸리나요?",
     answer:
       "네. 챔피언 등급 토큰 선수는 침묵 면역입니다. 침묵으로 키워드·능력이 제거되지 않습니다. 일반 토큰·레전더리 토큰이라는 이유만으로 이 면역이 생기지는 않습니다. 챔피언 본체와 필드에 놓인 챔피언 등급 토큰도 구별하세요.",
@@ -194,7 +280,7 @@ export const GAME_GUIDE: GuideEntry[] = [
   },
   {
     id: "quest",
-    category: "combat",
+    category: "champion",
     title: "퀘스트 완료·각성과 표정 변화는 같은 건가요?",
     answer:
       "퀘스트는 각 챔피언에 적힌 조건을 실제 전투 결과로 달성했을 때 완료됩니다. 표정·각성 이미지·사운드는 그 결과를 보여주는 연출입니다. 스킨이나 표정 설정을 바꿔도 능력·퀘스트 판정은 바뀌지 않습니다.",
@@ -266,7 +352,7 @@ export const GAME_GUIDE: GuideEntry[] = [
     category: "account",
     title: "내 기록은 공식 전적인가요?",
     answer:
-      "내 기록은 계정에 동기화하고 기기에도 보관하는 유저용 기록이며 공식 순위 전적은 아닙니다. 동기화에 실패하면 화면의 상태와 다시 시도 버튼을 확인하세요. 비회원 연습 완료 표시는 해당 기기에 저장됩니다.",
+      "내 기록은 기기에 보관하는 유저용 기록이며 공식 순위 전적은 아닙니다. 계정 동기화는 화면의 상태로 확인하세요. 동기화 준비 중이거나 연결에 실패해도 이 기기의 기록은 유지됩니다. 비회원 연습 완료 표시는 해당 기기에 저장됩니다.",
     source:
       "components/player-tools/shelf.ts; pages/player-notebook.tsx; components/tutorial/lesson-ui.tsx",
   },

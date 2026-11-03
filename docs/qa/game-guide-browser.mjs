@@ -35,7 +35,7 @@ try {
     );
     await p.goto("http://127.0.0.1:5186/guide");
     await p
-      .getByRole("heading", { name: "게임 도움말", exact: true })
+      .getByRole("heading", { name: "게임 규칙", exact: true })
       .waitFor();
     await p
       .getByRole("searchbox", { name: "궁금한 규칙 찾기" })
@@ -50,14 +50,14 @@ try {
       await p.locator(".ko-guide-entries details").evaluate((n) => n.open),
     );
     await p.screenshot({ path: `${out}/immunity-search-${width}.png` });
-    await p.getByRole("button", { name: "시작 · 덱", exact: true }).click();
+    await p.getByRole("button", { name: "기본 규칙", exact: true }).click();
     await p
       .getByRole("heading", { name: "맞는 안내를 찾지 못했어요.", exact: true })
       .waitFor();
     await p
       .getByRole("button", { name: "전체 안내 보기", exact: true })
       .click();
-    await p.getByRole("button", { name: "키워드", exact: true }).click();
+    await p.getByRole("button", { name: "키워드 사전", exact: true }).click();
     await p.getByText("러쉬", { exact: true }).first().click();
     await p
       .getByText("등장한 턴에도 선수 또는 상대 챔피언을 공격할 수 있습니다.", {
@@ -140,7 +140,7 @@ try {
     await p.getByRole("button", { name: "상세정보 닫기", exact: true }).click();
     await p.getByRole("button", { name: "설정 열기", exact: true }).click();
     await p
-      .getByRole("button", { name: "게임 도움말 · 규칙 찾기", exact: true })
+      .getByRole("button", { name: "게임 규칙 · 판정 찾기", exact: true })
       .click();
     const guide = p.getByRole("dialog");
     await guide

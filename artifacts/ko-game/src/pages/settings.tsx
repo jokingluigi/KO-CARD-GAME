@@ -87,7 +87,7 @@ export default function Settings() {
           title="설정"
           description="화면·소리·계정을 한곳에서 조절하세요."
         />
-        <Link href="/guide" className="ko-surface-back">게임 도움말 · 헷갈리는 규칙 찾기 →</Link>
+        <Link href="/guide" className="ko-surface-back">게임 규칙 · 판정 찾기 →</Link>
         <nav className="ko-surface-tabs" aria-label="설정 분류">
           {[
             ["display", "화면 · 접근성"],
