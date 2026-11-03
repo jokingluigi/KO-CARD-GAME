@@ -1,0 +1,41 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "realMatch": true,
+    "badgeMinimum9px": true,
+    "inspectorNoticeBeforeArtwork": true,
+    "referencePopupNotice": true,
+    "collectionDetailNotice": true,
+    "allNoticesVisibleWithoutScrolling": true,
+    "ordinaryNotMislabelled": true,
+    "championLinkedTokenNotice": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "realMatch": true,
+    "badgeMinimum9px": true,
+    "inspectorNoticeBeforeArtwork": true,
+    "referencePopupNotice": true,
+    "collectionDetailNotice": true,
+    "allNoticesVisibleWithoutScrolling": true,
+    "ordinaryNotMislabelled": true,
+    "championLinkedTokenNotice": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "realMatch": true,
+    "badgeMinimum9px": true,
+    "inspectorNoticeBeforeArtwork": true,
+    "referencePopupNotice": true,
+    "collectionDetailNotice": true,
+    "allNoticesVisibleWithoutScrolling": true,
+    "ordinaryNotMislabelled": true,
+    "championLinkedTokenNotice": true,
+    "errors": []
+  }
+]

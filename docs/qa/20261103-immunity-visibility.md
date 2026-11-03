@@ -19,3 +19,6 @@ The prior badge was small and detail notices were below large artwork. More impo
 
 ## Scope and limits
 Frontend presentation only; existing work branch retained, no main merge or DB changes. Browser accounts and combat responses are isolated fixtures, not real-user production matches. Deployment receipt and deployed-assets browser result will record final release verification.
+
+## Live release
+Frontend `364192d3c454f49730fe9e6513f3453f0cbe6b81` is live. All 136 deployed JS/CSS asset hashes match the local revision-aligned production build. Health 200; maintenance unchanged (False). Repeated all three viewport workflows against the actual deployed frontend, with isolated account/catalog responses; all passed, with no page errors. This does not constitute a live-account PvP test. API and DB were not changed.
