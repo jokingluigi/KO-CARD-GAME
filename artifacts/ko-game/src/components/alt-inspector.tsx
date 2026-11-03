@@ -369,6 +369,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           {definition?.name ?? '알 수 없는 카드'}
         </h3>
       </div>
+      <SilenceImmunityNotice {...cardSilenceProtection(card,definition)}/>
       <FullCardArtwork name={definition?.name ?? '카드'} imageUrl={cosmetic.src} fallbackImageUrl={definition?.imageUrl}>
       <CardRenderer
         cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
@@ -425,7 +426,6 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           </div>
         )}
       </InspectorSection>
-      <SilenceImmunityNotice {...cardSilenceProtection(card,definition)}/>
       {tags.length > 0 && (
         <InspectorSection title="태그" tone="cyan">
           <div className="flex flex-wrap gap-2">

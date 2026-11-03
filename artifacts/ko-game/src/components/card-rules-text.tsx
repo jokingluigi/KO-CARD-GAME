@@ -1,3 +1,5 @@
+import { cardSilenceProtection } from '../lib/card-protection-display';
+import { SilenceImmunityNotice } from './silence-immunity-notice';
 import {RecoverableArtwork} from "./recoverable-artwork";
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
@@ -52,6 +54,7 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
    onCloseAutoFocus={e=>{e.preventDefault();trigger.current?.focus();}}
    onClick={e=>e.stopPropagation()} onPointerUp={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>
    <DialogTitle className="pr-6 text-lg font-bold">{detail.title}</DialogTitle>
+   {detail.card&&<SilenceImmunityNotice {...cardSilenceProtection(detail.card)}/>}
    {detail.card&&<>{detail.card.imageUrl&&<RecoverableArtwork src={detail.card.imageUrl} alt={detail.title} className="mx-auto my-3 max-h-[40dvh] object-contain"/>}<p className="my-3">비용 {detail.card.cost}{detail.card.cardType!=='TECHNIQUE'&&` · 공격 ${detail.card.attack} · 체력 ${detail.card.health}`}</p></>}
    <DialogDescription className="whitespace-pre-wrap break-words text-white">{detail.text||'효과 없음'}</DialogDescription>
    <button type="button" className="mt-4 min-h-12 w-full rounded border border-neutral-500" onClick={()=>setDetail(null)}>닫기</button>

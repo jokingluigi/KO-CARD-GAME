@@ -1,0 +1,11 @@
+✔ related cards resolve explicit generation references, never target filters or prose (1.442508ms)
+✔ browser shelf is account-scoped, tolerates corrupt storage and quota errors (17.55046ms)
+✔ public cards never inspect concealed hands/decks or infer private discards (0.571918ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 392.252453

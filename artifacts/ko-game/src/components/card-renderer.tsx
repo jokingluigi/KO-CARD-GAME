@@ -495,7 +495,8 @@ export function CardRenderer({
             {keywordBadges.map((keyword) => (
               <span
                 key={keyword}
-                 className={`max-w-full rounded border px-0.5 py-0.5 text-[clamp(0.45rem,0.7vw,0.65rem)] font-extrabold leading-none shadow-lg ${
+                data-testid={keyword === "SILENCE_IMMUNE" ? "card-silence-immunity-badge" : undefined}
+                 className={`max-w-full rounded border px-0.5 py-0.5 text-[clamp(0.45rem,0.7vw,0.65rem)] font-extrabold leading-none shadow-lg ${keyword === "SILENCE_IMMUNE" ? "ko-card-silence-immunity-badge" : ""} ${
                   keyword === "SILENCE_IMMUNE" ? "border-amber-200 bg-neutral-950/95 text-amber-100" :
                   keyword === "TAUNT" ? "border-cyan-200 bg-cyan-950/90 text-cyan-100" :
                   keyword === "RUSH" ? "border-amber-200 bg-amber-950/90 text-amber-100" :

@@ -1,0 +1,45 @@
+/** Real battle/collection/reference UI with read-only published card fixtures. */
+import assert from 'node:assert/strict';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {chromium} from './black-gold-playwright.mjs';
+import {auditSetup} from './ui-audit-fixture.mjs';
+const origin=process.env.KO_UI_ORIGIN??'http://127.0.0.1:5186';
+const out=process.env.KO_IMMUNITY_OUT??'qa-results/silence-immunity-visibility';await mkdir(out,{recursive:true});
+const cards=JSON.parse(await readFile(process.env.KO_IMMUNITY_CATALOG??'docs/qa/snapshots/20261014-admin/cards.json','utf8'));
+const tokens=cards.filter(c=>c.rarity==='CHAMPION'&&(c.isToken||c.isChampionToken));
+const source=tokens.find(c=>tokens.some(t=>t.id!==c.id&&c.text.includes(t.name)));assert.ok(source,'authored champion token reference');
+const target=tokens.find(c=>c.id!==source.id&&source.text.includes(c.name));
+const ordinary=cards.find(c=>c.rarity==='NORMAL'&&!c.isToken&&!c.isChampionToken);assert.ok(ordinary);
+const championBody=JSON.parse(await readFile(process.env.KO_IMMUNITY_CHAMPIONS??'docs/qa/snapshots/20261014-admin/champions.json','utf8'));
+const champions=Array.isArray(championBody)?championBody:championBody.champions;
+const champion=champions.find(c=>tokens.some(t=>t.id===c.championTokenDefinitionId));assert.ok(champion);
+const linkedToken=tokens.find(t=>t.id===champion.championTokenDefinitionId);
+const b=await chromium.launch(),results=[];
+const visibleNotice=async(p,notice)=>{await notice.waitFor();const r=await notice.boundingBox();assert.ok(r&&r.y>=0&&r.y+r.height<=p.viewportSize().height,'notice visible without scrolling');await notice.getByText('침묵으로 능력과 키워드가 제거되지 않습니다.',{exact:true}).waitFor();};
+try{for(const [width,height] of [[390,844],[844,390],[1440,900]]){
+ const p=await b.newPage({viewport:{width,height},isMobile:width===390,hasTouch:width===390,reducedMotion:'reduce',ignoreHTTPSErrors:true}),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());
+ await auditSetup(p);
+ await p.route('**/api/auth/me',r=>r.fulfill({json:{authenticated:true,user:{id:'immunity-admin',nickname:'표시 검증',role:'ADMIN',currencyBalance:0,prismBalance:0,championPrismBalance:0}}}));
+ await p.route('**/api/cards',r=>r.fulfill({json:{cards}}));
+ await p.route('**/api/admin/cards/*/test',r=>r.fulfill({json:{card:source,relatedCards:cards}}));
+ await p.goto(origin+'/?testCardId='+source.id+'&source=admin');await p.locator('.ko-game-shell').waitFor();const opening=p.getByRole('button',{name:'그대로 시작',exact:true});if(await opening.isVisible())await opening.click();
+ const badge=p.locator('.ko-player-board-row .ko-board-slot').first().getByTestId('card-silence-immunity-badge');await badge.waitFor();assert.ok(await badge.evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=9));
+ await p.getByRole('button',{name:source.name+' 상세정보',exact:true}).click();
+ const inspector=p.locator('.ko-inspector-content');await visibleNotice(p,inspector.getByTestId('silence-immunity-notice'));
+ const beforeArtwork=await inspector.evaluate(n=>{const a=n.querySelector('[data-testid="silence-immunity-notice"]');return a&&Array.from(n.children).indexOf(a)===1;});assert.equal(beforeArtwork,true);
+ await p.screenshot({path:`${out}/battle-inspector-${width}x${height}.png`});
+ await inspector.getByRole('button',{name:target.name+' 정보 보기',exact:true}).click();
+ const reference=p.locator('[data-card-rules-dialog]');await visibleNotice(p,reference.getByTestId('silence-immunity-notice'));assert.ok(await reference.getByRole('heading',{name:target.name,exact:true}).isVisible());await p.screenshot({path:`${out}/reference-${width}x${height}.png`});
+ const catalog=[source,ordinary].map(c=>({...c,quantity:1}));
+ await p.route('**/api/collection',r=>r.fulfill({json:{cards:catalog,craftableCards:catalog,champions:[],prismBalance:0,championPrismBalance:0,prismSettings:[],championPrismSetting:{configured:false},isTestAccount:false}}));
+ await p.goto(origin+'/collection');await p.getByRole('button',{name:source.name+' 카드 상세 보기',exact:true}).click();
+ const detail=p.getByRole('dialog').filter({has:p.getByRole('heading',{name:source.name,exact:true})});await visibleNotice(p,detail.getByTestId('silence-immunity-notice'));await p.screenshot({path:`${out}/card-detail-${width}x${height}.png`});
+ await p.goto(origin+'/collection');await p.getByRole('button',{name:ordinary.name+' 카드 상세 보기',exact:true}).click();await p.getByRole('heading',{name:ordinary.name,exact:true}).waitFor();assert.equal(await p.getByTestId('silence-immunity-notice').count(),0);
+ await p.route('**/api/champions',r=>r.fulfill({json:{champions}}));
+ await p.route('**/api/collection',r=>r.fulfill({json:{cards:catalog,craftableCards:catalog,champions:[{...champion,owned:true}],prismBalance:0,championPrismBalance:0,prismSettings:[],championPrismSetting:{configured:false},isTestAccount:false}}));
+ await p.goto(origin+'/collection');await p.getByRole('button',{name:/^챔피언 \d+$/}).click();
+ await p.getByRole('button').filter({has:p.getByRole('heading',{name:champion.name,exact:true})}).click();
+ const linked=p.getByRole('button').filter({hasText:linkedToken.name}).filter({hasText:'침묵 면역'});await linked.waitFor();await linked.click();
+ const linkedDetail=p.getByRole('dialog').filter({has:p.getByRole('heading',{name:linkedToken.name,exact:true})});await visibleNotice(p,linkedDetail.getByTestId('silence-immunity-notice'));await p.screenshot({path:`${out}/champion-linked-token-${width}x${height}.png`});
+ assert.deepEqual(errors,[]);results.push({width,height,realMatch:true,badgeMinimum9px:true,inspectorNoticeBeforeArtwork:true,referencePopupNotice:true,collectionDetailNotice:true,allNoticesVisibleWithoutScrolling:true,ordinaryNotMislabelled:true,championLinkedTokenNotice:true,errors});await p.context().close();
+}await writeFile(out+'/results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results));}finally{await b.close();}

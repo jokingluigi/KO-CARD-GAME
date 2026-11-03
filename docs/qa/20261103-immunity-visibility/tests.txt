@@ -1,0 +1,19 @@
+✔ champion rarity token keeps text, keywords and buffs on direct and structured silence, owner 0 (6.616127ms)
+✔ champion rarity token keeps text, keywords and buffs on direct and structured silence, owner 1 (1.45016ms)
+✔ ordinary tokens, legendary tokens and non-token champion rarity do not gain silence immunity (0.867386ms)
+✔ old snapshots with false immunity are protected by authoritative definition; no new definition path inferred (0.544006ms)
+✔ leaving board restores intrinsic immunity and direct champion deployment does not overwrite it (1.775521ms)
+✔ combined weakening still reduces attack and stuns, but cannot silence a champion rarity token (1.753759ms)
+✔ silence immunity never grants protection from retirement, destruction or removal (2.524472ms)
+✔ champion rarity token displays innate immunity even in a legacy snapshot with a false flag (0.206186ms)
+✔ ordinary and legendary tokens and non-token champion rarity are not advertised as immune (0.182721ms)
+✔ an explicit runtime immunity remains visible without falsely calling it a champion-token trait (0.186737ms)
+✔ registered token definition supplies identity absent from a static preview record (0.162641ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 971.548425

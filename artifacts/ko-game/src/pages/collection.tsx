@@ -1,3 +1,5 @@
+import { RelatedCards } from "@/components/player-tools/related-cards";
+import { CardRulesText } from "@/components/card-rules-text";
 import {GamePageHeader} from '@/components/game-page-header';
 import { CatalogPagination } from '@/components/catalog-pagination';
 import {returnToCatalogCard} from "@/components/physical-feedback";
@@ -55,6 +57,9 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
       <div className="relative">
         <CardRenderer
           cardId={card.id}
+          isToken={card.isToken}
+          isChampionToken={card.isChampionToken}
+          isSilenceImmune={card.isSilenceImmune}
           keywords={card.keywords}
           keywordConfig={card.effectConfig}
           name={card.name}
@@ -524,6 +529,7 @@ function ChampionDetail({
   isMutating: boolean;
   onCraft: () => void;
 }) {
+  const [tokenDetail, setTokenDetail] = useState<import("@/components/card-detail-dialog").CardDetailRecord | null>(null);
   return (
     <>
       <DialogHeader>
@@ -549,6 +555,8 @@ function ChampionDetail({
           {champion.gameStartAbilityText && <InfoBlock label={`게임 시작 · ${champion.gameStartAbilityName || "시작 능력"}`} text={champion.gameStartAbilityText} />}
           {champion.hasQuest && <InfoBlock label={champion.questName || "Quest"} text={champion.questText || "Quest 정보가 없습니다."} />}
           {champion.hasQuest && champion.questRewardText && <InfoBlock label="Quest 보상 / 강화 능력" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 능력: ${champion.upgradedAbilityName || ""}\n${champion.upgradedAbilityText}` : ""}`} />}
+          <RelatedCards id={champion.id} onSelect={setTokenDetail}/>
+          <CardDetailDialog card={tokenDetail} open={Boolean(tokenDetail)} onOpenChange={open => {if(!open)setTokenDetail(null);}}/>
           <section className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-4">
             <p className="text-xs font-black uppercase tracking-wider text-rose-200">챔피언 프리즘 제작</p>
             <p className="mt-2 text-sm text-neutral-300">현재 보유량: <strong className="text-rose-200">{unlimited ? "∞" : balance.toLocaleString()}</strong> ◈</p>
@@ -582,7 +590,7 @@ function ChampionDetail({
 }
 
 function InfoBlock({ icon, label, text }: { icon?: React.ReactNode; label: string; text: string }) {
-  return <section className="rounded-lg border border-neutral-800 bg-black/30 p-4"><h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-300">{icon}{label}</h3><p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200">{text}</p></section>;
+  return <section className="rounded-lg border border-neutral-800 bg-black/30 p-4"><h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-300">{icon}{label}</h3><p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200"><CardRulesText text={text}/></p></section>;
 }
 
 function CollectionLoading() {

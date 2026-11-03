@@ -1,3 +1,4 @@
+import { cardSilenceProtection } from "../../lib/card-protection-display";
 import { useEffect, useState } from "react";
 import type { CardDetailRecord } from "../card-detail-dialog";
 export function explicitReferences(value: unknown): Set<string> {
@@ -118,6 +119,7 @@ export function RelatedCards({
             onClick={() => onSelect(c)}
           >
             {c.name} · {c.cost}코스트
+            {cardSilenceProtection(c).immune && <span className="ml-2 inline-block rounded border border-amber-400/60 px-1.5 py-0.5 text-xs font-bold text-amber-200">침묵 면역</span>}
           </button>
         ))
       ) : (

@@ -85,7 +85,7 @@ export function CardDetailDialog({
       >
         {card && (
           <>
-            <RelatedCards id={card.id} onSelect={setTagDetailCard}/><WishButton item={{id:card.id,kind:"card",name:card.name,image:card.imageUrl}}/>
+            <WishButton item={{id:card.id,kind:"card",name:card.name,image:card.imageUrl}}/>
             <DialogHeader>
               <DialogTitle className="text-left text-xl font-black">{card.name}</DialogTitle>
               <DialogDescription className="text-left text-xs text-neutral-500">
@@ -93,6 +93,7 @@ export function CardDetailDialog({
                 {quantityText ? ` · ${quantityText}` : ""}
               </DialogDescription>
             </DialogHeader>
+            <SilenceImmunityNotice {...cardSilenceProtection(card,getCardDefinition(card.id))}/>
             <div className="grid gap-5 sm:grid-cols-[minmax(220px,320px)_1fr] sm:items-start">
               <FullCardArtwork name={card.name} imageUrl={card.imageUrl}>
               <CardRenderer
@@ -131,7 +132,6 @@ export function CardDetailDialog({
                     </>
                   )}
                 </div>
-                <SilenceImmunityNotice {...cardSilenceProtection(card,getCardDefinition(card.id))}/>
                 {card.tags?.length ? (
                   <div>
                     <p className="text-[10px] font-black tracking-wider text-neutral-500">태그</p>
@@ -160,6 +160,7 @@ export function CardDetailDialog({
                 {children}
               </div>
             </div>
+            <RelatedCards id={card.id} onSelect={setTagDetailCard}/>
             <CardTagExplorerDialog
               tag={tagExplorer ?? ""}
               open={tagExplorer !== null}

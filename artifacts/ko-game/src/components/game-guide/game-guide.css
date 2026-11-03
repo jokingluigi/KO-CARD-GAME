@@ -200,3 +200,23 @@
     max-width: none;
   }
 }
+/* A passive rule belongs beside the card name, before large artwork. */
+.ko-silence-immunity-notice {
+  border-left: 3px solid #e8c66d;
+  background: #d8be8115;
+  text-align: left;
+}
+.ko-silence-immunity-notice strong {
+  font-size: 16px;
+}
+.ko-silence-immunity-notice .ko-silence-immunity-notice__summary {
+  color: #fff0c6;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.ko-card-silence-immunity-badge {
+  font-size: clamp(9px, 0.8vw, 12px) !important;
+  padding: 3px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap;
+}
