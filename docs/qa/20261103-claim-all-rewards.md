@@ -35,3 +35,10 @@ KO_UI_ORIGIN=http://127.0.0.1:5187 KO_CLAIM_ALL_OUT=qa-results/claim-all-product
 ```
 
 화면·영상·배포 확인 자료는 [첨부 폴더](20261103-claim-all-rewards/)에 기록한다. main 병합은 하지 않는다.
+
+## 배포
+
+- 소스 `294369271b536a5191452c57af57eebff6541033`을 기존 기능 브랜치에서 API → 프론트엔드 순서로 배포했다. 두 서비스 모두 해당 커밋의 `live` 상태를 확인했다. main 병합과 서비스 브랜치 변경은 하지 않았다.
+- 운영 주소의 엔트리 및 JS/CSS 140개가 로컬 동일 커밋 빌드와 SHA-256까지 일치했다. health 200, 기존 점검 설정 false를 유지했다. 새 보상 조회·수령 API의 비로그인 응답은 모두 401이었다.
+- [서버 배포](20261103-claim-all-rewards/api-deployment.json), [화면 배포 및 파일 검증](20261103-claim-all-rewards/front-deployment.json). 운영 DB에 수동 변경이나 QA 보상 지급을 수행하지 않았다.
+- 운영 URL의 실제 UI를 격리 API/DB에 연결해 같은 4개 해상도 검사를 다시 통과했다. [결과](20261103-claim-all-rewards/deployed-results.json), [메인 화면](20261103-claim-all-rewards/deployed-home-390.png), [수령 결과](20261103-claim-all-rewards/deployed-collected-390.png), [짧은 동작 녹화](20261103-claim-all-rewards/claim-all-mobile.mp4). 결과 JSON의 특정 시나리오 `false`는 해당 크기에서 그 시나리오를 실행하지 않았음을 뜻하며 실패 판정이 아니다. 응답 유실 검사는 가로 화면, 부분 실패 검사는 360px에서 실행했다. 녹화에는 오디오가 없으며 실물 모바일에서의 검증은 남아 있다.

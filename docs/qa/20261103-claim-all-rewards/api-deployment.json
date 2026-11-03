@@ -1,0 +1,13 @@
+{
+  "commit": "294369271b536a5191452c57af57eebff6541033",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbku8mgu01pc73eb87cg",
+  "status": "live",
+  "liveCommit": "294369271b536a5191452c57af57eebff6541033",
+  "publicChecks": {
+    "GET /api/healthz": 200,
+    "GET /api/rewards/available": 401,
+    "POST /api/rewards/claim-all": 401
+  },
+  "productionRewardWrites": 0
+}
