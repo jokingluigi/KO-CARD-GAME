@@ -1,0 +1,42 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualAIEntry": true,
+    "tokenRuleInHandReader": true,
+    "protectionVisibleWithoutScrolling": true,
+    "readingScale130": true,
+    "selectedSkinInReader": true,
+    "legacyTokenFlagDoesNotHideSkin": true,
+    "ordinaryCardNotMislabelled": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "actualAIEntry": true,
+    "tokenRuleInHandReader": true,
+    "protectionVisibleWithoutScrolling": true,
+    "readingScale130": true,
+    "selectedSkinInReader": true,
+    "legacyTokenFlagDoesNotHideSkin": true,
+    "ordinaryCardNotMislabelled": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualAIEntry": true,
+    "tokenRuleInHandReader": true,
+    "protectionVisibleWithoutScrolling": true,
+    "readingScale130": true,
+    "selectedSkinInReader": true,
+    "legacyTokenFlagDoesNotHideSkin": true,
+    "ordinaryCardNotMislabelled": true,
+    "errors": []
+  },
+  {
+    "controlledStateHarness": true,
+    "readerKeepsSelectedInstanceOnReorder": true
+  }
+]

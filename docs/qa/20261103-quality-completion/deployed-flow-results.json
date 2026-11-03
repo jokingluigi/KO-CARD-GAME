@@ -1,0 +1,53 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "purchaseLostReplyRecoveredAfterNewTab": true,
+    "oneDebitAndGrant": true,
+    "localCleanupFailureKeepsRecovery": true,
+    "staleInventoryBlocksPurchaseUntilReadRefresh": true,
+    "samePurchaseKeyReused": true,
+    "newPurchasesLockedUntilRecovery": true,
+    "logoutFailureRetainsScreen": true,
+    "logoutFocusRestored": true,
+    "collectionSortAndTypeAvailable": true,
+    "collectionFirstCardTop": 604.4375,
+    "disabledJournalDoesNotSpam": true,
+    "explicitJournalRetryAvailable": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "purchaseLostReplyRecoveredAfterNewTab": true,
+    "oneDebitAndGrant": true,
+    "localCleanupFailureKeepsRecovery": true,
+    "staleInventoryBlocksPurchaseUntilReadRefresh": true,
+    "samePurchaseKeyReused": true,
+    "newPurchasesLockedUntilRecovery": true,
+    "logoutFailureRetainsScreen": true,
+    "logoutFocusRestored": true,
+    "collectionSortAndTypeAvailable": true,
+    "collectionFirstCardTop": 674.0625,
+    "disabledJournalDoesNotSpam": true,
+    "explicitJournalRetryAvailable": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "purchaseLostReplyRecoveredAfterNewTab": true,
+    "oneDebitAndGrant": true,
+    "localCleanupFailureKeepsRecovery": true,
+    "staleInventoryBlocksPurchaseUntilReadRefresh": true,
+    "samePurchaseKeyReused": true,
+    "newPurchasesLockedUntilRecovery": true,
+    "logoutFailureRetainsScreen": true,
+    "logoutFocusRestored": true,
+    "collectionSortAndTypeAvailable": true,
+    "collectionFirstCardTop": 688.734375,
+    "disabledJournalDoesNotSpam": true,
+    "explicitJournalRetryAvailable": true,
+    "errors": []
+  }
+]
