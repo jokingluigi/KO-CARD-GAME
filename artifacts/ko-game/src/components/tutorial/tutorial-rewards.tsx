@@ -81,3 +81,7 @@ export function TutorialRewardsPanel({accountId,proof}:{accountId?:string;proof?
   </>}
  </section>;
 }
+
+/** Only replayable, account-scoped records are eligible for global recovery. */
+export const readPendingTutorialProofs=pendingProofs;
+export function discardPaidTutorialProof(account:string,lessonId:LessonId){try{localStorage.removeItem(key(account,lessonId));}catch{}}

@@ -1,3 +1,4 @@
+import claimAllRewardsRouter from "./claim-all-rewards";
 import tutorialRouter from "./tutorial";
 import playerJournalRouter from './player-journal';
 import clientDiagnosticsRouter from './client-diagnostics';
@@ -77,6 +78,7 @@ router.use("/online-matches", onlineMatchesRouter);
 router.use("/daily-quests", dailyQuestsRouter);
 router.use("/attendance", attendanceRouter);
 router.use("/tutorial", tutorialRouter);
+router.use("/rewards", claimAllRewardsRouter);
 router.use("/admin/rewards", adminRewardsRouter);
 router.use("/admin/quests", adminQuestsRouter);
 router.use("/admin/notices", adminNoticesRouter);

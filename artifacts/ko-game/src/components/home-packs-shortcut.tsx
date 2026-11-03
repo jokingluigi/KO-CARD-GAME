@@ -31,9 +31,9 @@ export function HomePacksShortcut({ accountId }: { accountId?: string }) {
             count += pack.quantity;
           }
         }
-        if (active) setStock({ account: accountId, count });
+        if (active && request===controller) setStock({ account: accountId, count });
       } catch {
-        if (active) setStock(null);
+        if (active && request===controller) setStock(null);
       } finally {
         clearTimeout(timer);
       }
@@ -42,10 +42,13 @@ export function HomePacksShortcut({ accountId }: { accountId?: string }) {
     const visible = () => {
       if (!document.hidden) void load();
     };
+    const collected=(event:Event)=>{if((event as CustomEvent).detail?.accountId===accountId){last=0;void load();}};
+    window.addEventListener('ko-rewards-updated',collected);
     window.addEventListener("focus", visible);
     document.addEventListener("visibilitychange", visible);
     return () => {
       active = false;
+      window.removeEventListener('ko-rewards-updated',collected);
       request?.abort();
       window.removeEventListener("focus", visible);
       document.removeEventListener("visibilitychange", visible);

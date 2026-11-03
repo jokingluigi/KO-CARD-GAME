@@ -1,0 +1,143 @@
+.ko-claim-all-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid #a08548;
+  border-radius: 10px;
+  background: #c6a75319;
+  color: #f2d891;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ko-claim-all-button:hover {
+  background: #c6a75330;
+}
+.ko-claim-all-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.ko-claim-all-dialog {
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  border: 1px solid #77633e;
+  border-radius: 18px;
+  background: #121310;
+  color: #f2eada;
+  padding: 24px;
+  gap: 16px;
+}
+.ko-claim-all-dialog h2 {
+  padding-right: 44px;
+  line-height: 1.4;
+}
+.ko-claim-all-dialog p {
+  line-height: 1.7;
+}
+.ko-claim-all-dialog [data-ui-motion-state] {
+  animation: none;
+}
+.ko-claim-all-progress,
+.ko-claim-all-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #e9d095;
+}
+.ko-claim-all-totals {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ko-claim-all-totals li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #7d6b3d66;
+  border-radius: 10px;
+  background: #d7ba6710;
+}
+.ko-claim-all-totals li > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ko-claim-all-totals strong {
+  color: #f5d98a;
+  flex-shrink: 0;
+}
+.ko-claim-all-issues {
+  border: 1px solid #a7795066;
+  border-radius: 10px;
+  padding: 12px;
+  color: #e5c7a6;
+  font-size: 13px;
+}
+.ko-claim-all-issues ul {
+  padding-left: 18px;
+  list-style: disc;
+}
+.ko-claim-all-balance {
+  font-size: 13px;
+  color: #b8af99;
+}
+.ko-claim-all-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ko-claim-all-actions :is(button, a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #7f6a3b;
+  border-radius: 9px;
+  color: #eddaac;
+  font-size: 13px;
+}
+.ko-claim-all-actions button:last-child {
+  margin-left: auto;
+  background: #d1b572;
+  color: #15130e;
+}
+.ko-home-collect-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.ko-home-collect-row > .ko-lobby-more {
+  min-width: 0;
+  flex: 1;
+}
+.ko-home-collect-row .ko-home-reward-count {
+  display: none;
+}
+@media (max-width: 767px) and (max-height: 780px) {
+  .ko-home-collect-row .ko-claim-all-button {
+    font-size: 11px;
+    padding-inline: 8px;
+  }
+  .ko-home-collect-row > .ko-lobby-more {
+    font-size: 11px;
+    padding-inline: 6px;
+  }
+}
+html[data-ui-reduced="true"] .ko-claim-all-progress svg {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ko-claim-all-progress svg {
+    animation: none;
+  }
+}

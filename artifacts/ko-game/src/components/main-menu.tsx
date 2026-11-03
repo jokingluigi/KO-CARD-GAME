@@ -1,3 +1,4 @@
+import {ClaimAllRewardsButton} from "./claim-all-rewards";
 import { MotionNumber } from "./presentation-motion";
 import {HomePacksShortcut} from "./home-packs-shortcut";
 import type {HomeLaunchStatus} from "./launch-deck-banner";
@@ -288,7 +289,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         <nav className="ko-home-learning" aria-label="튜토리얼과 게임 규칙"><button type="button" className="ko-home-tutorial" onClick={()=>navigate('/tutorial')}><BookOpen aria-hidden="true" size={20}/><span><strong>튜토리얼</strong><small>카드로 직접 배우기</small></span><span aria-hidden="true">→</span></button><button type="button" onClick={()=>navigate('/guide')}><span><strong>게임 규칙</strong><small>판정 · 챔피언 토큰</small></span><span aria-hidden="true">→</span></button></nav>
         </div>
         <nav className="ko-home-utility-links" aria-label="보상 바로가기"><button type="button" onClick={()=>navigate('/daily-quests')}>퀘스트</button><button type="button" onClick={()=>navigate('/attendance')}>출석</button><button type="button" onClick={()=>navigate('/packs')}>내 팩</button></nav>
+        <div className="ko-home-collect-row">
         <button type="button" className="ko-lobby-more" aria-label="보상 · 상점 · 전체 메뉴 ▸" aria-describedby={rewards?.total?'home-reward-count':undefined} onClick={()=>setAllMenusOpen(true)}>보상 · 상점 · 전체 메뉴 ▸{Boolean(rewards?.total)&&<span id="home-reward-count" className="ko-home-reward-count">받을 보상 {rewards!.total}건</span>}</button>
+        <ClaimAllRewardsButton accountId={user?.id} onUserChanged={onNicknameChanged} onCompleted={result=>{if(user&&result.accountId===user.id&&result.balances)onNicknameChanged?.({...user,...result.balances});}}/>
+        </div>
         <Dialog open={allMenusOpen} onOpenChange={setAllMenusOpen}><DialogContent className="ko-lobby-dialog"><DialogTitle>전체 메뉴</DialogTitle><DialogDescription>보상과 계정 기능을 확인하세요.</DialogDescription>
         {Boolean(rewards?.total)&&<aside aria-label="수령 가능한 보상" className="ko-home-reward-links">{Boolean(rewards?.quests)&&<button className="min-h-11" type="button" onClick={()=>navigate('/daily-quests')}>퀘스트 보상 {rewards!.quests}건 받으러 가기 ▸</button>}{Boolean(rewards?.attendance)&&<button className="min-h-11" type="button" onClick={()=>navigate('/attendance')}>출석 보상 받으러 가기 ▸</button>}</aside>}
         <HomePacksShortcut accountId={user?.id}/>

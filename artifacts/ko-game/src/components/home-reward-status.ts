@@ -24,12 +24,12 @@ export function useHomeRewardStatus(accountId?: string) {
           fetchDailyQuests({ signal: current.signal }),
           fetchAttendance({ signal: current.signal }),
         ]);
-        if (active && !current.signal.aborted) {
+        if (active && controller===current && !current.signal.aborted) {
           const counts = claimableHomeRewards(q, a);
           setValue(counts ? { account: accountId, counts } : null);
         }
       } catch {
-        if (active) setValue(null);
+        if (active && controller===current) setValue(null);
         current.abort();
       } finally {
         clearTimeout(timeout);
@@ -39,10 +39,13 @@ export function useHomeRewardStatus(accountId?: string) {
     const visible = () => {
       if (!document.hidden) void refresh();
     };
+    const collected=(event:Event)=>{if((event as CustomEvent).detail?.accountId===accountId){last=0;void refresh();}};
+    window.addEventListener('ko-rewards-updated',collected);
     window.addEventListener("focus", visible);
     document.addEventListener("visibilitychange", visible);
     return () => {
       active = false;
+      window.removeEventListener('ko-rewards-updated',collected);
       controller?.abort();
       window.removeEventListener("focus", visible);
       document.removeEventListener("visibilitychange", visible);

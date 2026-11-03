@@ -1,0 +1,62 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "oneClickCollectsAllSources": true,
+    "homeNoScroll": true,
+    "touchTarget44": true,
+    "duplicateClickOnePost": true,
+    "walletRefreshes": true,
+    "paidTutorialProofsCleared": true,
+    "lostReplyReadOnlyCheck": false,
+    "partialRetryOnlyRemainder": false,
+    "dailyAndAttendanceButtons": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "oneClickCollectsAllSources": true,
+    "homeNoScroll": true,
+    "touchTarget44": true,
+    "duplicateClickOnePost": true,
+    "walletRefreshes": true,
+    "paidTutorialProofsCleared": true,
+    "lostReplyReadOnlyCheck": true,
+    "partialRetryOnlyRemainder": false,
+    "dailyAndAttendanceButtons": false,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "oneClickCollectsAllSources": true,
+    "homeNoScroll": true,
+    "touchTarget44": true,
+    "duplicateClickOnePost": true,
+    "walletRefreshes": true,
+    "paidTutorialProofsCleared": true,
+    "lostReplyReadOnlyCheck": false,
+    "partialRetryOnlyRemainder": false,
+    "dailyAndAttendanceButtons": false,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 360,
+    "height": 740,
+    "oneClickCollectsAllSources": true,
+    "homeNoScroll": true,
+    "touchTarget44": true,
+    "duplicateClickOnePost": true,
+    "walletRefreshes": true,
+    "paidTutorialProofsCleared": true,
+    "lostReplyReadOnlyCheck": false,
+    "partialRetryOnlyRemainder": true,
+    "dailyAndAttendanceButtons": false,
+    "productionWrites": 0,
+    "errors": []
+  }
+]

@@ -1,3 +1,4 @@
+import {ClaimAllRewardsButton} from "@/components/claim-all-rewards";
 import { useEffect, useRef, useState } from "react";
 import { CalendarCheck2, Check, LockKeyhole } from "lucide-react";
 import {
@@ -60,12 +61,15 @@ export default function AttendancePage() {
   useEffect(() => {
     mounted.current = true;
     void load();
+    const collected=()=>void load();
+    window.addEventListener('ko-rewards-updated',collected);
     void fetchRewardCatalogs()
       .then((next) => {
         if (mounted.current) setCatalog(next);
       })
       .catch(() => {});
     return () => {
+      window.removeEventListener('ko-rewards-updated',collected);
       mounted.current = false;
       request.current?.abort();
     };
@@ -150,6 +154,7 @@ export default function AttendancePage() {
             </div>
           }
         />
+        <ClaimAllRewardsButton disabled={busy}/>
         {error && (
           <div className="ko-surface-message is-error" role="alert">
             {error}

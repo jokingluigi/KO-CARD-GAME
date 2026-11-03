@@ -1,3 +1,4 @@
+import {ClaimAllRewardsButton} from "@/components/claim-all-rewards";
 import { MotionNumber } from "@/components/presentation-motion";
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, ListChecks } from "lucide-react";
@@ -120,9 +121,12 @@ export default function DailyQuestsPage() {
       if (document.visibilityState === "visible") void load();
     };
     void load();
+    const collected=()=>void load();
+    window.addEventListener('ko-rewards-updated',collected);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     window.addEventListener("focus", refreshWhenVisible);
     return () => {
+      window.removeEventListener('ko-rewards-updated',collected);
       mounted.current = false;
       readController.current?.abort();
       document.removeEventListener("visibilitychange", refreshWhenVisible);
@@ -300,6 +304,7 @@ export default function DailyQuestsPage() {
           description="다음 목표를 확인하고, 플레이로 보상을 채워보세요."
           links={REWARD_PAGE_LINKS}
         />
+        <ClaimAllRewardsButton disabled={Boolean(busyId)}/>
         {error && (
           <div role="alert" className="ko-surface-message is-error">
             {error}
