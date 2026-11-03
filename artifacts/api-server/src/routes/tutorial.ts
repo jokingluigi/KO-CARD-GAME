@@ -5,7 +5,7 @@ import {db,rewardSettingsTable} from '@workspace/db';
 import {getAuthenticatedUser} from '../lib/auth';
 import {rewardTutorialCatalog} from '../lib/tutorial-catalog';
 import {replayTutorial} from '../lib/tutorial-replay';
-import {tutorialPackConfig,tutorialRewardStatus,claimTutorialReward,guaranteedChampionPack} from '../lib/tutorial-rewards';
+import {tutorialPackConfig,tutorialRewardStatus,claimTutorialReward,guaranteedChampionPack,ensureTutorialChampionPack} from '../lib/tutorial-rewards';
 const router:IRouter=Router();
 router.get('/availability',async(_req,res)=>{const c=await tutorialPackConfig();res.setHeader('Cache-Control','no-store');res.json({ready:Boolean(c.normal&&c.champion),normalPack:c.normal?.name??null,championPack:c.champion?.name??null,lessonQuantity:3,allQuantity:1});});
 router.get('/catalog',(_req,res)=>{res.setHeader('Cache-Control','no-store');res.json({catalog:rewardTutorialCatalog});});
@@ -20,7 +20,7 @@ router.patch('/admin-config',async(req,res)=>{
  if(req.authUser!.role!=='ADMIN'){res.sendStatus(403);return;}
  const c=await tutorialPackConfig(),normal=c.packs.find(p=>p.id===req.body?.normalPackId&&p.normalRate>0),champion=c.packs.find(p=>p.id===req.body?.championPackId&&guaranteedChampionPack(p));
  if(!normal||!champion||!(await getPackDetails(normal)).valid||!(await getPackDetails(champion)).valid){res.status(400).json({message:'공개된 노멀팩과 챔피언만 나오는 확정 팩을 선택해 주세요.'});return;}
- await db.transaction(async tx=>{for(const [key,id,amount] of [['TUTORIAL_LESSON_PACK',normal.id,3],['TUTORIAL_ALL_PACK',champion.id,1]] as const)await tx.insert(rewardSettingsTable).values({key,rewardType:'PACK',rewardTargetId:id,amount,enabled:true}).onConflictDoUpdate({target:rewardSettingsTable.key,set:{rewardType:'PACK',rewardTargetId:id,amount,enabled:true,updatedAt:new Date()}});});
+ await db.transaction(async tx=>{if(c.provisionChampion&&champion.id===c.champion?.id)await ensureTutorialChampionPack(champion,tx);for(const [key,id,amount] of [['TUTORIAL_LESSON_PACK',normal.id,3],['TUTORIAL_ALL_PACK',champion.id,1]] as const)await tx.insert(rewardSettingsTable).values({key,rewardType:'PACK',rewardTargetId:id,amount,enabled:true}).onConflictDoUpdate({target:rewardSettingsTable.key,set:{rewardType:'PACK',rewardTargetId:id,amount,enabled:true,updatedAt:new Date()}});});
  res.json({saved:true});
 });
 export default router;
