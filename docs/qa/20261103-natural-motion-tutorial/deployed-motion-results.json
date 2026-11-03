@@ -1,0 +1,58 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": false,
+    "actualMenuPanelEntrance": true,
+    "pressKeepsHitArea": true,
+    "dialogEnterAndExit": true,
+    "retainedListReflow": "animated",
+    "actualAIEntry": true,
+    "dragCancelReturnsWithoutDuplicate": true,
+    "actualSummonAndGoldFeedback": true,
+    "actualSurrenderResult": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "reduced": false,
+    "actualMenuPanelEntrance": true,
+    "pressKeepsHitArea": true,
+    "dialogEnterAndExit": true,
+    "retainedListReflow": "offscreenSkipped",
+    "actualAIEntry": true,
+    "dragCancelReturnsWithoutDuplicate": true,
+    "actualSummonAndGoldFeedback": true,
+    "actualSurrenderResult": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "reduced": false,
+    "actualMenuPanelEntrance": true,
+    "pressKeepsHitArea": true,
+    "dialogEnterAndExit": true,
+    "retainedListReflow": "animated",
+    "actualAIEntry": true,
+    "dragCancelReturnsWithoutDuplicate": true,
+    "actualSummonAndGoldFeedback": true,
+    "actualSurrenderResult": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": true,
+    "actualMenuPanelEntrance": true,
+    "pressKeepsHitArea": true,
+    "dialogEnterAndExit": true,
+    "retainedListReflow": "reduced",
+    "actualAIEntry": true,
+    "dragCancelReturnsWithoutDuplicate": true,
+    "actualSummonAndGoldFeedback": true,
+    "actualSurrenderResult": true,
+    "errors": []
+  }
+]

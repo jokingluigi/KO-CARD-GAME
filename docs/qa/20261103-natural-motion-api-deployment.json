@@ -1,0 +1,20 @@
+{
+  "commit": "ec7e95a9e19e0c1376f400f0adb9e0bcb69c1062",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbkqp5ek1f9s73dojjm0",
+  "status": "live",
+  "liveCommit": "ec7e95a9e19e0c1376f400f0adb9e0bcb69c1062",
+  "healthStatus": 200,
+  "recoveryOptions": {
+    "emailRecovery": false,
+    "journalSync": false
+  },
+  "tutorialAvailability": {
+    "ready": true,
+    "normalPack": "\ub178\uba40\ud329",
+    "championPack": "\ud29c\ud1a0\ub9ac\uc5bc \ud655\uc815 \ucc54\ud53c\uc5b8\ud329",
+    "lessonQuantity": 3,
+    "allQuantity": 1
+  },
+  "maintenanceEnabled": false
+}
