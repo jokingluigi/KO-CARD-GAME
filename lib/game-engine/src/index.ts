@@ -132,3 +132,5 @@ export {selectAIOpponentDeck} from './ai-deck-selection';
 
 export { LESSONS, tutorialCatalog, lessonUnavailable, createTutorialLesson, tutorialGoal, tutorialActionAllowed } from "./tutorial";
 export type { LessonId, TutorialCatalog, TutorialGoal } from "./tutorial";
+
+export {hasPendingHandAddition} from '../../../artifacts/ko-game/src/game/engine/hand-addition';

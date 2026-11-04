@@ -22,7 +22,7 @@ export function MatchRecapPanel({
     h.kind === "FINISHER"
       ? `결정타 · ${side(h.playerId)}의 ${h.sourceName} · ${h.amount} 피해`
       : h.kind === "QUEST"
-        ? `${side(h.playerId)}의 ${h.sourceName} · 챔피언 퀘스트 완료`
+        ? `${side(h.playerId)}의 ${h.sourceName} · 피니셔 준비 완료`
         : h.kind === "BIG_HIT"
           ? `큰 한 방 · ${side(h.playerId)}의 ${h.sourceName} · ${h.amount} 피해`
           : h.kind === "FATIGUE"

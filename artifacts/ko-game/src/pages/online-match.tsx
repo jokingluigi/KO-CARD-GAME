@@ -1,3 +1,4 @@
+import { currentChampionAbility } from '@/game/champions/types';
 import {launchDeckEditor} from "@/lib/launch-deck";
 import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
 import {watchActionAcknowledgement} from "@/lib/action-recovery";
@@ -607,7 +608,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   }, [awaitingAuthoritativeMatch, matchId, state?.status]);
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
   const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
-  const canAct = Boolean(isConnected && introFinished && (state?.targetingState?.active ? state.targetingState.playerId === me?.id : isMyTurn) && !state?.openingMulligan && !pendingAction && !presentationBusy);
+  const canAct = Boolean(isConnected && (!state?.waitingForHandDiscardPlayerId || state.waitingForHandDiscardPlayerId===me?.id) && introFinished && (state?.targetingState?.active ? state.targetingState.playerId === me?.id : isMyTurn) && !state?.openingMulligan && !pendingAction && !presentationBusy);
   const secondsRemaining = turnDeadlineAt === null
     ? TURN_TIME_LIMIT_SECONDS
     : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
@@ -782,9 +783,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     clearRejectedActionMessage();
     if (!state || !me) return;
     const champion = me.champion;
-    const activeAbility = champion?.questCompleted && champion.upgradedAbility
-      ? champion.upgradedAbility
-      : champion?.ability;
+    const activeAbility = currentChampionAbility(champion);
     const action = activeAbility ? championAbilityAction(activeAbility.effects) : null;
     if (!action) {
       setPlayError("현재 챔피언 능력을 사용할 수 없습니다. 최신 매치 상태를 불러옵니다.");

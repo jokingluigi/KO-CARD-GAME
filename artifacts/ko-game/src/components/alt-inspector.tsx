@@ -1,3 +1,4 @@
+import { currentChampionAbility } from '@/game/champions/types';
 import {cardSilenceProtection} from '../lib/card-protection-display';
 import {SilenceImmunityNotice} from './silence-immunity-notice';
 import {matchTurnNumber} from "@workspace/game-engine/rules";
@@ -558,9 +559,7 @@ export function ChampionAbilityInspectContent({
   unavailableReason: string;
 }) {
   const ability =
-    champion.questCompleted && champion.upgradedAbility
-      ? champion.upgradedAbility
-      : champion.ability;
+    currentChampionAbility(champion)!;
   return (
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
@@ -576,10 +575,10 @@ export function ChampionAbilityInspectContent({
 
 export function ChampionQuestInspectContent({ champion }: { champion: ChampionState }) {
   const quest = champion.quest;
-  if (!quest) return <div className="text-sm text-neutral-400">진행 중인 퀘스트가 없습니다.</div>;
+  if (!quest) return <div className="text-sm text-neutral-400">피니셔 준비 조건이 없습니다.</div>;
   return (
     <div>
-      <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">챔피언 퀘스트</div>
+      <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">피니셔 준비</div>
       <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{quest.name}</h3>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={quest.description}/></p>
@@ -589,8 +588,9 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
           ? '완료됨'
           : `${champion.questProgress} / ${quest.requiredProgress}`}
       </div>
-      <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">완료 보상</div>
+      <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">피니셔 획득 / 현재 완료 효과</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>
+      <p className="mt-2 text-xs text-neutral-500">피니셔 카드 연계 전까지 기존 완료 효과가 적용됩니다.</p>
     </div>
   );
 }

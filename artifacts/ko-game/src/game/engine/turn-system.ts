@@ -1,3 +1,4 @@
+import { hasPendingHandAddition } from './hand-addition';
 import { bonusGoldInterceptors,interceptImmediateBonusGold } from './reviewed-field-rules';
 import { resolveChampionGameStartAbility } from './champion-system';
 import { healNewCardAware } from './new-card-rules';
@@ -151,24 +152,32 @@ export function dealOpeningHands(state: GameState): GameState {
   return drawOpeningHand(firstPlayerDealt, secondPlayer.id, 4);
 }
 
-function resolveGameStartAbilities(state: GameState): GameState {
-  let next = state;
-  for (const startingPlayer of state.players) {
-    next = resolveChampionGameStartAbility(next, startingPlayer.id);
-    if (next.targetingState?.active) throw new Error('챔피언 게임 시작 능력은 자동으로 완료되어야 합니다.');
-    const startingIds = [...startingPlayer.deck, ...startingPlayer.hand].map((card) => card.instanceId);
-    for (const instanceId of startingIds) {
-      const player = next.players.find((candidate) => candidate.id === startingPlayer.id);
-      const card = [...(player?.deck ?? []), ...(player?.hand ?? [])].find((candidate) => candidate.instanceId === instanceId);
-      if (!player || !card || !getActiveCardAbilities(card).some((ability) => ability.trigger === 'GAME_START')) continue;
-      const triggered = resolveTriggeredAbilities(next, player.id, card, 'GAME_START');
-      next = triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
-      if (next.targetingState?.active) {
-        throw new Error('게임 시작 효과는 초기 손패를 나누기 전에 자동으로 완료되어야 합니다.');
-      }
+function resolveOpening(state:GameState):GameState {
+  let next=state;
+  while(next.pendingOpening && !next.targetingState?.active){
+    const pending=next.pendingOpening;
+    if(pending.phase==='EFFECTS'){
+      const [task,...remaining]=pending.tasks;
+      if(!task){next={...next,pendingOpening:{...pending,phase:'DRAW'}};continue;}
+      next={...next,pendingOpening:{...pending,tasks:remaining}};
+      if(!task.instanceId)next=resolveChampionGameStartAbility(next,task.playerId);
+      else {const owner=next.players.find(p=>p.id===task.playerId);const card=[...(owner?.hand??[]),...(owner?.deck??[])].find(c=>c.instanceId===task.instanceId);if(card&&getActiveCardAbilities(card).some(a=>a.trigger==='GAME_START'))next=resolveTriggeredAbilities(next,task.playerId,card,'GAME_START');}
+      if(next.targetingState?.active&&!hasPendingHandAddition(next))throw new Error('게임 시작 효과는 자동으로 완료되어야 합니다.');
+    }else{
+      const [playerId,...remaining]=pending.draws;
+      if(!playerId)return {...next,pendingOpening:undefined};
+      next=drawCard({...next,pendingOpening:{...pending,draws:remaining}},playerId);
     }
   }
   return next;
+}
+function resolveGameStartAbilities(state:GameState):GameState {
+  return resolveOpening({...state,pendingOpening:{phase:'EFFECTS',tasks:state.players.flatMap(p=>[{playerId:p.id},...[...p.deck,...p.hand].map(c=>({playerId:p.id,instanceId:c.instanceId}))]),draws:[...Array(3).fill(state.players[0].id),...Array(4).fill(state.players[1].id)]}});
+}
+export function resumeDeferredOpening(state:GameState):GameState {
+  if(!state.pendingOpening||state.targetingState?.active||state.status==='FINISHED')return state;
+  const resolved=resolveOpening(state);
+  return resolved.pendingOpening||resolved.targetingState?.active?resolved:processChampionQuestEvents(state,beginPlayerTurn(resolved,resolved.players[0].id));
 }
 
 export function isCurrentPlayer(
@@ -201,7 +210,7 @@ export function startGame(
     throw new Error('이미 시작된 게임입니다.');
   }
 
-  const preparedState = dealOpeningHands(resolveGameStartAbilities(prepareDecks(state, random, options)));
+  const preparedState = resolveGameStartAbilities(prepareDecks(state, random, options));
   const firstPlayer = preparedState.players[0];
   const mediaRandom = random ?? defaultRandom;
   const backgroundId = mediaCatalog?.backgrounds.length
@@ -220,6 +229,7 @@ export function startGame(
     status: 'IN_PROGRESS',
   };
 
+  if(startedState.pendingOpening)return startedState;
   return processChampionQuestEvents(
     startedState,
     beginPlayerTurn(startedState, firstPlayer.id),
@@ -260,6 +270,7 @@ export function endTurn(
         const expired = card.temporaryKeywordGrants?.filter(g => g.untilTurn <= state.turn) ?? [];
         return expired.length ? { ...card, keywords: card.keywords.filter(k => !expired.some(g => g.keyword === k)), temporaryKeywordGrants: card.temporaryKeywordGrants?.filter(g => g.untilTurn > state.turn) } : card;
       };
+      if(player.champion?.abilityOverrideExpiresAtTurn!==undefined && player.champion.abilityOverrideExpiresAtTurn<=state.turn)player={...player,champion:{...player.champion,abilityOverride:undefined,abilityOverrideExpiresAtTurn:undefined}};
       player = { ...player, board: player.board.map(c => c ? expireKeywords(c) : c) as typeof player.board, hand: player.hand.map(expireKeywords), deck: player.deck.map(expireKeywords) };
       if (player.id === actingPlayerId) {
         const expireTemporaryStats = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD'): CardInstance => {
@@ -360,10 +371,16 @@ export function endTurn(
   const scheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
   if (scheduled.status === 'FINISHED') return actionSuccess(processChampionQuestEvents(state, scheduled));
   const afterScheduled = { ...scheduled, pendingCardEffects: scheduled.pendingCardEffects?.filter(effect => effect.expiresAtTurn === undefined || effect.expiresAtTurn > state.turn) };
+  if(afterScheduled.targetingState?.active)return actionSuccess(processChampionQuestEvents(state,{...afterScheduled,pendingNextTurnStart:{playerId:nextPlayer.id}}));
   return actionSuccess(
     processChampionQuestEvents(
       state,
       beginPlayerTurn(afterScheduled, nextPlayer.id),
     ),
   );
+}
+
+export function resumeDeferredTurnStart(state:GameState):GameState {
+ const pending=state.pendingNextTurnStart;if(!pending||state.targetingState?.active||state.status!=='IN_PROGRESS')return state;
+ return processChampionQuestEvents(state,beginPlayerTurn({...state,pendingNextTurnStart:undefined},pending.playerId));
 }

@@ -3,7 +3,7 @@ import {verifyCatalogAssets} from "./cosmetics";
 import {parseBattleSprite} from "@workspace/cosmetics";
 import {AssetCleanupGate} from "../lib/asset-cleanup-gate";
 import { availableCardTags } from "../lib/card-tag-catalog";
-import { validCountdownCardSettings } from '@workspace/effect-registry';
+import { validAbilityReplacementConfig, validCountdownCardSettings } from '@workspace/effect-registry';
 import { validChampionQuestCondition, validAwakeningQuestConfig, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
 import { ensureAwakeningCards } from '../lib/awakening-card-service';
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
@@ -735,6 +735,7 @@ export function parseCardInput(value: unknown): CardInput | null {
      || ((input.effectConfig as Record<string, unknown>).dodgeCharges !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).dodgeCharges) || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) < 1 || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) > 999))
      || ((input.keywords as string[]).includes('CONDITION') && !validChampionQuestCondition((input.effectConfig as Record<string, unknown>).playCondition))
      || !validCountdownCardSettings(input.cardType, input.keywords as string[], input.effectConfig as Record<string, unknown>)
+     || !validAbilityReplacementConfig(input.effectConfig)
 
     || (imageAssetId === null) !== (imageUrl === null)
     || (imageAssetId !== null &&

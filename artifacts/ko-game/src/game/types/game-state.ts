@@ -121,7 +121,10 @@ export interface GameState {
   /** Effect resolution is deliberately part of game state, not UI state. */
   /** Accepted attack resumes after a pre-attack combo choice, including reconnect. */
   pendingComboAttack?: {gameId:string;turn:number;playerId:string;attackerInstanceId:string;target:AttackTarget};
+  /** Public waiting marker used by sanitized opponent views. */
+  waitingForHandDiscardPlayerId?: string;
   targetingState?: {
+    handAddition?: { playerId: string; cards: import('../engine/hand-addition').HandArrival[]; completion?: import('../engine/hand-addition').HandCompletion };
     /** Display-only identity of this serialized effect processing unit. */
     presentationResolutionId?: string;
     active: true;
@@ -181,6 +184,8 @@ export interface GameState {
     };
   };
   /** Resolution-local snapshot used by chained retirement/stat effects. */
+  pendingOpening?: {phase:'EFFECTS'|'DRAW';tasks:Array<{playerId:string;instanceId?:string}>;draws:string[]};
+  pendingNextTurnStart?: {playerId:string};
   pendingCountdownTurnStart?: {
     turn: number;
     playerId: string;

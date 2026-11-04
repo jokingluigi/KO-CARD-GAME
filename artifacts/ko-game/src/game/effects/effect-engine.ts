@@ -1,3 +1,5 @@
+import { validAbilityReplacement } from '@workspace/effect-registry';
+import { addCardsToHand, resumeHandAddition, selectHandDiscard } from '../engine/hand-addition';
 import {championTokenSilenceImmune} from '../cards/silence-immunity';
 import { matchTurnNumber } from '@workspace/game-engine/rules';
 import type {GameEvent} from "../events/types";
@@ -45,7 +47,7 @@ import { drawCard } from '../engine/draw-card';
 import { silenceCard, isCardSilenceImmune } from '../engine/card-status';
 import { enterField } from '../engine/enter-field';
 import { MAX_HAND_SIZE } from '../rules/constants';
-import { MINION_A_ID } from '../champions/minion-a';
+import { MINION_A_ID, isMinionAAbility } from '../champions/minion-a';
 import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, isEligibleForRandomPool } from '../cards/generation';
 import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
@@ -1379,7 +1381,7 @@ function applyRandomCardCreation(
 
   const target = effect.target;
   if (!target || target.selection !== 'RANDOM') return state;
-  const isMinionA = effect.action === 'GENERATE' && sourceCard.definitionId === `champion-${MINION_A_ID}`;
+  const isMinionA = effect.action === 'GENERATE' && sourceCard.definitionId === `champion-${MINION_A_ID}` && isMinionAAbility(state,{type:'USE_CHAMPION_ABILITY',playerId});
   const definitions = getRandomCardGenerationCandidates(
     isMinionA ? state.minionACardPool ?? [] : state.cardPool ?? definitionsFromState(state),
     {
@@ -1422,25 +1424,11 @@ function applyRandomCardCreation(
         generated.card,
         effect.values?.destination === 'DECK' ? 'DECK' : 'HAND',
       );
-      const overflow = isMinionA && nextState.players.find(p => p.id === playerId)!.hand.length >= MAX_HAND_SIZE;
-      const created:GameState={
-        ...nextState,
-        players: nextState.players.map((player) => player.id === playerId
-          ? effect.values?.destination === 'DECK'
-            ? effect.values.deckPosition === 'TOP'
-              ? { ...player, deck: [generatedCard, ...player.deck] }
-              : { ...player, deck: [...player.deck, generatedCard] }
-            : overflow ? { ...player, removedFromGame: [...player.removedFromGame, generatedCard] }
-              : { ...player, hand: [...player.hand, generatedCard] }
-          : player),
-        events: [...nextState.events, generated.event, ...(overflow ? [{ type: 'CARD_REMOVED' as const, playerId, cardInstanceId: generatedCard.instanceId, source: { type: 'SYSTEM' as const }, target: { type: 'CARD' as const, cardInstanceId: generatedCard.instanceId }, reason: 'OVERDRAW' }] : [])],
-      };
-      if (effect.values?.destination === 'DECK' || overflow) return created;
-      const added = resolveHandAdditionListeners(created, playerId, [generatedCard]);
-      return (effect.values?.generatedKeywords ?? []).reduce((next, keyword) => applyEffect(next, playerId, sourceCard, {
-        type: 'STRUCTURED', action: 'ADD_KEYWORD',
-        target: { zone: 'HAND', owner: 'SELF', selection: 'SAME_TARGET', count: 1 }, values: { keyword },
-      }, [generatedCard.instanceId]), added);
+      const created: GameState = { ...nextState, events: [...nextState.events, generated.event] };
+      if (effect.values?.destination === 'DECK') return { ...created, players: created.players.map(player => player.id !== playerId ? player : {
+        ...player, deck: effect.values?.deckPosition === 'TOP' ? [generatedCard,...player.deck] : [...player.deck,generatedCard],
+      }) };
+      return addCardsToHand(created,playerId,[{card:{...generatedCard, keywords:[...new Set([...generatedCard.keywords,...(effect.values?.generatedKeywords??[])])]}}]);
     }
     const owner = nextState.players.find((player) => player.id === playerId);
     const slot = towerOpenSlot(nextState, playerId);
@@ -1749,6 +1737,7 @@ export function resolveStateBasedDeaths(
 export function resolvePendingEffects(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.handAddition) { const resumed=resumeHandAddition(state); return resumed.targetingState?.handAddition ? resumed : resolvePendingEffects(resumed); }
   if (pending.fusion) return resumeFusion(state);
   if (pending.scriptContinuation?.autoResume) {
     const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
@@ -1815,9 +1804,11 @@ export function resolvePendingEffects(state: GameState): GameState {
       pending.triggerContext,
     );
     // Forced fusion owns its serialized continuation until every material finishes.
+    if (next.targetingState?.handAddition) return next;
     if (effect.type === 'STRUCTURED' && effect.action === 'FUSION' && effect.values?.fusionIntoSource) return next;
     lastAggregatedStats = next.lastAggregatedStats ?? next.targetingState?.lastAggregatedStats ?? lastAggregatedStats;
     if (next.targetingState?.continuation &&
+      (next.targetingState.effects!==pending.effects || next.targetingState.sourceInstanceId!==pending.sourceInstanceId) &&
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
       (next.targetingState.continuation.effectIndex > pending.effectIndex ||
         next.targetingState.continuation.scriptContinuation?.autoResume)) return next;
@@ -1868,6 +1859,7 @@ function applyTagChange(state: GameState, playerId: string, source: CardInstance
 export function selectEffectTarget(state: GameState, targetId: string): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.handAddition) { const selected=selectHandDiscard(state,targetId); return selected===state ? state : resolvePendingEffects(selected); }
   if (pending.fusion?.stage === "CHOOSE") {
     if (!fusionTargets(state, pending.playerId, pending.sourceInstanceId).includes(targetId)) return state;
     return commitFusion(state, pending.playerId, pending.sourceInstanceId, targetId, pending.continuation);
@@ -1929,7 +1921,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
-  if (pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
+  if (pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
   if (hasCommittedFusion(pending) && !pending.cancelable) return state;
   if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
@@ -2049,6 +2041,18 @@ function applyEffectInternal(
     return applyScript(state, playerId, sourceCard, effect.script);
   }
   if (effect.type === 'STRUCTURED') {
+    if (effect.action === 'REPLACE_CHAMPION_ABILITY') {
+      const config=effect.values?.abilityReplacement,owner=state.players.find(p=>p.id===playerId);
+      if(!owner?.champion || !validAbilityReplacement(config))return state;
+      const replacement='variant' in config ? (config.variant==='UPGRADED'?owner.champion.upgradedAbility:owner.champion.ability) : {
+        ...config.ability, effects:config.ability.effects.map(e=>({type:'STRUCTURED' as const,action:e.action,target:e.target,values:e.values,conditions:e.conditions} as Extract<CardEffect,{type:'STRUCTURED'}>)),
+      };
+      if(!replacement)return state;
+      return {...state,players:state.players.map(p=>p.id!==playerId?p:{...p,champion:{...p.champion!,
+        abilityOverride:structuredClone(replacement),
+        abilityOverrideExpiresAtTurn:effect.values?.duration==='THIS_TURN'?state.turn:effect.values?.duration==='UNTIL_NEXT_TURN'?state.turn+1:undefined,
+      }}),events:[...state.events,{type:'CHAMPION_ABILITY_CHANGED',playerId,championId:owner.champion.id,source:{type:'CARD',cardInstanceId:sourceCard.instanceId},target:{type:'CHAMPION',championId:owner.champion.id},reason:replacement.name,amount:replacement.cost??owner.champion.abilityCost}]};
+    }
     // A single choice branches on the selected character; reuse normal damage
     // resolution so armor, defense, deaths and damage attribution stay shared.
     if (effect.action === 'DAMAGE' && effect.values?.purpleRainFollowup && chosenTargetInstanceIds?.length === 1) {
@@ -2263,11 +2267,11 @@ function applyEffectInternal(
               ? effect.values?.deckPosition === 'TOP'
                 ? { ...player, deck: [...generatedCards.map(({ card }) => card), ...player.deck] }
                 : { ...player, deck: [...player.deck, ...generatedCards.map(({ card }) => card)] }
-              : { ...player, hand: [...player.hand, ...generatedCards.map(({ card }) => card)] }
+              : player
             : player),
           events: [...state.events, ...generatedCards.map(({ event }) => event)],
         }, generatedCards.map(({ card }) => card.instanceId));
-        return effect.values?.destination==='DECK' ? created : resolveHandAdditionListeners(created,playerId,generatedCards.map(({card})=>card));
+        return effect.values?.destination==='DECK' ? created : addCardsToHand(created,playerId,generatedCards.map(({card})=>({card})));
       }
        let summonState = setLastTargetIds(clearLastAggregatedStats(state), []);
        const summonedIds: string[] = [];
@@ -2431,10 +2435,21 @@ function applyEffectInternal(
       return drawCard({...state,players:state.players.map(player=>player.id!==playerId?player:{...player,deck:[card,...player.deck.filter(other=>other.instanceId!==card.instanceId)]})},playerId);
     }
     if (effect.action === 'DRAW') {
-      return Array.from({ length: amount }).reduce<GameState>(
-        (nextState) => nextState.status === 'FINISHED' ? nextState : drawCard(nextState, playerId),
-        state,
-      );
+      let next=state;
+      for(let i=0;i<amount;i++){
+        if(next.status==='FINISHED')break;
+        const parent=next.targetingState;
+        next=drawCard(next,playerId);
+        if(next.targetingState?.active && next.targetingState!==parent && next.targetingState.validTargetIds.length){
+          if(i+1<amount){
+            const resume:NonNullable<GameState['targetingState']>={active:true,playerId,sourceCard,sourceInstanceId:sourceCard.instanceId,effects:[{type:'STRUCTURED',action:'DRAW',values:{amount:amount-i-1}}],effectIndex:0,selectedTargetIds:[],lastTargetIds:[],validTargetIds:[],minTargets:0,maxTargets:0,mandatory:true,cancelable:false,continuation:parent};
+            const attach=(frame:NonNullable<GameState['targetingState']>):NonNullable<GameState['targetingState']> => parent && frame.sourceInstanceId===parent.sourceInstanceId && frame.effects===parent.effects ? resume : {...frame,continuation:frame.continuation?attach(frame.continuation):resume};
+            next={...next,targetingState:attach(next.targetingState)};
+          }
+          return next;
+        }
+      }
+      return next;
     }
     if (effect.action === 'RELEASE_CAPTURED') {
       const owner = state.players.find((player) => player.id === playerId);
@@ -2919,14 +2934,12 @@ function applyEffectInternal(
             : player.board,
           deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
-            hand: [...player.hand, ...moved.map((card) => normalizeCardForZone({
-              ...resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
-              ...temporaryCost,
-            }, 'HAND'))],
+          hand: player.hand,
         }),
       };
-      const withArrivals=zones.includes('DECK') ? returned : resolveHandAdditionListeners(returned,targetOwner,moved);
-      return zones.includes('BOARD') ? moved.reduce((next,card)=>resolveTriggeredAbilities(next,targetOwner,card,'SELF_RETURNED_TO_HAND',{sourceContext:sourceContextFor(playerId,sourceCard,triggerContext)}),withArrivals) : withArrivals;
+      return addCardsToHand(returned,targetOwner,moved.map(card=>({card:normalizeCardForZone({
+        ...resetCardAfterLeavingBoard(card,state.cardPool?.find(d=>d.id===card.definitionId)),...temporaryCost,
+      },'HAND'), returnedFromBoard:zones.includes('BOARD'),notifyListeners:!zones.includes('DECK')})));
     }
     if (effect.action === 'MOVE_TO_DECK') {
       const moved = [
@@ -2971,7 +2984,7 @@ function applyEffectInternal(
       const destinationPlayer = state.players.find((player) => player.id === playerId);
       if (!sourcePlayer || !destinationPlayer) return state;
        const stolen = cardsInZones(sourcePlayer, zones).filter((card) => ids.has(card.instanceId));
-      if (!stolen.length || destinationPlayer.hand.length >= 7) return state;
+      if (!stolen.length) return state;
       const taken:GameState={
         ...state,
         players: state.players.map((player) => player.id === targetOwner
@@ -2984,14 +2997,9 @@ function applyEffectInternal(
                ? player.board.map((card) => card && ids.has(card.instanceId) ? null : card) as typeof player.board
                : player.board,
            }
-          : player.id === playerId
-              ? { ...player, hand: [...player.hand, ...stolen.map((card) => normalizeCardForZone(
-                resetCardAfterLeavingBoard(card),
-                'HAND',
-              ))] }
-            : player),
+          : player),
       };
-      return resolveHandAdditionListeners(taken,playerId,stolen);
+      return addCardsToHand(taken,playerId,stolen.map(card=>({card:normalizeCardForZone(resetCardAfterLeavingBoard(card),'HAND')})));
     }
     if (effect.action === 'RETIRE') {
       return targets.reduce((nextState, targetCard) => {
@@ -3280,13 +3288,21 @@ function applyEffectInternal(
           const exactZero = health === 0 ? resolveTriggeredAbilities(afterSelfDamaged, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
             damagedTargetInstanceId: current.instanceId, healthBefore: preparedCurrent.currentHealth, healthAfter: health,
           }) : afterSelfDamaged;
-          return resolveRegisteredRuleListeners(clearDamageMarker(exactZero), 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+          return resolveRegisteredRuleListeners(
+            clearDamageMarker(exactZero), 'DAMAGE_TAKEN', targetOwner,
+            current.instanceId, current.cardType, preparedState.events.length,
+          );
         }
         const beforeRetire = resolveTriggeredAbilities(afterSelfDamaged, targetOwner, liveCurrent, 'BEFORE_RETIRE', {sourceContext: attribution,causalSourceInstanceId:sourceCard.instanceId});
         const protectedState = beforeRetire !== afterSelfDamaged && beforeRetire.targetingState?.active
           ? resolvePendingEffects(beforeRetire)
           : beforeRetire;
-        if(!protectedState.players.find(p=>p.id===targetOwner)?.board.some(card=>card?.instanceId===current.instanceId))return clearDamageMarker(protectedState);
+        if (!protectedState.players.find(p => p.id === targetOwner)?.board.some(card => card?.instanceId === current.instanceId)) {
+          return resolveRegisteredRuleListeners(
+            clearDamageMarker(protectedState), 'DAMAGE_TAKEN', targetOwner,
+            current.instanceId, current.cardType, preparedState.events.length,
+          );
+        }
         if (protectedState.preventedRetireTargetIds?.includes(current.instanceId)) {
           return resolveRegisteredRuleListeners({
             ...protectedState,
@@ -3339,8 +3355,14 @@ function applyEffectInternal(
           attack: current.currentAttack,
           health: Math.max(0, current.currentHealth),
         });
-        const continuation = resumed.targetingState ?? state.targetingState;
-        return continuation ? resolvePendingEffects({ ...resumed, targetingState: continuation }) : resumed;
+        // Lethal damage is still damage: retirement must not skip global observers.
+        // Pin the original event, since leave effects may deal additional damage.
+        const observed = resolveRegisteredRuleListeners(
+          resumed, 'DAMAGE_TAKEN', targetOwner,
+          current.instanceId, current.cardType, preparedState.events.length,
+        );
+        const continuation = observed.targetingState ?? state.targetingState;
+        return continuation ? resolvePendingEffects({ ...observed, targetingState: continuation }) : observed;
       }, state);
     }
     if (effect.action === 'SILENCE') {

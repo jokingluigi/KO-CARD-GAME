@@ -713,7 +713,9 @@ test("무작위와 완전히 무작위를 서로 다른 Random Scope로 분석�
 test("현재 registry에서 제공하는 Effect Library 메타데이터를 노출한다", () => {
   const library = effectLibrary();
   assert.ok(library.actions.length >= 19);
-  assert.deepEqual(library.actions.find((action) => action.name === "DAMAGE")?.requiredConfig, { target: true, values: { amount: "number (0..999)" } });
+  assert.equal(library.actions.find((action) => action.name === "DAMAGE")?.requiredConfig.target, true);
+  assert.equal(library.actions.find((action) => action.name === "DAMAGE")?.requiredConfig.values?.amount, "number (0..999)");
+  assert.match(library.actions.find((action) => action.name === "REPLACE_CHAMPION_ABILITY")?.requiredConfig.values?.abilityReplacement ?? "", /UPGRADED/);
   assert.ok(library.triggers.every((trigger) => trigger.status === "ACTIVE"));
   assert.ok(library.targetResolvers.length > 0);
   assert.ok(library.valueResolvers.length > 0);

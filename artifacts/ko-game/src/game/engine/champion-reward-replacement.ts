@@ -1,3 +1,4 @@
+import { addCardsToHand } from './hand-addition';
 import type { CardInstance } from '../cards/types';
 import { normalizeCardForZone, resetCardAfterLeavingBoard } from '../cards/zone-state';
 import type { GameState } from '../types/game-state';
@@ -11,9 +12,7 @@ export function awaitChampionRewardSpace(state: GameState, playerId: string, cha
   const owner = state.players.find(p => p.id === playerId)!;
   const validTargetIds = owner.board.flatMap(c => c && canEnterTowerField({ ...state, players: state.players.map(p => p.id !== playerId ? p : { ...p, board: p.board.map(card => card?.instanceId === c.instanceId ? null : card) as typeof p.board }) }, playerId) ? [c.instanceId] : []);
   // A tower relic can prohibit all entries this turn independently of field space.
-  if (!validTargetIds.length) {const returned:GameState={ ...state, players: state.players.map(p => p.id !== playerId ? p : p.hand.length < MAX_HAND_SIZE
-    ? { ...p, hand: [...p.hand, normalizeCardForZone(token, 'HAND')] }
-    : { ...p, deck: [normalizeCardForZone(token, 'DECK'), ...p.deck] }) };return owner.hand.length<MAX_HAND_SIZE ? resolveHandAdditionListeners(returned,playerId,[token]) : returned;}
+  if (!validTargetIds.length) return addCardsToHand(state,playerId,[{card:normalizeCardForZone(token,'HAND')}]);
   return { ...state, targetingState: {
     active: true, phase: 'POST_COMMIT', playerId, sourceInstanceId: token.instanceId, sourceCard: token,
     effects: [], effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
@@ -29,31 +28,18 @@ export function selectChampionRewardReplacement(state: GameState, targetId: stri
   const owner = state.players.find(p => p.id === pending.playerId);
   const card = owner?.board.find(c => c?.instanceId === targetId);
   if (!owner || !card || card.boardSlot === null || owner.champion?.id !== reward.championId) return state;
-  const destination = owner.hand.length < MAX_HAND_SIZE ? 'HAND' : 'DECK';
-  const returned = normalizeCardForZone(resetCardAfterLeavingBoard(card, state.cardPool?.find(d => d.id === card.definitionId)), destination);
-  const next: GameState = { ...state, targetingState: pending.continuation,
-    players: state.players.map(p => p.id !== owner.id ? p : { ...p,
-      ...(reward.token.awakening && p.champion?.awakening ? { champion: { ...p.champion, awakening: {
-        ...p.champion.awakening, activeStageInstanceId: reward.token.instanceId, pendingStage: false, championInvulnerable: true,
-      } } } : {}),
-      board: p.board.map(c => c?.instanceId === targetId ? null : c) as typeof p.board,
-      hand: destination === 'HAND' ? [...p.hand, returned] : p.hand,
-      deck: destination === 'DECK' ? [returned, ...p.deck] : p.deck,
-    }),
-    events: [...state.events, { type: 'CARD_REMOVED', playerId: owner.id, cardInstanceId: targetId, cardType: card.cardType,
-      boardSlot: card.boardSlot, source: { type: 'CHAMPION', championId: reward.championId },
-      target: { type: 'CARD', cardInstanceId: targetId }, reason: 'CHAMPION_REWARD_RETURN_' + destination }],
+  const returned = normalizeCardForZone(resetCardAfterLeavingBoard(card,state.cardPool?.find(d=>d.id===card.definitionId)),'HAND');
+  const next:GameState={...state,targetingState:pending.continuation,
+    players:state.players.map(p=>p.id!==owner.id?p:{...p,board:p.board.map(c=>c?.instanceId===targetId?null:c) as typeof p.board}),
+    events:[...state.events,{type:'CARD_REMOVED',playerId:owner.id,cardInstanceId:targetId,cardType:card.cardType,boardSlot:card.boardSlot,source:{type:'CHAMPION',championId:reward.championId},target:{type:'CARD',cardInstanceId:targetId},reason:'CHAMPION_REWARD_RETURN_HAND'}],
   };
-  // Place the reserved reward before hand-addition effects run awakening checkpoints.
-  // Otherwise a checkpoint treats the not-yet-placed stage as gone and fills its slot.
-  const entered = enterField(next, owner.id, reward.token, card.boardSlot,
-    { type: 'CHAMPION', championId: reward.championId }, undefined, 'CHAMPION_DEPLOY');
-  return destination === 'HAND' ? resolveHandAdditionListeners(entered, owner.id, [returned]) : entered;
+  return addCardsToHand(next,owner.id,[{card:returned,returnedFromBoard:true}],{playerId:owner.id,token:reward.token,championId:reward.championId,boardSlot:card.boardSlot});
+
 }
 
 export function findAwakeningRewardFrame(frame: GameState['targetingState'], sequenceId: string, stage: string): GameState['targetingState'] {
   for (let current = frame; current; current = current.continuation) {
-    const card = current.championRewardReplacement?.token;
+    const card = current.championRewardReplacement?.token ?? current.handAddition?.completion?.token;
     if (card?.awakening?.sequenceId === sequenceId && card.awakening.stage === stage) return current;
   }
   return undefined;

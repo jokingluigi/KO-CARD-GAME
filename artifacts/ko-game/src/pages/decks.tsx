@@ -1313,9 +1313,9 @@ export default function Decks() {
               </p>
               {selectedChampion.hasQuest && (
                 <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3 text-sm">
-                  <p className="font-black text-emerald-300">퀘스트 · {selectedChampion.questName}</p>
+                  <p className="font-black text-emerald-300">피니셔 준비 · {selectedChampion.questName}</p>
                   <p className="whitespace-pre-wrap text-neutral-300">{selectedChampion.questText}</p>
-                  {selectedChampion.questRewardText && <p className="whitespace-pre-wrap text-amber-200">보상 · {selectedChampion.questRewardText}</p>}
+                  {selectedChampion.questRewardText && <p className="whitespace-pre-wrap text-amber-200">피니셔 획득 / 현재 완료 효과 · {selectedChampion.questRewardText}</p>}
                   {selectedChampion.upgradedAbilityText && <p className="whitespace-pre-wrap text-sky-200">강화 능력 · {selectedChampion.upgradedAbilityText}</p>}
                 </div>
               )}

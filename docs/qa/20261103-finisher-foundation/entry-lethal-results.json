@@ -1,0 +1,24 @@
+[
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "attackBefore": 1,
+    "attackAfter": 2,
+    "victimRetiredExactlyOnce": true,
+    "realControlInput": true,
+    "networkMatch": false
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "attackBefore": 1,
+    "attackAfter": 2,
+    "victimRetiredExactlyOnce": true,
+    "realControlInput": true,
+    "networkMatch": false
+  }
+]

@@ -130,15 +130,16 @@ test('KO mechanisms: REVIVE moves the existing graveyard instance, restores heal
   assert.equal(reviveEvent?.entryCause, 'REVIVE');
 });
 
-test('KO mechanisms: prepare occurs before deterministic overdraw removal', () => {
+test('KO mechanisms: overdraw reveals then removes without prepare', () => {
   const drawn = card('drawn', { abilities: [{ trigger: 'CARD_DRAWN', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }] });
   const s = state();
   const result = drawCard({ ...s, players: s.players.map((p) => p.id === 'player-1' ? { ...p, hand: Array.from({ length: 7 }, (_, i) => card(`h${i}`)), deck: [drawn] } : p) }, 'player-1');
-  assert.equal(player(result).currentGold, 1);
+  assert.equal(player(result).currentGold, 0);
   assert.equal(player(result).removedFromGame[0].instanceId, 'drawn');
   const types = result.events.map((e) => e.type);
-  assert.ok(types.indexOf('CARD_DRAWN') < types.indexOf('GOLD_CHANGED'));
-  assert.ok(types.indexOf('GOLD_CHANGED') < types.indexOf('CARD_REMOVED'));
+  assert.ok(types.indexOf('CARD_REVEALED') < types.indexOf('CARD_REMOVED'));
+  assert.equal(types.includes('CARD_DRAWN'),true);
+  assert.equal(types.includes('GOLD_CHANGED'),false);
 });
 
 test('KO mechanisms: SUMMON/GENERATE require serializable definitions and switch selects current side', () => {

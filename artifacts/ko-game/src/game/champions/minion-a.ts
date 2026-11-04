@@ -1,3 +1,4 @@
+import { currentChampionAbility } from './types';
 import { ACTIONS, TRIGGERS, KEYWORDS, isEffectScript } from '@workspace/effect-registry';
 import type { CardDefinition } from '../cards/types';
 import type { PublishedCardRecord } from '../cards/published-cards';
@@ -35,7 +36,7 @@ export function minionACatalog(records: readonly unknown[]): CardDefinition[] {
   return [...definitions.values()].sort((a,b) => a.id.localeCompare(b.id));
 }
 export function isMinionAAbility(state: import('../types/game-state').GameState, action: import('../actions/types').GameAction): boolean {
-  return action.type === 'USE_CHAMPION_ABILITY' && state.players.some(p => p.id === action.playerId && p.champion?.id === MINION_A_ID);
+  return action.type === 'USE_CHAMPION_ABILITY' && state.players.some(p => p.id === action.playerId && p.champion?.id === MINION_A_ID && currentChampionAbility(p.champion)?.id===p.champion.ability.id);
 }
 
 /** The administrator catalog only: deleted content must not reappear as a fallback. */

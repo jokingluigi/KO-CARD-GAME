@@ -9,6 +9,10 @@ const VISIBLE_EVENT_TYPES = new Set<GameEvent["type"]>([
   "TURN_STARTED",
   "TURN_ENDED",
   "CARD_DRAWN",
+  "CARD_REVEALED",
+  "CARD_ADDED_TO_HAND",
+  "CARD_DISCARDED",
+  "CHAMPION_ABILITY_CHANGED",
   "CHAMPION_GAME_START_ABILITY",
   "CHAMPION_QUEST_PROGRESS",
   "CARD_PLAYED",
@@ -120,6 +124,10 @@ export function eventTitle(
       return "턴 시작";
     case "TURN_ENDED":
       return "턴 종료";
+    case "CARD_ADDED_TO_HAND": return "카드를 손패에 추가";
+    case "CARD_DISCARDED": return "손패 카드 버리기 · 묘지로 이동";
+    case "CARD_REVEALED": return event.reason==="OVERDRAW" ? "손패 초과 · 공개 후 제외" : "카드 공개";
+    case "CHAMPION_ABILITY_CHANGED": return `고유 능력 변경 · ${event.reason??""} (비용 ${event.amount??0})`;
     case "CARD_DRAWN":
       return event.playerId === viewerPlayerId
         ? `${visibleName(event.cardInstanceId)} 드로우`
@@ -127,7 +135,7 @@ export function eventTitle(
     case "CHAMPION_GAME_START_ABILITY":
       return "챔피언 게임 시작 능력";
     case "CHAMPION_QUEST_PROGRESS":
-      return `챔피언 퀘스트 진행 +${event.amount ?? 1}`;
+      return `피니셔 준비 진행 +${event.amount ?? 1}`;
     case "CARD_PLAYED":
       return `${visibleName(event.cardInstanceId)} 플레이`;
     case "ENTER_FIELD":
@@ -193,10 +201,10 @@ export function eventTitle(
       const champion = state.players.find(
         (player) => player.id === event.playerId,
       )?.champion;
-      return `${champion?.name ?? "챔피언"} 퀘스트 완료${champion?.quest?.rewardText ? ` · ${champion.quest.rewardText}` : ""}`;
+      return `${champion?.name ?? "챔피언"} 피니셔 준비 완료${champion?.quest?.rewardText ? ` · ${champion.quest.rewardText}` : ""}`;
     }
     case "GOLD_CHANGED":
-      return `${event.reason === "CHAMPION_QUEST_REWARD" ? "퀘스트 보상 " : ""}골드 ${event.amount && event.amount > 0 ? "+" : ""}${event.amount ?? 0}`;
+      return `${event.reason === "CHAMPION_QUEST_REWARD" ? "현재 완료 보상 " : ""}골드 ${event.amount && event.amount > 0 ? "+" : ""}${event.amount ?? 0}`;
     case "CHAMPION_ABILITY_USED":
       return "챔피언 고유 능력 사용";
     case "ATTACK_DECLARED": {

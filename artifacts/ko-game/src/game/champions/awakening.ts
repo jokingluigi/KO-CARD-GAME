@@ -157,8 +157,8 @@ export function reconcileAwakeningSequences(state: GameState): GameState {
       const slot = towerOpenSlot(next, p.id);
       if (slot < 0 && (!p.board.every(Boolean) || !canEnterTowerField({ ...next, players: next.players.map(candidate => candidate.id !== p.id ? candidate : { ...candidate, board: [null, ...candidate.board.slice(1)] as typeof candidate.board }) }, p.id))) break;
       const rewardFrame = findAwakeningRewardFrame(next.targetingState, sequence.sequenceId, sequence.stage);
-      const pendingCard = rewardFrame?.championRewardReplacement?.token;
-      if (slot < 0 && pendingCard) break;
+      const pendingCard = rewardFrame?.championRewardReplacement?.token ?? rewardFrame?.handAddition?.completion?.token;
+      if (rewardFrame?.handAddition?.completion || (slot < 0 && pendingCard)) break;
       p = next.players.find((candidate) => candidate.id === original.id)!;
       const definition = next.cardPool?.find(
         (d) => d.id === config.stageCardIds[sequence!.stage as AwakeningStage],

@@ -1,3 +1,5 @@
+import { isMinionAAbility } from '../champions/minion-a';
+import { currentChampionAbility } from '../champions/types';
 import {presentationHealingAfter} from "./presentation-health";
 import { TOWER_VANILLA_CHAMPION_ID } from '../champions/tower-vanilla';
 import { MINION_A_ID } from '../champions/minion-a';
@@ -87,9 +89,7 @@ function currentAbility(
     (player) => player.id === playerId,
   )?.champion;
   if (!champion) return null;
-  return champion.questCompleted && champion.upgradedAbility
-    ? champion.upgradedAbility
-    : champion.ability;
+  return currentChampionAbility(champion);
 }
 
 function currentAbilityCost(state: GameState, playerId: string): number | null {
@@ -110,7 +110,7 @@ export function canUseChampionAbility(
       state.activePlayerId === playerId &&
       player?.champion &&
       player.champion.id !== TOWER_VANILLA_CHAMPION_ID &&
-      (player.champion.id !== MINION_A_ID || Boolean(state.minionACardPool?.length)) &&
+      (!isMinionAAbility(state,{type:'USE_CHAMPION_ABILITY',playerId}) || Boolean(state.minionACardPool?.length)) &&
       !player.championAbilityUsedThisTurn &&
       cost !== null &&
       player.currentGold >= cost,
@@ -142,7 +142,7 @@ export function useChampionAbility(
       '사용할 수 있는 챔피언 능력이 없습니다.',
     );
   }
-  if (player.champion.id === MINION_A_ID && !state.minionACardPool?.length) return actionFailure(state, 'CHAMPION_ABILITY_UNAVAILABLE', '전체 카드 후보 목록이 없습니다.');
+  if (isMinionAAbility(state,{type:'USE_CHAMPION_ABILITY',playerId}) && !state.minionACardPool?.length) return actionFailure(state, 'CHAMPION_ABILITY_UNAVAILABLE', '전체 카드 후보 목록이 없습니다.');
   const abilityCost = ability.cost ?? player.champion.abilityCost;
   if (player.championAbilityUsedThisTurn) {
     return actionFailure(

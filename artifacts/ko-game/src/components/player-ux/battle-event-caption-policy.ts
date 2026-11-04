@@ -69,7 +69,7 @@ export function battleEventCaption(
     return who === "내" ? "내 턴 시작" : "상대 턴 시작";
   if (important.type === "CHAMPION_QUEST_PROGRESS") {
     const champion = after.players.find((p) => p.id === owner)?.champion;
-    return `${who ?? ""} 챔피언 퀘스트 ${champion?.questProgress ?? ""}${champion?.quest?.requiredProgress ? `/${champion.quest.requiredProgress}` : ""}`.trim();
+    return `${who ?? ""} 피니셔 준비 ${champion?.questProgress ?? ""}${champion?.quest?.requiredProgress ? `/${champion.quest.requiredProgress}` : ""}`.trim();
   }
   return `${who ? who + " · " : ""}${eventTitle(after, important, after.players[0].id)}`;
 }

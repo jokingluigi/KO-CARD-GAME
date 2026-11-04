@@ -1,4 +1,4 @@
-/** Start effects finish before opening hands; interactive selection cannot suspend this phase. */
+/** Authored start effects have no target picker; generic hand-capacity decisions may suspend them. */
 export function isAutomaticChampionStartConfig(value: unknown): boolean {
   if (value == null) return true;
   if (typeof value !== 'object' || Array.isArray(value)) return false;

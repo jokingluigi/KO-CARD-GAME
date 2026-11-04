@@ -199,7 +199,7 @@ router.get("/shop/decks", async (req, res) => {
   const [cards, recommended] = await Promise.all([
     ids.length
       ? db.select().from(cardsTable).where(inArray(cardsTable.id, ids))
-      : [],
+      : ([] as Array<typeof cardsTable.$inferSelect>),
     cids.length
       ? db
           .select({

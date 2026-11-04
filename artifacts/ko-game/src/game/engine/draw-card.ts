@@ -67,9 +67,18 @@ export function drawCard(state: GameState, playerId: string): GameState {
   }
 
   const [drawnCard, ...remainingDeck] = drawingPlayer.deck;
-  // CARD_DRAWN is deliberately resolved while the card is temporarily in hand,
-  // including an overdraw. This gives prepare effects a deterministic window
-  // before the normal remove-from-game consequence.
+  if (drawingPlayer.hand.length >= MAX_HAND_SIZE) return {
+    ...state,
+    players: state.players.map(player => player.id !== playerId ? player : {
+      ...player, deck: remainingDeck, removedFromGame: [...player.removedFromGame, drawnCard],
+    }),
+    events: [...state.events,
+      { type: 'CARD_DRAWN', playerId, cardInstanceId: drawnCard.instanceId, cardDefinitionId: drawnCard.definitionId, source: {type:'SYSTEM'}, reason: 'OVERDRAW' },
+      { type: 'CARD_REVEALED', playerId, cardInstanceId: drawnCard.instanceId, cardDefinitionId: drawnCard.definitionId, reason: 'OVERDRAW' },
+      { type: 'CARD_REMOVED', playerId, cardInstanceId: drawnCard.instanceId, cardDefinitionId: drawnCard.definitionId,
+        source: {type:'SYSTEM'}, target: {type:'CARD',cardInstanceId:drawnCard.instanceId}, reason: 'OVERDRAW' },
+    ],
+  };
   const drawState: GameState = {
     ...state,
     players: state.players.map((player) =>
@@ -85,16 +94,5 @@ export function drawCard(state: GameState, playerId: string): GameState {
         target: { type: 'CARD', cardInstanceId: drawnCard.instanceId }, reason: 'DRAW' },
     ],
   };
-  const prepared = resolveTriggeredAbilities(drawState, playerId, drawnCard, 'CARD_DRAWN');
-  if (drawingPlayer.hand.length < MAX_HAND_SIZE) return prepared;
-  return {
-    ...prepared,
-    players: prepared.players.map((player) => player.id !== playerId ? player : {
-      ...player,
-      hand: player.hand.filter((card) => card.instanceId !== drawnCard.instanceId),
-      removedFromGame: [...player.removedFromGame, drawnCard],
-    }),
-    events: [...prepared.events, { type: 'CARD_REMOVED', playerId, cardInstanceId: drawnCard.instanceId,
-      source: { type: 'SYSTEM' }, target: { type: 'CARD', cardInstanceId: drawnCard.instanceId }, reason: 'OVERDRAW' }],
-  };
+  return resolveTriggeredAbilities(drawState, playerId, drawnCard, 'CARD_DRAWN');
 }

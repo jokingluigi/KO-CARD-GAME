@@ -23,7 +23,7 @@ function eventReferencesCard(event: GameEvent, cardIds: Set<string>): boolean {
 
 function isLegacyHiddenEvent(event: GameEvent, viewerId: string): boolean {
   return event.playerId !== viewerId &&
-    (event.type === "CARD_DRAWN" || event.type === "CARD_GENERATED");
+    (event.type === "CARD_DRAWN" || event.type === "CARD_GENERATED" || event.type === "CARD_ADDED_TO_HAND");
 }
 
 function sanitizeEvent(
@@ -66,8 +66,10 @@ function sanitizeEvent(
 function sanitizeTargetingState(
   targetingState: NonNullable<GameState["targetingState"]>,
   hiddenCardIds: Set<string>,
+  viewerId: string,
 ): NonNullable<GameState["targetingState"]> {
   const safe = { ...targetingState };
+  if(safe.handAddition?.playerId!==viewerId)delete safe.handAddition;
   // Undo snapshots are authoritative server state, including hidden zones.
   delete safe.playRollback;
   safe.validTargetIds = targetingState.validTargetIds.filter((id) => !hiddenCardIds.has(id));
@@ -88,7 +90,7 @@ function sanitizeTargetingState(
     };
   }
   if (safe.continuation) {
-    safe.continuation = sanitizeTargetingState(safe.continuation, hiddenCardIds);
+    safe.continuation = sanitizeTargetingState(safe.continuation, hiddenCardIds, viewerId);
   }
   return safe;
 }
@@ -100,6 +102,8 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     championQuestEventCursorByPlayer: _questEventCursors,
     championQuestProcessedEventIdentitiesByPlayer: _processedQuestEventIdentities,
     pendingCountdownTurnStart: _countdownTurnStartQueue,
+    pendingOpening: _openingQueue,
+    pendingNextTurnStart: _nextTurnQueue,
     ...publicState
   } = withoutUsageObservation;
   const hiddenCardIds = new Set(
@@ -114,10 +118,11 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     return { ...opponent, hand: hiddenCardCount(opponentHand), deck: hiddenCardCount(opponentDeck) };
   });
   const targetingState = state.targetingState?.playerId === viewerId
-    ? sanitizeTargetingState(state.targetingState, hiddenCardIds)
+    ? sanitizeTargetingState(state.targetingState, hiddenCardIds, viewerId)
     : undefined;
   return {
     ...publicState,
+    waitingForHandDiscardPlayerId: state.targetingState?.handAddition ? state.targetingState.playerId : undefined,
     players,
     pendingCardEffects: (state.pendingCardEffects ?? []).filter(
       (pending) => !hiddenCardIds.has(pending.sourceInstanceId),

@@ -69,6 +69,7 @@ test('손패가 7장일 때 드로우한 카드는 removedFromGame으로 이동�
     type: 'CARD_REMOVED',
     playerId: 'player-1',
     cardInstanceId: 'card-7',
+    cardDefinitionId: 'definition-7',
     source: { type: 'SYSTEM' },
     target: { type: 'CARD', cardInstanceId: 'card-7' },
     reason: 'OVERDRAW',
@@ -84,7 +85,7 @@ test('손패가 7장일 때 드로우한 카드는 removedFromGame으로 이동�
   );
 });
 
-test('오버드로우 카드의 준비(CARD_DRAWN)는 제거 전에 처리된다', () => {
+test('오버드로우는 손패 진입과 준비(CARD_DRAWN)를 발동하지 않는다', () => {
   const initial = withPlayerOneCards(7, 1);
   const prepared = {
     ...initial,
@@ -95,10 +96,11 @@ test('오버드로우 카드의 준비(CARD_DRAWN)는 제거 전에 처리된다
   };
   const result = drawCard(prepared, 'player-1');
   const player = playerOne(result);
-  assert.equal(player.currentGold, 2);
+  assert.equal(player.currentGold, 0);
   assert.equal(player.hand.length, 7);
   assert.equal(player.removedFromGame[0].instanceId, 'card-7');
-  assert.equal(result.events.some((event) => event.type === 'CARD_DRAWN'), true);
+  assert.equal(result.events.some((event) => event.type === 'CARD_DRAWN' && event.reason==='OVERDRAW'), true);
+  assert.equal(result.events.some((event) => event.type === 'CARD_REVEALED'), true);
 });
 
 test('오버드로우된 카드는 묘지에 들어가지 않는다', () => {

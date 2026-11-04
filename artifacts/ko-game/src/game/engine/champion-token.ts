@@ -1,3 +1,4 @@
+import { addCardsToHand } from './hand-addition';
 import { awaitChampionRewardSpace } from './champion-reward-replacement';
 import { generateCard } from '../cards/generation';
 import type { CardInstance } from '../cards/types';
@@ -70,18 +71,8 @@ export function directDeployChampionToken(
   if (boardSlot < 0 && reason === 'CHAMPION_QUEST_REWARD') {
     return awaitChampionRewardSpace(generatedState, playerId, championId, directChampion);
   }
-  if (boardSlot < 0) {
-    return {
-      ...generatedState,
-      players: generatedState.players.map((candidate) => {
-        if (candidate.id !== playerId) return candidate;
-        if (candidate.hand.length < MAX_HAND_SIZE) {
-          return { ...candidate, hand: [...candidate.hand, normalizeCardForZone(directChampion, 'HAND')] };
-        }
-        return { ...candidate, deck: [normalizeCardForZone(directChampion, 'DECK'), ...candidate.deck] };
-      }),
-    };
-  }
+  if (boardSlot < 0) return addCardsToHand(generatedState,playerId,[{card:normalizeCardForZone(directChampion,'HAND')}]);
+
   return enterField(
     generatedState,
     playerId,

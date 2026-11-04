@@ -7,7 +7,7 @@ import { canUseActiveAbility, useActiveAbility } from '../engine/card-status';
 import { canUseChampionAbility, useChampionAbility } from '../engine/champion-system';
 import { playTechniqueFromHand } from '../engine/play-technique';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
-import { endTurn } from '../engine/turn-system';
+import { endTurn, resumeDeferredTurnStart, resumeDeferredOpening } from '../engine/turn-system';
 import { canMulligan, mulligan } from '../engine/mulligan';
 import { processChampionQuestEvents } from '../champions/quests';
 import { cancelEffectTargeting, selectEffectTarget } from '../effects/effect-engine';
@@ -38,7 +38,7 @@ function beginTargetedAction(state: GameState, action: Extract<GameAction, { typ
   const probe = immediateAction(probeState, action.playerId, action.action);
   if (!probe.success) return actionFailure(state, probe.errorCode, probe.message);
   const pending = probe.state.targetingState;
-  if (!pending?.active) return probe;
+  if (!pending?.active || pending.handAddition) return probe;
   if (pending.validTargetIds.length === 0) {
     return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
   }
@@ -61,8 +61,6 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
   const cached = cachedByPlayer?.get(playerId);
   if (cached) return cached;
   if (state.status !== 'IN_PROGRESS') return [];
-  if (state.openingMulligan) return canMulligan(state, playerId)
-    ? [{ type: 'MULLIGAN', playerId, cardInstanceIds: [] }] : [];
   if (state.targetingState?.active) {
     if (state.targetingState.playerId !== playerId) return [];
     const actions: GameAction[] = state.targetingState.validTargetIds.map((targetId) =>
@@ -70,11 +68,14 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
         ? { type: 'CONFIRM_PRECOMMIT_TARGET' as const, playerId, targetId }
         : { type: 'SELECT_EFFECT_TARGET' as const, playerId, targetId },
     );
-    if (!state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
+    if (!state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
     if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
     else legalActionsCache.set(state, new Map([[playerId, actions]]));
     return actions;
   }
+
+  if (state.openingMulligan) return canMulligan(state, playerId)
+    ? [{ type: 'MULLIGAN', playerId, cardInstanceIds: [] }] : [];
 
   if (state.activePlayerId !== playerId) return [];
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -132,8 +133,10 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
 }
 
 function executeActionInternal(state: GameState, action: GameAction): ActionResult {
-  if (state.openingMulligan && action.type !== 'MULLIGAN' && action.type !== 'EMOTE' && action.type !== 'SURRENDER')
+  if(state.status==='FINISHED')return actionFailure(state,'GAME_NOT_IN_PROGRESS','종료된 대전에서는 행동할 수 없습니다.');
+  if (state.openingMulligan && !(state.targetingState?.active && action.type==='SELECT_EFFECT_TARGET') && action.type !== 'MULLIGAN' && action.type !== 'EMOTE' && action.type !== 'SURRENDER')
     return actionFailure(state, 'NOT_YOUR_TURN', '두 플레이어가 시작 손패 교체를 마칠 때까지 기다려 주세요.');
+  if (state.targetingState?.handAddition && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','손패에서 버릴 카드 1장을 선택하세요.');
   if (action.type === 'BEGIN_TARGETED_ACTION') return beginTargetedAction(state, action);
   switch (action.type) {
     case 'PLAY_WRESTLER':
@@ -209,4 +212,4 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
   }
 }
 
-export function executeAction(state:GameState,action:GameAction):ActionResult{const initial=executeActionInternal(state,action);const result=initial.success&&initial.state.pendingComboAttack&&!initial.state.targetingState?.active?resumePendingComboAttack(initial.state):initial;return result.success?{...result,state:resolveConfiguredTowerEffects(state,result.state)}:result;}
+export function executeAction(state:GameState,action:GameAction):ActionResult{const initial=executeActionInternal(state,action);const result=initial.success&&initial.state.pendingComboAttack&&!initial.state.targetingState?.active?resumePendingComboAttack(initial.state):initial;return result.success?{...result,state:resolveConfiguredTowerEffects(state,resumeDeferredTurnStart(resumeDeferredOpening(result.state)))}:result;}

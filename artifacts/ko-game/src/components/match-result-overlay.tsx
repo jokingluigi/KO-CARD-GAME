@@ -291,7 +291,7 @@ export function MatchResultOverlay({
                     <b>{opponentSummary.cardsPlayed}</b>
                   </div>
                   <div className="ko-result-score-row">
-                    <span>챔피언 퀘스트</span>
+                    <span>피니셔 준비</span>
                     {[ownSummary, opponentSummary].map((summary) => (
                       <b key={summary.playerId} className="ko-result-quest">
                         {summary.questRequired === null

@@ -1,3 +1,4 @@
+import { selectEffectTarget } from '../effects/effect-engine';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -154,33 +155,13 @@ test('필드가 가득 찬 Champion Token은 손패로 보존된다', () => {
   assert.equal(result.players[0].board.every(Boolean), true);
 });
 
-test('필드와 손패가 가득 찬 Champion Token은 덱 맨 위에 보존되고 빈자리가 생기면 뽑힌다', () => {
-  const state = linkedChampionState();
-  const sourceCard = state.players[0].hand[0]!;
-  const fullHand = Array.from({ length: MAX_HAND_SIZE }, (_, index) => ({
-    ...sourceCard,
-    instanceId: `full-hand-${index}`,
-  }));
-  const fullBoard = withFullBoard(state, fullHand);
-  const stored = directDeployChampionToken(
-    fullBoard,
-    'player-1',
-    'test-linked-champion',
-    TEST_CHAMPION_TOKEN_DEFINITION.id,
-  );
-
-  const storedToken = stored.players[0].deck[0];
-  assert.equal(storedToken?.isDirectDeployedChampion, true);
-  const withHandSpace = {
-    ...stored,
-    players: stored.players.map((player) =>
-      player.id === 'player-1' ? { ...player, hand: player.hand.slice(1) } : player,
-    ),
-  };
-  const drawn = drawCard(withHandSpace, 'player-1');
-
-  assert.equal(drawn.players[0].hand.some((card) => card.isDirectDeployedChampion), true);
-  assert.equal(drawn.players[0].deck[0]?.isDirectDeployedChampion, false);
+test('필드와 손패가 가득 찬 Champion Token은 기존 손패 선택 후 버리기를 기다린다',()=>{
+ const state=linkedChampionState(),source=state.players[0].hand[0]!;
+ const fullBoard=withFullBoard(state,Array.from({length:MAX_HAND_SIZE},(_,i)=>({...source,instanceId:'full-hand-'+i})));
+ const pending=directDeployChampionToken(fullBoard,'player-1','test-linked-champion',TEST_CHAMPION_TOKEN_DEFINITION.id);
+ assert.ok(pending.targetingState?.handAddition);
+ const next=selectEffectTarget(pending,'full-hand-0');
+ assert.equal(next.players[0].hand.length,MAX_HAND_SIZE);assert.ok(next.players[0].hand.some(c=>c.isDirectDeployedChampion));assert.equal(next.players[0].graveyard[0]?.instanceId,'full-hand-0');
 });
 
 test('직접 출전 토큰은 Champion 현재 체력을 합산하지 않고 카드 기본 체력으로 전개한다', () => {

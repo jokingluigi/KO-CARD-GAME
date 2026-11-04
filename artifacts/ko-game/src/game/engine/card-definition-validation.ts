@@ -35,7 +35,15 @@ export function validateCardDefinitionReferences(state: GameState): void {
     definitionIds.add(definition.id);
   }
 
-  for (const card of allCards(state)) {
+  const pendingCards:CardInstance[]=[];
+  const occupied=new Set(allCards(state).map(c=>c.instanceId));
+  for(let frame=state.targetingState;frame;frame=frame.continuation){
+    const addition=frame.handAddition;if(!addition)continue;
+    if(addition.playerId!==frame.playerId||!state.players.some(p=>p.id===addition.playerId))throw new Error('손패 추가 대기 소유자가 올바르지 않습니다.');
+    const queued=[...addition.cards.map(a=>a.card),...(addition.completion?[addition.completion.token]:[])];
+    for(const card of queued){if(!card?.instanceId||occupied.has(card.instanceId))throw new Error('손패 추가 대기 카드가 중복되었거나 유효하지 않습니다.');occupied.add(card.instanceId);pendingCards.push(card);}
+  }
+  for (const card of [...allCards(state),...pendingCards]) {
     if (!definitionIds.has(card.definitionId)) {
       throw new Error(`저장된 매치의 CardInstance가 알 수 없는 CardDefinition을 참조합니다: ${card.definitionId}`);
     }

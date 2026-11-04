@@ -1,0 +1,47 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "realOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "twoPlayerPrivateChoice": true,
+    "confirmAndDetail": true,
+    "pendingReload": true,
+    "continuationOnce": true,
+    "spellReplacesAbility": true,
+    "usedFlagPreserved": true,
+    "publicOverdrawBothSides": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "realOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "twoPlayerPrivateChoice": true,
+    "confirmAndDetail": true,
+    "pendingReload": true,
+    "continuationOnce": true,
+    "spellReplacesAbility": true,
+    "usedFlagPreserved": true,
+    "publicOverdrawBothSides": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "realOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "twoPlayerPrivateChoice": true,
+    "confirmAndDetail": true,
+    "pendingReload": true,
+    "continuationOnce": true,
+    "spellReplacesAbility": true,
+    "usedFlagPreserved": true,
+    "publicOverdrawBothSides": true,
+    "productionWrites": 0,
+    "errors": []
+  }
+]

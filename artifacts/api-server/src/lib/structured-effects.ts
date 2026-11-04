@@ -1,4 +1,4 @@
-import { validCountdownTurns } from '@workspace/effect-registry';
+import { validAbilityReplacement, validCountdownTurns } from '@workspace/effect-registry';
 import {
   ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, DYNAMIC_VALUES, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, RULE_LISTENER_TRIGGERS, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
@@ -34,6 +34,7 @@ export type EffectScriptConfig = import("@workspace/effect-registry").EffectScri
  * destructive action such as DESTROY.
  */
 const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
+  REPLACE_CHAMPION_ABILITY: ["abilityReplacement", "duration"],
   BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "attackReference", "healthReference", "referenceDivisor", "duration", "conditionalBuff"],
   SET_STATS: ["attack", "health", "duration"],
   MODIFY_STAT: ["amount", "stat", "duration", "minimum"],
@@ -2022,6 +2023,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action) || !isActiveAction(item.action)) return false;
     const schema = ACTION_SCHEMAS[item.action], target = item.target, values = item.values;
      if (!hasOnlyActionValueKeys(item.action, values)) return false;
+     if (item.action === "REPLACE_CHAMPION_ABILITY" && (!validAbilityReplacement(values?.abilityReplacement) || (values?.duration!==undefined && !EFFECT_DURATIONS.includes(values.duration)))) return false;
     if (schema.target) {
       const zones = target?.zones ?? (target?.zone ? [target.zone] : []);
       const hasValidZones = Boolean(target) && zones.length > 0 && zones.length <= TARGET_ZONES.length &&

@@ -1,3 +1,4 @@
+import {hasPendingHandAddition} from '@workspace/game-engine';
 import {ownedImageEmote} from '../lib/owned-image-emote';
 import {withFrozenLaunchDeck,type FrozenLaunchDeck} from "../lib/frozen-launch-deck";
 import {CosmeticEmoteChannel} from '../lib/cosmetic-emotes';
@@ -696,6 +697,7 @@ async function commitTransition(
 
 async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<void> {
   if (runtime.state.status === "FINISHED" || !runtime.state.activePlayerId) return;
+  if (hasPendingHandAddition(runtime.state)) return;
   if (runtime.state.openingMulligan) {
     let next = runtime.state;
     for (const player of next.players) {
@@ -706,6 +708,8 @@ async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<vo
     if (next !== runtime.state) await commitTransition(runtime, next, runtime.state.events.length);
     return;
   }
+  // Never erase a committed arrival or choose a discard for a human on timeout.
+  for(let frame=runtime.state.targetingState;frame;frame=frame.continuation) if(frame.handAddition)return;
   const playerId = runtime.state.activePlayerId;
   const candidate = structuredClone(runtime.state.targetingState?.playRollback ?? runtime.state);
   if (candidate.targetingState?.championRewardReplacement) {
@@ -1252,7 +1256,7 @@ export async function applyMatchAction(
     }
 
     if (
-      actionIsNotSurrender(payload) &&
+      actionIsNotSurrender(payload) && !hasPendingHandAddition(runtime.state) &&
       runtime.turnDeadlineAt !== null &&
       Date.now() >= runtime.turnDeadlineAt &&
       runtime.state.activePlayerId === playerId

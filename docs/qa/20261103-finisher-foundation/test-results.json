@@ -1,0 +1,107 @@
+{
+  "core": {
+    "tests": 973,
+    "pass": 973,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "ai": {
+    "tests": 339,
+    "pass": 339,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "contracts": {
+    "tests": 112,
+    "pass": 112,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "online_service": {
+    "tests": 3,
+    "pass": 3,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "baseline_armor": {
+    "tests": 254,
+    "pass": 252,
+    "fail": 2,
+    "cancelled": 0,
+    "skipped": 0,
+    "revision": "31ce1fe",
+    "sameFailuresBeforeFeature": true,
+    "names": [
+      "current armor combat/effect/silence: 룬스달라이트 군주 루나",
+      "current armor combat/effect/silence: 하늘을 떨구는 자(각성)"
+    ]
+  },
+  "productionDBWrites": 0,
+  "productionDeployments": 0,
+  "mainMerged": false,
+  "browserTransport": "Playwright WebSocket interception -> actual online service + isolated PGlite DB",
+  "typecheck": "passed",
+  "apiBuild": "passed",
+  "frontendBuild": "passed",
+  "entryLethalDamage": {
+    "regressions": 5,
+    "allPassed": true,
+    "preFixFailures": 2,
+    "localBattleViewports": [
+      "390x844",
+      "1440x900"
+    ],
+    "networkMatch": false
+  },
+  "browser": [
+    {
+      "width": 390,
+      "height": 844,
+      "realOnlinePages": true,
+      "authoritativeServiceAndIsolatedDB": true,
+      "twoPlayerPrivateChoice": true,
+      "confirmAndDetail": true,
+      "pendingReload": true,
+      "continuationOnce": true,
+      "spellReplacesAbility": true,
+      "usedFlagPreserved": true,
+      "publicOverdrawBothSides": true,
+      "productionWrites": 0,
+      "errors": []
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "realOnlinePages": true,
+      "authoritativeServiceAndIsolatedDB": true,
+      "twoPlayerPrivateChoice": true,
+      "confirmAndDetail": true,
+      "pendingReload": true,
+      "continuationOnce": true,
+      "spellReplacesAbility": true,
+      "usedFlagPreserved": true,
+      "publicOverdrawBothSides": true,
+      "productionWrites": 0,
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "realOnlinePages": true,
+      "authoritativeServiceAndIsolatedDB": true,
+      "twoPlayerPrivateChoice": true,
+      "confirmAndDetail": true,
+      "pendingReload": true,
+      "continuationOnce": true,
+      "spellReplacesAbility": true,
+      "usedFlagPreserved": true,
+      "publicOverdrawBothSides": true,
+      "productionWrites": 0,
+      "errors": []
+    }
+  ]
+}

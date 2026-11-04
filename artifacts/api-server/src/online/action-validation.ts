@@ -5,7 +5,7 @@ export function directActionStartsTargeting(action: GameAction, candidateState: 
     action.type === "PLAY_TECHNIQUE" ||
     action.type === "USE_ACTIVE" ||
     action.type === "USE_CHAMPION_ABILITY"
-  ) && candidateState.targetingState?.active === true;
+  ) && candidateState.targetingState?.active === true && !candidateState.targetingState.handAddition;
 }
 
 export function rejectedActionCode(

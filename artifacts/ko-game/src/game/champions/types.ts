@@ -89,6 +89,8 @@ export interface ChampionDefinition {
 }
 
 export interface ChampionState {
+  abilityOverride?: ChampionAbility;
+  abilityOverrideExpiresAtTurn?: number;
   awakening?: import('./awakening-types').AwakeningState;
   id: string;
   presentationLines?: ChampionPresentationLines;
@@ -149,4 +151,9 @@ export function championVoiceLine(
   }
   const phase = questCompleted ? lines?.AFTER_QUEST : lines?.BEFORE_QUEST;
   return phase?.[kind]?.trim() || (questCompleted ? lines?.BEFORE_QUEST?.[kind]?.trim() : '') || null;
+}
+
+/** Per-match replacement wins over legacy preparation-completion upgrades. */
+export function currentChampionAbility(champion: ChampionState | null | undefined): ChampionAbility | null {
+ return champion ? champion.abilityOverride ?? (champion.questCompleted && champion.upgradedAbility ? champion.upgradedAbility : champion.ability) : null;
 }

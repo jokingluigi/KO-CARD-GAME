@@ -774,9 +774,10 @@ for(const fullHand of [false,true]) test('full-field awakening offers return cho
  if(fullHand)p.hand=Array.from({length:7},(_,i)=>generateCardInstance(basic,{instanceId:'full-'+i}));
  s=checkpointAwakening(s,s);assert.ok(s.targetingState?.championRewardReplacement);assert.equal(hasAwakeningInvulnerability(s,p.id),false);
  const replay=checkpointAwakening(s,s);assert.equal(replay.events.filter(e=>e.type==='CARD_GENERATED').length,1);
- const r=executeAction(JSON.parse(JSON.stringify(replay)),{type:'SELECT_EFFECT_TARGET',playerId:p.id,targetId:'choice-2'});assert.ok(r.success);
+ let r=executeAction(JSON.parse(JSON.stringify(replay)),{type:'SELECT_EFFECT_TARGET',playerId:p.id,targetId:'choice-2'});assert.ok(r.success);
+ if(fullHand){assert.ok(r.state.targetingState?.handAddition);assert.equal(hasAwakeningInvulnerability(r.state,p.id),false);r=executeAction(JSON.parse(JSON.stringify(r.state)),{type:'SELECT_EFFECT_TARGET',playerId:p.id,targetId:'full-0'});assert.ok(r.success);}
  assert.equal(stage(r.state).awakening?.stage,'TANK');assert.equal(stage(r.state).currentAttack,6);assert.equal(hasAwakeningInvulnerability(r.state,p.id),true);
- assert.equal(fullHand?owner(r.state).deck[0].instanceId:owner(r.state).hand.at(-1)?.instanceId,'choice-2');assert.ok(!r.state.targetingState);
+ assert.equal(owner(r.state).hand.at(-1)?.instanceId,'choice-2');assert.ok(!r.state.targetingState);
 });
 
 test('full-field awakening places the reserved Tank before returned-card hand effects can checkpoint stages',()=>{

@@ -183,7 +183,7 @@ export function presentationCueDrafts(
         drafts.push({
           id,
           kind: "QUEST_COMPLETE",
-          label: "QUEST COMPLETE",
+          label: "피니셔 준비 완료",
           ...target,
           playerId: event.playerId ?? target.playerId,
           duration: 820,

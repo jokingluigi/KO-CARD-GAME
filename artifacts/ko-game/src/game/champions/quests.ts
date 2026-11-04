@@ -1,3 +1,4 @@
+import { preparationCompletionReward } from './finisher-preparation';
 import { evaluateChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { towerQuestProgressBonus, towerQuestComplete, refreshTowerAuras } from '../tower/relics';
 import type { GameEvent } from '../events/types';
@@ -138,9 +139,10 @@ function processChampionQuestEventPass(
       quest.requiredProgress,
     );
     const questCompleted = questProgress >= quest.requiredProgress;
+    const completionReward = preparationCompletionReward(quest);
     let rewardGold =
-      questCompleted && quest.reward.type === 'GAIN_GOLD'
-        ? quest.reward.amount
+      questCompleted && completionReward.type === 'GAIN_GOLD'
+        ? completionReward.amount
         : 0;
     const intercepted=interceptImmediateBonusGold(resolvedState,originalPlayer.id,rewardGold);
     if(intercepted){resolvedState=intercepted;rewardGold=0;}
@@ -163,7 +165,7 @@ function processChampionQuestEventPass(
         championId: champion.id,
         source: { type: 'SYSTEM' },
         target: { type: 'CHAMPION', championId: champion.id },
-        reason: quest.reward.type,
+        reason: completionReward.type,
       });
       if (rewardGold > 0) {
         questEvents.push({
@@ -200,20 +202,20 @@ function processChampionQuestEventPass(
     };
     if (questCompleted) resolvedState = towerQuestComplete(resolvedState, originalPlayer.id);
     if (questCompleted && quest.awakening) resolvedState = beginAwakeningSequence(resolvedState, originalPlayer.id);
-    if (questCompleted && quest.reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
+    if (questCompleted && completionReward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
       resolvedState = tryDirectDeployChampionToken(
         resolvedState,
         originalPlayer.id,
         champion.id,
-        quest.reward.cardDefinitionId,
+        completionReward.cardDefinitionId,
         'CHAMPION_QUEST_REWARD',
       );
     }
     const rewardEffects =
-      questCompleted && quest.reward.type === 'UPGRADE_ABILITY'
-        ? quest.reward.effects ?? []
-        : questCompleted && quest.reward.type === 'STRUCTURED'
-          ? quest.reward.effects
+      questCompleted && completionReward.type === 'UPGRADE_ABILITY'
+        ? completionReward.effects ?? []
+        : questCompleted && completionReward.type === 'STRUCTURED'
+          ? completionReward.effects
           : [];
     if (rewardEffects.length) {
       const sourceCard: CardInstance = {

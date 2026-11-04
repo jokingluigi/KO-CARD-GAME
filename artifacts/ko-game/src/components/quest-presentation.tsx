@@ -61,14 +61,14 @@ function ActiveQuestPresentation({
   }, [cue.id,bannerDuration,rewardDuration]);
 
   const managed=useCinematicAvailable();
-  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:awakenedArt.src,artFallback:questPortrait(champion),artDisplay:awakenedArt.display,duration:bannerDuration});
+  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'피니셔 준비 완료',art:awakenedArt.src,artFallback:questPortrait(champion),artDisplay:awakenedArt.display,duration:bannerDuration});
   if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
       <BattleVfx kind="GOLD" seed={cue.id} left={window.innerWidth/2} top={window.innerHeight*.42} strength={10} duration={bannerDuration} />
       {phase === "BANNER" ? (
         <div className="ko-quest-chapter text-center" style={{ animation: `ko-quest-banner ${bannerDuration}ms ease both` }}>
-          <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "퀘스트 성공!" : "상대의 퀘스트 성공!"}</p>
+          <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "피니셔 준비 완료!" : "상대의 피니셔 준비 완료!"}</p>
           {normalArt.src && <div className="ko-quest-chapter__portrait">
             <CardArtwork src={normalArt.src} fallbackSrc={champion?.imageUrl} displayOverride={normalArt.display} alt="" className="absolute inset-0 h-full w-full" />
             {awakenedArt.src && awakenedArt.src!==normalArt.src &&
@@ -79,9 +79,10 @@ function ActiveQuestPresentation({
         </div>
       ) : (
         <div data-phase="reward" className="pointer-events-auto w-full max-w-xl max-h-[80dvh] overflow-y-auto rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: `ko-quest-reward ${rewardDuration}ms ease both` }}>
-          <p className="text-xs font-black tracking-[0.25em] text-amber-300">퀘스트 보상</p>
+          <p className="text-xs font-black tracking-[0.25em] text-amber-300">피니셔 획득 · 현재 완료 효과</p>
+          <p className="mt-2 text-xs text-neutral-400">피니셔 카드 연계 전까지 기존 완료 효과가 적용됩니다.</p>
           <h2 className="mt-2 text-2xl font-black">{champion?.name ?? "Champion"}</h2>
-          <p className="mt-4 whitespace-pre-wrap text-base leading-6 text-amber-100">{champion ? championQuestRewardText(champion) : "퀘스트를 완료했습니다."}</p>
+          <p className="mt-4 whitespace-pre-wrap text-base leading-6 text-amber-100">{champion ? championQuestRewardText(champion) : "피니셔 준비를 완료했습니다."}</p>
           {reward?.type === "UPGRADE_ABILITY" && champion?.upgradedAbility ? (
             <div className="mt-5 rounded-xl border border-violet-800/70 bg-violet-950/30 p-4 text-left">
               <p className="text-xs font-black text-violet-300">강화된 고유 능력</p>
