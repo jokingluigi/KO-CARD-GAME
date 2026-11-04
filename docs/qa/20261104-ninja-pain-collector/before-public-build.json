@@ -1,0 +1,28 @@
+{
+  "expectFixed": false,
+  "checkedAt": "2026-11-04T12:59:13.168Z",
+  "origin": "https://ko-card-game-vr69.onrender.com",
+  "enginePath": "/assets/effect-engine-CwiLKbEL.js",
+  "sha256": "e3e0fc2055514cae8cdd557bcec9e90bbec0e3842d079a0783f668df637e03fb",
+  "isolatedBrowserMemory": true,
+  "allAPIRequestsIntercepted": true,
+  "productionWrites": 0,
+  "results": [
+    {
+      "helOwner": "player-1",
+      "before": 1,
+      "after": 1,
+      "ninjaEntries": 2,
+      "ninjaGraveyard": 2,
+      "actualDamage": 2
+    },
+    {
+      "helOwner": "player-2",
+      "before": 1,
+      "after": 1,
+      "ninjaEntries": 2,
+      "ninjaGraveyard": 2,
+      "actualDamage": 2
+    }
+  ]
+}

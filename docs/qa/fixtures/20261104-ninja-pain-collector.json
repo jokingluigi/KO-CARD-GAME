@@ -1,0 +1,59 @@
+[
+  {
+    "id": "cb226840-3d8d-4c2c-a596-acb886fdb2d5",
+    "name": "고통 수집가",
+    "cardType": "WRESTLER",
+    "rarity": "NORMAL",
+    "cost": 3,
+    "attack": 1,
+    "health": 5,
+    "text": "이 카드가 필드에 있을때 아군 선수 카드 혹은 챔피언이 데미지를 입을때마다 이 카드의 공격력이 1 증가합니다.",
+    "keywords": [],
+    "tags": [
+      "빌런"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "cd84d2e5-1622-4f41-b8db-b77b439d6753",
+    "name": "닌자",
+    "cardType": "WRESTLER",
+    "rarity": "NORMAL",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:'닌자'를 자신의 필드에 소환합니다.",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+    "name": "헬뻑",
+    "cardType": "WRESTLER",
+    "rarity": "EPIC",
+    "cost": 3,
+    "attack": 3,
+    "health": 5,
+    "text": "이 카드가 필드에 있을때 선수 카드가 소환되거나 등장하면 그 카드에게 1 데미지를 줍니다.",
+    "keywords": [
+      "DEFENSE"
+    ],
+    "tags": [
+      "빌런"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED"
+  }
+]

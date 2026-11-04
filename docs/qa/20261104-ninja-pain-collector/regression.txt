@@ -1,0 +1,14 @@
+✔ real Ninja entry + lethal Hellppeok + Pain Collector, hel owner=player-1 (13.353427ms)
+✔ real Ninja entry + lethal Hellppeok + Pain Collector, hel owner=player-2 (3.273318ms)
+✔ Ninja and copy lethal damage each buff both allied collectors after restore (3.951252ms)
+✔ separate Ninja plays each grant two stacks without duplicate entry or listeners (4.044019ms)
+✔ Ninja without incoming damage grants no damage stack (1.651055ms)
+✔ opponent Ninja takes lethal entry damage without buffing my Pain Collector (1.47199ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1105.367781
