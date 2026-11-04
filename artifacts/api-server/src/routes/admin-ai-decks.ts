@@ -93,7 +93,7 @@ function readPayload(value: unknown): {
         ? body.championDefinitionId.trim()
         : null,
     cardDefinitionIds,
-    difficulty: (body.difficulty ?? "NORMAL") as "NORMAL" | "HARD" | "BOSS",
+    difficulty: "BOSS",
     enabled: readBoolean(body.enabled, false),
     displayOrder,
   };
@@ -247,10 +247,7 @@ router.patch("/:id", async (request, response): Promise<void> => {
       .update(aiDecksTable)
       .set({
         ...payload!,
-        difficulty:
-          request.body.difficulty === undefined
-            ? existing.difficulty
-            : payload!.difficulty,
+        difficulty: "BOSS",
         updatedAt: new Date(),
       })
       .where(eq(aiDecksTable.id, id))
@@ -283,7 +280,7 @@ router.post("/:id/duplicate", async (request, response): Promise<void> => {
         description: source.description,
         championDefinitionId: source.championDefinitionId,
         cardDefinitionIds: source.cardDefinitionIds,
-        difficulty: source.difficulty,
+        difficulty: "BOSS",
         enabled: false,
         displayOrder: source.displayOrder,
       })

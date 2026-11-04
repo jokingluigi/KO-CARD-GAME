@@ -1,32 +1,58 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { runAITurn, situationalAiEmote, AI_ACTION_DELAY_MS } from './ai-turn-scheduler';
-import { createInitialGameState } from '../engine/create-initial-game-state';
-import { startGame } from '../engine/turn-system';
-import type { GameState } from '../types/game-state';
+import {
+  runAITurn,
+  situationalAiEmote,
+  AI_ACTION_DELAY_MS,
+} from "./ai-turn-scheduler";
+import { createInitialGameState } from "../engine/create-initial-game-state";
+import { startGame } from "../engine/turn-system";
+import type { GameState } from "../types/game-state";
 
 const fixedRandom = () => 0.5;
 
-test('default AI pauses after presentation before executing its decision', async () => {
+test("default AI pauses after presentation before executing its decision", async () => {
   const order: string[] = [];
-  await runAITurn(aiOnlyTurn(), 'player-2', {
-    wait: async ms => { if (ms) { assert.equal(ms, AI_ACTION_DELAY_MS); assert.ok(ms >= 1000); order.push('think'); } },
-    waitForPresentationIdle: async () => { order.push('presentation'); },
+  await runAITurn(aiOnlyTurn(), "player-2", {
+    wait: async (ms) => {
+      if (ms) {
+        assert.equal(ms, AI_ACTION_DELAY_MS);
+        assert.ok(ms >= 1000);
+        order.push("think");
+      }
+    },
+    waitForPresentationIdle: async () => {
+      order.push("presentation");
+    },
     isCancelled: () => false,
     onState: () => {},
-    onAction: action => { if (action.type !== 'EMOTE') order.push('action'); },
+    onAction: (action) => {
+      if (action.type !== "EMOTE") order.push("action");
+    },
   });
-  assert.deepEqual(order.slice(0, 3), ['presentation', 'think', 'action']);
+  assert.deepEqual(order.slice(0, 3), ["presentation", "think", "action"]);
 });
 
-test('AI 감정표현은 퀘스트 완료와 막타 피해 상황에 반응하고 같은 턴 반복하지 않는다', () => {
+test("AI 감정표현은 퀘스트 완료와 막타 피해 상황에 반응하고 같은 턴 반복하지 않는다", () => {
   const state = aiOnlyTurn();
-  const playerId = 'player-2';
+  const playerId = "player-2";
   const start = state.events.length;
-  const quest = { ...state, events: [...state.events, { type: 'CHAMPION_QUEST_COMPLETED' as const, playerId }] };
-  assert.equal(situationalAiEmote(quest, playerId, start), 'THANKS');
-  const spoken = { ...quest, events: [...quest.events, { type: 'CHAMPION_EMOTE' as const, playerId, reason: 'THANKS' }] };
+  const quest = {
+    ...state,
+    events: [
+      ...state.events,
+      { type: "CHAMPION_QUEST_COMPLETED" as const, playerId },
+    ],
+  };
+  assert.equal(situationalAiEmote(quest, playerId, start), "THANKS");
+  const spoken = {
+    ...quest,
+    events: [
+      ...quest.events,
+      { type: "CHAMPION_EMOTE" as const, playerId, reason: "THANKS" },
+    ],
+  };
   assert.equal(situationalAiEmote(spoken, playerId, start), null);
 });
 
@@ -34,9 +60,9 @@ function aiOnlyTurn(): GameState {
   const started = startGame(createInitialGameState(), fixedRandom);
   return {
     ...started,
-    activePlayerId: 'player-2',
+    activePlayerId: "player-2",
     players: started.players.map((player) =>
-      player.id === 'player-2'
+      player.id === "player-2"
         ? {
             ...player,
             currentGold: 0,
@@ -65,32 +91,42 @@ function schedulerOptions(
   };
 }
 
-test('AI auto-ends a turn with no action beyond END_TURN without waiting for timeout', async () => {
+test("AI auto-ends a turn with no action beyond END_TURN without waiting for timeout", async () => {
   const state = aiOnlyTurn();
   const states: GameState[] = [];
   const waits: number[] = [];
 
   const result = await runAITurn(
     state,
-    'player-2',
+    "player-2",
     schedulerOptions(states, waits),
   );
 
-  assert.equal(result.activePlayerId, 'player-1');
+  assert.equal(result.activePlayerId, "player-1");
   assert.equal(states.length, 1);
   assert.equal(waits.includes(17), true);
   assert.equal(waits.includes(90_000), false);
-  assert.equal(result.events.some((event) => event.type === 'TURN_STARTED' && event.playerId === 'player-1'), true);
-  assert.equal(result.events.some((event) => event.type === 'TURN_ENDED' && event.playerId === 'player-2'), true);
+  assert.equal(
+    result.events.some(
+      (event) => event.type === "TURN_STARTED" && event.playerId === "player-1",
+    ),
+    true,
+  );
+  assert.equal(
+    result.events.some(
+      (event) => event.type === "TURN_ENDED" && event.playerId === "player-2",
+    ),
+    true,
+  );
 });
 
-test('AI scheduler keeps using the post-action state and presentation pause does not cancel the turn', async () => {
+test("AI scheduler keeps using the post-action state and presentation pause does not cancel the turn", async () => {
   const state = aiOnlyTurn();
   let presentationBusy = true;
   const states: GameState[] = [];
   const waits: number[] = [];
 
-  const result = await runAITurn(state, 'player-2', {
+  const result = await runAITurn(state, "player-2", {
     wait: async (milliseconds) => waits.push(milliseconds),
     waitForPresentationIdle: async () => {
       presentationBusy = false;
@@ -100,18 +136,18 @@ test('AI scheduler keeps using the post-action state and presentation pause does
     actionDelayMs: 17,
   });
 
-  assert.equal(result.activePlayerId, 'player-1');
+  assert.equal(result.activePlayerId, "player-1");
   assert.equal(states.length, 1);
   assert.deepEqual(waits, [0, 17]);
 });
 
-test('AI never auto-ends while an unresolved target selection is pending', async () => {
+test("AI never auto-ends while an unresolved target selection is pending", async () => {
   const state = {
     ...aiOnlyTurn(),
     targetingState: {
       active: true as const,
-      playerId: 'player-2',
-      sourceInstanceId: 'pending-source',
+      playerId: "player-2",
+      sourceInstanceId: "pending-source",
       effects: [],
       effectIndex: 0,
       selectedTargetIds: [],
@@ -128,7 +164,7 @@ test('AI never auto-ends while an unresolved target selection is pending', async
 
   const result = await runAITurn(
     state,
-    'player-2',
+    "player-2",
     schedulerOptions(states, waits),
   );
 
@@ -137,28 +173,88 @@ test('AI never auto-ends while an unresolved target selection is pending', async
   assert.deepEqual(waits, []);
 });
 
-for (const interruptedBy of ['END_TURN', 'SURRENDER'] as const) {
+for (const interruptedBy of ["END_TURN", "SURRENDER"] as const) {
   test(`AI does not overwrite an externally committed ${interruptedBy} during its wait`, async () => {
-    const { executeAction } = await import('./engine-actions');
+    const { executeAction } = await import("./engine-actions");
     const initial = aiOnlyTurn();
-    let current = initial, interrupted = false;
+    let current = initial,
+      interrupted = false;
     const actions: string[] = [];
-    const result = await runAITurn(initial, 'player-2', {
+    const result = await runAITurn(initial, "player-2", {
       getState: () => current,
-      onState: next => { current = next; },
-      onAction: action => actions.push(action.type),
-      isCancelled: () => false, waitForPresentationIdle: async () => {}, actionDelayMs: 1,
-      wait: async ms => {
+      onState: (next) => {
+        current = next;
+      },
+      onAction: (action) => actions.push(action.type),
+      isCancelled: () => false,
+      waitForPresentationIdle: async () => {},
+      actionDelayMs: 1,
+      wait: async (ms) => {
         if (!ms || interrupted) return;
         interrupted = true;
-        const result = executeAction(current, { type: interruptedBy, playerId: interruptedBy === 'SURRENDER' ? 'player-1' : 'player-2' });
-        assert.ok(result.success); current = result.state;
+        const result = executeAction(current, {
+          type: interruptedBy,
+          playerId: interruptedBy === "SURRENDER" ? "player-1" : "player-2",
+        });
+        assert.ok(result.success);
+        current = result.state;
       },
     });
     assert.ok(interrupted);
     assert.strictEqual(result, current);
     assert.deepEqual(actions, []);
-    assert.equal(result.status, interruptedBy === 'SURRENDER' ? 'FINISHED' : 'IN_PROGRESS');
-    if (interruptedBy === 'END_TURN') assert.equal(result.activePlayerId, 'player-1');
+    assert.equal(
+      result.status,
+      interruptedBy === "SURRENDER" ? "FINISHED" : "IN_PROGRESS",
+    );
+    if (interruptedBy === "END_TURN")
+      assert.equal(result.activePlayerId, "player-1");
   });
 }
+
+test("a worker result cannot overwrite surrender committed while it was computing", async () => {
+  const { executeAction } = await import("./engine-actions");
+  const initial = aiOnlyTurn();
+  let current = initial;
+  const actions: string[] = [];
+  const result = await runAITurn(initial, "player-2", {
+    getState: () => current,
+    onState: (s) => {
+      current = s;
+    },
+    onAction: (a) => actions.push(a.type),
+    isCancelled: () => false,
+    wait: async () => {},
+    waitForPresentationIdle: async () => {},
+    chooseAction: async () => {
+      const r = executeAction(current, {
+        type: "SURRENDER",
+        playerId: "player-1",
+      });
+      assert.ok(r.success);
+      current = r.state;
+      return { type: "END_TURN", playerId: "player-2" };
+    },
+  });
+  assert.equal(result.status, "FINISHED");
+  assert.strictEqual(result, current);
+  assert.deepEqual(actions, []);
+});
+
+test("cancelling an in-flight worker does not commit its fallback END_TURN", async () => {
+  const initial = aiOnlyTurn();
+  let cancelled = false,
+    updates = 0;
+  const result = await runAITurn(initial, "player-2", {
+    onState: () => updates++,
+    isCancelled: () => cancelled,
+    wait: async () => {},
+    waitForPresentationIdle: async () => {},
+    chooseAction: async () => {
+      cancelled = true;
+      return { type: "END_TURN", playerId: "player-2" };
+    },
+  });
+  assert.strictEqual(result, initial);
+  assert.equal(updates, 0);
+});

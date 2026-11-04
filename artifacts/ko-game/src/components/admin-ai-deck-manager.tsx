@@ -39,7 +39,7 @@ const emptyDraft: Draft = {
   description: "",
   championDefinitionId: null,
   cardDefinitionIds: [],
-  difficulty: "NORMAL",
+  difficulty: "BOSS",
   enabled: false,
   displayOrder: 0,
 };
@@ -52,7 +52,7 @@ function draftFromDeck(deck: AIDeck): Draft {
     description: deck.description,
     championDefinitionId: deck.championDefinitionId,
     cardDefinitionIds: deck.cardDefinitionIds,
-    difficulty: deck.difficulty ?? "NORMAL",
+    difficulty: "BOSS",
     enabled: deck.enabled,
     displayOrder: deck.displayOrder,
   };
@@ -229,7 +229,7 @@ return (
                 <span className="font-black">{deck.name}</span>
                 <span className={`text-[10px] font-black ${deck.enabled ? "text-emerald-300" : "text-neutral-500"}`}>{deck.enabled ? "활성" : "비활성"}</span>
               </div>
-              <p className="mt-2 text-xs text-neutral-500">{deck.champion?.name ?? "Champion 없음"} · {deck.cardDefinitionIds.length}장 · {{ NORMAL: "일반", HARD: "어려움", BOSS: "보스" }[deck.difficulty ?? "NORMAL"]}</p>
+              <p className="mt-2 text-xs text-neutral-500">{deck.champion?.name ?? "Champion 없음"} · {deck.cardDefinitionIds.length}장 · 최고 난이도</p>
               {!deck.isValid && <p className="mt-2 text-xs font-bold text-red-300">INVALID · {deck.invalidReasons[0]}</p>}
             </button>
           ))}
@@ -264,7 +264,7 @@ return (
   {draft.cosmeticIds.filter(id=>!(options?.cosmetics??[]).some(item=>item.id===id&&(item.type==='CHAMPION_SKIN'?item.targetId===draft.championDefinitionId:draft.cardDefinitionIds.includes(item.targetId??'')))).map(id=><button type="button" key={id} className="min-h-11 border border-red-800 p-2 text-xs text-red-200" onClick={()=>setDraft({...draft,cosmeticIds:draft.cosmeticIds.filter(value=>value!==id)})}>덱과 맞지 않거나 삭제된 스킨 제거</button>)}
   <p className="text-xs leading-5 text-neutral-400">장착한 스킨은 AI의 인트로·전투·대사에 적용됩니다. 플레이어에게 스킨이 지급되지는 않습니다.</p>
 </fieldset>
-<label className="block text-sm font-bold">AI 난이도<select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value as AIDeck["difficulty"] })} className="mt-1 min-h-11 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="NORMAL">일반</option><option value="HARD">어려움</option><option value="BOSS">보스</option></select></label>
+<div className="rounded border border-amber-800/70 bg-amber-950/20 p-3"><p className="text-sm font-bold text-amber-200">최고 난이도</p><p className="mt-1 text-xs leading-relaxed text-neutral-400">모든 AI 덱은 최고 수준의 판단을 사용합니다. 카드·챔피언 능력치와 게임 규칙은 플레이어와 같습니다.</p></div>
 <div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <label className="text-sm font-bold">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
             <label className="text-sm font-bold">순서<input type="number" value={draft.displayOrder} onChange={(event) => setDraft({ ...draft, displayOrder: Number(event.target.value) || 0 })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>

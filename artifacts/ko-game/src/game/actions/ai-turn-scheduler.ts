@@ -1,24 +1,65 @@
-import { chooseBestAction, type AIDifficulty } from './ai-evaluator';
-import { executeAction, getLegalActions } from './engine-actions';
-import type { GameAction } from './types';
-import type { GameState } from '../types/game-state';
-import type { ChampionEmote } from '../champions/types';
+import {
+  chooseBestAction,
+  DEFAULT_AI_DIFFICULTY,
+  type AIDifficulty,
+} from "./ai-evaluator";
+import { executeAction, getLegalActions } from "./engine-actions";
+import type { GameAction } from "./types";
+import type { GameState } from "../types/game-state";
+import type { ChampionEmote } from "../champions/types";
 
 export const AI_ACTION_DELAY_MS = 1100;
 export const AI_MAX_DECISIONS_PER_TURN = 50;
 
-export function situationalAiEmote(state: GameState, playerId: string, eventStart = 0): ChampionEmote | null {
+export function situationalAiEmote(
+  state: GameState,
+  playerId: string,
+  eventStart = 0,
+): ChampionEmote | null {
   const player = state.players.find((candidate) => candidate.id === playerId);
   if (!player?.champion) return null;
-  const turnStart = state.events.reduce((last, event, index) =>
-    event.type === 'TURN_STARTED' && event.playerId === playerId ? index : last, -1);
-  if (state.events.slice(turnStart + 1).some((event) => event.type === 'CHAMPION_EMOTE' && event.playerId === playerId)) return null;
+  const turnStart = state.events.reduce(
+    (last, event, index) =>
+      event.type === "TURN_STARTED" && event.playerId === playerId
+        ? index
+        : last,
+    -1,
+  );
+  if (
+    state.events
+      .slice(turnStart + 1)
+      .some(
+        (event) =>
+          event.type === "CHAMPION_EMOTE" && event.playerId === playerId,
+      )
+  )
+    return null;
   const recent = state.events.slice(eventStart);
-  if (recent.some((event) => event.type === 'CHAMPION_QUEST_COMPLETED' && event.playerId === playerId)) return 'THANKS';
-  if (recent.some((event) => event.type === 'CARD_RETIRED' && event.playerId !== playerId)) return 'WELL_PLAYED';
-  if (recent.some((event) => event.type === 'DAMAGE_DEALT' && event.target?.type === 'PLAYER' && event.target.playerId !== playerId)) return 'THREATEN';
-  if (player.health <= Math.ceil(player.maxHealth / 4)) return 'OOPS';
-  if (player.personalTurn === 1) return 'HELLO';
+  if (
+    recent.some(
+      (event) =>
+        event.type === "CHAMPION_QUEST_COMPLETED" &&
+        event.playerId === playerId,
+    )
+  )
+    return "THANKS";
+  if (
+    recent.some(
+      (event) => event.type === "CARD_RETIRED" && event.playerId !== playerId,
+    )
+  )
+    return "WELL_PLAYED";
+  if (
+    recent.some(
+      (event) =>
+        event.type === "DAMAGE_DEALT" &&
+        event.target?.type === "PLAYER" &&
+        event.target.playerId !== playerId,
+    )
+  )
+    return "THREATEN";
+  if (player.health <= Math.ceil(player.maxHealth / 4)) return "OOPS";
+  if (player.personalTurn === 1) return "HELLO";
   return null;
 }
 
@@ -31,6 +72,11 @@ export interface AITurnSchedulerOptions {
   getState?: () => GameState;
   onAction?: (action: GameAction) => void;
   difficulty?: AIDifficulty;
+  chooseAction?: (
+    state: GameState,
+    actions: GameAction[],
+    playerId: string,
+  ) => Promise<GameAction>;
   actionDelayMs?: number;
   maxDecisions?: number;
 }
@@ -48,24 +94,40 @@ export async function runAITurn(
   let workingState = initialState;
   const delay = options.actionDelayMs ?? AI_ACTION_DELAY_MS;
   const maxDecisions = options.maxDecisions ?? AI_MAX_DECISIONS_PER_TURN;
-  const refresh = () => { workingState = options.getState?.() ?? workingState; };
-  const ownsDecision = () => workingState.gameId === initialState.gameId &&
-    workingState.status === 'IN_PROGRESS' &&
-    (workingState.targetingState?.active ? workingState.targetingState.playerId === playerId : workingState.activePlayerId === playerId);
-  if (workingState.targetingState?.active && workingState.targetingState.validTargetIds.length === 0) return workingState;
+  const refresh = () => {
+    workingState = options.getState?.() ?? workingState;
+  };
+  const ownsDecision = () =>
+    workingState.gameId === initialState.gameId &&
+    workingState.status === "IN_PROGRESS" &&
+    (workingState.targetingState?.active
+      ? workingState.targetingState.playerId === playerId
+      : workingState.activePlayerId === playerId);
+  if (
+    workingState.targetingState?.active &&
+    workingState.targetingState.validTargetIds.length === 0
+  )
+    return workingState;
 
-  const greet = workingState.targetingState?.active ? null : situationalAiEmote(workingState, playerId, workingState.events.length);
+  const greet = workingState.targetingState?.active
+    ? null
+    : situationalAiEmote(workingState, playerId, workingState.events.length);
   if (greet) {
-    const spoken = executeAction(workingState, { type: 'EMOTE', playerId, emote: greet });
-    if (spoken.success) { workingState = spoken.state; options.onAction?.({ type: 'EMOTE', playerId, emote: greet }); options.onState(workingState); }
+    const spoken = executeAction(workingState, {
+      type: "EMOTE",
+      playerId,
+      emote: greet,
+    });
+    if (spoken.success) {
+      workingState = spoken.state;
+      options.onAction?.({ type: "EMOTE", playerId, emote: greet });
+      options.onState(workingState);
+    }
   }
 
   for (let decision = 0; decision < maxDecisions; decision += 1) {
     refresh();
-    if (
-      options.isCancelled() ||
-      !ownsDecision()
-    ) {
+    if (options.isCancelled() || !ownsDecision()) {
       break;
     }
 
@@ -74,10 +136,10 @@ export async function runAITurn(
       // A pending choice is a real action block. Never convert it into an
       // END_TURN, even if a malformed/stale frame exposes no target IDs.
       if (workingState.targetingState?.active) break;
-      const ended = executeAction(workingState, { type: 'END_TURN', playerId });
+      const ended = executeAction(workingState, { type: "END_TURN", playerId });
       if (!ended.success) break;
       workingState = ended.state;
-      options.onAction?.({ type: 'END_TURN', playerId });
+      options.onAction?.({ type: "END_TURN", playerId });
       options.onState(workingState);
       return workingState;
     }
@@ -93,7 +155,20 @@ export async function runAITurn(
     if (!ownsDecision()) break;
     const currentActions = getLegalActions(workingState, playerId);
     if (!currentActions.length) break;
-    const action = chooseBestAction(workingState, currentActions, playerId, options.difficulty);
+    const decisionState = workingState;
+    const action = options.chooseAction
+      ? await options.chooseAction(decisionState, currentActions, playerId)
+      : chooseBestAction(
+          decisionState,
+          currentActions,
+          playerId,
+          DEFAULT_AI_DIFFICULTY,
+        );
+    if (options.isCancelled()) break;
+    refresh();
+    if (!ownsDecision()) break;
+    // A human emote or other committed update can arrive while the worker thinks.
+    if (workingState !== decisionState) continue;
 
     const eventStart = workingState.events.length;
     const result = executeAction(workingState, action);
@@ -104,11 +179,19 @@ export async function runAITurn(
     if (!workingState.targetingState?.active) {
       const emote = situationalAiEmote(workingState, playerId, eventStart);
       if (emote) {
-        const spoken = executeAction(workingState, { type: 'EMOTE', playerId, emote });
-        if (spoken.success) { workingState = spoken.state; options.onAction?.({ type: 'EMOTE', playerId, emote }); options.onState(workingState); }
+        const spoken = executeAction(workingState, {
+          type: "EMOTE",
+          playerId,
+          emote,
+        });
+        if (spoken.success) {
+          workingState = spoken.state;
+          options.onAction?.({ type: "EMOTE", playerId, emote });
+          options.onState(workingState);
+        }
       }
     }
-    if (workingState.status === 'FINISHED') return workingState;
+    if (workingState.status === "FINISHED") return workingState;
   }
 
   refresh();
@@ -120,11 +203,15 @@ export async function runAITurn(
     await options.waitForPresentationIdle();
     await options.wait(delay);
     refresh();
-    if (!options.isCancelled() && ownsDecision() && !workingState.targetingState?.active) {
-      const ended = executeAction(workingState, { type: 'END_TURN', playerId });
+    if (
+      !options.isCancelled() &&
+      ownsDecision() &&
+      !workingState.targetingState?.active
+    ) {
+      const ended = executeAction(workingState, { type: "END_TURN", playerId });
       if (ended.success) {
         workingState = ended.state;
-        options.onAction?.({ type: 'END_TURN', playerId });
+        options.onAction?.({ type: "END_TURN", playerId });
         options.onState(workingState);
       }
     }

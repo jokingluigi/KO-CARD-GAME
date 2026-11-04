@@ -11,6 +11,7 @@ export {
   getLegalActions,
 } from "../../../artifacts/ko-game/src/game/actions/engine-actions";
 export {
+  DEFAULT_AI_DIFFICULTY,
   chooseBestAction,
   evaluateAction,
   evaluateState,

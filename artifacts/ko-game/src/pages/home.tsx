@@ -1,3 +1,4 @@
+import {createAIDecisionClient} from "@/lib/ai-decision-client";
 import {useTutorialAutoReward} from "@/components/tutorial/tutorial-rewards";
 import {fetchTutorialCatalog} from '@/components/tutorial/tutorial-client';
 import { LESSONS, lessonUnavailable, createTutorialLesson, tutorialGoal, tutorialActionAllowed, type LessonId, type TutorialCatalog } from '@/components/tutorial/lesson-engine';
@@ -746,7 +747,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     aiMatchQuestContextRef.current = {
       deckId: deck.id,
       aiDeckId: aiDeck.id,
-      difficulty: aiDeck.difficulty ?? "NORMAL",
+      difficulty: "BOSS",
       matchId,
     };
     aiMatchActionsRef.current = [];
@@ -804,7 +805,9 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       });
     };
 
+    const aiDecision=createAIDecisionClient();
     void runAITurn(gameState, gameState.players[1]!.id, {
+      chooseAction: aiDecision.choose,
       difficulty: aiMatchQuestContextRef.current?.difficulty,
       wait,
       waitForPresentationIdle,
@@ -813,6 +816,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       getState: () => latestGameStateRef.current,
       onState: (state) => { latestGameStateRef.current = state; setGameState(state); },
     }).finally(() => {
+      aiDecision.dispose();
       if (aiSchedulerGenerationRef.current === schedulerGeneration) {
         aiActionRunningRef.current = false;
       }
@@ -820,6 +824,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
 
     return () => {
       cancelled = true;
+      aiDecision.dispose();
       if (aiSchedulerGenerationRef.current === schedulerGeneration) {
         aiActionRunningRef.current = false;
       }

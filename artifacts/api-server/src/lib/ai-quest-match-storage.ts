@@ -1,7 +1,7 @@
 import { summarizeUsage, type UsageStart } from './usage-statistics-events';
 import { and, eq, sql } from "drizzle-orm";
 import { db, aiQuestMatchesTable } from "@workspace/db";
-import type { GameState } from "@workspace/game-engine";
+import { DEFAULT_AI_DIFFICULTY, type GameState } from "@workspace/game-engine";
 import {
   dailyDate,
   ensureDailyQuestAssignments, ensureSeasonQuestAssignments,
@@ -26,7 +26,7 @@ export async function storedAIQuestMatch(input: MatchIdentity) {
       saved.aiDeckId !== input.aiDeckId)
   )
     throw new Error("AI match record does not belong to this request");
-  return saved ?? null;
+  return saved ? {...saved,difficulty:DEFAULT_AI_DIFFICULTY} : null;
 }
 export async function saveAIQuestStart(
   input: MatchIdentity,
@@ -54,7 +54,7 @@ export async function saveAIQuestStart(
         userId: input.userId,
         deckId: input.deckId,
         aiDeckId: input.aiDeckId,
-        difficulty,
+        difficulty: DEFAULT_AI_DIFFICULTY,
         initialState: state as unknown as Record<string, unknown>,
         usageStart: {version:1,startedAt:new Date().toISOString(),champions:{[state.players[0]!.id]:state.players[0]!.champion!.id},decks:{[state.players[0]!.id]:startingDeck??null},...(quickQueue?{quickQueue}: {})},
         questDate,
@@ -89,9 +89,7 @@ export async function processStoredAIQuestMatch(
     input.actions,
     user.id,
     ai.id,
-    saved.difficulty === "HARD" || saved.difficulty === "BOSS"
-      ? saved.difficulty
-      : "NORMAL",
+    DEFAULT_AI_DIFFICULTY,
   );
   const usage=summarizeUsage(final,saved.usageStart as UsageStart|null,new Date(),[user.id]);
   // Retain the verified result before unrelated daily-quest work. A crash/retry cannot lose it.

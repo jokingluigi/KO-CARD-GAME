@@ -9,6 +9,7 @@ import {
   canonicalCardCatalog,
   cardRecordToDefinition,
   championRecordToDefinition,
+  DEFAULT_AI_DIFFICULTY,
   chooseBestAction,
   createDeterministicRandom,
   createInitialGameState,
@@ -76,7 +77,7 @@ export function advanceAIOpponent(state: GameState, aiPlayerId: string, difficul
       next = ended.state;
       return next;
     }
-    const action = chooseBestAction(next, legalActions, aiPlayerId, difficulty);
+    const action = chooseBestAction(next, legalActions, aiPlayerId, DEFAULT_AI_DIFFICULTY);
     const eventStart = next.events.length;
     const result = executeAction(next, action);
     if (!result.success) break;
@@ -134,7 +135,7 @@ export function replayAIMatch(
       throw new Error("경기가 끝난 뒤 추가 행동이 포함되어 있습니다.");
     }
     const isOutOfTurnAction = isRecord(rawAction) && (rawAction.type === "SURRENDER" || rawAction.type === "EMOTE");
-    if (!isOutOfTurnAction) state = advanceAIOpponent(state, aiPlayerId, difficulty);
+    if (!isOutOfTurnAction) state = advanceAIOpponent(state, aiPlayerId, DEFAULT_AI_DIFFICULTY);
     if (state.status !== "IN_PROGRESS") {
       throw new Error("AI 행동으로 경기가 먼저 끝났습니다.");
     }
@@ -152,7 +153,7 @@ export function replayAIMatch(
     state = result.state;
   }
 
-  state = advanceAIOpponent(state, aiPlayerId, difficulty);
+  state = advanceAIOpponent(state, aiPlayerId, DEFAULT_AI_DIFFICULTY);
   if (state.status !== "FINISHED") {
     throw new Error("완료된 AI 경기 기록이 아닙니다.");
   }
@@ -273,11 +274,11 @@ export async function completeAIMatchQuestProgress(input: {
     { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId), minionACardPool: completeMinionACatalog(cardRecords) },
   );
   const startedState = startGame(initialState, createDeterministicRandom(input.matchId), undefined, { flexibleDeckPlayerId: 'player-2' });
-  if(input.prepareOnly) return {intro:await loadAiMatchIntro(userChampion,aiChampion),state:startedState,startingDeck:[...userDeck.cardDefinitionIds],difficulty:aiDeck.difficulty === 'HARD' || aiDeck.difficulty === 'BOSS' ? aiDeck.difficulty : 'NORMAL'};
+  if(input.prepareOnly) return {intro:await loadAiMatchIntro(userChampion,aiChampion),state:startedState,startingDeck:[...userDeck.cardDefinitionIds],difficulty:DEFAULT_AI_DIFFICULTY};
   const userPlayerId = startedState.players[0]?.id;
   const aiPlayerId = startedState.players[1]?.id;
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
-  const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId, aiDeck.difficulty === "HARD" || aiDeck.difficulty === "BOSS" ? aiDeck.difficulty : "NORMAL");
+  const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId, DEFAULT_AI_DIFFICULTY);
 
   await db.transaction(async (tx) => {
     await processMatchEventsForDailyQuests(

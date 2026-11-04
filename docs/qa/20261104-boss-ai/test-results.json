@@ -1,0 +1,50 @@
+{
+  "core": {
+    "tests": 987,
+    "pass": 987,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "aiContent": {
+    "tests": 153,
+    "pass": 153,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "serverAI": {
+    "tests": 17,
+    "pass": 17,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "serviceAndCancellation": {
+    "tests": 12,
+    "pass": 12,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "tacticalAndMinionA": {
+    "tests": 41,
+    "pass": 41,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "typecheck": "passed",
+  "apiBuild": "passed",
+  "frontendBuild": "passed",
+  "productionDBBulkWrites": 0,
+  "mainMerged": false,
+  "final100Matches": {
+    "tests": 2,
+    "pass": 2,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "completedMatches": 100
+  }
+}

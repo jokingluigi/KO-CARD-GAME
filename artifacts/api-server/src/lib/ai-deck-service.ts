@@ -10,7 +10,7 @@ import {
   type CardRecord,
   type ChampionRecord,
 } from "@workspace/db";
-import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
+import { DEFAULT_AI_DIFFICULTY, DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
 
 export const AI_DECK_MIN_SIZE = 1;
 export const AI_DECK_MAX_SIZE = 100;
@@ -224,7 +224,7 @@ export async function resolveAIDeck(
 ): Promise<AIDeckView> {
   const validation = await validateAIDeckReferences(deck.championDefinitionId, deck.cardDefinitionIds, context, database);
   const selected=database===db&&includeCosmetics?(await readAIDeckCosmetics([deck.id])).get(deck.id):undefined;
-  return { ...deck, ...validation, ...selected };
+  return { ...deck, difficulty: DEFAULT_AI_DIFFICULTY, ...validation, ...selected };
 }
 
 export async function listAIDecks(options?: { enabledOnly?: boolean; context?: DeckValidationContext }, database: Pick<typeof db, "select"> = db): Promise<AIDeckView[]> {

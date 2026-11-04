@@ -2,7 +2,7 @@ import type {FrozenLaunchDeck} from "./frozen-launch-deck";
 import {randomUUID} from 'node:crypto';
 import {and,eq,isNull,sql} from 'drizzle-orm';
 import {db,aiQuestMatchesTable,championsTable,usersTable} from '@workspace/db';
-import {selectAIOpponentDeck} from '@workspace/game-engine';
+import {DEFAULT_AI_DIFFICULTY,selectAIOpponentDeck} from '@workspace/game-engine';
 import {listAIDecks} from './ai-deck-service';
 import {completeAIMatchQuestProgress} from './ai-match-quest-service';
 import {saveAIQuestStart} from './ai-quest-match-storage';
@@ -36,7 +36,7 @@ export async function readQuickAI(userId:string,matchId:string) {
   const [row]=await db.select().from(aiQuestMatchesTable).where(and(eq(aiQuestMatchesTable.id,matchId),eq(aiQuestMatchesTable.userId,userId))).limit(1);
   const metadata=row?.usageStart?.quickQueue as Record<string,unknown>|undefined;
   if(!row||!metadata||row.processedAt)return null;
-  return {matchId:row.id,deckId:row.deckId,aiDeckId:row.aiDeckId,difficulty:row.difficulty,state:row.initialState,opponentName:metadata.opponentName,opponentCosmetics:metadata.opponentCosmetics,selfChampion:metadata.selfChampion,opponentChampion:metadata.opponentChampion,intro:metadata.intro};
+  return {matchId:row.id,deckId:row.deckId,aiDeckId:row.aiDeckId,difficulty:DEFAULT_AI_DIFFICULTY,state:row.initialState,opponentName:metadata.opponentName,opponentCosmetics:metadata.opponentCosmetics,selfChampion:metadata.selfChampion,opponentChampion:metadata.opponentChampion,intro:metadata.intro};
 }
 export async function releaseQuickAI(userId:string,matchId?:string) {
   const rows=await db.update(aiQuestMatchesTable).set({usageStart:sql`jsonb_set(${aiQuestMatchesTable.usageStart}, '{quickQueue,active}', 'false'::jsonb)`})

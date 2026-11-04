@@ -1,0 +1,165 @@
+{
+  "baselineRevision": "b8c3715",
+  "openingShuffleExplicitlySeeded": true,
+  "deck": [
+    "15a6a381-90ce-4691-bdeb-6498c519a5a4",
+    "2a85d647-691c-4366-a0f5-4a93a8e917d6",
+    "31b1e88f-87cb-43e0-9ccd-d45e90b65ee1",
+    "37047fdf-bf94-4d09-97a3-f2750e82a0be",
+    "49f79c04-41b4-4d2c-83df-10541a7eceef",
+    "5dfadce6-2d8b-40b0-8926-bf58ff27eece",
+    "6188d881-ac7e-465e-ab86-feaa4dd48863",
+    "6745d650-9bd8-468f-b3e2-25f7e55114d0",
+    "epic-spell-push",
+    "29473daa-309c-41e0-bff4-c4b69b062d2f",
+    "792082db-3844-48f1-97d2-50c03c70c9db",
+    "8fecac0c-2bae-4737-8ac8-7beafa2fe527",
+    "15a6a381-90ce-4691-bdeb-6498c519a5a4",
+    "2a85d647-691c-4366-a0f5-4a93a8e917d6",
+    "31b1e88f-87cb-43e0-9ccd-d45e90b65ee1",
+    "37047fdf-bf94-4d09-97a3-f2750e82a0be",
+    "49f79c04-41b4-4d2c-83df-10541a7eceef",
+    "5dfadce6-2d8b-40b0-8926-bf58ff27eece",
+    "6188d881-ac7e-465e-ab86-feaa4dd48863",
+    "6745d650-9bd8-468f-b3e2-25f7e55114d0",
+    "epic-spell-push",
+    "29473daa-309c-41e0-bff4-c4b69b062d2f",
+    "792082db-3844-48f1-97d2-50c03c70c9db",
+    "8fecac0c-2bae-4737-8ac8-7beafa2fe527",
+    "15a6a381-90ce-4691-bdeb-6498c519a5a4"
+  ],
+  "cardNames": [
+    "마을 경비병",
+    "숲의 정찰병",
+    "도둑",
+    "여관 주인",
+    "하스이",
+    "초보 길잡이",
+    "불록스",
+    "초보 모험가",
+    "밀쳐내기",
+    "도적단 모집",
+    "좀비 감염",
+    "파멸 의식"
+  ],
+  "games": 12,
+  "wins": 8,
+  "losses": 4,
+  "capped": 0,
+  "decisionMs": {
+    "count": 851,
+    "p50": 11.406729000000269,
+    "p95": 77.66273600000022,
+    "max": 200.27055999999993
+  },
+  "results": [
+    {
+      "opponent": "legacy",
+      "initialDigest": "0cfbee78583576a358172910abd8d18af3416ac40a9267cf400ee6936bf5a8d6",
+      "seed": 1,
+      "side": 0,
+      "actions": 69,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "legacy",
+      "initialDigest": "0cfbee78583576a358172910abd8d18af3416ac40a9267cf400ee6936bf5a8d6",
+      "seed": 1,
+      "side": 1,
+      "actions": 186,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "legacy",
+      "initialDigest": "a7c4f0f1a9320d2559aa695e1149e58aeaebab10c5d7d08b1d739839318889df",
+      "seed": 2,
+      "side": 0,
+      "actions": 184,
+      "status": "FINISHED",
+      "winner": "previous"
+    },
+    {
+      "opponent": "legacy",
+      "initialDigest": "a7c4f0f1a9320d2559aa695e1149e58aeaebab10c5d7d08b1d739839318889df",
+      "seed": 2,
+      "side": 1,
+      "actions": 131,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "legacy",
+      "initialDigest": "2e7bc63f05a5fe6ce0fb20ce840d60898ab39493c8437a3723f79cdeb48fc0d4",
+      "seed": 3,
+      "side": 0,
+      "actions": 210,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "legacy",
+      "initialDigest": "2e7bc63f05a5fe6ce0fb20ce840d60898ab39493c8437a3723f79cdeb48fc0d4",
+      "seed": 3,
+      "side": 1,
+      "actions": 81,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "previous-boss",
+      "initialDigest": "0cfbee78583576a358172910abd8d18af3416ac40a9267cf400ee6936bf5a8d6",
+      "seed": 1,
+      "side": 0,
+      "actions": 43,
+      "status": "FINISHED",
+      "winner": "previous"
+    },
+    {
+      "opponent": "previous-boss",
+      "initialDigest": "0cfbee78583576a358172910abd8d18af3416ac40a9267cf400ee6936bf5a8d6",
+      "seed": 1,
+      "side": 1,
+      "actions": 207,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "previous-boss",
+      "initialDigest": "a7c4f0f1a9320d2559aa695e1149e58aeaebab10c5d7d08b1d739839318889df",
+      "seed": 2,
+      "side": 0,
+      "actions": 150,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "previous-boss",
+      "initialDigest": "a7c4f0f1a9320d2559aa695e1149e58aeaebab10c5d7d08b1d739839318889df",
+      "seed": 2,
+      "side": 1,
+      "actions": 193,
+      "status": "FINISHED",
+      "winner": "new"
+    },
+    {
+      "opponent": "previous-boss",
+      "initialDigest": "2e7bc63f05a5fe6ce0fb20ce840d60898ab39493c8437a3723f79cdeb48fc0d4",
+      "seed": 3,
+      "side": 0,
+      "actions": 69,
+      "status": "FINISHED",
+      "winner": "previous"
+    },
+    {
+      "opponent": "previous-boss",
+      "initialDigest": "2e7bc63f05a5fe6ce0fb20ce840d60898ab39493c8437a3723f79cdeb48fc0d4",
+      "seed": 3,
+      "side": 1,
+      "actions": 155,
+      "status": "FINISHED",
+      "winner": "previous"
+    }
+  ]
+}
