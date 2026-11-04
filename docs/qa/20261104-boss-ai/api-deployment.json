@@ -1,0 +1,11 @@
+{
+  "commit": "c596a745d354fc1225eae4e2e66e251681a93cb8",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "deployId": "dep-dbljsr3m8hqs739ga5sg",
+  "status": "live",
+  "previousLiveCommit": "d707ad23e303a3d716f63a82839c8192446e8d1d",
+  "authorizedBy": "2026-11-04 user request for highest-difficulty bots and standing deploy authorization",
+  "mainMerged": false,
+  "manualProductionDBWrites": 0,
+  "liveCommit": "c596a745d354fc1225eae4e2e66e251681a93cb8"
+}

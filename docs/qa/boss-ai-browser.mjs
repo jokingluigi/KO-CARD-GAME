@@ -83,6 +83,7 @@ try {
           ? { dir: out + "/raw", size: { width, height } }
           : undefined,
     });
+    await context.routeWebSocket("**",ws=>ws.close());
     const page = await context.newPage(),
       errors = [],
       workers = [];

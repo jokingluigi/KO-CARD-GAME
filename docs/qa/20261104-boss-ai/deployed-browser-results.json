@@ -1,0 +1,48 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "realHome": true,
+    "workerStarted": true,
+    "legacyNormalHandoffUsesHighest": true,
+    "realNinjaCombination": true,
+    "serverReplayAgrees": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "realHome": true,
+    "workerStarted": true,
+    "legacyNormalHandoffUsesHighest": true,
+    "realNinjaCombination": true,
+    "serverReplayAgrees": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "realHome": true,
+    "workerStarted": true,
+    "legacyNormalHandoffUsesHighest": true,
+    "realNinjaCombination": true,
+    "serverReplayAgrees": true,
+    "errors": []
+  },
+  {
+    "positions": 8,
+    "workerParity": true,
+    "heartbeatTicks": 35,
+    "decisionMs": [
+      205.5,
+      9.799999997019768,
+      3.7000000029802322,
+      3.0999999940395355,
+      47.900000005960464,
+      6.299999997019768,
+      4.200000002980232,
+      4.700000002980232
+    ],
+    "disposeResolvesPending": true
+  }
+]
