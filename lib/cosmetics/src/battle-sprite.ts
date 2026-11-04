@@ -379,6 +379,7 @@ export function reactSprite(
   event: SpriteEvent,
   now: number,
   config?: BattleSprite,
+  minimumHoldMs = 0,
 ) {
   if (config?.disabled?.includes(event)) return current;
   // Coalesce repeated identical reactions without extending their deadline.
@@ -401,7 +402,7 @@ export function reactSprite(
         ? Number.MAX_SAFE_INTEGER - now
         : event === "AWAKEN" && config?.frames[config.reactions.AWAKEN ?? "awaken"]
           ? spriteAwakeningDelay(config)
-          : (config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800)),
+          : Math.max(minimumHoldMs, config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800)),
   };
 }
 

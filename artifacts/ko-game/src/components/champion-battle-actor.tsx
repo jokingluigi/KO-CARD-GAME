@@ -173,6 +173,7 @@ export function ChampionBattleActor({
           cue.event,
           Date.now(),
           config ?? undefined,
+          cue.holdMs,
         );
         if (accepted !== next) next = { ...accepted, cue };
       }

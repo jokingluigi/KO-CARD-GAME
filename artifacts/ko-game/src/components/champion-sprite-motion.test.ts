@@ -26,6 +26,22 @@ import {
   explicitSingleDamageTarget,
   type ChampionMotionCue,
 } from "./champion-sprite-motion";
+
+test('strong-card surprise stays readable for two seconds without delaying higher priorities',()=>{
+  const config=parseBattleSprite({version:1,frames:{default:{url:'https://example.invalid/sprite.png',self:p,opponent:p}},reactions:{},timing:{ALLY_RETIRED:900}})!;
+  assert.ok(config);
+  const now=100,minimum=2000;
+  const surprised=reactSprite({event:'IDLE',until:0},'ALLY_RETIRED',now,config,minimum);
+  assert.equal(surprised.until,2100);
+  assert.strictEqual(reactSprite(surprised,'ATTACK',1200,config),surprised);
+  assert.equal(reactSprite(surprised,'HEAVY_HIT',1200,config).event,'HEAVY_HIT');
+  assert.equal(reactSprite(surprised,'AWAKEN',1200,config).event,'AWAKEN');
+  assert.equal(reactSprite(surprised,'DEFEAT',1200,config).event,'DEFEAT');
+  assert.equal(reactSprite({event:'IDLE',until:0},'ALLY_RETIRED',now,{...config,timing:{ALLY_RETIRED:2600}},minimum).until,2700);
+  // Unrelated retire reactions keep their configured timing.
+  assert.equal(reactSprite({event:'IDLE',until:0},'ALLY_RETIRED',now,config).until,1000);
+  assert.equal(motionDuration('SURPRISED'),600);
+});
 const normal: CardDefinition = {
   id: "unit",
   name: "Unit",

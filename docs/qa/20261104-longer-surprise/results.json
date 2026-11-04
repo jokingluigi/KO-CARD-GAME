@@ -1,0 +1,32 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": false,
+    "legacyConfiguredMs": 900,
+    "measuredSurpriseMs": 2066,
+    "lowHealthReturn": true,
+    "heavyHitInterrupts": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "reduced": false,
+    "legacyConfiguredMs": 900,
+    "measuredSurpriseMs": 2071.5,
+    "lowHealthReturn": true,
+    "heavyHitInterrupts": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": true,
+    "legacyConfiguredMs": 900,
+    "measuredSurpriseMs": 2078.8999999910593,
+    "lowHealthReturn": true,
+    "heavyHitInterrupts": true,
+    "errors": []
+  }
+]

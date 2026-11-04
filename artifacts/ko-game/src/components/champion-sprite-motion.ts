@@ -27,6 +27,8 @@ export type ChampionMotionCue = {
   emote?: string;
   target?: { playerId: string; slot?: number };
   support?: boolean;
+  /** A committed opponent threat stays readable even with a legacy short skin timing. */
+  holdMs?: number;
 };
 /** One presentation clock. Values are never awaited by rules/network/input. */
 export const CHAMPION_MOTION = {
@@ -41,7 +43,8 @@ export const CHAMPION_MOTION = {
   legendaryMs: 480,
   hitMs: 220,
   heavyMs: 320,
-  surpriseMs: 360,
+  surpriseMs: 600,
+  threatSurpriseHoldMs: 2000,
   healMs: 500,
   awakeMs: 700,
   resultMs: 620,
@@ -265,9 +268,9 @@ export function motionFrames(
   if (cue.kind === "SURPRISED")
     return [
       key(0),
-      key(0.16, -sign * 5, 1.5, -sign * 0.3, 0.978),
-      key(0.38, -sign * 5, 1.5, -sign * 0.7, 0.978),
-      key(0.8, -sign * 1, 0.3, -sign * 0.2, 0.995),
+      key(0.1, -sign * 5, 1.5, -sign * 0.3, 0.978),
+      key(0.6, -sign * 5, 1.5, -sign * 0.7, 0.978),
+      key(0.9, -sign * 1, 0.3, -sign * 0.2, 0.995),
       key(1),
     ];
   if (cue.kind === "HEAL")

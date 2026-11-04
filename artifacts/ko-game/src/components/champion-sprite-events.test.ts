@@ -11,6 +11,7 @@ import {
 } from "../game";
 import { healNewCardAware } from "../game/engine/new-card-rules";
 import { vanishCard } from "../game/engine/fusion";
+import {CHAMPION_MOTION,type ChampionMotionCue} from './champion-sprite-motion';
 import {
   championSpriteEvents,
   spriteEventCursor,
@@ -801,6 +802,9 @@ for (const [name, changes] of [
     });
     assert.equal(result.success, true);
     assert.deepEqual(collect(s, result.state), ["ALLY_RETIRED"]);
+    const cues:ChampionMotionCue[]=[];
+    championSpriteEvents(s,result.state,'player-1',spriteEventCursor(s),cues);
+    assert.equal(cues.find(c=>c.kind==='SURPRISED')?.holdMs,CHAMPION_MOTION.threatSurpriseHoldMs);
     assert.deepEqual(collect(s, result.state, "player-2"), ["SUMMON"]);
     const cursor = spriteEventCursor(s);
     assert.deepEqual(

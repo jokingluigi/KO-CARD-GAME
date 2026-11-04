@@ -3,6 +3,7 @@ import { SPRITE_EMOTES, type SpriteEvent } from "@workspace/cosmetics";
 
 /** A per-match cursor, not a timer-based guess about effect batching. */
 import {
+  CHAMPION_MOTION,
   explicitSingleDamageTarget,
   type ChampionMotionCue,
   type ChampionMotionKind,
@@ -188,7 +189,7 @@ export function championSpriteEvents(
         const key = `opponent:${e.playerId}:${resolution ?? identity}`;
         if (!cursor.surprises.has(key)) {
           cursor.surprises.add(key);
-          if (!reactions.includes("ALLY_RETIRED")) emit("ALLY_RETIRED");
+          if (!reactions.includes("ALLY_RETIRED")) emit("ALLY_RETIRED", {holdMs: CHAMPION_MOTION.threatSurpriseHoldMs});
         }
       }
     }
