@@ -1,3 +1,5 @@
+import { ChampionProtection } from './champion-protection';
+import { isChampionProtectedByToken } from '@/game/engine/direct-champion';
 import { HandOverflowDialog } from './hand-overflow-dialog';
 import { OverdrawReveal } from './overdraw-reveal';
 import { currentChampionAbility } from '@/game/champions/types';
@@ -903,8 +905,8 @@ export function GameStatePreview({
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
   const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
-  const opponentChampionProtected = opp.board.some((card) => card?.isChampionToken && !card.questExclusive);
-  const playerChampionProtected = me.board.some((card) => card?.isChampionToken && !card.questExclusive);
+  const opponentChampionProtected = state.status !== 'FINISHED' && isChampionProtectedByToken(state, opp.id);
+  const playerChampionProtected = state.status !== 'FINISHED' && isChampionProtectedByToken(state, me.id);
   const activePresentationCue = presentationQueue[0];
   const activePresentationCardId = activePresentationCue?.cardInstanceId;
   const activePresentationChampionId = activePresentationCue?.championId;
@@ -1177,6 +1179,7 @@ export function GameStatePreview({
                 <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                  <div
                     ref={championRef}
+                    data-champion-protected={opponentChampionProtected}
                     data-defeated={state.status === "FINISHED" && state.loserId === opp.id}
                     className={`ko-opponent-champion group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
                       !blackGold && attackImpactTriggered &&
@@ -1192,7 +1195,7 @@ export function GameStatePreview({
                        role="button"
                        tabIndex={0}
                        aria-label="상대 챔피언 대상"
-                       aria-description={blackGold ? `${opponentChampionName || opp.champion?.name || '챔피언'}, 체력 ${displayHealth(opponentSurvivalHealth)} / ${opp.champion?.maxHealth ?? 20}` : undefined}
+                       aria-description={blackGold ? `${opponentChampionName || opp.champion?.name || '챔피언'}, 체력 ${displayHealth(opponentSurvivalHealth)} / ${opp.champion?.maxHealth ?? 20}${opponentChampionProtected ? ', 무적: 챔피언 토큰이 보호 중' : ''}` : undefined}
                        onClick={effectTargeting
                          ? handleAttackChampion
                          : selectedAttackerId ? handleAttackChampion : undefined}
@@ -1203,13 +1206,7 @@ export function GameStatePreview({
                        }}
                  >
                    {blackGold && <ChampionPortraitFrame awakened={Boolean(opp.champion?.questCompleted)} name={opponentChampionName || opp.champion?.name || "챔피언"} health={opponentSurvivalHealth} maxHealth={opp.champion?.maxHealth ?? 20}/>}
-                   <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} framed={blackGold} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/></div>
-
-                   {opponentChampionProtected && (
-                     <span className="ko-champion-protection pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
-                       PROTECTED
-                     </span>
-                   )}
+                   <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+opp.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={opp.id} self={false} framed={blackGold} loadout={cosmetics[opp.id]} portrait={opponentChampionPortrait} original={originalOpponentPortrait} name={opp.champion?.name??"챔피언"}/>{opponentChampionProtected && <ChampionProtection/>}</div>
 
                   {selectedAttackerId && (
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
@@ -1690,12 +1687,12 @@ export function GameStatePreview({
               <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                 <div className="relative shrink-0">
                   <div
-                    ref={playerChampionRef}
+                    ref={playerChampionRef} data-champion-protected={playerChampionProtected}
                     data-defeated={state.status === "FINISHED" && state.loserId === me.id}
                     role="button"
                     tabIndex={0}
                     aria-label={effectTargeting ? '내 챔피언 대상' : '내 챔피언 감정표현 열기'}
-                    aria-description={blackGold ? `${playerChampionName || me.champion?.name || '챔피언'}, 체력 ${displayHealth(mySurvivalHealth)} / ${me.champion?.maxHealth ?? 20}` : undefined}
+                    aria-description={blackGold ? `${playerChampionName || me.champion?.name || '챔피언'}, 체력 ${displayHealth(mySurvivalHealth)} / ${me.champion?.maxHealth ?? 20}${playerChampionProtected ? ', 무적: 챔피언 토큰이 보호 중' : ''}` : undefined}
                     aria-expanded={!effectTargeting && emoteOpen}
                     onClick={() => { if (effectTargeting) onEffectTarget(me.id); else if (onEmote && state.status === 'IN_PROGRESS') setEmoteOpen((open) => !open); }}
                     onKeyDown={(event) => {
@@ -1708,13 +1705,7 @@ export function GameStatePreview({
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
                     {blackGold && <ChampionPortraitFrame awakened={Boolean(me.champion?.questCompleted)} name={playerChampionName || me.champion?.name || "챔피언"} health={mySurvivalHealth} maxHealth={me.champion?.maxHealth ?? 20}/>}
-                    <CosmeticEmoteOverlay self anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} framed={blackGold} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/></div>
-
-                   {playerChampionProtected && (
-                     <span className="ko-champion-protection pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
-                       PROTECTED
-                     </span>
-                   )}
+                    <CosmeticEmoteOverlay self anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/><div className="ko-portrait-window"><ChampionBattleActor key={state.gameId+me.id} attackActive={Boolean(attackAnimation)} hitContact={attackImpactTriggered} state={state} playerId={me.id} self={true} framed={blackGold} loadout={cosmetics[me.id]} portrait={playerChampionPortrait} original={originalPlayerPortrait} name={me.champion?.name??"챔피언"}/>{playerChampionProtected && <ChampionProtection/>}</div>
 
                </div>
 

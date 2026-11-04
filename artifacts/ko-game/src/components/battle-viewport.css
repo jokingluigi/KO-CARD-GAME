@@ -163,7 +163,6 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
   .ko-champion-arena .ko-portrait-health__label { font-size:7px; line-height:8px; }
   .ko-champion-arena .ko-portrait-health__value { font-size:20px; line-height:20px; }
   .ko-champion-arena .ko-portrait-health__value small { font-size:10px; }
-  .ko-champion-arena .ko-champion-protection { bottom:46px; }
   .ko-champion-arena .ko-champion-target-hint { bottom:64px; }
 }
 

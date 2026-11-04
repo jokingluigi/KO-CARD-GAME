@@ -1,0 +1,46 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": false,
+    "bothSides": true,
+    "engineSummonAndDestroy": true,
+    "lastTokenRemoval": true,
+    "handTap": true,
+    "overlayWithinViewport": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "reduced": false,
+    "bothSides": true,
+    "engineSummonAndDestroy": true,
+    "lastTokenRemoval": true,
+    "handTap": true,
+    "overlayWithinViewport": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "reduced": false,
+    "bothSides": true,
+    "engineSummonAndDestroy": true,
+    "lastTokenRemoval": true,
+    "handTap": true,
+    "overlayWithinViewport": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "reduced": true,
+    "bothSides": true,
+    "engineSummonAndDestroy": true,
+    "lastTokenRemoval": true,
+    "handTap": true,
+    "overlayWithinViewport": true,
+    "errors": []
+  }
+]

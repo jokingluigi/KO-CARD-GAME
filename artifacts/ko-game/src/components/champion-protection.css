@@ -1,0 +1,111 @@
+/* A persistent status treatment, clipped to the portrait, never a full-board tint. */
+.ko-champion-ward {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+  border-radius: inherit;
+  animation: ko-ward-arrive 300ms ease-out both;
+}
+.ko-champion-ward__surface {
+  position: absolute;
+  inset: 0;
+  border: 3px double #b7eced;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    #81e6e421,
+    transparent 30% 65%,
+    #81e6e42b
+  );
+  box-shadow:
+    inset 0 0 18px #6de7e35c,
+    inset 0 -28px 24px -16px #0d5c67;
+}
+.ko-champion-ward__seal {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  min-width: 88px;
+  padding: 3px 10px;
+  border: 1px solid #c3e4bf;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(#123d40f5, #081d22fa);
+  box-shadow:
+    0 2px 6px #000b,
+    inset 0 0 0 1px #061c1d;
+  color: #dcffff;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+.ko-champion-ward__seal > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ko-champion-ward__seal svg {
+  width: 17px;
+  height: 17px;
+  color: #d9ecb5;
+}
+.ko-champion-ward__seal strong {
+  font-size: 15px;
+  line-height: 19px;
+  letter-spacing: 0.12em;
+}
+.ko-champion-ward__seal small {
+  color: #bee4df;
+  font-size: 9px;
+  line-height: 12px;
+}
+.ko-champion-arena [data-champion-protected="true"] .ko-portrait-rim {
+  border-color: #b7eced;
+  box-shadow:
+    inset 0 0 0 3px #163f42,
+    0 0 10px #75d6cf80;
+}
+.ko-champion-arena [data-champion-protected="true"] .ko-portrait-health {
+  border-color: #b7eced;
+  background: #102e32;
+  box-shadow:
+    0 0 0 2px #081b1f,
+    0 0 10px #75d6cf66;
+}
+@keyframes ko-ward-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ko-champion-ward[data-reduced-motion="true"] {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ko-champion-ward {
+    animation: none;
+  }
+}
+/* Very short landscape apertures preserve the face with a single-line seal. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .ko-champion-ward__seal {
+    min-width: 70px;
+    padding: 1px 6px;
+  }
+  .ko-champion-ward__seal strong {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .ko-champion-ward__seal svg {
+    width: 14px;
+    height: 14px;
+  }
+  .ko-champion-ward__seal small {
+    display: none;
+  }
+}

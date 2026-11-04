@@ -229,17 +229,11 @@
   }
 }
 
-/* Existing protection and target hints stay above the name/vital plate. */
-.ko-champion-arena .ko-champion-protection {
-  bottom: 82px;
-}
+/* Target hints stay above the name/vital plate. */
 .ko-champion-arena .ko-champion-target-hint {
   bottom: 105px;
 }
 @media (min-width: 1000px), (min-width: 740px) and (orientation: landscape) {
-  .ko-champion-arena .ko-champion-protection {
-    bottom: 92px;
-  }
   .ko-champion-arena .ko-champion-target-hint {
     bottom: 115px;
   }
