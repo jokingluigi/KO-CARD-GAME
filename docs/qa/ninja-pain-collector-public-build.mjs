@@ -104,6 +104,47 @@ try {
     );
     results.push(r);
   }
+  let wimari = null;
+  if (expectFixed) {
+    const stages = JSON.parse(
+      await readFile("docs/qa/fixtures/20261104-wimari-awakened.json", "utf8"),
+    ).map(cardRecordToDefinition);
+    const healer = generateCardInstance(
+      stages.find((d) => d.id === "crisis-awakening-healer"),
+      { instanceId: "wimari" },
+    );
+    wimari = await p.evaluate(
+      async ({ state, stages, healer, ally, enginePath }) => {
+        const remote = await import(enginePath);
+        let s = { ...state, cardPool: [...state.cardPool, ...stages] };
+        s.players[0].health = 10;
+        s.players[0].board[0] = { ...healer, currentHealth: 1, boardSlot: 0 };
+        s.players[0].board[1] = { ...ally, currentHealth: 1, boardSlot: 1 };
+        s = remote.l(s, "player-1", s.players[0].board[0], "TURN_END");
+        if (s.targetingState?.active) s = remote.m(s);
+        const healed = {
+          champion: s.players[0].health,
+          self: s.players[0].board[0].currentHealth,
+          ally: s.players[0].board[1].currentHealth,
+        };
+        s.players[0].board[0].currentHealth = 0;
+        s = remote.x(s);
+        return {
+          healed,
+          leonCount: s.players[0].board.filter(
+            (c) => c?.definitionId === "crisis-awakening-dealer",
+          ).length,
+          retiredCount: s.players[0].graveyard.filter(
+            (c) => c.instanceId === "wimari",
+          ).length,
+        };
+      },
+      { state, stages, healer, ally: cards["고통 수집가"], enginePath },
+    );
+    assert.deepEqual(wimari.healed, { champion: 12, self: 3, ally: 3 });
+    assert.equal(wimari.leonCount, 1);
+    assert.equal(wimari.retiredCount, 1);
+  }
   const code = execFileSync(
     "curl",
     [
@@ -117,6 +158,7 @@ try {
     { maxBuffer: 8 * 1024 * 1024 },
   );
   const report = {
+    wimari,
     expectFixed,
     checkedAt: new Date().toISOString(),
     origin,

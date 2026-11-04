@@ -1,0 +1,12 @@
+{
+  "/assets/index-BljXBOJ-.css": {
+    "sha256": "fe34eca8bd6f0012aad68bd8404ed091004f8735a0a533c623ee101e0cf8301a",
+    "hasChampionWard": false
+  },
+  "engineMatchesTestedLocalBuild": true,
+  "/assets/match-result-overlay-CfelbslU.css": {
+    "sha256": "45627b64900ee4588759f007e03eab87ec445b216b68dc7398966396b98f9081",
+    "hasChampionWard": true,
+    "matchesLocal": true
+  }
+}

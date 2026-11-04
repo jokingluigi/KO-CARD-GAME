@@ -1,0 +1,37 @@
+{
+  "wimari": {
+    "healed": {
+      "champion": 12,
+      "self": 3,
+      "ally": 3
+    },
+    "leonCount": 1,
+    "retiredCount": 1
+  },
+  "expectFixed": true,
+  "checkedAt": "2026-11-04T13:05:32.816Z",
+  "origin": "https://ko-card-game-vr69.onrender.com",
+  "enginePath": "/assets/effect-engine-C6eFS74a.js",
+  "sha256": "63f16a65b4eac701b6c79cc79897fb6eb567e154b26d170514e773482eab9c1d",
+  "isolatedBrowserMemory": true,
+  "allAPIRequestsIntercepted": true,
+  "productionWrites": 0,
+  "results": [
+    {
+      "helOwner": "player-1",
+      "before": 1,
+      "after": 3,
+      "ninjaEntries": 2,
+      "ninjaGraveyard": 2,
+      "actualDamage": 2
+    },
+    {
+      "helOwner": "player-2",
+      "before": 1,
+      "after": 3,
+      "ninjaEntries": 2,
+      "ninjaGraveyard": 2,
+      "actualDamage": 2
+    }
+  ]
+}

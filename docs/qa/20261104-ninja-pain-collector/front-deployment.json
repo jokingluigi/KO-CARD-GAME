@@ -1,0 +1,11 @@
+{
+  "commit": "d707ad23e303a3d716f63a82839c8192446e8d1d",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dblipg142hec738bjqeg",
+  "status": "live",
+  "previousLiveCommit": "d2bda32e8771d120b12384ca328ba6114dfc19f9",
+  "authorizedBy": "2026-11-04 user request to deploy fixes",
+  "mainMerged": false,
+  "manualProductionDBWrites": 0,
+  "liveCommit": "d707ad23e303a3d716f63a82839c8192446e8d1d"
+}

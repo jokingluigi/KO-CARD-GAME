@@ -1,0 +1,54 @@
+[
+  {
+    "id": "crisis-awakening-dealer",
+    "name": "리온(각성)",
+    "cardType": "WRESTLER",
+    "rarity": "CHAMPION",
+    "cost": 2,
+    "attack": 0,
+    "health": 1,
+    "text": "이 카드가 필드에 소환되면 이 카드에게 이번 게임에서 리타이어하거나 파괴 된 아군 선수의 수만큼 공격력을 증가시킵니다.\n이 카드는 상대 필드에 선수 카드가 없을때만 상대 챔피언을 공격 할 수 있습니다.",
+    "keywords": [
+      "DODGE",
+      "IMMUNE"
+    ],
+    "tags": [
+      "히어로"
+    ],
+    "isToken": true,
+    "isChampionToken": true,
+    "effectId": null,
+    "effectConfig": {
+      "dodgeCharges": 2,
+      "awakeningStage": "DEALER",
+      "questExclusive": true
+    },
+    "status": "PUBLISHED"
+  },
+  {
+    "id": "crisis-awakening-healer",
+    "name": "위마리(각성)",
+    "cardType": "WRESTLER",
+    "rarity": "CHAMPION",
+    "cost": 3,
+    "attack": 2,
+    "health": 5,
+    "text": "턴 종료: 내 챔피언과 자신을 포함한 모든 아군 선수의 체력을 2 회복합니다.\n퇴장:'각성 리온'을 필드에 소환합니다.",
+    "keywords": [
+      "IMMUNE",
+      "REGEN"
+    ],
+    "tags": [
+      "악마",
+      "히어로"
+    ],
+    "isToken": true,
+    "isChampionToken": true,
+    "effectId": null,
+    "effectConfig": {
+      "awakeningStage": "HEALER",
+      "questExclusive": true
+    },
+    "status": "PUBLISHED"
+  }
+]

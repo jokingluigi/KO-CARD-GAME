@@ -1,0 +1,22 @@
+✔ Hellppeok entry hit: allied collector counts actual damage when victim HP=1 (11.120079ms)
+✔ Hellppeok entry hit: allied collector counts actual damage when victim HP=2 (1.306704ms)
+✔ both allied collectors gain from a lethal summon hit, exactly once each (2.678094ms)
+✔ enemy lethal entry does not grant an allied collector a stack (1.152556ms)
+✔ damage and self-damage draw triggers both resolve once on lethal entry (1.995915ms)
+✔ real Ninja entry + lethal Hellppeok + Pain Collector, hel owner=player-1 (14.304993ms)
+✔ real Ninja entry + lethal Hellppeok + Pain Collector, hel owner=player-2 (2.265924ms)
+✔ Ninja and copy lethal damage each buff both allied collectors after restore (22.171285ms)
+✔ separate Ninja plays each grant two stacks without duplicate entry or listeners (4.115181ms)
+✔ Ninja without incoming damage grants no damage stack (1.315577ms)
+✔ opponent Ninja takes lethal entry damage without buffing my Pain Collector (1.562112ms)
+✔ current Wimari awakened healing and exit remain functional: published (12.629223ms)
+✔ current Wimari awakened healing and exit remain functional: canonical-leon-name (2.109192ms)
+✔ current Wimari awakened healing and exit remain functional: renamed-healer (1.61491ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1867.931812
