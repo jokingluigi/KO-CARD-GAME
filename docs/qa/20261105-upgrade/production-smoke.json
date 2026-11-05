@@ -1,0 +1,27 @@
+{
+  "commit": "ce5568d955171b32719b24cabb2c7937b8da165f",
+  "checkedAtUTC": "2026-11-05T06:07:52.846408+00:00",
+  "frontendHTTP": 200,
+  "apiHealth": {
+    "status": "ok"
+  },
+  "entryScript": "https://ko-card-game-vr69.onrender.com/assets/index-Bz5Yieyr.js",
+  "revisionInEntry": true,
+  "assets": [
+    {
+      "asset": "awakening-DIHz61yO.js",
+      "status": 200,
+      "upgradeLabel": false,
+      "programRuntime": true
+    },
+    {
+      "asset": "match-result-overlay-Cy54iwmq.js",
+      "status": 200,
+      "upgradeLabel": true,
+      "programRuntime": true
+    }
+  ],
+  "manualProductionDBWrites": 0,
+  "productionTestCardsCreated": 0,
+  "mainMerged": false
+}

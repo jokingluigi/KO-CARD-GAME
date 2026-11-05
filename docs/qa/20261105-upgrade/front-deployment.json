@@ -1,0 +1,11 @@
+{
+  "commit": "ce5568d955171b32719b24cabb2c7937b8da165f",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dbm1pomc6qcc73fnec00",
+  "status": "live",
+  "previousLiveCommit": "bb7eb1fe0c6de64a3b793a6763e8d1d714dff6d9",
+  "authorizedBy": "User explicitly requested production deployment of the upgrade keyword after implementation",
+  "mainMerged": false,
+  "manualProductionDBWrites": 0,
+  "liveCommit": "ce5568d955171b32719b24cabb2c7937b8da165f"
+}
