@@ -1,3 +1,4 @@
+import { hasPendingProgram } from './program';
 import { canPlayFusion, queueHandFusion } from './fusion';
 import { getActiveCardKeywords } from '../cards/granted-text';
 import { canPlayConditionalCard } from './keyword-rules';
@@ -129,5 +130,5 @@ export function playWrestlerFromHand(
   const fusionState = getActiveCardKeywords(card).includes("FUSION") ? queueHandFusion(resolvedState, state, playerId, card) : resolvedState;
   if (fusionState === state) return actionSuccess(state);
   const completed = processChampionQuestEvents(state, fusionState);
-  return actionSuccess(completed.targetingState?.active ? { ...completed, targetingState: { ...completed.targetingState, playRollback: state } } : completed);
+  return actionSuccess(completed.targetingState?.active && !hasPendingProgram(completed) ? { ...completed, targetingState: { ...completed.targetingState, playRollback: state } } : completed);
 }

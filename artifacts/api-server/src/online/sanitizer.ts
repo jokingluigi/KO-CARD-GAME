@@ -1,3 +1,4 @@
+import {hasPendingProgram} from '@workspace/game-engine';
 import type { GameEvent, GameState } from "@workspace/game-engine";
 
 function hiddenCardCount(cards: unknown[]): { hidden: true; count: number } {
@@ -123,6 +124,7 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
   return {
     ...publicState,
     waitingForHandDiscardPlayerId: state.targetingState?.handAddition ? state.targetingState.playerId : undefined,
+    waitingForProgramPlayerId: hasPendingProgram(state) ? state.targetingState?.playerId : undefined,
     players,
     pendingCardEffects: (state.pendingCardEffects ?? []).filter(
       (pending) => !hiddenCardIds.has(pending.sourceInstanceId),

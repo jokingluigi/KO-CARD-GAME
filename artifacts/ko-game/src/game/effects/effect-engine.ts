@@ -1,3 +1,5 @@
+import {validProgramValues} from '@workspace/effect-registry';
+import {hasPendingProgram} from '../engine/program';
 import { validAbilityReplacement } from '@workspace/effect-registry';
 import { addCardsToHand, resumeHandAddition, selectHandDiscard } from '../engine/hand-addition';
 import {championTokenSilenceImmune} from '../cards/silence-immunity';
@@ -1758,6 +1760,93 @@ export function resolvePendingEffects(state: GameState): GameState {
     const effect = pending.effects[index];
     const source = pending.sourceCard ?? sourceInState(next, pending.sourceInstanceId);
     if (!source) return next;
+    if (effect.type === 'STRUCTURED' && effect.action === 'PROGRAM') {
+      const values = effect.values;
+      const key =
+        values?.programResolutionKey ??
+        `program:${pending.playerId}:${source.instanceId}:${next.events.length - 1 - [...next.events].reverse().findIndex((e) => e.type === 'ENTER_FIELD' && e.cardInstanceId === source.instanceId)}:${index}`;
+      const consumed = next.consumedNewCardEventKeys ?? [];
+      if (consumed.includes(key) || !validProgramValues(values))
+        return resolvePendingEffects({
+          ...next,
+          targetingState: { ...pending, effectIndex: index + 1 },
+        });
+      const effects: CardEffect[] = values.programEffects.map((child) => ({
+        type: 'STRUCTURED',
+        ...child,
+        target:
+          child.target?.selection === 'PLAYER_CHOICE'
+            ? { ...child.target, optionalTarget: false }
+            : child.target,
+      }));
+      const eligible = effects.every(
+        (child) =>
+          child.type !== 'STRUCTURED' ||
+          (child.action === 'SUMMON'
+            ? canEnterTowerField(next, pending.playerId) &&
+              Boolean(
+                resolveCardDefinition(
+                  next,
+                  child.values?.definition,
+                  child.values?.definitionRef,
+                  true,
+                ),
+              )
+            : !child.target ||
+              child.target.selection === 'SAME_TARGET' ||
+              getValidTargets(next, pending.playerId, source, child).length >=
+                Math.max(
+                  1,
+                  child.target.minTargets ??
+                    (child.target.selection === 'PLAYER_CHOICE'
+                      ? (child.target.count ?? 1)
+                      : 1),
+                )),
+      );
+      const owner = next.players.find((p) => p.id === pending.playerId);
+      const attempted = { ...next, consumedNewCardEventKeys: [...consumed, key] };
+      if (!eligible || !owner || owner.currentGold < values.programCost)
+        return resolvePendingEffects({
+          ...attempted,
+          targetingState: { ...pending, effectIndex: index + 1 },
+        });
+      return resolvePendingEffects({
+        ...attempted,
+        players: attempted.players.map((p) =>
+          p.id === owner.id
+            ? { ...p, currentGold: p.currentGold - values.programCost }
+            : p,
+        ),
+        events: [
+          ...attempted.events,
+          {
+            type: 'GOLD_CHANGED',
+            playerId: owner.id,
+            source: { type: 'CARD', cardInstanceId: source.instanceId },
+            target: { type: 'PLAYER', playerId: owner.id },
+            reason: 'CARD_EFFECT_COST',
+            amount: -values.programCost,
+          },
+          {
+            type: 'PROGRAM_ACTIVATED',
+            playerId: owner.id,
+            cardInstanceId: source.instanceId,
+            cardDefinitionId: source.definitionId,
+            source: { type: 'CARD', cardInstanceId: source.instanceId },
+            target: { type: 'CARD', cardInstanceId: source.instanceId },
+            reason: 'PROGRAM',
+            amount: values.programCost,
+          },
+        ],
+        targetingState: {
+          ...pending,
+          programPaid: true,
+          effects,
+          effectIndex: 0,
+          continuation: { ...pending, effectIndex: index + 1 },
+        },
+      });
+    }
     if (effect.type === 'STRUCTURED' && effect.target?.selection === 'PLAYER_CHOICE') {
       const validTargetIds = getValidTargets(next, pending.playerId, source, effect);
       const minTargets = effect.target.minTargets ?? effect.target.count;
@@ -1921,7 +2010,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
-  if (pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
+  if (hasPendingProgram(state) || pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
   if (hasCommittedFusion(pending) && !pending.cancelable) return state;
   if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
@@ -2041,6 +2130,7 @@ function applyEffectInternal(
     return applyScript(state, playerId, sourceCard, effect.script);
   }
   if (effect.type === 'STRUCTURED') {
+    if(effect.action==='PROGRAM')return resolvePendingEffects({...state,targetingState:{active:true,playerId,sourceInstanceId:sourceCard.instanceId,sourceCard,effects:[effect],effectIndex:0,selectedTargetIds:[],lastTargetIds:[],validTargetIds:[],minTargets:0,maxTargets:0,mandatory:true,cancelable:false,continuation:state.targetingState}});
     if (effect.action === 'REPLACE_CHAMPION_ABILITY') {
       const config=effect.values?.abilityReplacement,owner=state.players.find(p=>p.id===playerId);
       if(!owner?.champion || !validAbilityReplacement(config))return state;
@@ -3863,7 +3953,8 @@ export function resolveTriggeredAbilities(
 
   const compare = (actual: number, condition: 'GTE' | 'LTE' | 'EQ', expected: number) =>
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
-  const abilities = getActiveCardAbilities(card).filter((ability) => {
+  const activeAbilities = getActiveCardAbilities(card);
+  const abilities = activeAbilities.filter((ability) => {
     if (ability.trigger !== trigger) return false;
     if (trigger === 'CARD_ENTERED' && options.eventPlayerId) {
       const eventOwner = 'eventOwner' in ability ? ability.eventOwner ?? 'SELF' : 'SELF';
@@ -3919,7 +4010,11 @@ export function resolveTriggeredAbilities(
     return true;
   });
 
-  const effects = abilities.flatMap((ability) => ability.effects).filter(effect => {
+  const triggerIndex = trigger==='ENTER_FIELD'
+    ? (state.events.length-1-[...state.events].reverse().findIndex(event=>event.type==='ENTER_FIELD'&&event.cardInstanceId===card.instanceId))
+    : state.events.length;
+  const effects = abilities.flatMap((ability) => ability.effects.map((effect,effectIndex)=>effect.type==='STRUCTURED'&&effect.action==='PROGRAM'
+    ? {...effect,values:{...effect.values,programResolutionKey:`program:${playerId}:${card.instanceId}:${trigger}:${triggerIndex}:${activeAbilities.indexOf(ability)}:${effectIndex}`}} : effect)).filter(effect => {
     if(trigger !== 'LEAVE_FIELD' || !card.awakening || effect.type !== 'STRUCTURED' || effect.action !== 'SUMMON')return true;
     const sequence=state.players.find(p=>p.id===playerId)?.champion;
     const ids=sequence?.quest?.awakening?.stageCardIds;

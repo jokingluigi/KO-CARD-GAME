@@ -37,6 +37,7 @@ export type CardEffect =
       action: RuntimeAction;
       target?: StructuredTarget;
        values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects" | "definition" | "listener"> & {
+         programResolutionKey?: string;
          /** Serializable card definition supplied by the runtime card pool. */
          definition?: CardDefinition;
          purpleRainFollowup?: boolean;

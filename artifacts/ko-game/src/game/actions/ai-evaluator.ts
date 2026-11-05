@@ -13,6 +13,8 @@ import { executeAction, getLegalActions } from "./engine-actions";
 import type { GameAction } from "./types";
 
 const KEYWORD_VALUES: Record<string, number> = {
+  // Its value is already reflected by actual paid effects in the simulation.
+  PROGRAM: 0,
   TAUNT: 4,
   DODGE: 4,
   RUSH: 2,

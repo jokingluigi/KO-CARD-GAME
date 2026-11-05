@@ -1,0 +1,41 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "base2ThenUpgrade2": true,
+    "mobileTargetTouch": true,
+    "opponentWait": true,
+    "reloadChoice": true,
+    "exactlyOnceBuff": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "base2ThenUpgrade2": true,
+    "mobileTargetTouch": true,
+    "opponentWait": true,
+    "reloadChoice": true,
+    "exactlyOnceBuff": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "base2ThenUpgrade2": true,
+    "mobileTargetTouch": false,
+    "opponentWait": true,
+    "reloadChoice": true,
+    "exactlyOnceBuff": true,
+    "productionWrites": 0,
+    "errors": []
+  }
+]

@@ -4,8 +4,8 @@ export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIR
 export const RULE_LISTENER_TRIGGERS = ["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN", "SOURCE_CAUSED_TARGET_REMOVAL"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "SOURCE_IN_HAND", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
-export const ACTIONS = ["REPLACE_CHAMPION_ABILITY", "BUFF", "SET_STATS", "MODIFY_STAT", "MODIFY_MAX_HEALTH", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MOVE_TO_DECK", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "COPY_BEST_STATS", "REPEAT_TURN_END", "TRANSFORM_SOURCE", "TRANSFORM_TARGET", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT", "FUSION", "VANISH"] as const;
-export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN", "WANTED", "FUSION", "CANNOT_ATTACK"] as const;
+export const ACTIONS = ["PROGRAM", "REPLACE_CHAMPION_ABILITY", "BUFF", "SET_STATS", "MODIFY_STAT", "MODIFY_MAX_HEALTH", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MOVE_TO_DECK", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "COPY_BEST_STATS", "REPEAT_TURN_END", "TRANSFORM_SOURCE", "TRANSFORM_TARGET", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT", "FUSION", "VANISH"] as const;
+export const KEYWORDS = ["PROGRAM", "RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN", "WANTED", "FUSION", "CANNOT_ATTACK"] as const;
 
 export function validCountdownTurns(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 999;
@@ -72,7 +72,7 @@ export type StatName = "COST" | "ATTACK" | "HEALTH";
 export type EffectDuration = "THIS_TURN" | "UNTIL_NEXT_TURN" | "PERMANENT";
 export const STAT_NAMES = ["COST", "ATTACK", "HEALTH"] as const;
 export const EFFECT_DURATIONS = ["THIS_TURN", "UNTIL_NEXT_TURN", "PERMANENT"] as const;
-export type EffectActionSchema = { abilityReplacement?: boolean; target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; statChannelReference?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean; delayed?: boolean; listener?: boolean; prevention?: boolean; captureStats?: boolean };
+export type EffectActionSchema = { program?: boolean; abilityReplacement?: boolean; target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; statChannelReference?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean; delayed?: boolean; listener?: boolean; prevention?: boolean; captureStats?: boolean };
 export type RegistryStatus = "ACTIVE" | "DISABLED";
 
 /** Closed, data-only Script AST. It is intentionally separate from the
@@ -253,6 +253,8 @@ export type StructuredListener = {
 export type StructuredPrevention = { uses?: number; setHealth?: number };
 export type AbilityReplacement = { variant: "BASE" | "UPGRADED" } | { ability: { id: string; name: string; description: string; cost: number; effects: StructuredEffect[] } };
 export type StructuredEffectValues = {
+  programCost?: number;
+  programEffects?: StructuredQueuedEffect[];
   abilityReplacement?: AbilityReplacement;
   /** Purple Rain: chosen own character takes damage, then branches by target kind. */
   purpleRainFollowup?: boolean;
@@ -325,7 +327,7 @@ const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minBaseCost", "minCost", "ma
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId", "offset", "left", "right"]);
 const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
-const SCRIPT_EFFECT_VALUE_KEYS = new Set(["abilityReplacement",
+const SCRIPT_EFFECT_VALUE_KEYS = new Set(["programCost", "programEffects", "abilityReplacement",
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
   "attackMultiplier", "healthMultiplier", "stat", "duration", "currentHealthOnly", "maxHealth", "maxHealthExpression",
   "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
@@ -535,7 +537,7 @@ export const DISPLAY_LABELS = {
   BUFF: "강화", SET_STATS: "스탯 설정", MODIFY_STAT: "스탯 변경", MODIFY_MAX_HEALTH: "최대 체력 변경", SET_STAT: "스탯 설정", DAMAGE: "피해", HEAL: "회복", DESTROY: "파괴", RETIRE: "리타이어", DRAW: "드로우",
   ADD_GOLD: "골드 획득", ADD_NEXT_TURN_GOLD: "다음 턴 골드", REDUCE_COST: "비용 감소",
   INCREASE_COST: "비용 증가", ADD_KEYWORD: "키워드 부여", REMOVE_KEYWORD: "키워드 제거",
-  REPLACE_CHAMPION_ABILITY: "고유 능력 변경", SUMMON: "소환", GENERATE: "생성", DEPLOY_CHAMPION_TOKEN: "챔피언 토큰 전개", ADD_DAMAGE_MODIFIER: "피해 보정", RELEASE_CAPTURED: "포획 해방",
+  PROGRAM: "업그레이드", REPLACE_CHAMPION_ABILITY: "고유 능력 변경", SUMMON: "소환", GENERATE: "생성", DEPLOY_CHAMPION_TOKEN: "챔피언 토큰 전개", ADD_DAMAGE_MODIFIER: "피해 보정", RELEASE_CAPTURED: "포획 해방",
   SWITCH_EFFECT_BRANCH: "스위치", COPY_BEST_STATS: "최고 스탯 복사", REPEAT_TURN_END: "턴 종료 반복", TRANSFORM_SOURCE: "변신", TRANSFORM_TARGET: "대상 변신", RUSH: "러쉬", SURPRISE: "기습", TAUNT: "도발", DODGE: "회피",
   SILENCE: "침묵", STUN: "기절", DISABLE_ABILITY: "능력 비활성화", WEAKEN_TO_STUN_SILENCE: "공격력 감소 후 제어",
   MOVE_TO_HAND: "손패 이동", MOVE_TO_DECK: "덱 이동", MILL: "덱 파괴", SPEND_GOLD_BUFF_SELF: "남은 골드 강화",
@@ -543,6 +545,7 @@ export const DISPLAY_LABELS = {
 } as const;
 
 export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
+  PROGRAM: {target:false,program:true},
   REPLACE_CHAMPION_ABILITY: { target: false, abilityReplacement: true },
   ADD_GOLD: { target: false, amount: true }, ADD_NEXT_TURN_GOLD: { target: false, amount: true }, DRAW: { target: false, amount: true },
   MODIFY_STAT: { target: true, amount: true, signedAmount: true, stat: true, duration: true, minimum: true }, MODIFY_MAX_HEALTH: { target: true, amount: true, signedAmount: true }, SET_STAT: { target: true, amount: true, stat: true, duration: true },
@@ -585,11 +588,12 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
   if (rawValues === undefined) {
     return !schema.amount && !schema.keyword && !schema.stat && !schema.duration &&
       !schema.stats && !schema.statMultiplier && !schema.referenceStat && !schema.dynamicValue &&
-      action !== "REPLACE_CHAMPION_ABILITY" && action !== "TRANSFORM_SOURCE" && action !== "TRANSFORM_TARGET";
+      action !== "PROGRAM" && action !== "REPLACE_CHAMPION_ABILITY" && action !== "TRANSFORM_SOURCE" && action !== "TRANSFORM_TARGET";
   }
   if (depth > SCRIPT_MAX_DEPTH || !isRecord(rawValues) ||
     !hasOnlyKeys(rawValues, SCRIPT_EFFECT_VALUE_KEYS)) return false;
   const values = rawValues;
+  if(action === "PROGRAM" && !validProgramValues(values,depth+1))return false;
   if (action === "REPLACE_CHAMPION_ABILITY" && !validAbilityReplacement(values.abilityReplacement, depth+1)) return false;
   const allowed: Record<string, boolean> = {
     amount: Boolean(schema.amount || action === "MOVE_TO_HAND"),
@@ -602,6 +606,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     attackMultiplier: Boolean(schema.statMultiplier),
     healthMultiplier: Boolean(schema.statMultiplier),
     stat: Boolean(schema.stat),
+    programCost: action === "PROGRAM", programEffects: action === "PROGRAM",
     abilityReplacement: action === "REPLACE_CHAMPION_ABILITY",
     duration: Boolean(schema.duration || action === "REPLACE_CHAMPION_ABILITY"),
     currentHealthOnly: action === "SET_STAT",
@@ -769,6 +774,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
 }
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
+  PROGRAM: "남은 골드와 유효 대상을 검사한 뒤 추가 비용을 자동 지불하고 효과를 해결합니다.",
   REPLACE_CHAMPION_ABILITY: "현재 챔피언의 고유 능력을 변경합니다. 사용 횟수와 체력은 유지합니다.",
   FUSION: "필드의 원본 선수와 다른 아군 선수가 합체합니다. 현재 공격력·체력을 이전하고 양쪽 합체 효과 후 재료가 소멸합니다.", VANISH: "리타이어·파괴·묘지와 무관하게 현재 전투에서 완전히 제거합니다.",
   BUFF: "명시된 공격력/체력 채널만 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", MODIFY_MAX_HEALTH: "대상의 최대 체력만 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
@@ -806,6 +812,7 @@ export const EFFECT_LIBRARY = {
   actions: ACTIONS.map((name) => {
     const schema = ACTION_SCHEMAS[name];
     const values = {
+       ...(schema.program ? {programCost:"integer 0..999",programEffects:"StructuredQueuedEffect[] (1..10)"} : {}),
        ...(schema.abilityReplacement ? { abilityReplacement: '{ variant: "BASE" | "UPGRADED" } 또는 { ability: { id, name, description, cost, effects: StructuredEffect[] } }' } : {}),
        ...(schema.amount ? { amount: schema.signedAmount ? "number (-999..999)" : "number (0..999)" } : {}),
        ...(schema.stat ? { stat: [...STAT_NAMES] } : {}),
@@ -875,4 +882,65 @@ export function validAbilityReplacementConfig(value:unknown):boolean {
   if(!Array.isArray(node)){const record=node as Record<string,unknown>;if(record.action==='REPLACE_CHAMPION_ABILITY'){const v=record.values as Record<string,unknown>|undefined;if(!validAbilityReplacement(v?.abilityReplacement)||(v?.duration!==undefined&&!EFFECT_DURATIONS.includes(v.duration as EffectDuration)))return false;}}
   const valid=Object.values(node).every(child=>walk(child,depth+1));seen.delete(node);return valid;
  };return walk(value,0);
+}
+
+/** PROGRAM is a paid, automatic effect group, never an activation button. */
+export function validProgramValues(
+  value: unknown,
+  depth = 0,
+): value is Record<string, unknown> & {
+  programCost: number;
+  programEffects: StructuredQueuedEffect[];
+} {
+  if (
+    depth > SCRIPT_MAX_DEPTH ||
+    !isRecord(value) ||
+    !Number.isSafeInteger(value.programCost) ||
+    Number(value.programCost) < 0 ||
+    Number(value.programCost) > 999 ||
+    !Array.isArray(value.programEffects) ||
+    value.programEffects.length < 1 ||
+    value.programEffects.length > 10
+  )
+    return false;
+  return value.programEffects.every(
+    (child) =>
+      isRecord(child) &&
+      child.action !== 'PROGRAM' &&
+      child.conditions === undefined &&
+      child.trigger === undefined &&
+      validScriptEmbeddedEffect(child, depth + 1, false),
+  );
+}
+export function validProgramConfig(value: unknown, depth = 0): boolean {
+  if (depth > 24) return false;
+  if (!value || typeof value !== 'object') return true;
+  if (Array.isArray(value))
+    return value.every((v) => validProgramConfig(v, depth + 1));
+  const v = value as Record<string, unknown>;
+  if (v.action === 'PROGRAM' && !validProgramValues(v.values)) return false;
+  return Object.values(v).every((child) =>
+    validProgramConfig(child, depth + 1),
+  );
+}
+
+/** Shared authoring syntax; PROGRAM remains the stable serialized keyword ID. */
+export function programTextClauses(
+  input: string,
+): Array<{ text: string; cost?: number }> | null {
+  if (!/(?:업그레이드|프로그램|PROGRAM)\s*\(/i.test(input)) return null;
+  return input
+    .trim()
+    .split(/\r?\n+/)
+    .filter((line) => line.trim())
+    .map((line) => {
+      const match = line
+        .trim()
+        .match(
+          /^(?:등장\s*(?:[—–-]|:)\s*)?(?:업그레이드|프로그램|PROGRAM)\s*\(\s*(\d+)\s*\)\s*[:：]\s*(.+)$/i,
+        );
+      return match
+        ? { cost: Number(match[1]), text: match[2] }
+        : { text: line };
+    });
 }

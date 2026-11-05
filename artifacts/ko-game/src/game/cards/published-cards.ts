@@ -72,6 +72,8 @@ export function abilitiesFor(
       } as CardAbility));
   }
   if (effectId === "STRUCTURED_EFFECTS_V1" && Array.isArray(config.effects)) {
+    // Paid and ordinary groups must retain their own conditions and authoring order.
+    if (config.effects.length > 1 && config.effects.some((effect: any) => effect?.action === 'PROGRAM')) return config.effects.flatMap(effect => abilitiesFor(effectId, { ...config, effects: [effect] }));
     const byTrigger = new Map<string, CardEffect[]>();
     for (const raw of config.effects) {
       if (!raw || typeof raw !== "object") continue;
@@ -301,6 +303,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
         originEffect,
       ] }
     : exchangeRuntimeConfig;
+  const programAbilities = card.effectId === 'STRUCTURED_EFFECTS_V1' && Array.isArray(card.effectConfig.effects) && card.effectConfig.effects.some((effect: any) => effect?.action === 'PROGRAM') ? abilitiesFor(card.effectId, finalRuntimeConfig) : null;
   return {
       id: card.id,
       name: card.name,
@@ -326,10 +329,10 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       ...(card.effectConfig.questExclusive === true ? { questExclusive: true } : {}),
       ...(['TANK', 'HEALER', 'DEALER'].includes(String(card.effectConfig.awakeningStage)) ? { awakeningStage: card.effectConfig.awakeningStage as 'TANK' | 'HEALER' | 'DEALER' } : {}),
-      keywords: reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card),
+      keywords: [...new Set([...(reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card)), ...(programAbilities ? ['PROGRAM' as const] : [])])],
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (latestReviewed ?? reviewedOctober24Abilities(card) ?? reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (programAbilities ?? latestReviewed ?? reviewedOctober24Abilities(card) ?? reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

@@ -1,3 +1,4 @@
+export {hasPendingProgram} from '../../../artifacts/ko-game/src/game/engine/program';
 /**
  * Server-safe adapter for the existing KO rules engine.
  *

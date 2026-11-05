@@ -292,6 +292,7 @@ export function CardRenderer({
     ...(isAbilityDisabled ? ["DISABLED" as CardKeyword] : []),
   ].filter((keyword, index, all) => all.indexOf(keyword) === index);
   const keywordLabels: Record<string, string> = {
+    PROGRAM: "업그레이드",
     ...KEYWORD_RULE_LABELS,
     SILENCE_IMMUNE:"침묵 면역",
     TAUNT: "도발",

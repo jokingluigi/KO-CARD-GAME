@@ -1,4 +1,5 @@
-import { validAbilityReplacement, validCountdownTurns } from '@workspace/effect-registry';
+import { programTextClauses } from '@workspace/effect-registry';
+import { validProgramValues, validAbilityReplacement, validCountdownTurns } from '@workspace/effect-registry';
 import {
   ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, DYNAMIC_VALUES, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, RULE_LISTENER_TRIGGERS, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
@@ -34,6 +35,7 @@ export type EffectScriptConfig = import("@workspace/effect-registry").EffectScri
  * destructive action such as DESTROY.
  */
 const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
+  PROGRAM: ["programCost","programEffects"],
   REPLACE_CHAMPION_ABILITY: ["abilityReplacement", "duration"],
   BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "attackReference", "healthReference", "referenceDivisor", "duration", "conditionalBuff"],
   SET_STATS: ["attack", "health", "duration"],
@@ -1965,6 +1967,21 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
 
 /** Hand activation is opt-in for every trigger, never inferred from TURN_END alone. */
 export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
+  const programClauses = programTextClauses(input);
+  if (programClauses?.some(clause => clause.cost !== undefined)) {
+    const results = programClauses.map(clause => {
+      const namedAlly = clause.cost !== undefined ? clause.text.match(/^다른\s*아군\s+([^\s]+)\s+1장에게\s*([+-]\d+\s*\/\s*[+-]\d+)\s*(?:를|을)?\s*부여합니다[.!]?$/u) : null;
+      const body = namedAlly ? `아군 선수 1장에게 ${namedAlly[2]}를 부여합니다.` : clause.text;
+      const result = analyzeEffectText(body, {...options, defaultTrigger: clause.cost !== undefined ? 'ENTER_FIELD' : options.defaultTrigger});
+      if (namedAlly) result.effects = result.effects.map(effect => effect.target ? {...effect, target: {...effect.target, filter: {...effect.target.filter, excludeSource: true, ...(namedAlly[1] !== '선수' ? {definitionRef: {name: namedAlly[1]}} : {})}}} : effect);
+      if (clause.cost === undefined) return result;
+      const values = {programCost: clause.cost, programEffects: result.effects.map(({trigger, ...effect}) => effect)};
+      if (result.status !== 'success' || !validProgramValues(values)) return {...result, status: 'failure' as const, outcome: 'analysis_failure' as const, effects: [], reason: '업그레이드 비용과 내부 효과를 확인해 주세요.'};
+      return {...result, effects: [{trigger: 'ENTER_FIELD' as const, action: 'PROGRAM' as const, values}], keywords: [...new Set([...result.keywords, 'PROGRAM' as Keyword])], summaries: [`업그레이드(${clause.cost}) · ${result.summaries.join(' / ')}`]};
+    });
+    const failed = results.find(result => result.status !== 'success');
+    return {...(failed ?? results[0]), effects: failed ? [] : results.flatMap(result => result.effects), keywords: [...new Set(results.flatMap(result => result.keywords))], summaries: results.flatMap(result => result.summaries), unsupportedSegments: results.flatMap(result => result.unsupportedSegments)};
+  }
   const added: Keyword[] = [];
   const remainder = input.replace(/^(?:합체|FUSION|공격불가|CANNOT_ATTACK)\s*$/gim, line => { added.push(/합체|FUSION/i.test(line) ? "FUSION" : "CANNOT_ATTACK"); return ""; }).trim();
   if (added.length) {
@@ -2012,7 +2029,8 @@ export function isChampionQuestRewardEffects(value: unknown): value is { effects
   });
 }
 
-export function isStructuredEffects(value: unknown): value is { effects: StructuredEffect[] } {
+export function isStructuredEffects(value: unknown, depth=0, committedProgram=false): value is { effects: StructuredEffect[] } {
+  if(depth>6)return false;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const effects = (value as { effects?: unknown }).effects;
   if (!Array.isArray(effects) || effects.length < 1 || effects.length > 10) return false;
@@ -2023,6 +2041,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action) || !isActiveAction(item.action)) return false;
     const schema = ACTION_SCHEMAS[item.action], target = item.target, values = item.values;
      if (!hasOnlyActionValueKeys(item.action, values)) return false;
+     if(item.action==='PROGRAM' && (!validProgramValues(values)||!isStructuredEffects({effects:values.programEffects.map(child=>({...child,trigger:item.trigger}))},depth+1,true)))return false;
      if (item.action === "REPLACE_CHAMPION_ABILITY" && (!validAbilityReplacement(values?.abilityReplacement) || (values?.duration!==undefined && !EFFECT_DURATIONS.includes(values.duration)))) return false;
     if (schema.target) {
       const zones = target?.zones ?? (target?.zone ? [target.zone] : []);
@@ -2043,7 +2062,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         !["ASC", "DESC"].includes(target.sort.direction) ||
         Object.keys(target.sort).some((key) => !["stat", "direction"].includes(key))
       )) return false;
-      if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE" && values?.purpleRainFollowup !== true) return false;
+      if (!committedProgram && item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE" && values?.purpleRainFollowup !== true) return false;
       if (target.owner === "ALL") {
         const characterAll = zones.length === 1 && zones[0] === "CHARACTER" && target.selection === "ALL";
         const unrestrictedChoice = zones.length === 1 &&

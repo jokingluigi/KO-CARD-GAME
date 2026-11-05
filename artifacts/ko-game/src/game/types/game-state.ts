@@ -123,7 +123,9 @@ export interface GameState {
   pendingComboAttack?: {gameId:string;turn:number;playerId:string;attackerInstanceId:string;target:AttackTarget};
   /** Public waiting marker used by sanitized opponent views. */
   waitingForHandDiscardPlayerId?: string;
+  waitingForProgramPlayerId?: string;
   targetingState?: {
+    programPaid?: boolean;
     handAddition?: { playerId: string; cards: import('../engine/hand-addition').HandArrival[]; completion?: import('../engine/hand-addition').HandCompletion };
     /** Display-only identity of this serialized effect processing unit. */
     presentationResolutionId?: string;

@@ -189,6 +189,9 @@ export function presentationCueDrafts(
           duration: 820,
         });
         break;
+      case "PROGRAM_ACTIVATED":
+        drafts.push({id,kind:"EFFECT",label:`업그레이드(${event.amount ?? 0})`,...target,duration:450});
+        break;
       case "GOLD_CHANGED":
         if ((event.amount ?? 0) !== 0) {
           drafts.push({

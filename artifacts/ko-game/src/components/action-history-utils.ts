@@ -203,6 +203,8 @@ export function eventTitle(
       )?.champion;
       return `${champion?.name ?? "챔피언"} 피니셔 준비 완료${champion?.quest?.rewardText ? ` · ${champion.quest.rewardText}` : ""}`;
     }
+    case "PROGRAM_ACTIVATED":
+      return `${visibleName(event.cardInstanceId)} 업그레이드(${event.amount ?? 0}) 자동 발동`;
     case "GOLD_CHANGED":
       return `${event.reason === "CHAMPION_QUEST_REWARD" ? "현재 완료 보상 " : ""}골드 ${event.amount && event.amount > 0 ? "+" : ""}${event.amount ?? 0}`;
     case "CHAMPION_ABILITY_USED":

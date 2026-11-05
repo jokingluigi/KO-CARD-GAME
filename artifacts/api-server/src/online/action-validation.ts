@@ -1,3 +1,4 @@
+import { hasPendingProgram } from "@workspace/game-engine";
 import type { GameAction, GameState } from "@workspace/game-engine";
 
 export function directActionStartsTargeting(action: GameAction, candidateState: GameState): boolean {
@@ -5,7 +6,7 @@ export function directActionStartsTargeting(action: GameAction, candidateState: 
     action.type === "PLAY_TECHNIQUE" ||
     action.type === "USE_ACTIVE" ||
     action.type === "USE_CHAMPION_ABILITY"
-  ) && candidateState.targetingState?.active === true && !candidateState.targetingState.handAddition;
+  ) && candidateState.targetingState?.active === true && !candidateState.targetingState.handAddition && !hasPendingProgram(candidateState);
 }
 
 export function rejectedActionCode(

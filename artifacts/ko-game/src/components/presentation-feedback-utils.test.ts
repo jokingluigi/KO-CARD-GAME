@@ -51,7 +51,7 @@ test("이벤트 순서대로 피해, 퇴장, 퀘스트 완료 피드백을 만�
     [
       ["DAMAGE", "-4"],
       ["RETIRE", "RETIRE"],
-      ["QUEST_COMPLETE", "QUEST COMPLETE"],
+      ["QUEST_COMPLETE", "피니셔 준비 완료"],
     ],
   );
 });

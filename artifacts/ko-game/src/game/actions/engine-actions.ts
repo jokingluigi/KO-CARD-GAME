@@ -1,3 +1,4 @@
+import { hasPendingProgram } from '../engine/program';
 import {resolveConfiguredTowerEffects} from '../tower/configured-effects';
 import { hasCommittedFusion } from '../engine/fusion';
 import { isMinionAAbility } from '../champions/minion-a';
@@ -38,7 +39,7 @@ function beginTargetedAction(state: GameState, action: Extract<GameAction, { typ
   const probe = immediateAction(probeState, action.playerId, action.action);
   if (!probe.success) return actionFailure(state, probe.errorCode, probe.message);
   const pending = probe.state.targetingState;
-  if (!pending?.active || pending.handAddition) return probe;
+  if (!pending?.active || pending.handAddition || hasPendingProgram(probe.state)) return probe;
   if (pending.validTargetIds.length === 0) {
     return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
   }
@@ -68,7 +69,7 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
         ? { type: 'CONFIRM_PRECOMMIT_TARGET' as const, playerId, targetId }
         : { type: 'SELECT_EFFECT_TARGET' as const, playerId, targetId },
     );
-    if (!state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
+    if (!hasPendingProgram(state) && !state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
     if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
     else legalActionsCache.set(state, new Map([[playerId, actions]]));
     return actions;
@@ -137,6 +138,7 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
   if (state.openingMulligan && !(state.targetingState?.active && action.type==='SELECT_EFFECT_TARGET') && action.type !== 'MULLIGAN' && action.type !== 'EMOTE' && action.type !== 'SURRENDER')
     return actionFailure(state, 'NOT_YOUR_TURN', '두 플레이어가 시작 손패 교체를 마칠 때까지 기다려 주세요.');
   if (state.targetingState?.handAddition && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','손패에서 버릴 카드 1장을 선택하세요.');
+  if (hasPendingProgram(state) && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','업그레이드 효과의 대상을 선택하세요.');
   if (action.type === 'BEGIN_TARGETED_ACTION') return beginTargetedAction(state, action);
   switch (action.type) {
     case 'PLAY_WRESTLER':
@@ -177,7 +179,7 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
         return actionFailure(state, 'TARGET_SELECTION_PENDING', '사용을 확정한 뒤 대상을 선택하세요.');
       }
       let selected = selectEffectTarget(state, action.targetId);
-      if (selected !== state && selected.targetingState?.active && pending.playRollback && pending.fusion?.stage !== "CHOOSE") selected = { ...selected, targetingState: { ...selected.targetingState, playRollback: pending.playRollback } };
+      if (selected !== state && selected.targetingState?.active && !hasPendingProgram(state) && pending.playRollback && pending.fusion?.stage !== "CHOOSE") selected = { ...selected, targetingState: { ...selected.targetingState, playRollback: pending.playRollback } };
       return selected === state
         ? actionFailure(state, 'NO_VALID_TARGET', '선택할 수 없는 대상입니다.')
         : actionSuccess(processChampionQuestEvents(state, selected));

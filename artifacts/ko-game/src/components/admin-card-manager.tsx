@@ -45,6 +45,7 @@ type CardType = "WRESTLER" | "TECHNIQUE";
 type CardStatus = "DRAFT" | "PUBLISHED" | "DISABLED";
 type EffectAuditResult = { id: string; status: "missing" | "review" | "aligned" | "none"; reason: string };
 type CardKeyword =
+  | "PROGRAM"
   | "RUSH"
   | "SURPRISE"
   | "TAUNT"
@@ -150,6 +151,7 @@ const EMPTY_CARD: CardFormValues = {
 };
 
 const KEYWORDS: CardKeyword[] = [
+  "PROGRAM",
   "RUSH",
   "SURPRISE",
   "TAUNT",
@@ -158,6 +160,7 @@ const KEYWORDS: CardKeyword[] = [
 ];
 
 const KEYWORD_LABELS: Record<CardKeyword, string> = {
+  PROGRAM: "업그레이드",
   FUSION: '합체', CANNOT_ATTACK: '공격불가',
   WANTED: '수배',
   COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
