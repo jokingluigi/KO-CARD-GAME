@@ -1,0 +1,11 @@
+{
+  "commit": "bb7eb1fe0c6de64a3b793a6763e8d1d714dff6d9",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "deployId": "dep-dblkaaou01pc73af5mt0",
+  "status": "live",
+  "previousLiveCommit": "c596a745d354fc1225eae4e2e66e251681a93cb8",
+  "authorizedBy": "2026-11-04 user request for longer surprise reactions and standing deploy authorization",
+  "mainMerged": false,
+  "manualProductionDBWrites": 0,
+  "liveCommit": "bb7eb1fe0c6de64a3b793a6763e8d1d714dff6d9"
+}
