@@ -524,7 +524,7 @@
 html[data-ui-reduced="true"] .ko-quest-meter i { transition:none; }
 @media(prefers-reduced-motion:reduce) { .ko-quest-meter i { transition:none; } }
 
-/* A spell's action stays outside animated cards and the hand scroller. */
+/* Keep the spell action on its card's stable layout anchor, outside artwork motion. */
 .ko-technique-use-button {
   position: static;
   min-width: 76px;
@@ -542,13 +542,39 @@ html[data-ui-reduced="true"] .ko-quest-meter i { transition:none; }
   animation: none;
   transition: background-color 120ms;
 }
-.ko-game-controls > .flex .ko-technique-use-button {
+.ko-hand-use-action {
+  position: absolute;
+  left: 50%;
+  top: 36px;
+  width: max(64px, calc(100% - 8px));
+  max-width: 96px;
+  transform: translateX(-50%);
+  z-index: 170;
+  pointer-events: none;
+  animation: none;
+  transition: none;
+}
+.ko-hand-use-action .ko-technique-use-button {
   min-width: 64px;
   min-height: 44px;
-  padding: 4px 8px;
+  width: 100%;
+  padding: 6px 8px;
+  pointer-events: auto;
 }
 .ko-technique-use-button:disabled {
   background: #28251e;
   color: #8d8878;
   cursor: not-allowed;
+}
+/* Settle the layout before exposing an action, rather than chasing an animated gap. */
+.ko-game-shell .ko-hand-cards:has(.ko-hand-use-action) {
+  transition: none;
+}
+.ko-game-shell .ko-hand-use-action .ko-technique-use-button,
+.ko-game-shell .ko-hand-use-action .ko-technique-use-button:not(:disabled):active {
+  scale: 1;
+  translate: none;
+  transform: none;
+  animation: none;
+  transition: background-color 120ms, filter 140ms;
 }

@@ -40,6 +40,9 @@ export function SpellUseButton({
           pointer.current !== null
         )
           return;
+        // Native focus can scroll a partially visible hand card under the finger.
+        event.preventDefault();
+        event.currentTarget.focus({ preventScroll: true });
         pointer.current = event.pointerId;
         event.currentTarget.setPointerCapture(event.pointerId);
       }}

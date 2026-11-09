@@ -1101,7 +1101,7 @@ export function GameStatePreview({
     onUseTechnique(cardInstanceId, rectSnapshot(sourceElement.getBoundingClientRect()));
   }
 
-  // This action belongs to the stable turn controls, never the scrolling/lifting card.
+  // Keep the action with its card, outside the card artwork motion layer.
   const techniqueUseAction = selectedHandCard?.cardType === 'TECHNIQUE' && !effectTargeting ? (
     <SpellUseButton key={selectedHandCard.instanceId}
       title={`${getCardDefinition(selectedHandCard.definitionId)?.name ?? '주문'} · ${selectedHandCard.currentCost} 골드`}
@@ -1357,7 +1357,6 @@ export function GameStatePreview({
                  {String(Math.floor(turnSecondsRemaining / 60)).padStart(2, '0')}:
                  {String(turnSecondsRemaining % 60).padStart(2, '0')}
               </div>}
-               {techniqueUseAction}
             </div>
             <button
               type="button"
@@ -1796,6 +1795,7 @@ export function GameStatePreview({
                           key={`hand-${card.instanceId}`}
                           card={payableCost === card.currentCost ? card : { ...card, currentCost: payableCost }}
                           isSelected={isSelected}
+                          useAction={isSelected ? techniqueUseAction : null}
                           canAfford={canAfford}
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
@@ -1905,6 +1905,7 @@ function HandCard({
   onClick,
   density,
   style,
+  useAction,
   cardRef,
 }: {
   cosmeticOwnerId?:string;
@@ -1918,6 +1919,7 @@ function HandCard({
   cardRef: (element: HTMLDivElement | null) => void;
   density: 'small' | 'medium' | 'regular';
   style?: React.CSSProperties;
+  useAction?: React.ReactNode;
 }) {
   const getCardDefinition=React.useContext(RenderCardCatalog);
   const def = getCardDefinition(card.definitionId);
@@ -1987,6 +1989,7 @@ function HandCard({
       ⓘ
     </button>
     </div>
+    {useAction && <div className="ko-hand-use-action">{useAction}</div>}
     </Inspectable>
   );
 }
