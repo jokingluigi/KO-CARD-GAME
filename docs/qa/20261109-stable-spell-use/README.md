@@ -39,3 +39,5 @@
 ## 배포
 
 운영 전용 production 브랜치에 빠른 감기 방식으로 반영하고, 승인 SHA를 고정하는 안전 배포 실행기로 배포한다. 실제 배포와 공개 버전 확인 결과는 별도 배포 확인 JSON에 기록한다. main 병합과 운영 카드 데이터 수정은 하지 않는다.
+
+배포 완료: `694b27341bf600c373b310b1b892392ba39b5aac`를 API·프런트 모두 live 확인했다. 공개 health와 version.json이 같은 커밋을 제공하고, 실제 배포된 UI 청크에서 고정 사용 버튼 처리와 기존 버튼 드래그 표식 제거를 확인했다. [운영 확인](production-verification.json). 승인 SHA와 production 기본 브랜치 보호도 유지했다.

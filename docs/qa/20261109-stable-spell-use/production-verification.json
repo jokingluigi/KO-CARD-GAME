@@ -1,0 +1,55 @@
+{
+  "checkedAtUTC": "2026-11-09T15:36:20.359854+00:00",
+  "revision": "694b27341bf600c373b310b1b892392ba39b5aac",
+  "api": {
+    "status": "ok",
+    "revision": "694b27341bf600c373b310b1b892392ba39b5aac"
+  },
+  "front": {
+    "revision": "694b27341bf600c373b310b1b892392ba39b5aac",
+    "builtAtUTC": "2026-11-09T15:35:18.048Z"
+  },
+  "services": [
+    {
+      "role": "api",
+      "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dboug0ugekts73f8cvp0",
+      "status": "live",
+      "commit": "694b27341bf600c373b310b1b892392ba39b5aac",
+      "branch": "production",
+      "autoDeploy": "no",
+      "externalApprovedCommit": "694b27341bf600c373b310b1b892392ba39b5aac",
+      "buildCommand": "node -e \"if(process.env.RENDER_GIT_COMMIT!=='694b27341bf600c373b310b1b892392ba39b5aac'){console.error('UNAPPROVED PRODUCTION REVISION');process.exit(1)}\" && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server build"
+    },
+    {
+      "role": "front",
+      "serviceId": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dboug3ou01pc738es5n0",
+      "status": "live",
+      "commit": "694b27341bf600c373b310b1b892392ba39b5aac",
+      "branch": "production",
+      "autoDeploy": "no",
+      "externalApprovedCommit": "694b27341bf600c373b310b1b892392ba39b5aac",
+      "buildCommand": "node -e \"if(process.env.RENDER_GIT_COMMIT!=='694b27341bf600c373b310b1b892392ba39b5aac'){console.error('UNAPPROVED PRODUCTION REVISION');process.exit(1)}\" && pnpm install --frozen-lockfile && pnpm --filter @workspace/ko-game build"
+    }
+  ],
+  "frontendEntry": "https://ko-card-game-vr69.onrender.com/assets/index-DEbVRBrC.js",
+  "runtime": [
+    {
+      "asset": "awakening-DIHz61yO.js",
+      "programRuntime": true,
+      "upgradeLabel": false,
+      "stableUseButton": false,
+      "removedButtonDragMarker": true
+    },
+    {
+      "asset": "match-result-overlay-CIrQttuD.js",
+      "programRuntime": true,
+      "upgradeLabel": true,
+      "stableUseButton": true,
+      "removedButtonDragMarker": true
+    }
+  ],
+  "manualProductionDBWrites": 0,
+  "mainMerged": false
+}
