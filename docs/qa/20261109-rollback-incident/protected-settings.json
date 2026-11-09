@@ -1,0 +1,16 @@
+[
+  {
+    "role": "api",
+    "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+    "branch": "production",
+    "autoDeploy": "no",
+    "buildCommand": "node scripts/deploy/verify-release.mjs --minimum-commit ce5568d955171b32719b24cabb2c7937b8da165f && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server build"
+  },
+  {
+    "role": "front",
+    "serviceId": "srv-damlm4gu01pc73ao3mb0",
+    "branch": "production",
+    "autoDeploy": "no",
+    "buildCommand": "node scripts/deploy/verify-release.mjs --minimum-commit ce5568d955171b32719b24cabb2c7937b8da165f && pnpm install --frozen-lockfile && pnpm --filter @workspace/ko-game build"
+  }
+]

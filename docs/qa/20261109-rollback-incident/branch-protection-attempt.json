@@ -1,0 +1,5 @@
+{
+  "applied": false,
+  "httpStatus": 403,
+  "reason": "GitHub API token lacks permission for production branch protection; Render approval guard is independently configured"
+}

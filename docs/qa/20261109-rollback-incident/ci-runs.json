@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Production release safety",
+    "head_sha": "721bbc1f53ef894085072d9e084b803677060d4f",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/jokingluigi/KO-CARD-GAME/actions/runs/42559674637"
+  },
+  {
+    "name": "Production release safety",
+    "head_sha": "6219379f9f257a4f959392d585840c0a0eec8fab",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/jokingluigi/KO-CARD-GAME/actions/runs/42559341774"
+  },
+  {
+    "name": "Production release safety",
+    "head_sha": "c7bda88e36967aeacc97089c1b6d161f2e591560",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/jokingluigi/KO-CARD-GAME/actions/runs/42558996003"
+  }
+]

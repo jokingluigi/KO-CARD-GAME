@@ -1,0 +1,51 @@
+{
+  "checkedAtUTC": "2026-11-09T04:06:08.411187+00:00",
+  "revision": "721bbc1f53ef894085072d9e084b803677060d4f",
+  "api": {
+    "status": "ok",
+    "revision": "721bbc1f53ef894085072d9e084b803677060d4f"
+  },
+  "front": {
+    "revision": "721bbc1f53ef894085072d9e084b803677060d4f",
+    "builtAtUTC": "2026-11-09T04:04:27.370Z"
+  },
+  "services": [
+    {
+      "role": "api",
+      "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbokc63l550s73a13lt0",
+      "status": "live",
+      "commit": "721bbc1f53ef894085072d9e084b803677060d4f",
+      "branch": "production",
+      "autoDeploy": "no",
+      "externalApprovedCommit": "721bbc1f53ef894085072d9e084b803677060d4f",
+      "buildCommand": "node -e \"if(process.env.RENDER_GIT_COMMIT!=='721bbc1f53ef894085072d9e084b803677060d4f'){console.error('UNAPPROVED PRODUCTION REVISION');process.exit(1)}\" && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server build"
+    },
+    {
+      "role": "front",
+      "serviceId": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbokc8nf3r2c73beh2g0",
+      "status": "live",
+      "commit": "721bbc1f53ef894085072d9e084b803677060d4f",
+      "branch": "production",
+      "autoDeploy": "no",
+      "externalApprovedCommit": "721bbc1f53ef894085072d9e084b803677060d4f",
+      "buildCommand": "node -e \"if(process.env.RENDER_GIT_COMMIT!=='721bbc1f53ef894085072d9e084b803677060d4f'){console.error('UNAPPROVED PRODUCTION REVISION');process.exit(1)}\" && pnpm install --frozen-lockfile && pnpm --filter @workspace/ko-game build"
+    }
+  ],
+  "frontendEntry": "https://ko-card-game-vr69.onrender.com/assets/index-BwpEdM9S.js",
+  "runtime": [
+    {
+      "asset": "awakening-DIHz61yO.js",
+      "programRuntime": true,
+      "upgradeLabel": false
+    },
+    {
+      "asset": "match-result-overlay-DnNqT53F.js",
+      "programRuntime": true,
+      "upgradeLabel": true
+    }
+  ],
+  "manualProductionDBWrites": 0,
+  "mainMerged": false
+}
