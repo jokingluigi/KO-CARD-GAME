@@ -1,0 +1,12 @@
+{
+  "role": "api",
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "commit": "ce5568d955171b32719b24cabb2c7937b8da165f",
+  "deployId": "dep-dbok6s7f3r2c73be0to0",
+  "status": "live",
+  "authorizedBy": "User requested immediate rollback recovery and recurrence prevention",
+  "startedAtUTC": "2026-11-09T03:52:16.166089+00:00",
+  "manualProductionDBWrites": 0,
+  "mainMerged": false,
+  "liveCommit": "ce5568d955171b32719b24cabb2c7937b8da165f"
+}

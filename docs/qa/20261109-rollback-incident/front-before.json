@@ -1,0 +1,187 @@
+{
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "branch": "main",
+  "autoDeploy": "no",
+  "history": [
+    {
+      "id": "dep-dbo6qts9v7es73eenplg",
+      "status": "live",
+      "commit": {
+        "id": "381d903b46c6c5279f30b910606ae2e8c5af71f5",
+        "message": "Use equipped presentation skins, enlarge champion captions and support AI deck skins (#101)",
+        "createdAt": "2026-10-27T04:49:25Z"
+      },
+      "createdAt": "2026-11-08T12:39:19.506438Z",
+      "finishedAt": "2026-11-08T12:39:46.111955Z",
+      "trigger": "manual"
+    },
+    {
+      "id": "dep-dbm1pomc6qcc73fnec00",
+      "status": "deactivated",
+      "commit": {
+        "id": "ce5568d955171b32719b24cabb2c7937b8da165f",
+        "message": "style: keep upgrade validation test diff focused",
+        "createdAt": "2026-11-05T05:35:17Z"
+      },
+      "createdAt": "2026-11-05T06:06:26.890654Z",
+      "finishedAt": "2026-11-05T06:07:12.943696Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dblkaaou01pc73af5mt0",
+      "status": "deactivated",
+      "commit": {
+        "id": "bb7eb1fe0c6de64a3b793a6763e8d1d714dff6d9",
+        "message": "Hold strong-card surprise expressions for at least two seconds",
+        "createdAt": "2026-11-04T14:45:50Z"
+      },
+      "createdAt": "2026-11-04T14:46:03.696667Z",
+      "finishedAt": "2026-11-04T14:46:53.844564Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbljsr8u01pc73ae3bq0",
+      "status": "deactivated",
+      "commit": {
+        "id": "c596a745d354fc1225eae4e2e66e251681a93cb8",
+        "message": "Unify bots at highest difficulty and improve tactical planning with worker search",
+        "createdAt": "2026-11-04T14:16:35Z"
+      },
+      "createdAt": "2026-11-04T14:17:17.22357Z",
+      "finishedAt": "2026-11-04T14:18:04.598616Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dblipg142hec738bjqeg",
+      "status": "deactivated",
+      "commit": {
+        "id": "d707ad23e303a3d716f63a82839c8192446e8d1d",
+        "message": "Verify Ninja and Pain Collector interaction against the public build",
+        "createdAt": "2026-11-04T12:59:46Z"
+      },
+      "createdAt": "2026-11-04T13:01:52.184976Z",
+      "finishedAt": "2026-11-04T13:02:41.461306Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkuthp5efls73fof1ng",
+      "status": "deactivated",
+      "commit": {
+        "id": "d2bda32e8771d120b12384ca328ba6114dfc19f9",
+        "message": "feat(cards): support champion rarity for technique cards",
+        "createdAt": "2026-11-03T14:22:53Z"
+      },
+      "createdAt": "2026-11-03T14:25:11.630278Z",
+      "finishedAt": "2026-11-03T14:25:58.870322Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbku9legekts73f6cbb0",
+      "status": "deactivated",
+      "commit": {
+        "id": "294369271b536a5191452c57af57eebff6541033",
+        "message": "feat(rewards): collect all claimable account rewards in one action",
+        "createdAt": "2026-11-03T13:40:13Z"
+      },
+      "createdAt": "2026-11-03T13:42:45.472924Z",
+      "finishedAt": "2026-11-03T13:43:26.486973Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkqvpmk1f9s73dp4n2g",
+      "status": "deactivated",
+      "commit": {
+        "id": "342652fef6de289b52121e6b5b178889600b7518",
+        "message": "Settle tutorial rewards at completion independently of dialog motion",
+        "createdAt": "2026-11-03T09:56:37Z"
+      },
+      "createdAt": "2026-11-03T09:56:54.948218Z",
+      "finishedAt": "2026-11-03T09:57:35.2982Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkqq36gekts73eu30s0",
+      "status": "deactivated",
+      "commit": {
+        "id": "ec7e95a9e19e0c1376f400f0adb9e0bcb69c1062",
+        "message": "Provision a tutorial-only guaranteed champion pack when needed",
+        "createdAt": "2026-11-03T09:42:35Z"
+      },
+      "createdAt": "2026-11-03T09:44:44.135213Z",
+      "finishedAt": "2026-11-03T09:45:24.579922Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkplqrncjis73f0iilg",
+      "status": "deactivated",
+      "commit": {
+        "id": "0a38b6f93b0256fee3485cacb2203a8094385d44",
+        "message": "Preserve deck edits and recover interrupted screen loads",
+        "createdAt": "2026-11-03T08:27:10Z"
+      },
+      "createdAt": "2026-11-03T08:27:23.524042Z",
+      "finishedAt": "2026-11-03T08:28:07.821921Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkp3867bikc73fgq6ng",
+      "status": "deactivated",
+      "commit": {
+        "id": "df87911780e6e320fd13a263910d7953a9ac92a6",
+        "message": "Harden purchase recovery, session feedback and battle readability",
+        "createdAt": "2026-11-03T05:15:47Z"
+      },
+      "createdAt": "2026-11-03T07:47:44.46703Z",
+      "finishedAt": "2026-11-03T07:48:24.828269Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkk2emc6qcc73allnk0",
+      "status": "deactivated",
+      "commit": {
+        "id": "364192d3c454f49730fe9e6513f3453f0cbe6b81",
+        "message": "Expose champion token silence immunity before card artwork",
+        "createdAt": "2026-11-03T02:04:21Z"
+      },
+      "createdAt": "2026-11-03T02:04:42.472639Z",
+      "finishedAt": "2026-11-03T02:05:21.694178Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkjtemgekts73ec81v0",
+      "status": "deactivated",
+      "commit": {
+        "id": "760754f9c75c040d8991ddf5f98bc154d550cf87",
+        "message": "Keep small home menus accessible while web fonts load",
+        "createdAt": "2026-11-03T01:53:50Z"
+      },
+      "createdAt": "2026-11-03T01:54:02.797738Z",
+      "finishedAt": "2026-11-03T01:54:41.672942Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkjr9egekts73ec2pog",
+      "status": "deactivated",
+      "commit": {
+        "id": "466b722934ccbd71e960002cec152d7fac6874b6",
+        "message": "Clarify tutorial access and apply stat growth passives in hand and deck",
+        "createdAt": "2026-11-03T01:47:05Z"
+      },
+      "createdAt": "2026-11-03T01:49:25.490549Z",
+      "finishedAt": "2026-11-03T01:50:06.690626Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbk3r57b9u1s73fhpllg",
+      "status": "deactivated",
+      "commit": {
+        "id": "33ab155e31286fa44bf286276c55f3fea846c663",
+        "message": "Polish player rewards, market, journal and draft entry screens",
+        "createdAt": "2026-11-02T07:35:55Z"
+      },
+      "createdAt": "2026-11-02T07:36:52.318124Z",
+      "finishedAt": "2026-11-02T07:37:24.254933Z",
+      "trigger": "api"
+    }
+  ]
+}

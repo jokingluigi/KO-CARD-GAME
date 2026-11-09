@@ -1,0 +1,187 @@
+{
+  "serviceId": "srv-daml9kqd0e5s73fsnjs0",
+  "branch": "main",
+  "autoDeploy": "no",
+  "history": [
+    {
+      "id": "dep-dbo71lu417fc73fem7s0",
+      "status": "live",
+      "commit": {
+        "id": "381d903b46c6c5279f30b910606ae2e8c5af71f5",
+        "message": "Use equipped presentation skins, enlarge champion captions and support AI deck skins (#101)",
+        "createdAt": "2026-10-27T04:49:25Z"
+      },
+      "createdAt": "2026-11-08T12:53:43.139457Z",
+      "finishedAt": "2026-11-08T12:54:58.165317Z",
+      "trigger": "manual"
+    },
+    {
+      "id": "dep-dbo6qkgu01pc73eduna0",
+      "status": "deactivated",
+      "commit": {
+        "id": "381d903b46c6c5279f30b910606ae2e8c5af71f5",
+        "message": "Use equipped presentation skins, enlarge champion captions and support AI deck skins (#101)",
+        "createdAt": "2026-10-27T04:49:25Z"
+      },
+      "createdAt": "2026-11-08T12:38:42.787781Z",
+      "finishedAt": "2026-11-08T12:39:55.730884Z",
+      "trigger": "manual"
+    },
+    {
+      "id": "dep-dbm1ort6e07s73asfj00",
+      "status": "deactivated",
+      "commit": {
+        "id": "ce5568d955171b32719b24cabb2c7937b8da165f",
+        "message": "style: keep upgrade validation test diff focused",
+        "createdAt": "2026-11-05T05:35:17Z"
+      },
+      "createdAt": "2026-11-05T06:04:31.564742Z",
+      "finishedAt": "2026-11-05T06:06:16.441724Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbljsr3m8hqs739ga5sg",
+      "status": "deactivated",
+      "commit": {
+        "id": "c596a745d354fc1225eae4e2e66e251681a93cb8",
+        "message": "Unify bots at highest difficulty and improve tactical planning with worker search",
+        "createdAt": "2026-11-04T14:16:35Z"
+      },
+      "createdAt": "2026-11-04T14:17:16.365254Z",
+      "finishedAt": "2026-11-04T14:18:58.99256Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbliombm8hqs739dh2jg",
+      "status": "deactivated",
+      "commit": {
+        "id": "d707ad23e303a3d716f63a82839c8192446e8d1d",
+        "message": "Verify Ninja and Pain Collector interaction against the public build",
+        "createdAt": "2026-11-04T12:59:46Z"
+      },
+      "createdAt": "2026-11-04T13:00:09.744462Z",
+      "finishedAt": "2026-11-04T13:02:08.735652Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkusj59fdbs73cdn530",
+      "status": "deactivated",
+      "commit": {
+        "id": "d2bda32e8771d120b12384ca328ba6114dfc19f9",
+        "message": "feat(cards): support champion rarity for technique cards",
+        "createdAt": "2026-11-03T14:22:53Z"
+      },
+      "createdAt": "2026-11-03T14:23:08.263189Z",
+      "finishedAt": "2026-11-03T14:24:58.58169Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbku8mgu01pc73eb87cg",
+      "status": "deactivated",
+      "commit": {
+        "id": "294369271b536a5191452c57af57eebff6541033",
+        "message": "feat(rewards): collect all claimable account rewards in one action",
+        "createdAt": "2026-11-03T13:40:13Z"
+      },
+      "createdAt": "2026-11-03T13:40:43.01607Z",
+      "finishedAt": "2026-11-03T13:42:30.107113Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkqp5ek1f9s73dojjm0",
+      "status": "deactivated",
+      "commit": {
+        "id": "ec7e95a9e19e0c1376f400f0adb9e0bcb69c1062",
+        "message": "Provision a tutorial-only guaranteed champion pack when needed",
+        "createdAt": "2026-11-03T09:42:35Z"
+      },
+      "createdAt": "2026-11-03T09:42:45.713731Z",
+      "finishedAt": "2026-11-03T09:44:24.626838Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkqlm95efls73fd0v3g",
+      "status": "deactivated",
+      "commit": {
+        "id": "28d9b1beb0f4b925875751b30720e124766c0733",
+        "message": "Unify natural interface motion and award verified tutorial completion packs",
+        "createdAt": "2026-11-03T09:35:07Z"
+      },
+      "createdAt": "2026-11-03T09:35:21.289912Z",
+      "finishedAt": "2026-11-03T09:37:03.97365Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkp25mi0phs73atots0",
+      "status": "deactivated",
+      "commit": {
+        "id": "df87911780e6e320fd13a263910d7953a9ac92a6",
+        "message": "Harden purchase recovery, session feedback and battle readability",
+        "createdAt": "2026-11-03T05:15:47Z"
+      },
+      "createdAt": "2026-11-03T07:45:26.134019Z",
+      "finishedAt": "2026-11-03T07:47:04.01757Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbkjqbrncjis73eh9jfg",
+      "status": "deactivated",
+      "commit": {
+        "id": "466b722934ccbd71e960002cec152d7fac6874b6",
+        "message": "Clarify tutorial access and apply stat growth passives in hand and deck",
+        "createdAt": "2026-11-03T01:47:05Z"
+      },
+      "createdAt": "2026-11-03T01:47:27.161223Z",
+      "finishedAt": "2026-11-03T01:49:03.796702Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbk0kmmc6qcc73d65q4g",
+      "status": "deactivated",
+      "commit": {
+        "id": "913386698d739fca975c5b1d3da33c857722bf8a",
+        "message": "Fix launch deck recovery and visible actions; use all owned image emotes",
+        "createdAt": "2026-11-02T03:58:09Z"
+      },
+      "createdAt": "2026-11-02T03:58:18.078367Z",
+      "finishedAt": "2026-11-02T03:59:53.633207Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbjvqns9v7es73b9noog",
+      "status": "deactivated",
+      "commit": {
+        "id": "3886a7456779d4abe2ee39c96b39c97ca42a2113",
+        "message": "Add administrator-controlled default image emote grants",
+        "createdAt": "2026-11-02T03:02:44Z"
+      },
+      "createdAt": "2026-11-02T03:02:55.195672Z",
+      "finishedAt": "2026-11-02T03:04:33.712108Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbjn5f5g1s2s7387rlo0",
+      "status": "deactivated",
+      "commit": {
+        "id": "2546bc6af46799d7bcad1848619c5c67c786752f",
+        "message": "Improve home deck readiness and grant champion tokens silence immunity",
+        "createdAt": "2026-11-01T17:11:16Z"
+      },
+      "createdAt": "2026-11-01T17:11:24.676683Z",
+      "finishedAt": "2026-11-01T17:13:18.731366Z",
+      "trigger": "api"
+    },
+    {
+      "id": "dep-dbjm9hu7bikc73ftcuj0",
+      "status": "deactivated",
+      "commit": {
+        "id": "556e6d07d8d2cbd32d0279a130b0ff971cc0d09e",
+        "message": "Clarify home account, launch deck, notices, rewards and background framing",
+        "createdAt": "2026-11-01T16:11:21Z"
+      },
+      "createdAt": "2026-11-01T16:11:51.156146Z",
+      "finishedAt": "2026-11-01T16:13:24.27128Z",
+      "trigger": "api"
+    }
+  ]
+}

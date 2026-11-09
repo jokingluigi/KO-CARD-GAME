@@ -1,0 +1,12 @@
+{
+  "role": "front",
+  "serviceId": "srv-damlm4gu01pc73ao3mb0",
+  "commit": "ce5568d955171b32719b24cabb2c7937b8da165f",
+  "deployId": "dep-dbok6s3l550s73a0k73g",
+  "status": "live",
+  "authorizedBy": "User requested immediate rollback recovery and recurrence prevention",
+  "startedAtUTC": "2026-11-09T03:52:16.845024+00:00",
+  "manualProductionDBWrites": 0,
+  "mainMerged": false,
+  "liveCommit": "ce5568d955171b32719b24cabb2c7937b8da165f"
+}

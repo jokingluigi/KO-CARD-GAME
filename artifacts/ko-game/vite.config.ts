@@ -36,6 +36,7 @@ export default defineConfig({
   define:{"import.meta.env.VITE_BUILD_REVISION":JSON.stringify(sourceRevision)},
   base: basePath,
   plugins: [
+    {name:'ko-release-version',generateBundle(){this.emitFile({type:'asset',fileName:'version.json',source:JSON.stringify({revision:sourceRevision,builtAtUTC:new Date().toISOString()})});}},
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
