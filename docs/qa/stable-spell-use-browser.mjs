@@ -179,13 +179,26 @@ try {
     assert.equal((await state()).players[0].currentGold, 5);
     await load("normal", true);
     await select();
-    const first = await use().boundingBox();
-    await page.locator(".ko-player-hand").evaluate((e) => (e.scrollLeft = 150));
+    const anchored = await use().evaluate((button) =>
+      Boolean(button.closest(".ko-hand-cards")),
+    );
+    const anchorX = () =>
+      use().evaluate(
+        (button) =>
+          button.closest(".ko-hand-cards > *")?.getBoundingClientRect().x ?? 0,
+      );
+    const first = await use().boundingBox(),
+      beforeAnchor = await anchorX();
+    await page
+      .locator(".ko-player-hand")
+      .evaluate((e, amount) => (e.scrollLeft = amount), anchored ? 20 : 150);
     await page.waitForTimeout(250);
-    const next = await use().boundingBox();
+    const next = await use().boundingBox(),
+      afterAnchor = await anchorX();
     assert.ok(
-      Math.abs(first.x - next.x) < 1 && Math.abs(first.y - next.y) < 1,
-      "Use stays fixed when hand scrolls",
+      Math.abs(first.x - beforeAnchor - (next.x - afterAnchor)) < 1 &&
+        Math.abs(first.y - next.y) < 1,
+      "Use retains its layout anchor while hand scrolls",
     );
     assert.ok(next.width >= 44 && next.height >= 44);
     await page.screenshot({ path: `${out}/selected-${width}.png` });
@@ -256,7 +269,7 @@ try {
       touch,
       buttonSlopCastsOnce: true,
       buttonDoesNotDrag: true,
-      fixedWhileHandScrolls: true,
+      stableRelativeToLayoutAnchor: true,
       targetSelection: true,
       disabledTurnAndCost: true,
       errors,

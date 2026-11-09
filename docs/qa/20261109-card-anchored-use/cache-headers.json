@@ -1,0 +1,20 @@
+[
+  {
+    "id": "hdr-dbourvajnfac7383ir6g",
+    "name": "Cache-Control",
+    "path": "/",
+    "value": "no-cache, no-store, must-revalidate"
+  },
+  {
+    "id": "hdr-dbourvetlv9c73bbm3mg",
+    "name": "Cache-Control",
+    "path": "/index.html",
+    "value": "no-cache, no-store, must-revalidate"
+  },
+  {
+    "id": "hdr-dbourvetlv9c73bbm3p0",
+    "name": "Cache-Control",
+    "path": "/version.json",
+    "value": "no-cache, no-store, must-revalidate"
+  }
+]
