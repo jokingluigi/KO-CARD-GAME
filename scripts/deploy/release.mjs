@@ -60,6 +60,11 @@ export async function deploy(role, commit) {
   if (!live?.commit?.id)
     throw Error("Cannot establish the current live revision.");
   assertForwardRelease(process.cwd(), live.commit.id, commit);
+  // Approve exactly this locally verified, fast-forward commit before building.
+  await render("services/" + sid, {
+    method: "PATCH",
+    body: productionSettings(role, commit),
+  });
   const started = await render("services/" + sid + "/deploys", {
     method: "POST",
     body: { commitId: commit, clearCache: "do_not_clear" },

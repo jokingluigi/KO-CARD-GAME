@@ -100,8 +100,8 @@ test("Render settings use production and an externally pinned advancing floor", 
     assert.equal(config.branch, "production");
     assert.equal(config.autoDeploy, "no");
     assert.ok(
-      protectedBuildCommand(role, floor).startsWith(
-        `node scripts/deploy/verify-release.mjs --minimum-commit ${floor} && `,
+      protectedBuildCommand(role, floor).includes(
+        `RENDER_GIT_COMMIT!=='${floor}'`,
       ),
     );
     assert.notEqual(
@@ -169,4 +169,20 @@ test("hosted ancestry rejects behind, diverged, wrong head and unavailable verif
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test("external build approval stops every different commit before source scripts or dependency installation", () => {
+  const approved = "a".repeat(40);
+  const command = protectedBuildCommand("api", approved).split(" && ")[0];
+  const rejected = spawnSync("/bin/sh", ["-c", command], {
+    env: { ...process.env, RENDER_GIT_COMMIT: "b".repeat(40) },
+    encoding: "utf8",
+  });
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /UNAPPROVED/);
+  const accepted = spawnSync("/bin/sh", ["-c", command], {
+    env: { ...process.env, RENDER_GIT_COMMIT: approved },
+    encoding: "utf8",
+  });
+  assert.equal(accepted.status, 0);
 });
