@@ -496,7 +496,7 @@
 @media (prefers-reduced-motion: reduce) { .card-leave-animation--fusion,.card-leave-animation--vanish { animation-name:ko-vanish; } }
 
 /* Pointer drag stays local; the battle and hand layout never follow the pointer. */
-.ko-player-hand .ko-hand-card, .ko-player-hand .ko-technique-use-button { touch-action: pan-x; }
+.ko-player-hand .ko-hand-card { touch-action: pan-x; }
 .ko-hand-card[data-dragging=true],.ko-hand-card[data-drag-returning=true] { opacity:0 !important; }
 .ko-card-drag-ghost { transform-origin:center; contain:layout style; filter:drop-shadow(0 8px 4px #000b); }
 .ko-card-drag-ghost * { pointer-events:none !important; }
@@ -523,3 +523,32 @@
 .ko-quest-meter i { transition:transform 280ms cubic-bezier(.2,.8,.2,1); }
 html[data-ui-reduced="true"] .ko-quest-meter i { transition:none; }
 @media(prefers-reduced-motion:reduce) { .ko-quest-meter i { transition:none; } }
+
+/* A spell's action stays outside animated cards and the hand scroller. */
+.ko-technique-use-button {
+  position: static;
+  min-width: 76px;
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1px solid #e7c76d;
+  border-radius: 4px;
+  background: #e7c76d;
+  color: #100f0b;
+  font-weight: 900;
+  font-size: 14px;
+  touch-action: none;
+  transform: none;
+  animation: none;
+  transition: background-color 120ms;
+}
+.ko-game-controls > .flex .ko-technique-use-button {
+  min-width: 64px;
+  min-height: 44px;
+  padding: 4px 8px;
+}
+.ko-technique-use-button:disabled {
+  background: #28251e;
+  color: #8d8878;
+  cursor: not-allowed;
+}

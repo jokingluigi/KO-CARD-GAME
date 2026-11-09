@@ -127,12 +127,11 @@ export function BattleCardDrag(props: Props) {
       if (!latest.current.enabled || e.button !== 0 || !e.isPrimary || gesture)
         return;
       const target = e.target as Element;
-      const useButton = target.closest<HTMLElement>('[data-hand-drag-card-id]');
       const info = target.closest("[data-touch-inspect-trigger]");
-      if (!useButton && !info && target.closest("button,a,input,select"))
+      if (!info && target.closest("button,a,input,select"))
         return;
       const entry = Array.from(latest.current.hand.current).find(([id, n]) =>
-        useButton ? id === useButton.dataset.handDragCardId : n.contains(target) || Boolean(info && n.parentElement?.contains(info)),
+        n.contains(target) || Boolean(info && n.parentElement?.contains(info)),
       );
       if (!entry || allowed(entry[0]).length === 0) return;
       for(const [ghost,source] of returns)if(source===entry[1]){ghost.remove();returns.delete(ghost);delete source.dataset.dragReturning;}

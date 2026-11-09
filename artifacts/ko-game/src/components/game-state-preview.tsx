@@ -1,3 +1,4 @@
+import { SpellUseButton } from './spell-use-button';
 import { hasPendingProgram } from '../game/engine/program';
 import { ChampionProtection } from './champion-protection';
 import { isChampionProtectedByToken } from '@/game/engine/direct-champion';
@@ -1100,6 +1101,14 @@ export function GameStatePreview({
     onUseTechnique(cardInstanceId, rectSnapshot(sourceElement.getBoundingClientRect()));
   }
 
+  // This action belongs to the stable turn controls, never the scrolling/lifting card.
+  const techniqueUseAction = selectedHandCard?.cardType === 'TECHNIQUE' && !effectTargeting ? (
+    <SpellUseButton key={selectedHandCard.instanceId}
+      title={`${getCardDefinition(selectedHandCard.definitionId)?.name ?? '주문'} · ${selectedHandCard.currentCost} 골드`}
+      disabled={!isMyTurn || !canEndTurn || !playableHandIds.has(selectedHandCard.instanceId) || !!interactionStatus || introActive || !!playAnimation || !!attackAnimation}
+      onUse={()=>handleUseTechnique(selectedHandCard.instanceId)} />
+  ) : null;
+
   const opponentZones = (<ZoneStack
                     className="ko-opponent-zones" cosmeticLoadout={cosmetics[opp.id]}
                    deckRef={opponentDeckRef}
@@ -1348,6 +1357,7 @@ export function GameStatePreview({
                  {String(Math.floor(turnSecondsRemaining / 60)).padStart(2, '0')}:
                  {String(turnSecondsRemaining % 60).padStart(2, '0')}
               </div>}
+               {techniqueUseAction}
             </div>
             <button
               type="button"
@@ -1791,7 +1801,6 @@ export function GameStatePreview({
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                           onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
-                           onUseTechnique={() => handleUseTechnique(card.instanceId)}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
@@ -1896,7 +1905,6 @@ function HandCard({
   onClick,
   density,
   style,
-  onUseTechnique,
   cardRef,
 }: {
   cosmeticOwnerId?:string;
@@ -1907,7 +1915,6 @@ function HandCard({
   presentationActive: boolean;
   targetable: boolean;
   onClick: () => void;
-  onUseTechnique: () => void;
   cardRef: (element: HTMLDivElement | null) => void;
   density: 'small' | 'medium' | 'regular';
   style?: React.CSSProperties;
@@ -1979,21 +1986,6 @@ function HandCard({
     >
       ⓘ
     </button>
-    {card.cardType === "TECHNIQUE" && isSelected && (
-      <button
-        type="button"
-        onPointerDown={(event) => event.stopPropagation()}
-        onPointerUp={(event) => event.stopPropagation()}
-        data-hand-drag-card-id={card.instanceId}
-        className="ko-technique-use-button absolute left-1/2 top-9 z-[130] touch-manipulation min-h-11 min-w-[56px] md:min-h-0 -translate-x-1/2 whitespace-nowrap rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
-        onClick={(event) => {
-          event.stopPropagation();
-          onUseTechnique();
-        }}
-      >
-        사용
-      </button>
-    )}
     </div>
     </Inspectable>
   );

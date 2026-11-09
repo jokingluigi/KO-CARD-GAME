@@ -1,0 +1,46 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "touch": true,
+    "buttonSlopCastsOnce": true,
+    "buttonDoesNotDrag": true,
+    "fixedWhileHandScrolls": true,
+    "targetSelection": true,
+    "disabledTurnAndCost": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "touch": true,
+    "buttonSlopCastsOnce": true,
+    "buttonDoesNotDrag": true,
+    "fixedWhileHandScrolls": true,
+    "targetSelection": true,
+    "disabledTurnAndCost": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "touch": true,
+    "buttonSlopCastsOnce": true,
+    "buttonDoesNotDrag": true,
+    "fixedWhileHandScrolls": true,
+    "targetSelection": true,
+    "disabledTurnAndCost": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "touch": false,
+    "buttonSlopCastsOnce": true,
+    "buttonDoesNotDrag": true,
+    "fixedWhileHandScrolls": true,
+    "targetSelection": true,
+    "disabledTurnAndCost": true,
+    "errors": []
+  }
+]

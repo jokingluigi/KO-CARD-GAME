@@ -781,13 +781,6 @@ body:has(.ko-board-preview)
   min-height: 44px;
 }
 
-/* Horizontal hand scrolling clips content outside its vertical bounds. Keep
-   the selected spell's use action within the hand rather than above it. */
-.ko-board-preview .ko-technique-use-button {
-  top: 36px;
-  min-height: 44px;
-}
-
 /* Desktop hand cards are taller than the old fixed 220px tray. Let their row
    determine its height and reserve room for the existing hover/selection lift. */
 @media (min-width: 769px) {
