@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
-import { verifyRelease } from "./verify-release.mjs";
+import { verifyRelease, verifyHostedRelease } from "./verify-release.mjs";
 import { assertForwardRelease } from "./release.mjs";
 function fixture(run) {
   const cwd = mkdtempSync(join(tmpdir(), "ko-release-"));
@@ -110,4 +110,63 @@ test("Render settings use production and an externally pinned advancing floor", 
     );
   }
   assert.throws(() => productionSettings("api", "HEAD"), /Invalid/);
+});
+
+test("hosted archives validate immutable ancestry without local git history", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "ko-hosted-"));
+  const floor = "a".repeat(40),
+    revision = "b".repeat(40);
+  try {
+    const result = await verifyHostedRelease({
+      cwd,
+      minimumCommit: floor,
+      revision,
+      compare: async () => ({
+        status: "ahead",
+        merge_base_commit: { sha: floor },
+        commits: [{ sha: revision }],
+      }),
+    });
+    assert.equal(result.verification, "github-ancestry");
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+test("hosted ancestry rejects behind, diverged, wrong head and unavailable verification", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "ko-hosted-"));
+  const floor = "a".repeat(40),
+    revision = "b".repeat(40);
+  try {
+    for (const data of [
+      { status: "behind" },
+      { status: "diverged" },
+      {
+        status: "ahead",
+        merge_base_commit: { sha: floor },
+        commits: [{ sha: "c".repeat(40) }],
+      },
+    ])
+      await assert.rejects(
+        verifyHostedRelease({
+          cwd,
+          minimumCommit: floor,
+          revision,
+          compare: async () => data,
+        }),
+        /older than/,
+      );
+    await assert.rejects(
+      verifyHostedRelease({
+        cwd,
+        minimumCommit: floor,
+        revision,
+        compare: async () => {
+          throw Error("network unavailable");
+        },
+      }),
+      /network unavailable/,
+    );
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
 });
