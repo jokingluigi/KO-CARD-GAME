@@ -50,9 +50,23 @@ export function AdminEditorSections({
   children: ReactNode[];
 }) {
   const prefix = useId();
+  const sectionRoot=useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(panels[0]?.id);
+  useEffect(()=>{
+    const node=sectionRoot.current;
+    if(!node)return;
+    const reveal=(event:Event)=>{
+      const field=event.target as HTMLElement;
+      const panel=field.closest<HTMLElement>('[data-admin-panel]');
+      if(panel?.dataset.adminPanel)setActive(panel.dataset.adminPanel);
+      for(let parent=field.parentElement;parent&&parent!==node;parent=parent.parentElement)if(parent instanceof HTMLDetailsElement)parent.open=true;
+      requestAnimationFrame(()=>{field.focus({preventScroll:true});field.scrollIntoView({block:'center',behavior:'instant'});});
+    };
+    node.addEventListener('ko-admin-reveal-field',reveal);
+    return()=>node.removeEventListener('ko-admin-reveal-field',reveal);
+  },[]);
   return (
-    <div
+    <div ref={sectionRoot}
       className="admin-editor-sections md:col-span-2"
       onInvalidCapture={(e) => {
         const panel = (e.target as HTMLElement).closest<HTMLElement>(
@@ -81,7 +95,7 @@ export function AdminEditorSections({
         role="tablist"
         aria-label="편집 설정"
       >
-        {panels.map((p) => (
+        {panels.map((p,index) => (
           <button
             type="button"
             role="tab"
@@ -92,7 +106,7 @@ export function AdminEditorSections({
             key={p.id}
             onClick={() => setActive(p.id)}
           >
-            {p.label}
+            <span className="admin-editor-tab-number" aria-hidden="true">{index+1}</span>{p.label}
           </button>
         ))}
       </div>

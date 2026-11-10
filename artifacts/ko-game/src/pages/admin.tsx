@@ -16,6 +16,7 @@ import { AuthRecovery } from "@/components/auth-page";
 import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/components/admin-layout";
 import "@/styles/admin-console.css";
+import "@/components/admin-workspace.css";
 const AdminBattleSprites = lazy(() => import("@/components/admin-battle-sprites").then(m=>({default:m.AdminBattleSprites})));
 const AdminDashboard = lazy(() =>
   import("@/components/admin-dashboard").then((m) => ({

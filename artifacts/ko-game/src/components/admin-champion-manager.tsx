@@ -1,5 +1,6 @@
-import {FinisherOptionsEditor} from './finisher-options-editor';
-import type {FinisherChoice} from '@/game/champions/types';
+import {applyPreparationCondition} from '@/lib/champion-preparation-editor';
+import {ChampionPreparationEditor} from './champion-preparation-editor';
+import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { AWAKENING_CARD_IDS, AWAKENING_QUEST_TEXT } from '@/game/champions/awakening-definitions';
@@ -387,7 +388,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 
   async function analyzeQuest() {
     const text = form.questText?.trim();
-    if (!text) { setError("분석할 퀘스트 조건을 입력해 주세요."); return; }
+    if (!text) { setError("분석할 피니셔 준비 조건을 입력해 주세요."); return; }
     setError("");
     setAnalyzingKey("questText");
     try {
@@ -401,14 +402,14 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setQuestAnalysis(result);
       setPrompts((current) => ({ ...current, questText: undefined }));
       if (result.outcome === "supported") {
-        setMessageText("퀘스트 조건 분석이 완료되었습니다. 결과를 확인한 뒤 조건 적용을 눌러 저장할 수 있습니다.");
+        setMessageText("피니셔 준비 조건 분석이 완료되었습니다. 결과를 확인한 뒤 조건 적용을 눌러 저장할 수 있습니다.");
       } else {
         setError(result.outcome === "mechanism_required"
           ? `새 메커니즘이 필요합니다: ${(result.unsupportedParts ?? result.unsupportedSegments ?? []).join(", ")}`
-          : result.reason ?? "퀘스트 조건을 이해하지 못했습니다.");
+          : result.reason ?? "피니셔 준비 조건을 이해하지 못했습니다.");
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "퀘스트 조건을 분석하지 못했습니다.");
+      setError(reason instanceof Error ? reason.message : "피니셔 준비 조건을 분석하지 못했습니다.");
     } finally {
       setAnalyzingKey(null);
     }
@@ -418,26 +419,15 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     if (!questAnalysis?.condition || questAnalysis.outcome !== "supported") return;
     const next = {
       ...formRef.current,
-      questCondition: questAnalysis.condition ?? null,
+      questCondition: applyPreparationCondition(formRef.current.questCondition,questAnalysis.condition),
       questProgressRequired: typeof questAnalysis.condition?.required === "number"
         ? questAnalysis.condition.required
         : formRef.current.questProgressRequired,
     };
     formRef.current = next;
     setForm(next);
-    setMessageText("퀘스트 조건 분석 결과를 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
+    setMessageText("피니셔 준비 조건 분석 결과를 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
     setError("");
-  }
-  function updateQuestProgress(value: number | null) {
-    const next = {
-      ...formRef.current,
-      questProgressRequired: value,
-      questCondition: formRef.current.questCondition && value !== null
-        ? { ...formRef.current.questCondition, required: value }
-        : formRef.current.questCondition,
-    };
-    formRef.current = next;
-    setForm(next);
   }
   async function save() {
     if (saveInFlightRef.current || busy) return;
@@ -700,7 +690,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           update("questCompletedPortraitUploadToken", asset.imageUploadToken);
           update("questCompletedPortraitFileName", file.name);
           update("questCompletedPortraitEnabled", true);
-          setMessageText("퀘스트 완료 초상화를 업로드했습니다. 저장하면 적용됩니다.");
+          setMessageText("피니셔 준비 완료 초상화를 업로드했습니다. 저장하면 적용됩니다.");
         }
       } catch (reason) {
         clearLocalUrl(setLocalUrl);
@@ -750,7 +740,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <p className="mt-1 text-xs text-neutral-500">새 챔피언은 미공개로 저장되며 기본 최대 체력은 20입니다.</p></div>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
-     <AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} />
+     <details className="admin-support-tools"><summary>효과 분석 · 구현 도구 (고급)</summary><AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} /></details>
     {error && <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div>}
     {messageText && <div className="mb-4 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{messageText}</div>}
     {brokenIntroInteractions.length > 0 && (
@@ -767,8 +757,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         </ul>
       </section>
     )}
-    <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
-      <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option value="DRAFT">미공개</option><option value="PUBLISHED">공개</option><option value="DISABLED">비활성화</option></select></div>
+    <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input aria-label="챔피언 검색" value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
+      <select aria-label="챔피언 공개 상태" value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option value="DRAFT">미공개</option><option value="PUBLISHED">공개</option><option value="DISABLED">비활성화</option></select></div>
      <div className="grid gap-3 md:grid-cols-2">{champions.slice(listPage*20,(listPage+1)*20).map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
       <div className="flex gap-4">{champion.imageUrl ? (
         <CardArtwork
@@ -785,11 +775,12 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">미공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
 <div className="admin-pagination"><button disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(champions.length/20))} · {champions.length}명</span><button disabled={(listPage+1)*20>=champions.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
-    {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="admin-editor-dialog mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
-        <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button type="button" onClick={closeEditor}><X/></button></div>
-        {editing?.id === TOWER_VANILLA_CHAMPION_ID && <p className="mb-4 rounded border border-amber-700 p-3 text-sm text-amber-200">타워 일반 층 전용입니다. 초상화를 설정할 수 있으며, 전투에서는 체력 30·능력 없음·퀘스트 없음으로 적용됩니다.</p>}
+    {open && <AdminEditorWorkspace title={editing ? `${form.name || '챔피언'} 편집` : '새 챔피언 만들기'} description={editing ? `현재 버전 v${editing.version} · 능력, 이미지, 대사를 한곳에서 편집합니다.` : '기본 정보와 능력을 설정하세요. 새 챔피언은 미공개로 저장됩니다.'} dirty={adminDraftDirty} isNew={!editing} busy={busy} uploading={basicPortraitUploading||portraitUploading} error={error} onClose={closeEditor} onSave={()=>void save()}>
+      <div className="admin-workbench-columns"><div className="admin-workbench-fields">
+        <details className="admin-champion-advanced"><summary>특수 인트로 · 전체 효과 점검</summary>
+        {editing?.id === TOWER_VANILLA_CHAMPION_ID && <p className="mb-4 rounded border border-amber-700 p-3 text-sm text-amber-200">타워 일반 층 전용입니다. 초상화를 설정할 수 있으며, 전투에서는 체력 30·능력 없음·피니셔 준비 없음으로 적용됩니다.</p>}
         {editing && <section className="mb-4 rounded border border-neutral-800 bg-neutral-900/50 p-3">
-          <div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-black">이 Champion의 특수 Intro 관계</h4><button type="button" disabled={introBusy} onClick={() => setIntroDraft({ championOneId: editing.id, championTwoId: champions.find(c => c.id !== editing.id)?.id, lineOne: "", lineTwo: "", firstSpeaker: "ONE", status: "DRAFT" })} className="rounded bg-primary px-2 py-1 text-[11px] font-bold text-black">새 관계</button></div>
+          <div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-black">이 챔피언의 특수 인트로 관계</h4><button type="button" disabled={introBusy} onClick={() => setIntroDraft({ championOneId: editing.id, championTwoId: champions.find(c => c.id !== editing.id)?.id, lineOne: "", lineTwo: "", firstSpeaker: "ONE", status: "DRAFT" })} className="rounded bg-primary px-2 py-1 text-[11px] font-bold text-black">새 관계</button></div>
           {introError && <p className="mb-2 text-xs text-red-300">{introError}</p>}
           {introInteractions.filter(item => item.championOneId === editing.id || item.championTwoId === editing.id).map(item => {
             const currentIsOne = item.championOneId === editing.id;
@@ -815,13 +806,14 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          </button>
        </div>
        <FullAnalysisPanel analysis={fullAnalysis} prompt={fullPrompt} onCopyPrompt={()=>void copyFullPrompt()} />
+      </details>
       <div className="grid gap-4 md:grid-cols-2">
-        <AdminEditorSections panels={[{"id":"admin-champion-manager-0","label":"기본 정보"},{"id":"admin-champion-manager-1","label":"고유 · 시작 능력"},{"id":"admin-champion-manager-2","label":"퀘스트 · 강화"},{"id":"admin-champion-manager-3","label":"챔피언 토큰"},{"id":"admin-champion-manager-4","label":"대사"},{"id":"admin-champion-manager-5","label":"이미지"}]}>{[<><label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
+        <AdminEditorSections panels={[{"id":"admin-champion-manager-0","label":"기본 정보"},{"id":"admin-champion-manager-1","label":"고유 · 시작 능력"},{"id":"admin-champion-manager-2","label":"피니셔 준비"},{"id":"admin-champion-manager-3","label":"챔피언 토큰"},{"id":"admin-champion-manager-4","label":"대사"},{"id":"admin-champion-manager-5","label":"이미지"}]}>{[<><label>이름<input name="championName" className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
 <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
 <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
 <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.isCraftable} onChange={e=>update("isCraftable", e.target.checked)} />
-            프리즘 제작 허용 (해제해도 퀘스트·보상 획득은 가능)
+            프리즘 제작 허용 (해제해도 피니셔 준비·보상 획득은 가능)
           </label>
 <label className="md:col-span-2 flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm">
             <input type="checkbox" checked={form.isStarterGrant} onChange={e=>update("isStarterGrant", e.target.checked)} />
@@ -869,35 +861,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             onApplyAi={(effects, mode) => applyAiEffect("gameStartAbilityEffects", effects, mode)}
             onUnauthorized={onUnauthorized}
           /></>,
-<><label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>{
-           const current = formRef.current;
-           const enabled = e.target.checked;
-           replaceForm({
-             ...current,
-             hasQuest: enabled,
-             questProgressRequired: enabled
-               ? (current.questProgressRequired ?? (typeof current.questCondition?.required === "number" ? current.questCondition.required : 1))
-               : null,
-             questCondition: enabled && current.questCondition
-               ? {
-                   ...current.questCondition,
-                   required: current.questProgressRequired
-                     ?? (typeof current.questCondition.required === "number" ? current.questCondition.required : 1),
-                 }
-               : current.questCondition,
-           });
-         }}/> 퀘스트 있음</label>
-<div className="md:col-span-2"><button type="button" className="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200" onClick={() => setForm(current => ({ ...current,
-           hasQuest: true, questName: '위기 각성', questText: AWAKENING_QUEST_TEXT, questProgressRequired: 1,
-           questCondition: { event: 'STATE_CONDITION', required: 1, condition: { type: 'ALL', conditions: [
-             { type: 'HEALTH', owner: 'SELF', op: 'GTE', value: 1 }, { type: 'HEALTH', owner: 'SELF', op: 'LTE', value: 5 },
-           ] }, awakening: { stageCardIds: { ...AWAKENING_CARD_IDS }, fullBoardPolicy: 'WAIT_WITHOUT_INVULNERABILITY' } },
-           questRewardEffects: null, questRewardText: '각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 각성 선수가 필드에 있는 동안 내 챔피언은 무적입니다. 소환 대기 중에는 무적이 보류됩니다.',
-         }))}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
-{form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
-           <FinisherOptionsEditor value={(form.questCondition?.finisherChoices as FinisherChoice[]|undefined)??[]} cards={tokenCards} onChange={finisherChoices=>{const next={...formRef.current.questCondition};if(finisherChoices)next.finisherChoices=finisherChoices;else delete next.finisherChoices;update('questCondition',next);}}/>
-           <fieldset className="space-y-3 md:col-span-2"><legend>퀘스트 달성 조건 설정</legend><select className={input} value={form.questCondition?.event === 'STATE_CONDITION' ? 'advanced' : 'legacy'} onChange={e=>{ if(e.target.value==='advanced') { update('questCondition',{...form.questCondition,event:'STATE_CONDITION',required:form.questProgressRequired??1,condition:{type:'TURN',turn:5}}); } else update('questCondition',{...form.questCondition,event:'CARD_PLAYED',progress:1,required:form.questProgressRequired??1}); }}><option value="legacy">기존 이벤트 진행도</option><option value="advanced">턴·체력·행동 누적·복합 조건</option></select>{form.questCondition?.event === 'STATE_CONDITION' && validChampionQuestCondition(form.questCondition.condition) && <ChampionQuestConditionEditor value={form.questCondition.condition} onChange={condition=>update('questCondition',{...formRef.current.questCondition,condition})}/>}<p className="text-xs text-neutral-400">복합 조건은 누적 행동과 현재 턴·체력을 함께 평가합니다. 퀘스트 보상은 최초 달성 시 한 번만 적용합니다.</p></fieldset>
-           <QuestConditionField
+<><ChampionPreparationEditor value={form} onChange={patch=>replaceForm({...formRef.current,...patch})} cards={tokenCards}
+ analysisTools={<QuestConditionField compact
              value={form.questText??""}
              onChange={v=>update("questText",v)}
              onAnalyze={()=>void analyzeQuest()}
@@ -909,9 +874,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              onCopyPrompt={()=>void copyPrompt("questText")}
              analyzing={analyzingKey === "questText"}
              prompting={promptingKey === "questText"}
-           />
-             <EffectField
-               title="퀘스트 보상"
+           />}
+ reward={<EffectField
+               title="준비 완료 효과"
                value={form.questRewardText??""}
                onChange={v=>update("questRewardText",v)}
                onAnalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
@@ -928,8 +893,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                existingEffectCount={effectConfigEntryCount(form.questRewardEffects)}
                 onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
                 onUnauthorized={onUnauthorized}
-             /></>}
-<label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
+             />}
+ ability={<><label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
 <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
 <EffectField
              title="강화 고유 능력"
@@ -949,9 +914,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             existingEffectCount={effectConfigEntryCount(form.upgradedAbilityEffects)}
              onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
              onUnauthorized={onUnauthorized}
-           />
-<AdminAudioField
-           title="챔피언 퀘스트 완료 음악"
+           /></>}
+ presentation={<AdminAudioField
+           title="챔피언 피니셔 준비 완료 음악"
            value={{
              assetId: form.questCompleteAudioAssetId,
              url: form.questCompleteAudioUrl,
@@ -976,9 +941,18 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              setError("");
              setMessageText(messageText);
            }}
-         /></>,
+         />}
+ awakeningTools={<><div className="md:col-span-2"><button type="button" className="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200" onClick={() => replaceForm({ ...formRef.current,
+           hasQuest: true, questName: '위기 각성', questText: AWAKENING_QUEST_TEXT, questProgressRequired: 1,
+           questCondition: { event: 'STATE_CONDITION', required: 1, condition: { type: 'ALL', conditions: [
+             { type: 'HEALTH', owner: 'SELF', op: 'GTE', value: 1 }, { type: 'HEALTH', owner: 'SELF', op: 'LTE', value: 5 },
+           ] }, awakening: { stageCardIds: { ...AWAKENING_CARD_IDS }, fullBoardPolicy: 'WAIT_WITHOUT_INVULNERABILITY' } },
+           questRewardEffects: null, questRewardText: '각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 각성 선수가 필드에 있는 동안 내 챔피언은 무적입니다. 소환 대기 중에는 무적이 보류됩니다.',
+         })}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
+{form.questCondition?.awakening!=null&&<button type="button" className="mt-3 rounded border px-3 py-2" onClick={()=>{const next={...formRef.current.questCondition};delete next.awakening;update('questCondition',next);}}>일반 준비 조건으로 전환</button>}</>}
+ /></>,
 <><div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
-           <div className="mb-2 text-xs font-bold text-neutral-400">연결할 Champion Token</div>
+           <div className="mb-2 text-xs font-bold text-neutral-400">연결할 챔피언 토큰</div>
            <input
              className={input}
              value={tokenSearch}
@@ -990,7 +964,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              className={`${input} mt-2`}
              value={form.championTokenDefinitionId ?? ""}
              onChange={e=>update("championTokenDefinitionId", e.target.value || null)}
-             aria-label="연결할 Champion Token"
+             aria-label="연결할 챔피언 토큰"
            >
              <option value="">연결하지 않음</option>
              {visibleTokenCards.map((card) => (
@@ -1027,14 +1001,14 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 <><label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
 <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
 <div className="md:col-span-2 border border-neutral-700 p-4"><strong>대전 스프라이트</strong><p className="my-2 text-sm text-neutral-400">등록·배치·표정 반응은 큰 전용 작업 화면에서 관리합니다.</p>{editing?<a className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200" href={`/admin/battle-sprites?champion=${encodeURIComponent(editing.id)}`}>스프라이트 전용 관리 열기</a>:<p>챔피언을 먼저 저장해 주세요.</p>}</div>
-<label className="md:col-span-2">퀘스트 클리어 시 대사
-  <input aria-label="퀘스트 클리어 시 대사" data-testid="champion-quest-complete-line" className={input} maxLength={120} value={form.presentationLines?.QUEST_COMPLETE ?? ""} onChange={event => update("presentationLines", { ...form.presentationLines, QUEST_COMPLETE: event.target.value })} placeholder="선택 사항 · 최대 120자" />
-  <span className="mt-1 block text-xs text-neutral-400">퀘스트를 완료하는 순간 표시됩니다. 빈칸이면 표시하지 않으며, 완료 후 감정표현 대사와 별도로 설정합니다.</span>
+<label className="md:col-span-2">피니셔 준비 완료 대사
+  <input aria-label="피니셔 준비 완료 대사" data-testid="champion-quest-complete-line" className={input} maxLength={120} value={form.presentationLines?.QUEST_COMPLETE ?? ""} onChange={event => update("presentationLines", { ...form.presentationLines, QUEST_COMPLETE: event.target.value })} placeholder="선택 사항 · 최대 120자" />
+  <span className="mt-1 block text-xs text-neutral-400">피니셔 준비를 완료하는 순간 표시됩니다. 빈칸이면 표시하지 않으며, 완료 후 감정표현 대사와 별도로 설정합니다.</span>
 </label>
 <div className="md:col-span-2 grid gap-3 lg:grid-cols-2">
           {(["BEFORE_QUEST", "AFTER_QUEST"] as const).map((phase) => (
             <section key={phase} className="rounded-lg border border-amber-800/60 bg-neutral-900/70 p-3">
-              <h4 className="mb-2 font-black text-amber-200">{phase === "BEFORE_QUEST" ? "퀘스트 완료 전 대사" : "퀘스트 완료 후 대사"}</h4>
+              <h4 className="mb-2 font-black text-amber-200">{phase === "BEFORE_QUEST" ? "피니셔 준비 완료 전 대사" : "피니셔 준비 완료 후 대사"}</h4>
               <p className="mb-3 text-xs text-neutral-400">빈칸은 대사를 재생하지 않습니다. 완료 후 대사가 비어 있으면 완료 전 대사를 사용합니다.</p>
               {[...CHAMPION_EMOTES, "VICTORY", "DEFEAT"].map((key) => (
                 <label key={key} className="mb-2 block text-xs text-neutral-300">
@@ -1057,7 +1031,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             </select>
             {rivalChampionId && <div className="mt-3 grid gap-3 md:grid-cols-2">
               {(['BEFORE_QUEST', 'AFTER_QUEST'] as const).map((phase) => <div key={phase}>
-                <p className="text-xs font-bold text-amber-300">{phase === 'BEFORE_QUEST' ? '퀘스트 완료 전' : '퀘스트 완료 후'}</p>
+                <p className="text-xs font-bold text-amber-300">{phase === 'BEFORE_QUEST' ? '피니셔 준비 완료 전' : '피니셔 준비 완료 후'}</p>
                 {(['VICTORY', 'DEFEAT'] as const).map((kind) => <label key={kind} className="mt-2 block text-xs text-neutral-300">
                   {kind === 'VICTORY' ? '승리' : '패배'}
                   <input className={input} maxLength={120} value={form.presentationLines?.MATCHUPS?.[rivalChampionId]?.[phase]?.[kind] ?? ''}
@@ -1076,7 +1050,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 <><div className="md:col-span-2 grid gap-3 md:grid-cols-2">
             <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
               <div className="text-xs font-bold text-neutral-300">기본 초상화</div>
-              <p className="mt-1 text-[10px] text-neutral-500">게임 시작부터 표시됩니다. 퀘스트 완료 초상화가 없으면 이 이미지를 계속 사용합니다.</p>
+              <p className="mt-1 text-[10px] text-neutral-500">게임 시작부터 표시됩니다. 피니셔 준비 완료 초상화가 없으면 이 이미지를 계속 사용합니다.</p>
               <div className="mt-3 grid gap-3 md:grid-cols-[auto_1fr]">
                 <CardArtwork
                   src={basicPortraitLocalUrl ?? form.imageUrl}
@@ -1135,8 +1109,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="text-xs font-bold text-neutral-300">퀘스트 완료 후 초상화</div>
-                  <p className="mt-1 text-[10px] text-neutral-500">퀘스트 완료 후 표시할 이미지입니다. 업로드하지 않으면 기본 초상화가 표시됩니다.</p>
+                  <div className="text-xs font-bold text-neutral-300">피니셔 준비 완료 후 초상화</div>
+                  <p className="mt-1 text-[10px] text-neutral-500">피니셔 준비 완료 후 표시할 이미지입니다. 업로드하지 않으면 기본 초상화가 표시됩니다.</p>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-neutral-400">
                   <input type="checkbox" checked={form.questCompletedPortraitEnabled} onChange={(event) => update("questCompletedPortraitEnabled", event.target.checked)} />
@@ -1147,7 +1121,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                 {portraitLocalUrl || form.questCompletedPortraitUrl ? (
                   <CardArtwork
                     src={portraitLocalUrl ?? form.questCompletedPortraitUrl}
-                    alt={form.name || "퀘스트 완료 초상화"}
+                    alt={form.name || "피니셔 준비 완료 초상화"}
                     className="h-24 w-20 rounded border border-neutral-700"
                     imageDisplayMode={form.imageDisplayMode}
                     imageScale={form.imageScale}
@@ -1195,8 +1169,15 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             </div>
           </div></>]}</AdminEditorSections>
        </div>
-       {error&&<p role="alert" className="mt-4 text-red-300">{error}</p>}
+
        <p className="mt-4 text-xs text-neutral-400">효과 분석·인증 없이 저장할 수 있습니다. 분석은 선택 사항이며, 저장한 효과의 실제 작동을 보증하지는 않습니다.</p>
+      </div>
+      <aside className="admin-editor-preview admin-workbench-summary" aria-label="챔피언 미리보기">
+       <h4>챔피언 정보 미리보기</h4><div className="admin-workbench-summary-art">{basicPortraitLocalUrl||form.imageUrl?<CardArtwork src={basicPortraitLocalUrl??form.imageUrl!} alt={form.name||'챔피언'} className="h-full w-full" imageDisplayMode={form.imageDisplayMode} imageScale={form.imageScale} imagePositionX={form.imagePositionX} imagePositionY={form.imagePositionY}/>:<span>이미지를 등록하면 여기에 표시됩니다.</span>}</div>
+       <h5>{form.name||'새 챔피언'}</h5><dl><div><dt>최대 체력</dt><dd>{form.maxHealth}</dd></div><div><dt>능력 비용</dt><dd>{form.abilityCost} 골드</dd></div></dl>
+       <strong>{form.abilityName||'고유 능력'}</strong><p>{form.abilityText||'능력 설명을 입력하세요.'}</p>{form.hasQuest&&<><h5>피니셔 준비</h5><p>{form.questText||'준비 조건을 입력하세요.'}</p></>}
+       <p>표시 설정과 입력 내용을 확인하는 미리보기입니다. 전투 판정은 실행하지 않습니다.</p>
+      </aside></div>
        <div className="admin-editor-footer mt-5 flex flex-wrap justify-end gap-2">
          {editing && editing.status !== "DISABLED" && (
            <button
@@ -1218,7 +1199,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
            {basicPortraitUploading || portraitUploading ? "이미지 업로드 중..." : editing ? "수정 저장" : "미공개로 생성"}
          </button>
        </div>
-    </div></div>}
+    </AdminEditorWorkspace>}
   </div>;
 }
 
@@ -1358,7 +1339,8 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
   </label>;
 }
 
-function QuestConditionField({ value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting }: {
+function QuestConditionField({ compact=false,value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting }: {
+  compact?: boolean;
   value: string;
   onChange: (value: string) => void;
   onAnalyze: () => void;
@@ -1371,11 +1353,11 @@ function QuestConditionField({ value, onChange, onAnalyze, onApply, onPrompt, on
   analyzing?: boolean;
   prompting?: boolean;
 }) {
-  return <label className="md:col-span-2">
-    퀘스트 조건
-    <textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/>
+  return <div className="md:col-span-2">
+    {!compact&&<>피니셔 준비 조건
+    <textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/></>}
     <button type="button" onClick={onAnalyze} disabled={analyzing} className="mt-2 rounded border border-primary px-3 py-1.5 text-xs font-bold text-primary disabled:opacity-50">
-      {analyzing ? "분석 중..." : "퀘스트 조건 분석"}
+      {analyzing ? "분석 중..." : "피니셔 준비 조건 분석"}
     </button>
     <AnalysisControls
       analysis={analysis}
@@ -1388,7 +1370,7 @@ function QuestConditionField({ value, onChange, onAnalyze, onApply, onPrompt, on
       analyzing={analyzing}
       prompting={prompting}
     />
-  </label>;
+  </div>;
 }
 
 function ChampionImageDisplayControls({

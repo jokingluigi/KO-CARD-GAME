@@ -1,0 +1,28 @@
+✔ append preserves an existing structured effect AST (6.963641ms)
+✔ append treats a missing Champion effect slot as empty without hiding malformed configs (0.163833ms)
+✔ append preserves an existing SCRIPT_V1 AST and displays its count (0.344712ms)
+✔ incompatible execution modes reject append without changing existing data (0.660653ms)
+✔ card-level execution ID mismatch rejects append instead of relabeling the old AST (0.217614ms)
+✔ malformed or unknown existing config fails explicitly in append mode (0.365924ms)
+✔ replace deliberately switches execution format and omits the old AST (0.131446ms)
+✔ auto-apply and save/reload preserve executable DSL only, never provider interpretation (0.176883ms)
+✔ entry count supports both stored execution formats (0.197714ms)
+✔ all management tools have unique URLs and a valid category (1.185344ms)
+✔ direct links, queries and trailing slash restore the same tool (0.219557ms)
+✔ menu search matches labels, descriptions and all query words (0.522147ms)
+✔ saved navigation preferences reject stale keys and duplicates (0.942472ms)
+✔ one cosmetic menu retains legacy skin URLs and saved navigation (0.518562ms)
+✔ sprite studio has a distinct searchable route and keeps target queries (0.271103ms)
+✔ admin entry uses its own current session lookup and includes the existing cookie (19.114207ms)
+✔ an unresponsive admin lookup is bounded without logging out or clearing the session (6.639438ms)
+✔ leaving admin aborts its lookup; a server failure does not become a guest session (1.446562ms)
+✔ condition editors offer only actual registered battle events (0.865518ms)
+✔ applying analyzed condition clears stale special counters and preserves unrelated settings without mutating old config (0.662546ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 805.894972

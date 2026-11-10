@@ -1,0 +1,16 @@
+✔ current and newer descendants pass; old source fails closed (61.2039ms)
+✔ checkout mismatch, unavailable floor and invalid hashes fail (39.883403ms)
+✔ live revision can only move forward, never backwards or onto unrelated history (45.316993ms)
+✔ old commits without the guard cannot execute the protected build entrypoint (57.230657ms)
+✔ Render settings use production and an externally pinned advancing floor (0.495557ms)
+✔ hosted archives validate immutable ancestry without local git history (2.861401ms)
+✔ hosted ancestry rejects behind, diverged, wrong head and unavailable verification (7.633453ms)
+✔ external build approval stops every different commit before source scripts or dependency installation (60.581941ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 351.635104

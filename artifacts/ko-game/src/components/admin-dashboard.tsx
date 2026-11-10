@@ -52,6 +52,9 @@ export function AdminDashboard({ go }: { go: (id: AdminPageId) => void }) {
     .slice(0, 8);
   return (
     <div className="admin-dashboard">
+      <section className="admin-launchpad" aria-label="관리 작업 시작"><div><p className="admin-launchpad-eyebrow">KO CARD GAME · 관리 작업</p><h2>오늘은 무엇을 편집할까요?</h2><p>카드와 챔피언을 찾고, 이미지와 연출을 확인하세요.<br/>최근 수정한 항목과 등록 현황은 아래에서 이어서 볼 수 있습니다.</p></div><div className="admin-launchpad-actions">{([
+        ['cards','카드 편집','선수·주문 · 효과와 이미지'],['champions','챔피언 편집','고유 능력 · 피니셔 준비'],['battle-sprites','스프라이트 편집','표정 · 배치 · 움직임'],['tags','태그 정리','이름 · 선수 일괄 연결']
+      ] as const).map(([id,title,description])=><button key={id} type="button" onClick={()=>go(id)}><strong>{title} →</strong><small>{description}</small></button>)}</div></section>
       <section className="admin-overview-strip" aria-label="콘텐츠 현황">
         {[
           ["cards", "카드", data.cards?.cards?.length],

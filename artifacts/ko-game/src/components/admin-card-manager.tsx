@@ -1,3 +1,4 @@
+import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {useTagLabels} from '@/lib/tag-labels';
 import {TagLabel} from './tag-label';
 import {ImageDisplaySlider} from "./image-display-slider";
@@ -353,6 +354,7 @@ export function AdminCardManager({
   const [tokenKind, setTokenKind] = useState("");
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const saveRequest=useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -571,6 +573,7 @@ export function AdminCardManager({
   }
 
   async function submitCard(values: CardFormValues) {
+    if(saveRequest.current || isUploadingImage)return;
     setError("");
     let effectConfig: Record<string, unknown>;
     try {
@@ -603,6 +606,7 @@ export function AdminCardManager({
       entranceAudioUploadToken: entranceAudio.uploadToken,
     };
 
+    saveRequest.current=true;
     setBusyId(editingCard?.id ?? "create");
     try {
       const response = await fetch(
@@ -630,6 +634,7 @@ export function AdminCardManager({
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "카드를 저장하지 못했습니다.");
     } finally {
+      saveRequest.current=false;
       setBusyId(null);
     }
   }
@@ -1050,22 +1055,22 @@ export function AdminCardManager({
         <select value={cardType} onChange={(event) => {
           setCardType(event.target.value);
           if (event.target.value === "TECHNIQUE" && rarity && !allowedCardRarities("TECHNIQUE").includes(rarity as CardRarity)) setRarity("");
-        }} data-testid="select-card-type" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
+        }} aria-label="카드 종류 필터" data-testid="select-card-type" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 종류</option>
           <option value="WRESTLER">선수</option>
           <option value="TECHNIQUE">기술</option>
         </select>
-        <select value={rarity} onChange={(event) => setRarity(event.target.value)} data-testid="select-card-rarity" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
+        <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="카드 등급 필터" data-testid="select-card-rarity" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 등급</option>
           {allowedCardRarities(cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER").map((grade) => <option key={grade} value={grade}>{grade}</option>)}
         </select>
-        <select value={tokenKind} onChange={(event) => setTokenKind(event.target.value)} data-testid="select-token-kind" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
+        <select value={tokenKind} onChange={(event) => setTokenKind(event.target.value)} aria-label="토큰 종류 필터" data-testid="select-token-kind" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 카드</option>
           <option value="STANDARD">일반 카드</option>
           <option value="TOKEN">토큰</option>
           <option value="CHAMPION_TOKEN">챔피언 토큰</option>
         </select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-card-status" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
+        <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="카드 공개 상태 필터" data-testid="select-card-status" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 상태</option>
           <option value="DRAFT">미공개</option>
           <option value="PUBLISHED">공개</option>
@@ -1151,22 +1156,15 @@ export function AdminCardManager({
 
 <div className="admin-pagination" aria-label="카드 목록 페이지"><button type="button" disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(filteredAdminCards.length/30))} · {filteredAdminCards.length}장</span><button type="button" disabled={(listPage+1)*30>=filteredAdminCards.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-           <div role="dialog" aria-modal="true" className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-xl border border-neutral-700 bg-neutral-950 p-5 shadow-2xl">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-black">{editingCard ? "카드 수정" : "새 카드 추가"}</h3>
-                <p className="mt-1 text-xs text-neutral-500">{editingCard ? `저장하면 v${editingCard.version + 1}로 증가합니다.` : "새 카드는 미공개 상태로 생성됩니다."}</p>
-              </div>
-               <button type="button" onClick={closeForm} data-testid="button-close-card-form" className="rounded p-2 text-neutral-500 hover:bg-neutral-800 hover:text-white"><X className="h-5 w-5" /></button>
-            </div>
-             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-             <form onSubmit={form.handleSubmit(submitCard)} className="grid gap-4 md:grid-cols-2">
-               <AdminEditorSections panels={[{"id":"admin-card-manager-0","label":"기본 정보"},{"id":"admin-card-manager-1","label":"효과 및 조건"},{"id":"admin-card-manager-2","label":"태그 · 키워드"},{"id":"admin-card-manager-3","label":"이미지"},{"id":"admin-card-manager-4","label":"대사 · 음악"}]}>{[<><label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">이름</span><input {...form.register("name", { required: true })} data-testid="input-card-name" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+        <AdminEditorWorkspace title={editingCard ? `${preview.name || '카드'} 편집` : '새 카드 만들기'} description={editingCard ? `현재 버전 v${editingCard.version} · 저장하면 변경 내용이 반영됩니다.` : '기본 정보와 효과를 설정하세요. 새 카드는 미공개로 저장됩니다.'} dirty={adminDraftDirty} isNew={!editingCard} busy={busyId!==null} uploading={isUploadingImage} error={error} onClose={closeForm} onSave={()=>void form.handleSubmit(submitCard,errors=>{const key=Object.keys(errors)[0];setError('입력값을 확인하세요. 이름과 수치 항목은 필수입니다.');requestAnimationFrame(()=>document.querySelector<HTMLElement>(`[data-admin-workbench] [name="${key}"]`)?.dispatchEvent(new CustomEvent('ko-admin-reveal-field',{bubbles:true})));})()}>
+             <div className="admin-workbench-columns">
+             <form onSubmit={form.handleSubmit(submitCard,errors=>{const key=Object.keys(errors)[0];setError('입력값을 확인하세요. 이름과 수치 항목은 필수입니다.');requestAnimationFrame(()=>document.querySelector<HTMLElement>(`[data-admin-workbench] [name="${key}"]`)?.dispatchEvent(new CustomEvent('ko-admin-reveal-field',{bubbles:true})));})}>
+             <div className="admin-workbench-fields grid gap-4 md:grid-cols-2">
+               <AdminEditorSections panels={[{"id":"admin-card-manager-0","label":"기본 정보"},{"id":"admin-card-manager-1","label":"효과 및 조건"},{"id":"admin-card-manager-2","label":"태그 · 키워드"},{"id":"admin-card-manager-3","label":"이미지"},{"id":"admin-card-manager-4","label":"대사 · 음악"}]}>{[<><label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">이름</span><input {...form.register("name", { required: true })} aria-invalid={Boolean(form.formState.errors.name)} data-testid="input-card-name" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
 <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 종류</span><select {...form.register("cardType")} data-testid="input-card-card-type" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></label>
 <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 등급</span><select {...form.register("rarity")} data-testid="input-card-rarity" className="w-full rounded border border-neutral-700 bg-neutral-900">{allowedCardRarities(previewCardType).map((rarity) => <option key={rarity} value={rarity}>{CARD_RARITY_LABELS[rarity]}</option>)}</select></label>
 <div className="grid grid-cols-3 gap-2">
-                {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
+                {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} aria-invalid={Boolean(form.formState.errors[field])} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
 <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
 <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
@@ -1358,15 +1356,15 @@ export function AdminCardManager({
                  }}
                  onMessage={setMessage}
                /></>]}</AdminEditorSections>
-              {error && <p role="alert" className="md:col-span-2 rounded border border-red-900 bg-red-950/50 px-3 py-2 text-xs font-bold text-red-300">{error}</p>}
+              </div>
               <div className="admin-editor-footer flex justify-end gap-2 border-t border-neutral-800 pt-4 md:col-span-2">
                   {editingCard && <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(editingCard.id)}`)} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
-                 <button type="button" onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
+                 <button type="button" disabled={busyId!==null||isUploadingImage} onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
                  <button type="submit" disabled={busyId !== null || isUploadingImage} className="rounded bg-primary px-5 py-2 text-sm font-black text-black disabled:opacity-40" data-testid="button-save-card">{editingCard ? "수정 저장" : "미공개로 생성"}</button>
               </div>
             </form>
-             <aside className="lg:sticky lg:top-0 lg:self-start">
-               <div className="mb-3 text-[10px] font-black tracking-[0.18em] text-neutral-500">실시간 미리보기</div>
+             <aside className="admin-editor-preview" aria-label="카드 미리보기">
+               <h4>실시간 카드 미리보기</h4>
                <AdminCardPreview
                  name={preview.name}
                  cardType={preview.cardType}
@@ -1382,8 +1380,7 @@ export function AdminCardManager({
                <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-600">미리보기 전용 카드입니다.<br />게임 액션은 실행되지 않습니다.</p>
              </aside>
              </div>
-          </div>
-        </div>
+        </AdminEditorWorkspace>
       )}
     </div>
   );

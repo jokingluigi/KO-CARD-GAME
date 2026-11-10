@@ -219,6 +219,15 @@ export function AdminLayout({
       window.removeEventListener("ko-admin-maintenance-changed", refresh);
     };
   }, []);
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{
+      if(!(event.ctrlKey||event.metaKey)||event.key.toLowerCase()!=='k'||document.querySelector('[data-admin-workbench]'))return;
+      event.preventDefault();setCollapsed(false);
+      if(matchMedia('(max-width:900px)').matches)setDrawer(true);
+      requestAnimationFrame(()=>searchInput.current?.focus());
+    };
+    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
+  },[]);
   function favorite() {
     if (!current) return;
     const next = favorites.includes(current.id)
@@ -416,7 +425,7 @@ export function AdminLayout({
               }}
             >
               <Search size={16} />
-              <span>메뉴 검색</span>
+              <span>메뉴 검색</span><kbd aria-hidden="true">Ctrl / ⌘ K</kbd>
             </button>
             <button
               className="admin-server-status"
