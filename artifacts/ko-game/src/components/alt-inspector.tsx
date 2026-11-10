@@ -1,3 +1,4 @@
+import {TagLabel} from './tag-label';
 import {FinisherProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
 import {cardSilenceProtection} from '../lib/card-protection-display';
@@ -443,7 +444,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
                 }}
                 className="pointer-events-auto rounded-full border border-cyan-500/60 bg-cyan-950/60 px-3 py-1 text-[clamp(0.875rem,1.2vw,1.0625rem)] font-black text-cyan-100 transition hover:bg-cyan-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
               >
-                {tag}
+                <TagLabel tag={tag}/>
               </button>
             ))}
           </div>

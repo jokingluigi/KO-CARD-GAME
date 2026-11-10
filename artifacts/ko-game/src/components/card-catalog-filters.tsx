@@ -1,3 +1,4 @@
+import {useTagLabels,tagLabel} from '@/lib/tag-labels';
 import type { ReactNode } from "react";
 export type CatalogFilters = { ownership: 'ALL' | 'OWNED' | 'UNOWNED'; rarity: string; tag: string; cost: string };
 export const EMPTY_CATALOG_FILTERS: CatalogFilters = { ownership: 'ALL', rarity: 'ALL', tag: 'ALL', cost: 'ALL' };
@@ -10,12 +11,13 @@ export function matchesCatalogFilters(card: CatalogCard, filters: CatalogFilters
     (filters.cost === 'ALL' || card.cost === Number(filters.cost));
 }
 export function CardCatalogFilters({ cards, value, onChange, children, label="상세 필터" }: { cards: CatalogCard[]; value: CatalogFilters; onChange: (value: CatalogFilters) => void; children?:ReactNode; label?:string }) {
+  const labels=useTagLabels();
   const tags = [...new Set(cards.flatMap(card => card.tags ?? []).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ko'));
   const costs = [...new Set(cards.map(card => card.cost))].sort((a,b) => a-b);
   const controls: [keyof CatalogFilters, string, [string,string][]][] = [
     ['ownership', '보유 여부', [['ALL','전체 보유 상태'],['OWNED','보유'],['UNOWNED','미보유']]],
     ['rarity', '등급', [['ALL','전체 등급'],['NORMAL','일반'],['EPIC','에픽'],['LEGENDARY','레전더리'],['CHAMPION','챔피언']]],
-    ['tag', '태그', [['ALL','전체 태그'], ...tags.map(tag => [tag,tag] as [string,string])]],
+    ['tag', '태그', [['ALL','전체 태그'], ...tags.map(tag => [tag,tagLabel(tag,labels)] as [string,string])]],
     ['cost', '코스트', [['ALL','전체 코스트'], ...costs.map(cost => [String(cost),String(cost)] as [string,string])]],
   ];
   const active = Object.values(value).filter(v=>v!=="ALL").length;

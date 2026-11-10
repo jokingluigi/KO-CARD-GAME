@@ -1,0 +1,179 @@
+/* Catalog geometry is independent of battle hand/board sizes. */
+.ko-continuous-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 36;
+  background: #101116f5 !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 12px #0004;
+}
+.ko-decks__toolbar.ko-continuous-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px;
+  border: 1px solid #ffffff20;
+  border-radius: 12px;
+}
+.ko-decks__toolbar .ko-catalog-density {
+  grid-column: 2;
+  grid-row: 1;
+}
+.ko-decks__toolbar .ko-decks__search {
+  grid-column: 1;
+  grid-row: 1;
+}
+.ko-decks__toolbar .ko-decks__filters {
+  margin: 0;
+}
+.ko-decks__toolbar .ko-catalog-filter-disclosure {
+  grid-column: 1/-1;
+}
+.ko-catalog-density {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.ko-catalog-density button {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #c9c3b8;
+  white-space: nowrap;
+}
+.ko-catalog-density button[aria-pressed="true"] {
+  background: #bd963624;
+  border-color: #d2b363;
+  color: #f1d58a;
+}
+.ko-continuous-card-grid,
+.ko-decks__card-grid.ko-continuous-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 12px;
+}
+.ko-continuous-card-grid[data-density="large"],
+.ko-decks__card-grid.ko-continuous-card-grid[data-density="large"] {
+  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+}
+.ko-continuous-card-grid > * {
+  min-width: 0;
+}
+.ko-collection-item {
+  padding: 5px;
+}
+.ko-collection-item > div:last-child {
+  gap: 2px;
+  padding: 4px 0 0;
+  flex-wrap: wrap;
+}
+.ko-collection-item > div:last-child > span:first-child {
+  flex: 1 1 60%;
+  font-size: 12px;
+}
+.ko-collection-item > div:last-child > button {
+  margin-left: auto;
+}
+.ko-catalog-continuation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 80px;
+  padding: 18px 0;
+  color: #b8b1a5;
+  font-size: 12px;
+}
+.ko-catalog-continuation button {
+  min-height: 44px;
+  border: 1px solid #8c733e;
+  border-radius: 10px;
+  padding: 8px 18px;
+  color: #f3d584;
+  background: #211c14;
+}
+.ko-mobile-current-deck {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .ko-decks .ko-decks__toolbar.ko-continuous-toolbar {
+    top: 0;
+  }
+  .ko-decks[data-workspace] .ko-workspace-nav {
+    position: relative;
+    top: auto;
+    z-index: auto;
+  }
+  .ko-mobile-current-deck {
+    display: block;
+    position: fixed;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 50%;
+    translate: -50% 0;
+    z-index: 40;
+    min-height: 48px;
+    max-width: calc(100vw - 24px);
+    padding: 10px 24px;
+    border: 1px solid #dfc06e;
+    border-radius: 14px;
+    box-shadow: 0 5px 24px #000b;
+    background: #211d12f5;
+    color: #f3db94;
+    font-weight: 700;
+  }
+  .ko-decks__wrap {
+    padding-bottom: 80px;
+  }
+}
+@media (max-width: 600px) {
+  .ko-continuous-card-grid,
+  .ko-decks__card-grid.ko-continuous-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .ko-continuous-card-grid[data-density="large"],
+  .ko-decks__card-grid.ko-continuous-card-grid[data-density="large"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ko-collection-controls.ko-continuous-toolbar {
+    padding: 8px;
+  }
+  .ko-collection-controls .ko-catalog-density {
+    float: right;
+    margin: 0 0 6px 6px;
+  }
+  .ko-collection-controls .ko-collection-search-row {
+    clear: both;
+  }
+  .ko-collection-controls.ko-continuous-toolbar > p {
+    margin-top: 6px;
+  }
+  .ko-collection-controls.ko-continuous-toolbar > button {
+    margin-top: 6px;
+    padding: 4px 8px;
+    min-height: 36px;
+  }
+  .ko-catalog-density button {
+    font-size: 11px;
+    padding: 5px 7px;
+  }
+  .ko-collection-item > div:last-child > span:nth-child(2) {
+    display: none;
+  }
+}
+@media (max-height: 500px) {
+  .ko-continuous-toolbar {
+    position: relative;
+    top: auto !important;
+  }
+}
+/* Expanded settings scroll naturally even on short screens. */
+.ko-continuous-toolbar:has(.ko-catalog-filter-disclosure[open]) {
+  position: relative;
+  top: auto !important;
+}

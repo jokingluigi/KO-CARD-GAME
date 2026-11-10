@@ -1,7 +1,8 @@
+import '@/components/catalog-browsing.css';
 import { RelatedCards } from "@/components/player-tools/related-cards";
 import { CardRulesText } from "@/components/card-rules-text";
 import {GamePageHeader} from '@/components/game-page-header';
-import { CatalogPagination } from '@/components/catalog-pagination';
+import {useContinuousCatalog,CatalogContinuation,useCatalogDensity,CatalogDensity} from '@/components/continuous-catalog';
 import {returnToCatalogCard} from "@/components/physical-feedback";
 import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
 import {WishlistArrivals} from "@/components/player-tools/wishlist";
@@ -144,7 +145,7 @@ export default function CollectionPage() {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
     catch { return []; }
   });
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useBrowsingState("collection:favoritesOnly",false,v=>typeof v==='boolean');
   function toggleFavorite(id: string) {
     setFavorites((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
@@ -196,8 +197,7 @@ export default function CollectionPage() {
     };
   }, [loadAttempt, navigate]);
 
-  const [catalogPage,setCatalogPage]=useState(1);
-  useEffect(()=>setCatalogPage(1),[tab,search,sort,cardType,catalogFilters,favoritesOnly]);
+  const [density,setDensity]=useCatalogDensity();
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return [...catalogCards]
@@ -305,6 +305,8 @@ export default function CollectionPage() {
   }
 
   const gridRoot=useRef<HTMLElement>(null);
+  const listedCards=tab==='crafting'?filteredCraftableCards:filteredCards;
+  const catalog=useContinuousCatalog('collection',JSON.stringify([tab,search,sort,cardType,catalogFilters,favoritesOnly]),listedCards.length,loadState==='ready',gridRoot);
   useGridReflow(gridRoot,`${tab}:${filteredCards.map(c=>c.id).join()}:${filteredCraftableCards.map(c=>c.id).join()}`);
 
   if (loadState === "loading") {
@@ -374,7 +376,8 @@ export default function CollectionPage() {
 
         {tab === "cards" || tab === "crafting" ? (
           <>
-            <section aria-label="카드 검색 및 필터" className="ko-collection-controls mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
+            <section aria-label="카드 검색 및 필터" className="ko-collection-controls ko-continuous-toolbar mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
+              <CatalogDensity value={density} onChange={setDensity}/>
               <div className="ko-collection-search-row grid gap-3">
                 <div className="relative block">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
@@ -408,11 +411,11 @@ export default function CollectionPage() {
                  </>}
                </EmptyState>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-               {(tab === "cards" ? filteredCards : filteredCraftableCards).slice((catalogPage-1)*12,catalogPage*12).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
+              <div className="ko-continuous-card-grid" data-density={density} data-testid="collection-card-grid">
+               {listedCards.slice(0,catalog.limit).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
               </div>
             )}
-            <CatalogPagination page={catalogPage} total={(tab === "cards" ? filteredCards : filteredCraftableCards).length} pageSize={12} onChange={n=>{setCatalogPage(n);gridRoot.current?.scrollIntoView({block:'start'});}}/>
+            <CatalogContinuation catalog={catalog} total={listedCards.length}/>
           </>
         ) : (
            champions.length === 0 ? (

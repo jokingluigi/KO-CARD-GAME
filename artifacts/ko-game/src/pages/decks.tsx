@@ -1,8 +1,9 @@
+import '@/components/catalog-browsing.css';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { CatalogPagination } from '@/components/catalog-pagination';
+import {useContinuousCatalog,CatalogContinuation,useCatalogDensity,CatalogDensity} from '@/components/continuous-catalog';
 import {prefersReducedMotion} from "@/components/presentation-config";
 import "@/components/player-ux/player-ux.css";
 import {useBrowsingState,validCatalogView} from "@/components/player-ux/browsing-state";
@@ -253,8 +254,8 @@ export default function Decks() {
   const [championId, setChampionId] = useState<string | null>(null);
   const [cardIds, setCardIds] = useState<string[]>([]);
   const [search, setSearch] = useBrowsingState("decks:search","",v=>typeof v==='string'&&v.length<300);
-  const [filter, setFilter] = useState<CardFilter>("ALL");
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [filter, setFilter] = useBrowsingState<CardFilter>("decks:cardType","ALL",v=>typeof v==='string'&&["ALL","WRESTLER","TECHNIQUE"].includes(v));
+  const [favoritesOnly, setFavoritesOnly] = useBrowsingState("decks:favoritesOnly",false,v=>typeof v==='boolean');
   const [catalogFilters, setCatalogFilters] = useBrowsingState("decks:filters",EMPTY_CATALOG_FILTERS,validCatalogView);
   const [favorites] = useState<string[]>(() => {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
@@ -480,11 +481,9 @@ export default function Decks() {
     }
      return uniqueValidationReasons(reasons);
   }, [authUser?.role, cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
-  const [catalogPage, setCatalogPage] = useState(1);
+  const [density,setDensity]=useCatalogDensity();
   const [workspace, setWorkspace] = useState('cards');
-  useEffect(()=>{window.dispatchEvent(new Event('ko-close-inspector'));},[workspace,catalogPage]);
-  useEffect(()=>setCatalogPage(1),[search,filter,catalogFilters,favoritesOnly]);
-  const goPage=(page:number)=>{setCatalogPage(page);document.getElementById('deck-library')?.scrollIntoView({block:'start'});};
+  useEffect(()=>{window.dispatchEvent(new Event('ko-close-inspector'));},[workspace]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
@@ -495,6 +494,7 @@ export default function Decks() {
       return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
     });
   }, [filter, options.cards, search, favorites, favoritesOnly, catalogFilters, authUser?.role]);
+
   const selectedRows = useMemo(() => {
     const rows = Array.from(counts.entries()).map(([id, count]) => ({
       id,
@@ -545,6 +545,9 @@ export default function Decks() {
   }
 
   const catalogRoot=useRef<HTMLElement>(null);
+  const libraryRoot=useRef<HTMLElement>(null);
+  const catalog=useContinuousCatalog('decks',JSON.stringify([search,filter,catalogFilters,favoritesOnly]),filteredCards.length,!isLoading,libraryRoot,workspace);
+
   useGridReflow(catalogRoot,filteredCards.map(c=>c.id).join());
 
   const [changedCard,setChangedCard]=useState<{id:string;kind:"add"|"remove"}|null>(null);
@@ -782,6 +785,7 @@ export default function Decks() {
         {recovery.recovery&&<section className="my-3 border border-amber-700 p-3 text-sm" role="status"><p>이 계정의 저장하지 않은 덱 편집이 있어요: {recovery.recovery.name}</p><button disabled={isMutating} className="min-h-11 px-3 underline" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);setEditorCollapsed(false);recovery.acknowledge();}}>임시 편집 복구</button><button disabled={isMutating} className="min-h-11 px-3" onClick={recovery.discard}>임시 편집 삭제</button></section>}
         {dirty&&<p className="my-2 text-sm text-amber-200" role="status">저장하지 않은 변경 · {recovery.error?'임시 보관 실패 — 나가기 전에 저장하세요.':recovery.stored?'이 브라우저에 임시 보관됨':'임시 보관 준비 중'}</p>}
         <fieldset disabled={isMutating} className="contents" aria-label="덱 구성" aria-busy={isMutating}>
+        <button type="button" className="ko-mobile-current-deck" onClick={()=>{setWorkspace(workspace==='editor'?'cards':'editor');setEditorCollapsed(false);}}>{workspace==='editor'?'카드 찾기로 돌아가기':`현재 덱 · ${cardIds.length}/25`}</button>
         <nav className="ko-workspace-nav" aria-label="덱 편집 작업 이동">
           <button type="button" aria-pressed={workspace==='decks'} onClick={()=>setWorkspace('decks')}>내 덱</button><button type="button" aria-pressed={workspace==='cards'} onClick={()=>setWorkspace('cards')}>카드 찾기</button><button type="button" aria-pressed={workspace==='editor'} onClick={()=>{setWorkspace('editor');setEditorCollapsed(false);}}>현재 덱 · {cardIds.length}/25</button>
         </nav>
@@ -827,7 +831,7 @@ export default function Decks() {
             </div>
           </aside>
 
-          <section id="deck-library" className="ko-decks__library" aria-label="카드 컬렉션">
+          <section ref={libraryRoot} id="deck-library" className="ko-decks__library" aria-label="카드 컬렉션">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="ko-decks__section-label">카드 목록</p>
@@ -839,7 +843,8 @@ export default function Decks() {
                 {filteredCards.length}종
               </span>
             </div>
-            <div className="ko-decks__toolbar">
+            <div className="ko-decks__toolbar ko-continuous-toolbar">
+              <CatalogDensity value={density} onChange={setDensity}/>
               <label className="ko-decks__search">
                 <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="sr-only">카드 검색</span>
@@ -879,8 +884,8 @@ export default function Decks() {
                 {(search || filter!=="ALL" || favoritesOnly || Object.values(catalogFilters).some(value=>value!=="ALL")) && <button type="button" className="ko-decks__mini-button mx-auto mt-4" onClick={()=>{setSearch("");setFilter("ALL");setFavoritesOnly(false);setCatalogFilters({...EMPTY_CATALOG_FILTERS});requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('[data-testid="input-card-search"]')?.focus());}}>검색·필터 초기화</button>}
               </div>
             ) : (
-              <div className="ko-decks__card-grid" data-testid="grid-card-collection">
-                {filteredCards.slice((catalogPage-1)*18,catalogPage*18).map((card) => {
+              <div className="ko-decks__card-grid ko-continuous-card-grid" data-density={density} data-testid="grid-card-collection">
+                {filteredCards.slice(0,catalog.limit).map((card) => {
                   const action = getDeckCardAction(card, {
                     count: counts.get(card.id) ?? 0,
                     deckCount: cardIds.length,
@@ -907,7 +912,7 @@ export default function Decks() {
                 })}
               </div>
             )}
-            <CatalogPagination page={catalogPage} total={filteredCards.length} pageSize={18} onChange={goPage}/>
+            <CatalogContinuation catalog={catalog} total={filteredCards.length}/>
           </section>
 
           <section id="deck-workspace" className={`ko-decks__editor ${editorCollapsed ? 'ko-decks__editor--collapsed' : ''}`} aria-label="현재 덱 편집기">

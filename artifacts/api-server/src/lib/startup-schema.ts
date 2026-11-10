@@ -1,3 +1,4 @@
+import cardTagDisplayNames from "../../../../lib/db/migrations/0057_card_tag_display_names.sql";
 import aiDeckCosmetics from "../../../../lib/db/migrations/0055_ai_deck_cosmetics.sql";
 import packEmoteRates from "../../../../lib/db/migrations/0056_pack_emote_rates.sql";
 import shopDecks from "../../../../lib/db/migrations/0054_shop_decks.sql";
@@ -26,7 +27,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql`SET LOCAL lock_timeout = '15s'`);
     await tx.execute(sql`SET LOCAL statement_timeout = '30s'`);
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('ko-card-tower-schema-v1'))`);
-    for (const migration of [towerStorage, towerUnlocks, aiDifficulty, epicPackConfiguration, draftStorage, aiQuestMatches, cardTagCatalog, questPlatform, towerV2Versions, usageStatistics, cosmetics, shopDecks, aiDeckCosmetics, packEmoteRates]) {
+    for (const migration of [towerStorage, towerUnlocks, aiDifficulty, epicPackConfiguration, draftStorage, aiQuestMatches, cardTagCatalog, cardTagDisplayNames, questPlatform, towerV2Versions, usageStatistics, cosmetics, shopDecks, aiDeckCosmetics, packEmoteRates]) {
       // Migration 0026 has standalone transaction delimiters. One outer
       // transaction must own all three migrations and the advisory lock.
       const statements = migration.replace(/^\s*--[^\r\n]*$/gm, "").replace(/^\s*(?:BEGIN|COMMIT);\s*$/gm, "").split(";");

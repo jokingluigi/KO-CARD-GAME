@@ -1,3 +1,4 @@
+import {cardTagLabels} from "../lib/card-tag-catalog";
 import claimAllRewardsRouter from "./claim-all-rewards";
 import tutorialRouter from "./tutorial";
 import playerJournalRouter from './player-journal';
@@ -58,6 +59,7 @@ router.use(shopDecksRouter);
 router.use("/admin/battle-sprites", adminBattleSpritesRouter);
 router.use(cosmeticsRouter);
 router.use("/admin/usage-statistics", adminUsageStatisticsRouter);
+router.get('/card-tags',async (_request,response,next)=>{try{response.setHeader('Cache-Control','no-store');response.json({labels:await cardTagLabels()});}catch(error){next(error);}});
 router.use("/admin/tags", adminTagsRouter);
 router.use("/admin/home-menu",adminHomeMenuRouter);
 router.use("/admin", adminRouter);

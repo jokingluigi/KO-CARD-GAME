@@ -1,3 +1,4 @@
+import {useTagLabels,tagLabel} from '@/lib/tag-labels';
 import {cardSilenceProtection} from '../lib/card-protection-display';
 import {getCardDefinition} from '../game/cards/test-cards';
 import {SilenceImmunityNotice} from './silence-immunity-notice';
@@ -57,6 +58,7 @@ export function CardDetailDialog({
   quantityText?: string;
   children?: ReactNode;
 }) {
+  const labels=useTagLabels();
   const detailRoot=useRef<HTMLDivElement>(null);
   useDetailFlight(detailRoot,open,card?.id);
   const [tagExplorer, setTagExplorer] = useState<string | null>(null);
@@ -141,11 +143,11 @@ export function CardDetailDialog({
                           key={tag}
                           type="button"
                           data-testid="card-detail-tag"
-                          aria-label={`${tag} 태그 카드 보기`}
+                          aria-label={`${tagLabel(tag,labels)} 태그 카드 보기`}
                           onClick={() => setTagExplorer(tag)}
                           className="rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200 transition hover:border-cyan-400 hover:bg-cyan-950/60 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
                         >
-                          {tag}
+                          {tagLabel(tag,labels)}
                         </button>
                       ))}
                     </div>

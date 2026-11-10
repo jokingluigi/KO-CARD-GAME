@@ -1,0 +1,41 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "realAdminHTTP": true,
+    "rename": true,
+    "saveReload": true,
+    "combinedFilters": true,
+    "selectionSurvivesSearch": true,
+    "bulkAttach": true,
+    "bulkDetach": true,
+    "individualToggle": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "realAdminHTTP": true,
+    "rename": true,
+    "saveReload": true,
+    "combinedFilters": true,
+    "selectionSurvivesSearch": true,
+    "bulkAttach": true,
+    "bulkDetach": true,
+    "individualToggle": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "realAdminHTTP": true,
+    "rename": true,
+    "saveReload": true,
+    "combinedFilters": true,
+    "selectionSurvivesSearch": true,
+    "bulkAttach": true,
+    "bulkDetach": true,
+    "individualToggle": true,
+    "errors": []
+  }
+]

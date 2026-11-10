@@ -1,3 +1,4 @@
+import {TagLabel} from './tag-label';
 import { useEffect, useMemo, useState } from "react";
 import { CardArtwork } from "@/components/card-artwork";
 import {
@@ -151,7 +152,7 @@ export function CardTagExplorerDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-left text-xl font-black">
-            {tag} 태그 카드
+            <TagLabel tag={tag}/> 태그 카드
           </DialogTitle>
           <DialogDescription className="text-left text-xs text-neutral-400">
             {catalog

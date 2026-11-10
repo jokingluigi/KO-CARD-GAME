@@ -1,0 +1,41 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "initial": 40,
+    "scrollLoadsMore": true,
+    "densitySwitch": true,
+    "detailKeepsScroll": true,
+    "reloadKeepsScroll": true,
+    "filters": true,
+    "mobileDeckReturn": true,
+    "addCardKeepsScroll": true,
+    "pageErrors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "initial": 40,
+    "scrollLoadsMore": true,
+    "densitySwitch": true,
+    "detailKeepsScroll": true,
+    "reloadKeepsScroll": true,
+    "filters": true,
+    "mobileDeckReturn": true,
+    "addCardKeepsScroll": true,
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "initial": 40,
+    "scrollLoadsMore": true,
+    "densitySwitch": true,
+    "detailKeepsScroll": true,
+    "reloadKeepsScroll": true,
+    "filters": true,
+    "mobileDeckReturn": false,
+    "addCardKeepsScroll": true,
+    "pageErrors": []
+  }
+]

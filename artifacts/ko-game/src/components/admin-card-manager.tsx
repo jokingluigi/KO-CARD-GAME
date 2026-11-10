@@ -1,3 +1,5 @@
+import {useTagLabels} from '@/lib/tag-labels';
+import {TagLabel} from './tag-label';
 import {ImageDisplaySlider} from "./image-display-slider";
 import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
 import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
@@ -336,6 +338,7 @@ export function AdminCardManager({
   onUnauthorized: () => void;
 }) {
   const [, navigate] = useLocation();
+  const tagLabels=useTagLabels();
   const { toast } = useToast();
   const [listPage,setListPage]=useState(0),[tagFilter,setTagFilter]=useState(""),[listSort,setListSort]=useState("updated");
   const [cards, setCards] = useState<CardRecord[]>([]);
@@ -632,7 +635,8 @@ export function AdminCardManager({
   }
 
   function addTag() {
-    const tag = tagDraft.trim();
+    const rawTag = tagDraft.trim();
+    const tag = Object.entries(tagLabels).find(([,label])=>label===rawTag)?.[0]??rawTag;
     const tags = form.getValues("tags") ?? [];
     if (!tag || tags.includes(tag)) return;
     form.setValue("tags", [...tags, tag], { shouldDirty: true });
@@ -1069,7 +1073,7 @@ export function AdminCardManager({
         </select>
       </div>
 
-<div className="admin-directory-toolbar"><label>태그<select aria-label="목록 태그 필터" value={tagFilter} onChange={e=>setTagFilter(e.target.value)}><option value="">모든 태그</option>{[...new Set(cards.flatMap(c=>c.tags??[]))].sort().map(tag=><option key={tag}>{tag}</option>)}</select></label><label>정렬<select aria-label="카드 정렬" value={listSort} onChange={e=>setListSort(e.target.value)}><option value="updated">최근 수정</option><option value="name">이름</option><option value="cost">비용</option></select></label></div>
+<div className="admin-directory-toolbar"><label>태그<select aria-label="목록 태그 필터" value={tagFilter} onChange={e=>setTagFilter(e.target.value)}><option value="">모든 태그</option>{[...new Set(cards.flatMap(c=>c.tags??[]))].sort().map(tag=><option key={tag} value={tag}><TagLabel tag={tag}/></option>)}</select></label><label>정렬<select aria-label="카드 정렬" value={listSort} onChange={e=>setListSort(e.target.value)}><option value="updated">최근 수정</option><option value="name">이름</option><option value="cost">비용</option></select></label></div>
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-black/40 p-3 text-xs">
         <button type="button" onClick={() => void runEffectAudit()} disabled={auditing} data-testid="button-audit-card-effects" className="rounded border border-amber-700 px-3 py-2 font-bold text-amber-300 disabled:opacity-40">
           {auditing ? "효과 점검 중..." : "카드 효과 문구·설정 점검"}
@@ -1198,7 +1202,7 @@ export function AdminCardManager({
                   <div className="flex flex-wrap gap-2">
                     {(preview.tags ?? []).map((tag) => (
                       <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200">
-                        {tag}
+                        <TagLabel tag={tag}/>
                         <button type="button" onClick={() => removeTag(tag)} aria-label={`${tag} 태그 삭제`} className="rounded-full p-0.5 hover:bg-amber-200/20">
                           <X className="h-3 w-3" />
                         </button>
