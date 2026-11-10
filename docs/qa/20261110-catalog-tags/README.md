@@ -38,3 +38,9 @@
 브라우저는 Chromium 터치/뷰포트 검증이다. 실제 휴대전화 하드웨어 및 화면 낭독기 검증은 수행하지 않았다. 관리자 전체의 정보 구조와 모든 편집기를 통합하는 개편은 이번 패치 범위가 아니며 별도 검토 대상이다.
 
 배포 결과: `production-verification.json`. 변경 파일: `changed-files.txt`.
+
+## 배포 확인
+
+2026-11-10 UTC, 소스 `8f09fcf2ae79e9aa1abcbce93cb3fcb3ffcf8fa3`으로 서버→프런트 순서로 배포했다. 양쪽 live 커밋, 공개 API health, version.json, 실제 루트 HTML의 엔트리 JS를 확인했다. 공개 태그 표시 이름 API도 200 응답을 확인했고 기존 헬퍼 OR 회복 패치도 유지됨을 확인했다. 수동 운영 데이터 수정·테스트 계정/카드 생성·main 병합 없음.
+
+후속 관리자 전체 개편 제안은 `admin-redesign-review.md`이며, 해당 전체 개편을 이번 배포에 포함했다고 보고하지 않는다.

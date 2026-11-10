@@ -17,13 +17,16 @@ artifacts/ko-game/src/lib/tag-labels.ts
 artifacts/ko-game/src/pages/collection.tsx
 artifacts/ko-game/src/pages/decks.tsx
 docs/qa/20261110-catalog-tags/README.md
+docs/qa/20261110-catalog-tags/admin-redesign-review.md
 docs/qa/20261110-catalog-tags/catalog-browser.json
+docs/qa/20261110-catalog-tags/changed-files.txt
 docs/qa/20261110-catalog-tags/collection-1440x900.png
 docs/qa/20261110-catalog-tags/collection-390x844.png
 docs/qa/20261110-catalog-tags/collection-844x390.png
 docs/qa/20261110-catalog-tags/decks-1440x900.png
 docs/qa/20261110-catalog-tags/decks-390x844.png
 docs/qa/20261110-catalog-tags/decks-844x390.png
+docs/qa/20261110-catalog-tags/production-verification.json
 docs/qa/20261110-catalog-tags/regression-tests.txt
 docs/qa/20261110-catalog-tags/service-tests.txt
 docs/qa/20261110-catalog-tags/tag-browser.json
@@ -31,6 +34,7 @@ docs/qa/20261110-catalog-tags/tag-tools-1440x900.png
 docs/qa/20261110-catalog-tags/tag-tools-390x844.png
 docs/qa/20261110-catalog-tags/tag-tools-844x390.png
 docs/qa/catalog-scroll-browser.mjs
+docs/qa/catalog-tags-production.mjs
 docs/qa/catalog-tags-service.test.mjs
 docs/qa/tag-tools-browser.mjs
 lib/db/migrations/0057_card_tag_display_names.sql

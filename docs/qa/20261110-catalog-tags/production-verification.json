@@ -1,0 +1,41 @@
+{
+  "checkedAtUTC": "2026-11-10T13:14:16.051Z",
+  "commit": "8f09fcf2ae79e9aa1abcbce93cb3fcb3ffcf8fa3",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbphfg88v5cc73e9b3e0",
+      "status": "live",
+      "commit": "8f09fcf2ae79e9aa1abcbce93cb3fcb3ffcf8fa3",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbphgom1egvs73c51q00",
+      "status": "live",
+      "commit": "8f09fcf2ae79e9aa1abcbce93cb3fcb3ffcf8fa3",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "8f09fcf2ae79e9aa1abcbce93cb3fcb3ffcf8fa3"
+  },
+  "front": {
+    "revision": "8f09fcf2ae79e9aa1abcbce93cb3fcb3ffcf8fa3",
+    "builtAtUTC": "2026-11-10T13:13:50.125Z"
+  },
+  "rootEntryModule": "/assets/index-xlDXf_R7.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "previousHelperPatchRetained": true,
+  "manualProductionDataWrites": 0,
+  "startupSchemaMigration": "0057_card_tag_display_names.sql",
+  "tagLabelsEndpointAvailable": true,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
