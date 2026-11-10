@@ -126,7 +126,7 @@ function ChampionCollectionItem({ champion, onOpen }: { champion: CollectionCham
       <div className="p-4">
         <h3 className="font-black text-white">{champion.name}</h3>
         <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{champion.owned ? (champion.abilityText || champion.description) : "미보유 챔피언 · 상세 정보를 확인하고 제작할 수 있습니다."}</p>
-        <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-amber-300">기본 능력 · {champion.abilityName}</p>
+        <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-amber-300">고유 능력</p>
       </div>
     </button>
   );
@@ -563,10 +563,10 @@ function ChampionDetail({
           ) : <div className="flex aspect-square items-center justify-center text-rose-300"><Shield className="h-20 w-20" /></div>}
         </div>
         <div className="space-y-4">
-          <InfoBlock icon={<Swords className="h-4 w-4" />} label={`${champion.abilityName}${champion.abilityCost > 0 ? ` · 비용 ${champion.abilityCost} 골드` : ""}`} text={champion.abilityText || champion.description} />
-          {champion.gameStartAbilityText && <InfoBlock label={`게임 시작 · ${champion.gameStartAbilityName || "시작 능력"}`} text={champion.gameStartAbilityText} />}
+          <InfoBlock icon={<Swords className="h-4 w-4" />} label={`고유 능력 · 비용 ${champion.abilityCost} 골드`} text={champion.abilityText || champion.description} />
+          {champion.gameStartAbilityText && <InfoBlock label="게임 시작 능력" text={champion.gameStartAbilityText} />}
           {champion.hasQuest && <InfoBlock label={`피니셔 준비 · ${champion.questName || "준비 조건"}`} text={champion.questText || "준비 조건 정보가 없습니다."} />}
-          {champion.hasQuest && champion.questRewardText && <InfoBlock label="피니셔 획득 / 현재 완료 효과" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 능력: ${champion.upgradedAbilityName || ""}\n${champion.upgradedAbilityText}` : ""}`} />}
+          {champion.hasQuest && champion.questRewardText && <InfoBlock label="피니셔 획득 / 현재 완료 효과" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 고유 능력\n${champion.upgradedAbilityText}` : ""}`} />}
           <RelatedCards id={champion.id} onSelect={setTokenDetail}/>
           <CardDetailDialog card={tokenDetail} open={Boolean(tokenDetail)} onOpenChange={open => {if(!open)setTokenDetail(null);}}/>
           <section className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-4">

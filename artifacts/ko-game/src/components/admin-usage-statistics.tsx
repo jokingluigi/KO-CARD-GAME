@@ -327,7 +327,7 @@ export function AdminUsageStatistics({
                   ) : (
                     <>
                       <h3>
-                        현재 고유 능력 · {item.abilityName} · 비용 {item.cost}
+                        현재 고유 능력 · 비용 {item.cost}
                       </h3>
                       <p>{item.abilityText || "효과 없음"}</p>
                       <h3>현재 퀘스트 · {item.questName}</h3>

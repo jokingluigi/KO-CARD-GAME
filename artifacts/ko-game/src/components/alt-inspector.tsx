@@ -565,7 +565,6 @@ export function ChampionAbilityInspectContent({
   return (
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
-      <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{ability.name}</h3>
       <div className="my-3 font-display text-[clamp(1rem,1.3vw,1.125rem)] font-bold text-primary">비용 {ability.cost ?? champion.abilityCost} 골드</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={ability.description}/></p>
       <div className={`mt-3 text-[clamp(0.875rem,1.1vw,1rem)] font-bold ${available ? 'text-emerald-300' : 'text-red-300'}`}>

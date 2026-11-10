@@ -103,7 +103,7 @@ const empty: Form = {
   questCompletedPortraitEnabled: false, questCompletedPortraitAssetId: null, questCompletedPortraitUrl: null,
   questCompletedPortraitUploadToken: null, questCompletedPortraitFileName: null,
   gameStartAbilityName: null, gameStartAbilityText: null, gameStartAbilityEffects: null,
-  abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
+  abilityName: "고유 능력", abilityCost: 0, abilityText: "", abilityEffects: {},
   hasQuest: false, questName: null, questText: null, questCondition: null,
   questProgressRequired: null, questRewardText: null, questRewardEffects: null,
   upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null,
@@ -771,7 +771,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           imagePositionY={champion.imagePositionY}
         />
       ) : <div className="h-24 w-20 rounded bg-neutral-900"/>}
-        <div><div className="text-xs text-primary">{STATUS_LABELS[champion.status]} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 text-sm">{champion.abilityName}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">Quest: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
+        <div><div className="text-xs text-primary">{STATUS_LABELS[champion.status]} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 line-clamp-2 text-sm">{champion.abilityText}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">피니셔 준비: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">미공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
 <div className="admin-pagination"><button disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(champions.length/20))} · {champions.length}명</span><button disabled={(listPage+1)*20>=champions.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
@@ -819,7 +819,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             <input type="checkbox" checked={form.isStarterGrant} onChange={e=>update("isStarterGrant", e.target.checked)} />
             신규 계정 Starter Champion
           </label></>,
-<><label>고유 능력 이름<input className={input} value={form.abilityName} onChange={e=>update("abilityName",e.target.value)}/></label>
+<>
 <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
 <EffectField
             title="고유 능력 효과"
@@ -840,7 +840,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
             onUnauthorized={onUnauthorized}
           />
-<label className="md:col-span-2">게임 시작 능력 이름 (선택)<input data-testid="champion-start-name" className={input} value={form.gameStartAbilityName ?? ''} onChange={e=>update('gameStartAbilityName',e.target.value)}/></label>
+
 <p className="md:col-span-2 text-xs text-neutral-400">초기 손패를 나누기 전에 챔피언당 한 번 자동 발동합니다. 비용이나 고유 능력 사용 횟수를 소모하지 않습니다. 직접 대상 선택이 필요한 효과는 사용할 수 없습니다.</p>
 <EffectField
             title="게임 시작 능력 효과"
@@ -894,7 +894,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                 onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
                 onUnauthorized={onUnauthorized}
              />}
- ability={<><label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
+ ability={<><label className="md:col-span-2 flex items-center gap-2"><input type="checkbox" checked={Boolean(form.upgradedAbilityName)} onChange={e=>update("upgradedAbilityName",e.target.checked ? "강화 고유 능력" : null)}/>완료 후 강화 고유 능력 사용</label>
 <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
 <EffectField
              title="강화 고유 능력"
@@ -1175,7 +1175,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       <aside className="admin-editor-preview admin-workbench-summary" aria-label="챔피언 미리보기">
        <h4>챔피언 정보 미리보기</h4><div className="admin-workbench-summary-art">{basicPortraitLocalUrl||form.imageUrl?<CardArtwork src={basicPortraitLocalUrl??form.imageUrl!} alt={form.name||'챔피언'} className="h-full w-full" imageDisplayMode={form.imageDisplayMode} imageScale={form.imageScale} imagePositionX={form.imagePositionX} imagePositionY={form.imagePositionY}/>:<span>이미지를 등록하면 여기에 표시됩니다.</span>}</div>
        <h5>{form.name||'새 챔피언'}</h5><dl><div><dt>최대 체력</dt><dd>{form.maxHealth}</dd></div><div><dt>능력 비용</dt><dd>{form.abilityCost} 골드</dd></div></dl>
-       <strong>{form.abilityName||'고유 능력'}</strong><p>{form.abilityText||'능력 설명을 입력하세요.'}</p>{form.hasQuest&&<><h5>피니셔 준비</h5><p>{form.questText||'준비 조건을 입력하세요.'}</p></>}
+       <strong>고유 능력</strong><p>{form.abilityText||'능력 설명을 입력하세요.'}</p>{form.hasQuest&&<><h5>피니셔 준비</h5><p>{form.questText||'준비 조건을 입력하세요.'}</p></>}
        <p>표시 설정과 입력 내용을 확인하는 미리보기입니다. 전투 판정은 실행하지 않습니다.</p>
       </aside></div>
        <div className="admin-editor-footer mt-5 flex flex-wrap justify-end gap-2">

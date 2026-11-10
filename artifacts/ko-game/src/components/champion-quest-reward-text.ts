@@ -6,7 +6,7 @@ export function championQuestRewardText(champion: ChampionState): string {
   if (!reward) return '보상 없음';
   if (champion.quest?.rewardText) return champion.quest.rewardText;
   return reward.type === 'UPGRADE_ABILITY'
-    ? champion.upgradedAbility?.description || `${champion.upgradedAbility?.name ?? champion.ability.name} 능력을 강화합니다.`
+    ? champion.upgradedAbility?.description || '고유 능력을 강화합니다.'
     : reward.type === 'GAIN_GOLD'
       ? `다음 턴 골드 ${reward.amount}를 얻습니다.`
       : reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN'

@@ -4,7 +4,7 @@ import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { startTutorialFixture } from "./tutorial-rewards-fixture.mjs";
 import { chromium } from "./black-gold-playwright.mjs";
 import { eq } from "../../lib/db/node_modules/drizzle-orm/index.js";
-const out = "docs/qa/20261110-admin-workspace";
+const out = process.env.ADMIN_QA_OUTPUT ?? "docs/qa/20261110-admin-workspace";
 await mkdir(out, { recursive: true });
 const f = await startTutorialFixture(),
   browser = await chromium.launch({ headless: true }),
@@ -286,17 +286,36 @@ try {
       "업무 카드",
     );
     await page.goto("http://127.0.0.1:5186/admin/champions");
-    const row = page
-      .locator("article")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "조건 검증 챔피언",
-          exact: true,
-        }),
-      });
+    const row = page.locator("article").filter({
+      has: page.getByRole("heading", {
+        name: "조건 검증 챔피언",
+        exact: true,
+      }),
+    });
     await row.getByRole("button", { name: "수정", exact: true }).click();
     await editor.waitFor();
     await editor.getByRole("tab", { name: "피니셔 준비", exact: true }).click();
+    if (process.env.ASSERT_ABILITY_LABELS) {
+      assert.equal(
+        await editor.getByLabel("고유 능력 이름", { exact: true }).count(),
+        0,
+      );
+      assert.equal(
+        await editor.getByLabel("강화 능력 이름", { exact: true }).count(),
+        0,
+      );
+      assert.equal(
+        await editor.getByLabel("완료 후 강화 고유 능력 사용").isChecked(),
+        true,
+      );
+      assert.equal(
+        await editor
+          .getByRole("complementary", { name: "챔피언 미리보기" })
+          .getByText("기본 능력", { exact: true })
+          .count(),
+        0,
+      );
+    }
     const prep = editor.getByTestId("champion-preparation-editor");
     await prep.waitFor();
     assert.equal(
@@ -358,14 +377,13 @@ try {
     assert.deepEqual(saved.questCondition, originalCondition);
     assert.equal(saved.questProgressRequired, 7);
     assert.equal(saved.upgradedAbilityName, "기존 강화");
-    const optionRow = page
-      .locator("article")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "선택지 검증 챔피언",
-          exact: true,
-        }),
-      });
+    assert.equal(saved.abilityName, "기본 능력");
+    const optionRow = page.locator("article").filter({
+      has: page.getByRole("heading", {
+        name: "선택지 검증 챔피언",
+        exact: true,
+      }),
+    });
     await optionRow.getByRole("button", { name: "수정", exact: true }).click();
     await editor.getByRole("tab", { name: "피니셔 준비", exact: true }).click();
     assert.equal(
@@ -387,11 +405,9 @@ try {
       .where(eq(f.schema.championsTable.id, "workspace-options"));
     assert.deepEqual(options.questCondition.finisherChoices, optionData);
     assert.deepEqual(options.questCondition.customMetadata, { keep: true });
-    const noRow = page
-      .locator("article")
-      .filter({
-        has: page.getByRole("heading", { name: "준비 없음 검증", exact: true }),
-      });
+    const noRow = page.locator("article").filter({
+      has: page.getByRole("heading", { name: "준비 없음 검증", exact: true }),
+    });
     await noRow.getByRole("button", { name: "수정", exact: true }).click();
     await editor.getByRole("tab", { name: "피니셔 준비", exact: true }).click();
     assert.equal(await prep.getByLabel("피니셔 준비 사용").isChecked(), false);

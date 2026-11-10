@@ -962,7 +962,7 @@ export default function Decks() {
                     <ChampionPortrait champion={selectedChampion} />
                     <div className="ko-decks__champion-copy min-w-0">
                       <h3>{selectedChampion.name}</h3>
-                      <p>{selectedChampion.abilityName} · 비용 {selectedChampion.abilityCost} 골드</p>
+                      <p>고유 능력 · 비용 {selectedChampion.abilityCost} 골드</p>
                       {(selectedChampion.status !== "PUBLISHED" && !(selectedChampion.status === "DRAFT")) && (
                         <p className="mt-2 flex items-center gap-1 text-[#de8e7f]"><AlertTriangle className="h-3 w-3" /> 공개되지 않은 챔피언</p>
                       )}
@@ -1293,7 +1293,7 @@ export default function Decks() {
                   <span className="min-w-0">
                     <strong className="block truncate text-sm text-amber-200">{champion.name}</strong>
                     <span className="mt-1 block text-xs font-bold text-neutral-300">
-                      {champion.abilityName} · 비용 {champion.abilityCost} 골드
+                      고유 능력 · 비용 {champion.abilityCost} 골드
                     </span>
                     <span className="mt-2 block line-clamp-3 text-xs leading-5 text-neutral-400">
                       {champion.abilityText || champion.description || "능력 설명 없음"}
@@ -1311,7 +1311,7 @@ export default function Decks() {
             <div className="rounded-lg border border-neutral-800 bg-black/30 p-4">
               <h3 className="font-black text-amber-200">{selectedChampion.name} 상세</h3>
               <p className="mt-2 text-sm font-bold text-neutral-200">
-                기본 능력 · 비용 {selectedChampion.abilityCost} 골드 · {selectedChampion.abilityName}
+                고유 능력 · 비용 {selectedChampion.abilityCost} 골드
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-300">
                 {selectedChampion.abilityText || selectedChampion.description || "능력 설명 없음"}
