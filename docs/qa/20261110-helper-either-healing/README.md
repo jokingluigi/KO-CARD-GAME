@@ -32,3 +32,7 @@
 - `game/qa/latest-admin-revisions-20261014.test.ts`: 헬퍼 기대값 수정.
 
 별도 브랜치에서 작업하며 main 병합은 하지 않는다. 배포는 production 브랜치 및 외부 승인 SHA 검사 경로를 사용한다.
+
+## 운영 반영 확인
+
+`32b6d38d561ed61a7699623f763e3711113d771c`를 서버·프런트 모두 live로 확인했다. 공개 health와 version.json도 같은 커밋이다. 배포 후 운영 `/api/cards`에서 헬퍼의 ‘아군 선수 카드나 아군 챔피언 중 하나라도’ 설명을 직접 확인하고, 그 실제 공개 정의를 공통 변환기에 넣어 ANY 조건으로 연결되는 것을 검증했다. [운영 확인 기록](production-verification.json). 검증 실행기: `docs/qa/helper-healing-production.mjs`.

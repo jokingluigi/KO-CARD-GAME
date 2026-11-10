@@ -1,0 +1,36 @@
+{
+  "checkedAtUTC": "2026-11-10T02:37:36.512Z",
+  "commit": "32b6d38d561ed61a7699623f763e3711113d771c",
+  "services": [
+    {
+      "role": "api",
+      "deployId": "dep-dbp85su1egvs73bbsoog",
+      "status": "live",
+      "commit": "32b6d38d561ed61a7699623f763e3711113d771c"
+    },
+    {
+      "role": "front",
+      "deployId": "dep-dbp8643m8hqs73d51r2g",
+      "status": "live",
+      "commit": "32b6d38d561ed61a7699623f763e3711113d771c"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "32b6d38d561ed61a7699623f763e3711113d771c"
+  },
+  "front": {
+    "revision": "32b6d38d561ed61a7699623f763e3711113d771c",
+    "builtAtUTC": "2026-11-10T02:36:40.917Z"
+  },
+  "publicHelper": {
+    "id": "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+    "name": "헬퍼",
+    "text": "등장:손패에 '냥냥 펀치'를 추가합니다.\n턴 시작:지난 턴에 아군 선수 카드나 아군 챔피언 중 하나라도 체력을 회복했다면 손패에 '냥냥 펀치'를 추가한다.",
+    "updatedAt": "2026-10-16T14:38:58.016Z"
+  },
+  "runtimeCondition": "PREVIOUS_OWN_TURN_ANY_HEALED",
+  "manualProductionDBWrites": 0,
+  "mainMerged": false,
+  "productionMatchCreated": false
+}
