@@ -121,7 +121,7 @@ export function getAttackLegality(
     opponent && entry.card.attacksUsedThisTurn < maximumAttacks &&
       !isChampionProtectedByToken(state, opponent.id) &&
       !(hasOpponentWrestler && !entry.card.isAbilityDisabled && getActiveCardAbilities(entry.card).some(ability => 'cannotAttackChampionWhileEnemyBoardOccupied' in ability && ability.cannotAttackChampionWhileEnemyBoardOccupied)) &&
-      (!entry.card.enteredThisTurn || !hasKeyword(entry.card, 'SURPRISE')),
+      (!entry.card.enteredThisTurn || hasKeyword(entry.card, 'RUSH') || !hasKeyword(entry.card, 'SURPRISE')),
   );
   if (!hasOpponentWrestler && !canAttackChampion) {
     return {

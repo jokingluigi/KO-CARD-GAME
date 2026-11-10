@@ -461,15 +461,15 @@ test('MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보
 
   assert.equal(result.players[0].board[1], null);
   assert.equal(result.players[0].hand.at(-1)?.currentCost, 4);
-  assert.equal(result.players[0].hand.at(-1)?.currentAttack, ally.baseAttack);
-  assert.equal(result.players[0].hand.at(-1)?.currentHealth, ally.baseHealth);
+  assert.equal(result.players[0].hand.at(-1)?.currentAttack, ally.currentAttack);
+  assert.equal(result.players[0].hand.at(-1)?.currentHealth, ally.maxHealth);
   assert.equal(result.players[0].hand.at(-1)?.temporaryCostUntilTurn, state.turn);
   const afterTurn = endTurn(result, 'player-1');
   assert.equal(afterTurn.success, true);
   assert.equal(afterTurn.state.players[0].hand.at(-1)?.currentCost, 5);
 });
 
-test('필드에서 손패로 돌아간 선수는 공격력·체력·코스트가 초기화된다', () => {
+test('필드에서 손패로 돌아간 선수는 현재 공격력·최대체력·코스트를 유지하며 완전히 회복된다', () => {
   const source = instance('bounce-source', [structured('MOVE_TO_HAND', {
     zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1,
   })]);
@@ -483,10 +483,10 @@ test('필드에서 손패로 돌아간 선수는 공격력·체력·코스트가
 
   const result = selectEffectTarget(enterField(state, 'player-1', source, 0), ally.instanceId);
   const returned = result.players[0].hand.find((card) => card.instanceId === ally.instanceId);
-  assert.equal(returned?.currentAttack, ally.baseAttack);
-  assert.equal(returned?.currentHealth, ally.baseHealth);
-  assert.equal(returned?.maxHealth, ally.baseHealth);
-  assert.equal(returned?.currentCost, ally.baseCost);
+  assert.equal(returned?.currentAttack, ally.currentAttack);
+  assert.equal(returned?.currentHealth, ally.maxHealth);
+  assert.equal(returned?.maxHealth, ally.maxHealth);
+  assert.equal(returned?.currentCost, ally.currentCost);
   assert.deepEqual(returned?.temporaryStatModifiers, []);
 });
 

@@ -55,7 +55,7 @@ import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
 import { isChampionProtectedByToken } from '../engine/direct-champion';
 import { checkpointAwakening, hasAwakeningInvulnerability, hasAwakeningPassive, reconcileAwakeningSequences } from '../champions/awakening';
-import { normalizeCardForZone, resetCardAfterLeavingBoard, resetCardForGraveyard } from '../cards/zone-state';
+import { normalizeCardForZone, returnCardFromBoard, resetCardAfterLeavingBoard, resetCardForGraveyard } from '../cards/zone-state';
 import {
   getActiveCardAbilities,
   getActiveCardKeywords,
@@ -205,7 +205,7 @@ function sortAndTakeTargetCards<T extends CardInstance>(
   return target.take === undefined ? sorted : sorted.slice(0, target.take);
 }
 
-type ScriptRegister = { ids: string[] } | { slots: number[] } | { value: number };
+type ScriptRegister = ({ ids: string[] } | { slots: number[] } | { value: number }) & { otherAllyCount?: number };
 type ScriptRegisters = Map<string, ScriptRegister>;
 
 function scriptZones(target: ScriptTarget): TargetZone[] {
@@ -340,6 +340,10 @@ function historyValue(
   if (query.operation === 'SUM') return Math.min(values.reduce((sum, value) => sum + value, 0), 999);
   if (!values.length) return 0;
   return query.operation === 'MIN' ? Math.min(...values) : Math.max(...values);
+}
+
+function isPresenceComparison(compare: string, threshold: number): boolean {
+  return threshold === 0 && ['GT','LTE','EQ','NE'].includes(compare) || threshold === 1 && ['GTE','LT'].includes(compare);
 }
 
 function scriptCompare(left: number, operator: string, right: number): boolean {
@@ -478,7 +482,12 @@ function applyScriptSteps(
           },
         };
       }
-      registers.set(step.id, { ids: scriptTargetCards(next, playerId, sourceCard, step.target, registers).map((card) => card.instanceId) });
+      const selectedCards = scriptTargetCards(next, playerId, sourceCard, step.target, registers);
+      const alliedPresenceQuery = (step.target.owner ?? 'SELF') === 'SELF' && scriptZones(step.target).every(zone => zone === 'BOARD') &&
+        (!step.target.selection || step.target.selection === 'ALL') && !step.target.resultId;
+      registers.set(step.id, { ids: selectedCards.map(card => card.instanceId),
+        ...(alliedPresenceQuery ? {otherAllyCount:scriptTargetCards(next,playerId,sourceCard,{...step.target,
+          filter:{...step.target.filter,excludeSource:true},count:64,take:undefined},registers).length} : {}) });
       continue;
     }
     if (step.type === 'AGGREGATE') {
@@ -486,7 +495,7 @@ function applyScriptSteps(
       const ids = selected && 'ids' in selected ? selected.ids : [];
       const cards = ids.map((id) => sourceInState(next, id)).filter((card): card is CardInstance => Boolean(card));
       if (step.operation === 'COUNT') {
-        registers.set(step.id, { value: cards.length });
+        registers.set(step.id, { value: cards.length, otherAllyCount:selected?.otherAllyCount });
         continue;
       }
       const values = cards.map((card) =>
@@ -505,8 +514,14 @@ function applyScriptSteps(
       continue;
     }
     if (step.type === 'IF') {
+      // Only boolean field-presence tests exclude the source. Totals and effect targets stay unchanged.
+      const {left,right,compare} = step.condition;
+      const presenceTest = right.kind === 'CONSTANT' &&
+        isPresenceComparison(compare,right.value) &&
+        (left.kind === 'RESULT_COUNT' || left.kind === 'RESULT_VALUE') && !left.offset;
+      const otherCount = presenceTest ? registers.get(left.resultId)?.otherAllyCount : undefined;
       const branch = scriptCompare(
-        scriptValue(registers, step.condition.left),
+        otherCount ?? scriptValue(registers, step.condition.left),
         step.condition.compare,
         scriptValue(registers, step.condition.right),
       ) ? step.then : (step.else ?? []);
@@ -3028,7 +3043,7 @@ function applyEffectInternal(
         }),
       };
       return addCardsToHand(returned,targetOwner,moved.map(card=>({card:normalizeCardForZone({
-        ...resetCardAfterLeavingBoard(card,state.cardPool?.find(d=>d.id===card.definitionId)),...temporaryCost,
+        ...(zones.includes('BOARD') ? returnCardFromBoard : resetCardAfterLeavingBoard)(card,state.cardPool?.find(d=>d.id===card.definitionId)),...temporaryCost,
       },'HAND'), returnedFromBoard:zones.includes('BOARD'),notifyListeners:!zones.includes('DECK')})));
     }
     if (effect.action === 'MOVE_TO_DECK') {
@@ -3047,8 +3062,8 @@ function applyEffectInternal(
           : []),
       ];
       if (!moved.length) return state;
-      const normalized = moved.map(({ card }) => normalizeCardForZone(
-        effect.values?.preserveStats ? card : resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
+      const normalized = moved.map(({ card, zone }) => normalizeCardForZone(
+        zone === 'BOARD' ? returnCardFromBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)) : effect.values?.preserveStats ? card : resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
         'DECK',
       ));
       const destinationOwner=effect.values?.destinationOwner === 'SELF' ? playerId : effect.values?.destinationOwner === 'ENEMY' ? state.players.find(p=>p.id!==playerId)!.id : targetOwner;
@@ -3089,7 +3104,7 @@ function applyEffectInternal(
            }
           : player),
       };
-      return addCardsToHand(taken,playerId,stolen.map(card=>({card:normalizeCardForZone(resetCardAfterLeavingBoard(card),'HAND')})));
+      return addCardsToHand(taken,playerId,stolen.map(card=>({card:normalizeCardForZone((zones.includes('BOARD') ? returnCardFromBoard : resetCardAfterLeavingBoard)(card,state.cardPool?.find(d=>d.id===card.definitionId)),'HAND')})));
     }
     if (effect.action === 'RETIRE') {
       return targets.reduce((nextState, targetCard) => {
@@ -3975,7 +3990,7 @@ export function resolveTriggeredAbilities(
       if(condition.type==='SOURCE_ATTACKED_CHAMPION_THIS_TURN' && !state.events.slice(turnStart+1).some(event=>event.type==='DAMAGE_DEALT'&&(event.amount??0)>0&&event.source?.type==='CARD'&&event.source.cardInstanceId===card.instanceId&&event.target?.type==='PLAYER'&&event.reason==='BASIC_ATTACK'))return false;
       if(condition.type==='WRESTLER_DESTROYED_THIS_TURN' && !state.events.slice(turnStart+1).some(event=>event.type==='CARD_DESTROYED'&&(event.cardType??event.targetSnapshot?.cardType)==='WRESTLER'))return false;
       if (condition.type === 'HAND_COUNT' && !compare(owner.hand.length, condition.compare, condition.amount)) return false;
-      if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(Boolean).length, condition.compare, condition.amount)) return false;
+      if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(entry=>entry && (!isPresenceComparison(condition.compare,condition.amount) || entry.instanceId!==card.instanceId)).length, condition.compare, condition.amount)) return false;
       // A field-presence prerequisite requires another instance, including another copy of the same definition.
       if (condition.type === 'BOARD_HAS_TAG' && owner.board.some(entry => entry && entry.instanceId !== card.instanceId && matchesStateCardTagFilter(state, entry, {tagsAny:[condition.tag]})) !== (condition.present ?? true)) return false;
       if (condition.type === 'HAS_TAG' && !owner.hand.some((entry) => entry.tags?.includes(condition.tag))) return false;

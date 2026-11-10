@@ -1,3 +1,5 @@
+import {FinisherProgress} from './finisher-progress';
+import {FinisherChoiceDialog} from './finisher-choice-dialog';
 import { SpellUseButton } from './spell-use-button';
 import { hasPendingProgram } from '../game/engine/program';
 import { ChampionProtection } from './champion-protection';
@@ -304,7 +306,7 @@ export function GameStatePreview({
       if (tutorialStep !== null) setTutorialStep(null);
       else if (openGraveyardPlayerId) setOpenGraveyardPlayerId(null);
       else if (settingsOpen) { setSettingsOpen(false); setSurrenderConfirming(false); }
-      else if (state.targetingState?.active) {if(!hasPendingProgram(state)&&!state.targetingState.handAddition&&!state.targetingState.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState.cancelable))onCancelEffectTargeting();}
+      else if (state.targetingState?.active) {if(!hasPendingProgram(state)&&!state.targetingState.finisherChoice&&!state.targetingState.handAddition&&!state.targetingState.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState.cancelable))onCancelEffectTargeting();}
       else if (selectedCardId) onSelectCard(selectedCardId);
       else if (selectedAttackerId) onSelectAttacker(selectedAttackerId);
     };
@@ -1137,6 +1139,8 @@ export function GameStatePreview({
       <LocalActionFeedback message={!settingsOpen&&!historyOpen&&!emoteOpen?localReason?.message??null:null} node={localReason?.id===me.id?playerChampionRef.current:localReason?.id===opp.id?championRef.current:localReason?handCardRefs.current.get(localReason.id)??boardCardRefs.current.get(localReason.id)??null:null}/>
       <p role="status" aria-live="polite" aria-atomic="true" className="ko-battle-event-reader" data-testid="battle-event-caption">{eventCaption}</p>
       <OverdrawReveal state={state}/>
+      {state.status==='IN_PROGRESS' && state.targetingState?.finisherChoice && state.targetingState.playerId===me.id && <FinisherChoiceDialog key={state.gameId+':'+state.targetingState.sourceInstanceId} state={state} playerId={me.id} onConfirm={onEffectTarget}/>}
+      {state.status==='IN_PROGRESS' && state.waitingForFinisherPlayerId && state.waitingForFinisherPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 피니셔를 선택하고 있어요.</div>}
       {state.status==='IN_PROGRESS' && state.targetingState?.handAddition && state.targetingState.playerId===me.id && <HandOverflowDialog key={state.gameId+':'+state.targetingState.handAddition.cards[0]?.card.instanceId} state={state} playerId={me.id} onConfirm={onEffectTarget}/>}
       {state.status==='IN_PROGRESS' && state.waitingForProgramPlayerId && state.waitingForProgramPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 업그레이드 효과의 대상을 선택하고 있어요.</div>}
       {state.status==='IN_PROGRESS' && (state.waitingForHandDiscardPlayerId && state.waitingForHandDiscardPlayerId!==me.id || state.targetingState?.handAddition && state.targetingState.playerId!==me.id) && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 손패에서 버릴 카드를 선택하고 있어요.</div>}
@@ -1153,14 +1157,14 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-effect-targeting={Boolean(effectTargeting&&state.targetingState?.playerId===me.id)} data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!hasPendingProgram(state)&&!state.targetingState!.handAddition&&!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
+      <div data-effect-targeting={Boolean(effectTargeting&&state.targetingState?.playerId===me.id)} data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!hasPendingProgram(state)&&!state.targetingState!.finisherChoice&&!state.targetingState!.handAddition&&!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,
       } as React.CSSProperties}>
 
          {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/><BattleAttention state={state}/></>}
-         <TargetSelectionFocus active={Boolean(effectTargeting&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
+         <TargetSelectionFocus active={Boolean(effectTargeting&&!state.targetingState?.finisherChoice&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
          <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -1247,10 +1251,10 @@ export function GameStatePreview({
                   className="ko-opponent-quest"
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
-                    피니셔 준비 {opp.champion.questCompleted ? '완료' : <><MotionNumber value={opp.champion.questProgress} />/{opp.champion.quest.requiredProgress}</>}
+                    {opp.champion.quest.finisherChoices?.length ? <FinisherProgress champion={opp.champion} compact/> : <>피니셔 준비 {opp.champion.questCompleted ? '완료' : <><MotionNumber value={opp.champion.questProgress} />/{opp.champion.quest.requiredProgress}</>}
                      <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,opp.champion.questProgress/Math.max(1,opp.champion.quest.requiredProgress)))})`}} /></span>
                     <AwakeningStatus champion={opp.champion} />
-                    {!opp.champion.questCompleted && opp.champion.questProgress === opp.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}
+                    {!opp.champion.questCompleted && opp.champion.questProgress === opp.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}</>}
                   </div>
                 </Inspectable>
               )}
@@ -1330,10 +1334,10 @@ export function GameStatePreview({
                  {state.targetingState!.fusion?.stage === 'CHOOSE' ? '합체 대상 선택 · 취소하면 카드와 골드 복원' : state.targetingState!.championRewardReplacement ? '준비 완료 토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요' : <>대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})</>}
                  {state.targetingState!.championRewardReplacement && <span className="block">손패가 가득 차면 기존 손패 1장을 골라 버린 뒤 받습니다.</span>}
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
-                 {!hasPendingProgram(state) && !state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
+                 {!hasPendingProgram(state) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
                </div>
              )}
-             {!blackGold && effectTargeting && !hasPendingProgram(state) && !state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
+             {!blackGold && effectTargeting && !hasPendingProgram(state) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
                <button type="button" onClick={onCancelEffectTargeting} className="ko-mobile-target-cancel hidden rounded border border-amber-600 text-amber-200">취소</button>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">
@@ -1414,7 +1418,7 @@ export function GameStatePreview({
               <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
               {!tutorialGuide&&contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
-                : effectTargeting ? !hasPendingProgram(state) && !state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
+                : effectTargeting ? !hasPendingProgram(state) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
                 : selectedCardId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectCard(selectedCardId);}}>선택 취소</button>
                 : selectedAttackerId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectAttacker(selectedAttackerId);}}>선택 취소</button> : !tutorialGuide&&!controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
             </div>}
@@ -1742,10 +1746,10 @@ export function GameStatePreview({
                {me.champion?.quest && (
                  <Inspectable className="ko-player-quest" content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
-                     피니셔 준비 {me.champion.questCompleted ? '완료' : <><MotionNumber value={me.champion.questProgress} />/{me.champion.quest.requiredProgress}</>}
+                     {me.champion.quest.finisherChoices?.length ? <FinisherProgress champion={me.champion} compact/> : <>피니셔 준비 {me.champion.questCompleted ? '완료' : <><MotionNumber value={me.champion.questProgress} />/{me.champion.quest.requiredProgress}</>}
                      <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,me.champion.questProgress/Math.max(1,me.champion.quest.requiredProgress)))})`}} /></span>
                      <AwakeningStatus champion={me.champion} />
-                     {!me.champion.questCompleted && me.champion.questProgress === me.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}
+                     {!me.champion.questCompleted && me.champion.questProgress === me.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}</>}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
                        <span className="mt-1 block max-w-40 text-[9px] leading-tight text-purple-100">{activePresentationCue.label} +{activePresentationCue.value}</span>
                      )}

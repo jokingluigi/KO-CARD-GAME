@@ -44,7 +44,17 @@ export function resetCardForGraveyard(card: CardInstance): CardInstance {
   };
 }
 
-/** Restore original stats/cost when a card moves into hand, deck or graveyard. */
+/** A field return keeps its numerical progression, but starts a clean hidden-zone lifecycle.
+ * Retained temporary changes are consolidated so old expiry timers cannot subtract twice.
+ */
+export function returnCardFromBoard(card: CardInstance, definition?: CardDefinition): CardInstance {
+  const reset = resetCardAfterLeavingBoard(card, definition);
+  if (card.cardType !== 'WRESTLER') return reset;
+  return { ...reset, currentCost: card.currentCost, currentAttack: card.currentAttack,
+    maxHealth: Math.max(1, card.maxHealth), currentHealth: Math.max(1, card.maxHealth) };
+}
+
+/** Graveyard and non-field lifecycle reset retain their existing printed-stat rules. */
 export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition?: CardDefinition): CardInstance {
   const definition = printedDefinition ?? getCardDefinition(card.definitionId);
   const draft = card.draftMutation ? draftBaseline(card, definition) : undefined;

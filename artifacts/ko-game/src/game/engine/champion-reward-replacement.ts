@@ -1,6 +1,6 @@
 import { addCardsToHand } from './hand-addition';
 import type { CardInstance } from '../cards/types';
-import { normalizeCardForZone, resetCardAfterLeavingBoard } from '../cards/zone-state';
+import { normalizeCardForZone, returnCardFromBoard } from '../cards/zone-state';
 import type { GameState } from '../types/game-state';
 import { resolveHandAdditionListeners } from '../effects/effect-engine';
 import { MAX_HAND_SIZE } from '../rules/constants';
@@ -28,7 +28,7 @@ export function selectChampionRewardReplacement(state: GameState, targetId: stri
   const owner = state.players.find(p => p.id === pending.playerId);
   const card = owner?.board.find(c => c?.instanceId === targetId);
   if (!owner || !card || card.boardSlot === null || owner.champion?.id !== reward.championId) return state;
-  const returned = normalizeCardForZone(resetCardAfterLeavingBoard(card,state.cardPool?.find(d=>d.id===card.definitionId)),'HAND');
+  const returned = normalizeCardForZone(returnCardFromBoard(card,state.cardPool?.find(d=>d.id===card.definitionId)),'HAND');
   const next:GameState={...state,targetingState:pending.continuation,
     players:state.players.map(p=>p.id!==owner.id?p:{...p,board:p.board.map(c=>c?.instanceId===targetId?null:c) as typeof p.board}),
     events:[...state.events,{type:'CARD_REMOVED',playerId:owner.id,cardInstanceId:targetId,cardType:card.cardType,boardSlot:card.boardSlot,source:{type:'CHAMPION',championId:reward.championId},target:{type:'CARD',cardInstanceId:targetId},reason:'CHAMPION_REWARD_RETURN_HAND'}],

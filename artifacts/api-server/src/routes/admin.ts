@@ -1,3 +1,4 @@
+import { validFinisherChoices } from '@workspace/game-engine';
 import {removeHomeMenuImage} from "../lib/home-menu-media";
 import {verifyCatalogAssets} from "./cosmetics";
 import {parseBattleSprite} from "@workspace/cosmetics";
@@ -202,6 +203,8 @@ function parseChampionInput(value: unknown, existing: Record<string, unknown> = 
   result.isCraftable = input.isCraftable !== false;
   result.imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]) ? input.imageDisplayMode : 'COVER';
   for (const key of ['abilityEffects','gameStartAbilityEffects','questCondition','questRewardEffects','upgradedAbilityEffects','presentationLines']) result[key] = input[key] ?? (key === 'abilityEffects' || key === 'presentationLines' ? {} : null);
+  const choices=(result.questCondition as Record<string,unknown>|null)?.finisherChoices;
+  if (choices !== undefined && !validFinisherChoices(choices)) return null;
   const sprite=(result.presentationLines as Record<string,unknown>|null)?.BATTLE_SPRITE;
   if(sprite!==undefined&&!parseBattleSprite(sprite))return null;
   const completionLine = (result.presentationLines as Record<string, unknown> | null)?.QUEST_COMPLETE;
@@ -218,7 +221,7 @@ function parseChampionInput(value: unknown, existing: Record<string, unknown> = 
   return result as ChampionInput;
 }
 
-function championInputError(_value: unknown): string { return '저장할 챔피언 데이터가 객체여야 합니다.'; }
+function championInputError(_value: unknown): string { return '챔피언 설정을 확인하세요. 피니셔 선택지는 서로 다른 ID의 2~8개 항목과 유효한 조건·카드 참조가 필요합니다.'; }
 
 async function validatePublishedChampionToken(
   championTokenDefinitionId: string | null,
@@ -250,14 +253,28 @@ function containsStructuredAction(value: unknown, action: string): boolean {
     Object.values(record).some((item) => containsStructuredAction(item, action));
 }
 
+async function validateFinisherReferences(condition: Record<string,unknown>|null, published=false): Promise<string|null> {
+  const options=condition?.finisherChoices;
+  if(options===undefined)return null;
+  if(!validFinisherChoices(options))return '피니셔 선택지 설정이 올바르지 않습니다.';
+  for(const option of options){
+    const [card]=await db.select({id:cardsTable.id,cardType:cardsTable.cardType,rarity:cardsTable.rarity,isChampionToken:cardsTable.isChampionToken,status:cardsTable.status}).from(cardsTable).where(eq(cardsTable.id,option.cardDefinitionId)).limit(1);
+    if(!card||card.cardType!=='TECHNIQUE'||card.rarity!=='CHAMPION'||!card.isChampionToken||card.status==='DISABLED'||published&&card.status!=='PUBLISHED')return `피니셔 '${option.name}'에는 ${published?'공개된 ':''}챔피언 등급 토큰 주문 카드를 연결하세요.`;
+  }
+  return null;
+}
+
 async function validatePublishedChampionEffects(
   champion: {
     championTokenDefinitionId: string | null;
+    questCondition?: Record<string,unknown>|null;
     abilityEffects: unknown;
     questRewardEffects: unknown;
     upgradedAbilityEffects: unknown;
   },
 ): Promise<{ ok: true } | { ok: false; message: string }> {
+  const finisherError=await validateFinisherReferences(champion.questCondition??null,true);
+  if(finisherError)return {ok:false,message:finisherError};
   const requiresChampionToken = [
     champion.abilityEffects,
     champion.questRewardEffects,
@@ -1716,6 +1733,8 @@ router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
   if (!input) { response.status(400).json({ message: championInputError(request.body) }); return; }
+  const finisherError=await validateFinisherReferences(input.questCondition);
+  if(finisherError){response.status(400).json({message:finisherError});return;}
   try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
   if (
     input.imageAssetId &&
@@ -1776,6 +1795,8 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: id ? championInputError(request.body) : "챔피언 ID를 확인해 주세요." });
     return;
   }
+  const finisherError=await validateFinisherReferences(input.questCondition,existing.status==='PUBLISHED');
+  if(finisherError){response.status(400).json({message:finisherError});return;}
   try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
   expectedVersion ??= existing.version;
   const versionCheck = expectedVersion === null
@@ -1957,6 +1978,7 @@ router.post("/champions/:id/status", async (request, response): Promise<void> =>
     const [champion] = await db
       .select({
         championTokenDefinitionId: championsTable.championTokenDefinitionId,
+        questCondition: championsTable.questCondition,
         abilityEffects: championsTable.abilityEffects,
         questRewardEffects: championsTable.questRewardEffects,
         upgradedAbilityEffects: championsTable.upgradedAbilityEffects,

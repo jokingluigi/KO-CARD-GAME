@@ -36,7 +36,16 @@ export type ChampionQuestReward =
        effects: Array<Extract<ChampionEffect, { type: 'STRUCTURED' | 'SCRIPT' }>>;
     };
 
+export interface FinisherChoice {
+  id: string;
+  name: string;
+  description: string;
+  condition: ChampionQuestCondition;
+  cardDefinitionId: string;
+}
+
 export interface ChampionQuest {
+  finisherChoices?: FinisherChoice[];
   awakening?: import('./awakening-types').AwakeningQuestConfig;
   goldSpent?: boolean;
   selfEffectDamage?: boolean;
@@ -89,6 +98,10 @@ export interface ChampionDefinition {
 }
 
 export interface ChampionState {
+  finisherProgress?: Record<string, { counts: Record<string, number>; completed: boolean }>;
+  finisherEventCursor?: number;
+  finisherEventIdentities?: string[];
+  selectedFinisherId?: string;
   abilityOverride?: ChampionAbility;
   abilityOverrideExpiresAtTurn?: number;
   awakening?: import('./awakening-types').AwakeningState;
@@ -155,5 +168,5 @@ export function championVoiceLine(
 
 /** Per-match replacement wins over legacy preparation-completion upgrades. */
 export function currentChampionAbility(champion: ChampionState | null | undefined): ChampionAbility | null {
- return champion ? champion.abilityOverride ?? (champion.questCompleted && champion.upgradedAbility ? champion.upgradedAbility : champion.ability) : null;
+ return champion ? champion.abilityOverride ?? (champion.questCompleted && !champion.quest?.finisherChoices?.length && champion.upgradedAbility ? champion.upgradedAbility : champion.ability) : null;
 }

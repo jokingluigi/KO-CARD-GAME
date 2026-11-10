@@ -1,3 +1,4 @@
+import { validFinisherChoices } from './finisher-preparation';
 import {reviewedOctober24Champion} from './balance-patch-20261024';
 import { isAutomaticChampionStartConfig } from '../../../../../lib/game-engine/src/champion-game-start';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
@@ -20,7 +21,7 @@ export type PublishedChampionRecord = {
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   gameStartAbilityName?: string | null; gameStartAbilityText?: string | null; gameStartAbilityEffects?: Structured | null;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { awakening?: unknown; condition?: unknown; goldSpent?: boolean; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { finisherChoices?: unknown; awakening?: unknown; condition?: unknown; goldSpent?: boolean; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -70,6 +71,7 @@ function ability(id: string, name: string, cost: number, description: string, co
 }
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
+  const configuredChoices = record.hasQuest && validFinisherChoices(record.questCondition?.finisherChoices) ? record.questCondition.finisherChoices : undefined;
   record = reviewedOctober24Champion(record);
   // Exact administrator revision, explicitly implemented rather than parsed at runtime.
   if (record.id === 'f7b087d8-3148-43d5-a634-a81d15c81721' &&
@@ -205,6 +207,9 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
       description: '이번 게임에서 아군 선수가 총 10회 리타이어하세요. DESTROY는 포함하지 않습니다.',
       rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'CARD_RETIRED', cardType: 'WRESTLER',
       strictEventCount: true, requiredProgress: 10, reward: { type: 'UPGRADE_ABILITY' } };
+  }
+  if (configuredChoices) {
+    definition.quest = {...(definition.quest ?? {id:`${record.id}-quest`,name:'피니셔 준비',description:'선택지 중 하나의 조건을 달성하세요.',trackedEvent:'CARD_PLAYED',requiredProgress:1,reward:{type:'GAIN_GOLD',amount:0}}),finisherChoices:configuredChoices};
   }
   return definition;
 }

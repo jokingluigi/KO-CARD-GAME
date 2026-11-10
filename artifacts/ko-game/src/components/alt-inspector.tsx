@@ -1,3 +1,4 @@
+import {FinisherProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
 import {cardSilenceProtection} from '../lib/card-protection-display';
 import {SilenceImmunityNotice} from './silence-immunity-notice';
@@ -576,6 +577,7 @@ export function ChampionAbilityInspectContent({
 export function ChampionQuestInspectContent({ champion }: { champion: ChampionState }) {
   const quest = champion.quest;
   if (!quest) return <div className="text-sm text-neutral-400">피니셔 준비 조건이 없습니다.</div>;
+  if (quest.finisherChoices?.length) return <div><h3 className="mb-3 text-lg font-bold text-amber-200">피니셔 준비 · 선택지</h3><FinisherProgress champion={champion}/><p className="mt-3 text-xs text-neutral-400">하나를 획득하면 나머지는 이번 대전에서 비활성화됩니다. 동시에 달성하면 선택합니다.</p></div>;
   return (
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">피니셔 준비</div>

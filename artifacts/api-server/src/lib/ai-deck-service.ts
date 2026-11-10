@@ -161,6 +161,7 @@ export async function validateAIDeckReferences(
     Object.values(record).forEach(visitReferences);
   };
   cards.forEach((card) => visitReferences(card.effectConfig));
+  visitReferences(champion?.questCondition);
   if (champion?.championTokenDefinitionId) {
     requiredCardDefinitionIds.add(champion.championTokenDefinitionId);
     championTokenReferenceIds.add(champion.championTokenDefinitionId);

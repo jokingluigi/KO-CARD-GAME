@@ -123,6 +123,7 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     : undefined;
   return {
     ...publicState,
+    waitingForFinisherPlayerId: state.targetingState?.finisherChoice ? state.targetingState.playerId : undefined,
     waitingForHandDiscardPlayerId: state.targetingState?.handAddition ? state.targetingState.playerId : undefined,
     waitingForProgramPlayerId: hasPendingProgram(state) ? state.targetingState?.playerId : undefined,
     players,

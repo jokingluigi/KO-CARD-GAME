@@ -27,7 +27,7 @@ for(const count of [0,MAX_HAND_SIZE-1,MAX_HAND_SIZE])for(const slot of [0,1,2,3]
   let n=result.state;if(count===MAX_HAND_SIZE){assert.ok(n.targetingState?.handAddition);assert.equal(n.players[0].board[slot],null);const chosen=executeAction(n,{type:'SELECT_EFFECT_TARGET',playerId:'player-1',targetId:n.players[0].hand[0].instanceId});assert.ok(chosen.success);n=chosen.state;}const p=n.players[0];assert.ok(p.board[slot]?.isChampionToken);assert.ok(!n.targetingState);assert.equal(n.activePlayerId,'player-2');
   assert.equal(p.graveyard.length,before.players[0].graveyard.length+(count===MAX_HAND_SIZE?1:0));assert.equal(n.events.some(e=>e.type==='CARD_RETIRED'||e.type==='CARD_DESTROYED'),false);
   assert.equal(p.hand.length,Math.min(count+1,MAX_HAND_SIZE));
-  const moved=p.hand.at(-1)!;assert.equal(moved.instanceId,victim.instanceId);assert.equal(moved.boardSlot,null);assert.notEqual(moved.currentAttack,50);
+  const moved=p.hand.at(-1)!;assert.equal(moved.instanceId,victim.instanceId);assert.equal(moved.boardSlot,null);assert.equal(moved.currentAttack,50);assert.equal(moved.currentHealth,50);assert.equal(moved.maxHealth,50);assert.equal(moved.currentCost,victim.currentCost);
   assert.equal(n.events.filter(e=>e.type==='CARD_GENERATED').length,1);assert.equal(n.events.filter(e=>e.type==='ENTER_FIELD').length,1);
   assert.equal(executeAction(n,{type:'SELECT_EFFECT_TARGET',playerId:'player-1',targetId:victim.instanceId}).success,false);
 });

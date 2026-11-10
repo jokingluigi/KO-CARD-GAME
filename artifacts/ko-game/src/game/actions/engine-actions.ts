@@ -1,3 +1,4 @@
+import { deferFinisherChoiceResolution, selectPreparedFinisher } from '../champions/finisher-preparation';
 import { hasPendingProgram } from '../engine/program';
 import {resolveConfiguredTowerEffects} from '../tower/configured-effects';
 import { hasCommittedFusion } from '../engine/fusion';
@@ -69,7 +70,7 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
         ? { type: 'CONFIRM_PRECOMMIT_TARGET' as const, playerId, targetId }
         : { type: 'SELECT_EFFECT_TARGET' as const, playerId, targetId },
     );
-    if (!hasPendingProgram(state) && !state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
+    if (!hasPendingProgram(state) && !state.targetingState.finisherChoice && !state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
     if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
     else legalActionsCache.set(state, new Map([[playerId, actions]]));
     return actions;
@@ -139,6 +140,7 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
     return actionFailure(state, 'NOT_YOUR_TURN', '두 플레이어가 시작 손패 교체를 마칠 때까지 기다려 주세요.');
   if (state.targetingState?.handAddition && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','손패에서 버릴 카드 1장을 선택하세요.');
   if (hasPendingProgram(state) && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','업그레이드 효과의 대상을 선택하세요.');
+  if (state.targetingState?.finisherChoice && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','사용할 피니셔를 하나 선택하세요.');
   if (action.type === 'BEGIN_TARGETED_ACTION') return beginTargetedAction(state, action);
   switch (action.type) {
     case 'PLAY_WRESTLER':
@@ -175,6 +177,10 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
       if (!pending?.active || pending.playerId !== action.playerId) {
         return actionFailure(state, 'NO_VALID_TARGET', '선택할 수 있는 대상이 없습니다.');
       }
+      if (pending.finisherChoice) {
+        const selected = selectPreparedFinisher(state, action.playerId, action.targetId);
+        return selected === state ? actionFailure(state,'NO_VALID_TARGET','선택할 수 없는 피니셔입니다.') : actionSuccess(selected);
+      }
       if (pending.phase === 'PRE_COMMIT') {
         return actionFailure(state, 'TARGET_SELECTION_PENDING', '사용을 확정한 뒤 대상을 선택하세요.');
       }
@@ -189,6 +195,7 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
       if (!pending?.active || pending.playerId !== action.playerId) {
         return actionFailure(state, 'NO_VALID_TARGET', '취소할 선택이 없습니다.');
       }
+      if (pending.finisherChoice) return actionFailure(state,'TARGET_SELECTION_PENDING','피니셔 선택을 완료하세요.');
       return actionSuccess(cancelEffectTargeting(state));
     }
     case 'CONFIRM_PRECOMMIT_TARGET': {
@@ -214,4 +221,20 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
   }
 }
 
-export function executeAction(state:GameState,action:GameAction):ActionResult{const initial=executeActionInternal(state,action);const result=initial.success&&initial.state.pendingComboAttack&&!initial.state.targetingState?.active?resumePendingComboAttack(initial.state):initial;return result.success?{...result,state:resolveConfiguredTowerEffects(state,resumeDeferredTurnStart(resumeDeferredOpening(result.state)))}:result;}
+export function executeAction(state: GameState, action: GameAction): ActionResult {
+  const result = deferFinisherChoiceResolution(()=>{
+    const initial = executeActionInternal(state, action);
+    const result = initial.success && initial.state.pendingComboAttack && !initial.state.targetingState?.active
+      ? resumePendingComboAttack(initial.state) : initial;
+    return result.success ? {...result,state:resolveConfiguredTowerEffects(state,resumeDeferredTurnStart(resumeDeferredOpening(result.state)))} : result;
+  });
+  if (!result.success || !state.players.some(p=>p.champion?.quest?.finisherChoices?.length) || action.type==='CANCEL_EFFECT_TARGET' ||
+      (result.state.targetingState?.phase==='PRE_COMMIT' && result.state.events.length===state.events.length)) return result;
+  let final = result.state;
+  for (let pass=0;pass<state.players.length+1;pass++) {
+    const before=final.events.length;
+    final=processChampionQuestEvents(state,final);
+    if(final.events.length===before)break;
+  }
+  return {...result,state:final};
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "sharedBattleUI": true,
+    "realEngineCardPlay": true,
+    "confirmation": true,
+    "touch": true,
+    "selectedFinisherId": "b",
+    "pageErrors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "sharedBattleUI": true,
+    "realEngineCardPlay": true,
+    "confirmation": true,
+    "touch": true,
+    "selectedFinisherId": "b",
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "sharedBattleUI": true,
+    "realEngineCardPlay": true,
+    "confirmation": true,
+    "touch": false,
+    "selectedFinisherId": "b",
+    "pageErrors": []
+  }
+]

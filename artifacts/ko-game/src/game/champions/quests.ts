@@ -1,4 +1,4 @@
-import { preparationCompletionReward } from './finisher-preparation';
+import { preparationCompletionReward, processFinisherChoices } from './finisher-preparation';
 import { evaluateChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { towerQuestProgressBonus, towerQuestComplete, refreshTowerAuras } from '../tower/relics';
 import type { GameEvent } from '../events/types';
@@ -80,6 +80,7 @@ function processChampionQuestEventPass(
     ]);
     const champion = originalPlayer.champion;
     const quest = champion?.quest;
+    if (quest?.finisherChoices?.length) continue;
     const progressEvents = champion && quest && !champion.questCompleted
       ? newEvents.filter((event) => {
           if (quest.goldSpent) return event.type === 'GOLD_CHANGED' && event.playerId === originalPlayer.id && Number(event.amount) < 0 && ['CARD_COST', 'CHAMPION_ABILITY_COST', 'CARD_EFFECT_COST'].includes(event.reason ?? '');
@@ -290,6 +291,6 @@ export function processChampionQuestEvents(previousState: GameState, nextState: 
     resolved = processChampionQuestEventPass(previousState, resolved);
     if (resolved.events.length === before.events.length) break;
   }
-  return resolved;
+  return processFinisherChoices(previousState, resolved);
 }
 import {interceptImmediateBonusGold} from '../engine/reviewed-field-rules';

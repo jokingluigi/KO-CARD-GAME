@@ -215,7 +215,7 @@ export const GAME_GUIDE: GuideEntry[] = [
     category: "combat",
     title: "소환한 선수가 왜 바로 공격하지 못하나요?",
     answer:
-      "일반 선수는 소환한 행동 턴에 공격할 수 없습니다. 러쉬는 등장한 턴에도 선수와 상대 챔피언을 공격할 수 있고, 기습은 등장한 턴에 상대 선수만 공격할 수 있습니다. 공격불가·기절·도발 같은 다른 제한도 함께 적용됩니다.",
+      "일반 선수는 소환한 행동 턴에 공격할 수 없습니다. 러쉬는 등장한 턴에도 선수와 상대 챔피언을 공격할 수 있고, 기습은 등장한 턴에 상대 선수만 공격할 수 있습니다. 러쉬와 기습이 함께 있으면 러쉬가 우선되어 상대 챔피언도 공격할 수 있습니다. 공격불가·기절·도발 같은 다른 제한도 함께 적용됩니다.",
     example: "기습 선수를 방금 냈다면 상대 챔피언을 직접 때릴 수는 없습니다.",
     source: "game/engine/keyword-rules.ts; components/alt-inspector-utils.ts",
   },
@@ -277,6 +277,21 @@ export const GAME_GUIDE: GuideEntry[] = [
     example:
       "아머 2인 선수가 공격 피해 5를 받으면 다른 경감이 없을 때 3을 받습니다. 카드 효과 피해 5에는 아머 경감을 적용하지 않습니다.",
     source: "components/alt-inspector-utils.ts; game/engine/combat.ts",
+  },
+  {
+    id: "return-stats",
+    category: "combat",
+    title: "필드의 선수가 손패나 덱으로 돌아가면 강화가 사라지나요?",
+    answer: "현재 비용·공격력·최대 체력을 유지하고 체력을 최대치까지 회복합니다. 기절·침묵 등 필드의 일시 상태는 정리합니다. 묘지로 가는 리타이어·파괴와 다른 처리입니다.",
+    example: "공격력 7, 체력 2/9, 현재 비용 1인 선수가 손패로 돌아오면 비용 1, 공격력 7, 체력 9/9입니다.",
+    source: "game/cards/zone-state.ts; game/engine/finisher-choices-and-returns.test.ts",
+  },
+  {
+    id: "finisher-choices",
+    category: "champion",
+    title: "피니셔 준비 조건이 여러 개면 모두 받을 수 있나요?",
+    answer: "여러 선택지가 설정된 챔피언은 각 조건을 독립적으로 준비하지만, 먼저 완료한 피니셔 하나만 획득합니다. 같은 효과 처리에서 여러 조건을 함께 완료하면 하나를 선택합니다. 획득 후 나머지는 이번 대전에서 비활성화되고, 피니셔를 사용해도 다시 열리지 않습니다.",
+    source: "game/champions/finisher-preparation.ts",
   },
   {
     id: "quest",

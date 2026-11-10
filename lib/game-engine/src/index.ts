@@ -138,3 +138,5 @@ export type { LessonId, TutorialCatalog, TutorialGoal } from "./tutorial";
 export {hasPendingHandAddition} from '../../../artifacts/ko-game/src/game/engine/hand-addition';
 
 export {normalizeHelperHealing} from '../../../artifacts/ko-game/src/game/cards/helper-healing';
+
+export { validFinisherChoices } from '../../../artifacts/ko-game/src/game/champions/finisher-preparation';
