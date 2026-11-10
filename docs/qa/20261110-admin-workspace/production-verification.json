@@ -1,0 +1,44 @@
+{
+  "checkedAtUTC": "2026-11-10T13:53:08.083Z",
+  "commit": "30c86484f3f82b9ff6a65f77a534f5c66904c160",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbpi2glg1s2s738gbe60",
+      "status": "live",
+      "commit": "30c86484f3f82b9ff6a65f77a534f5c66904c160",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbpi2gk9v7es73bv9v10",
+      "status": "live",
+      "commit": "30c86484f3f82b9ff6a65f77a534f5c66904c160",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "30c86484f3f82b9ff6a65f77a534f5c66904c160"
+  },
+  "front": {
+    "revision": "30c86484f3f82b9ff6a65f77a534f5c66904c160",
+    "builtAtUTC": "2026-11-10T13:51:44.316Z"
+  },
+  "rootEntryModule": "/assets/index-CjC8vaTX.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-CjC8vaTX.js",
+  "previousHelperPatchRetained": true,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "admin-workspace-and-champion-preparation-editor",
+  "tagLabelsEndpointAvailable": true,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
