@@ -1,0 +1,44 @@
+{
+  "checkedAtUTC": "2026-11-10T14:15:23.234Z",
+  "commit": "c6d97315a473525874c1a9afe2252948285cce40",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbpid1k9v7es73c062kg",
+      "status": "live",
+      "commit": "c6d97315a473525874c1a9afe2252948285cce40",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbpid1jncjis73909g6g",
+      "status": "live",
+      "commit": "c6d97315a473525874c1a9afe2252948285cce40",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "c6d97315a473525874c1a9afe2252948285cce40"
+  },
+  "front": {
+    "revision": "c6d97315a473525874c1a9afe2252948285cce40",
+    "builtAtUTC": "2026-11-10T14:14:04.808Z"
+  },
+  "rootEntryModule": "/assets/index-CQv3HVDN.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-CQv3HVDN.js",
+  "previousHelperPatchRetained": true,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "admin-remove-analysis-tools",
+  "tagLabelsEndpointAvailable": true,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
