@@ -1,3 +1,4 @@
+import {normalizeHelperHealing,helperHealingAbilities} from './helper-healing';
 import {reviewedOctober30Abilities} from './reviewed-admin-content-20261030';
 import {reviewedOctober24Abilities} from './reviewed-admin-content-20261024';
 import { reviewedOctober19Abilities } from './reviewed-admin-content-20261019';
@@ -239,7 +240,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       awakeningLegacyPassives: card.text === awakening.rulesText,
       effectConfig: { ...awakening.effectConfig, ...card.effectConfig } };
   }
-  card = lunaSelfSilenceRecord(card);
+  card = normalizeHelperHealing(lunaSelfSilenceRecord(card));
   if (card.id === 'epic-spell-life-exchange' && card.text === LIFE_EXCHANGE_OLD_TEXT) {
     card = { ...card, text: LIFE_EXCHANGE_RULES_TEXT };
   }
@@ -255,7 +256,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       return { ...effect, target };
     }) } };
   }
-  const latestReviewed = reviewedOctober30Abilities(card);
+  const latestReviewed = helperHealingAbilities(card) ?? reviewedOctober30Abilities(card);
   const reviewedCurrent = reviewedOctober19Abilities(card) ?? reviewedLatestAdminAbilities(card) ?? reviewedCurrentAdminAbilities(card);
   const reviewedAdmin = reviewedAdminContentAbilities(card);
   const implementation = latestReviewed || reviewedCurrent || reviewedAdmin ? null : newCardImplementation(card);

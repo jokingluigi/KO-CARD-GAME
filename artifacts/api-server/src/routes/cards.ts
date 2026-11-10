@@ -3,7 +3,7 @@ import { and, asc, eq, ne, or, inArray, gt } from "drizzle-orm";
 import { db, cardsTable, cardFrameDefinitionsTable, championsTable, userCardCollectionsTable, userChampionCollectionsTable } from "@workspace/db";
 import { Router, type IRouter } from "express";
 
-import { completeMinionACatalog } from "@workspace/game-engine";
+import { normalizeHelperHealing, completeMinionACatalog } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -23,7 +23,7 @@ router.get("/cards", async (request, response): Promise<void> => {
   const requiredIds = new Set(allCards.filter(card => user?.role === 'ADMIN' || card.status === 'PUBLISHED' || ownedIds.has(card.id)).map(card => card.id));
   expandNamedCardReferences(allCards, requiredIds);
   const cards = allCards.filter(card => requiredIds.has(card.id)).map(card => card.name === '디 오리진'
-    ? { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') } : card);
+    ? { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') } : normalizeHelperHealing(card));
 
   response.setHeader("Cache-Control", "no-store");
   response.json({ cards });

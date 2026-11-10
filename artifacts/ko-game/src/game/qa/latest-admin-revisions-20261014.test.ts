@@ -224,7 +224,7 @@ test('Black Market Merchant deletes actual deck top without graveyard, replacing
 });
 for(const healed of ['BOTH','HERO','WRESTLER','OVERHEAL','OPPONENT_TURN'] as const)test(`Helper next own turn checks genuine previous-own-turn healing: ${healed}`,()=>{
  const {state}=setup('헬퍼');let n=play(state);const cat=definitions.find(d=>d.name==='냥냥 펀치')!;assert.equal(n.players[0].hand.filter(c=>c.definitionId===cat.id).length,1);if(healed==='OPPONENT_TURN')n=end(n);if(healed!=='OVERHEAL'){n.players[0].health=20;n.players[0].champion!.health=20;ally(n).currentHealth=8;}
- const heal=(zone:'PLAYER'|'BOARD')=>{n=applyEffect(n,'player-1',source(n),{type:'STRUCTURED',action:'HEAL',target:{zone,owner:'SELF',selection:zone==='PLAYER'?'SELF':'PLAYER_CHOICE',count:1},values:{amount:1}},zone==='BOARD'?['ally']:undefined);};if(healed!=='WRESTLER')heal('PLAYER');if(healed!=='HERO')heal('BOARD');if(healed==='OPPONENT_TURN')n=end(n);else n=end(end(n));assert.equal(n.players[0].hand.filter(c=>c.definitionId===cat.id).length,healed==='BOTH'?2:1);
+ const heal=(zone:'PLAYER'|'BOARD')=>{n=applyEffect(n,'player-1',source(n),{type:'STRUCTURED',action:'HEAL',target:{zone,owner:'SELF',selection:zone==='PLAYER'?'SELF':'PLAYER_CHOICE',count:1},values:{amount:1}},zone==='BOARD'?['ally']:undefined);};if(healed!=='WRESTLER')heal('PLAYER');if(healed!=='HERO')heal('BOARD');if(healed==='OPPONENT_TURN')n=end(n);else n=end(end(n));assert.equal(n.players[0].hand.filter(c=>c.definitionId===cat.id).length,['BOTH','HERO','WRESTLER'].includes(healed)?2:1);
 });
 
 for(const alreadyAttacked of [true,false])test(`Skad grants Surprise plus one wrestler-only extra attack (${alreadyAttacked?'already attacked':'unused normal attack'})`,()=>{

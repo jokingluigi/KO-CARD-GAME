@@ -1,0 +1,13 @@
+{
+  "id": "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+  "name": "헬퍼",
+  "cardType": "WRESTLER",
+  "cost": 4,
+  "attack": 2,
+  "health": 5,
+  "text": "등장:손패에 '냥냥 펀치'를 추가합니다.\n턴 시작:지난 턴에 아군 선수 카드와 챔피언이 체력을 회복했다면 손패에 '냥냥 펀치'를 추가한다.",
+  "effectId": null,
+  "effectConfig": {},
+  "status": "PUBLISHED",
+  "updatedAt": "2026-10-16T14:38:58.016Z"
+}

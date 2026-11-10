@@ -144,5 +144,6 @@ export type AbilityCondition =
   | { type: 'OWNER_TURN' }
   | { type: 'OPPONENT_TURN' }
   | { type: 'PREVIOUS_OWN_TURN_BOTH_HEALED' }
+  | { type: 'PREVIOUS_OWN_TURN_ANY_HEALED' }
   | { type: 'SOURCE_ATTACKED_CHAMPION_THIS_TURN' }
   | { type: 'WRESTLER_DESTROYED_THIS_TURN' };

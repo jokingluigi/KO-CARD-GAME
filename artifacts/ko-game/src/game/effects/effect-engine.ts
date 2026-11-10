@@ -3984,6 +3984,7 @@ export function resolveTriggeredAbilities(
       if (condition.type === 'SOURCE_ON_RIGHT_SIDE' && (card.boardSlot === null || card.boardSlot < 2)) return false;
       if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;
       if (condition.type === 'ATTACK_GAIN' && (options.attackDelta ?? 0) <= 0) return false;
+      if (condition.type === 'PREVIOUS_OWN_TURN_ANY_HEALED' && !(state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.champion || state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.wrestler)) return false;
       if (condition.type === 'PREVIOUS_OWN_TURN_BOTH_HEALED' && !(state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.champion && state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.wrestler)) return false;
       if (condition.type === 'OPPONENT_TURN' && state.activePlayerId === playerId) return false;
       if (condition.type === 'OWNER_TURN' && state.activePlayerId !== playerId) return false;
