@@ -1,0 +1,39 @@
+{
+  "checkedAtUTC": "2026-11-10T03:10:59.893Z",
+  "commit": "eb04d4a6fedd3651b78d5df4b03d9258d53d09f6",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbp8les9v7es73aumeg0",
+      "status": "live",
+      "commit": "eb04d4a6fedd3651b78d5df4b03d9258d53d09f6",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbp8leon74is73d75sk0",
+      "status": "live",
+      "commit": "eb04d4a6fedd3651b78d5df4b03d9258d53d09f6",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "eb04d4a6fedd3651b78d5df4b03d9258d53d09f6"
+  },
+  "front": {
+    "revision": "eb04d4a6fedd3651b78d5df4b03d9258d53d09f6",
+    "builtAtUTC": "2026-11-10T03:09:23.635Z"
+  },
+  "rootEntryModule": "/assets/index-DfR9Qigp.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "previousHelperPatchRetained": true,
+  "productionDBWrites": 0,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
