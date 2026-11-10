@@ -18,24 +18,3 @@ export const PREPARATION_EVENTS: ReadonlyArray<
   ["TURN_STARTED", "턴 시작"],
   ["TURN_ENDED", "턴 종료"],
 ];
-/** Applying a new analysis replaces its condition fields, retaining unrelated configuration. */
-export function applyPreparationCondition(
-  current: Record<string, unknown> | null,
-  analyzed: Record<string, unknown>,
-): Record<string, unknown> {
-  const next = { ...current };
-  for (const key of [
-    "event",
-    "condition",
-    "progress",
-    "required",
-    "cardType",
-    "sourceActionType",
-    "causedByOwner",
-    "goldSpent",
-    "selfEffectDamage",
-    "strictEventCount",
-  ])
-    delete next[key];
-  return { ...next, ...analyzed };
-}

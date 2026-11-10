@@ -581,7 +581,6 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
   return (
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">피니셔 준비</div>
-      <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{quest.name}</h3>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={quest.description}/></p>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">진행</div>

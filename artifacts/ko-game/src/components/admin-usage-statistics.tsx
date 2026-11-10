@@ -330,7 +330,7 @@ export function AdminUsageStatistics({
                         현재 고유 능력 · 비용 {item.cost}
                       </h3>
                       <p>{item.abilityText || "효과 없음"}</p>
-                      <h3>현재 퀘스트 · {item.questName}</h3>
+                      <h3>현재 피니셔 준비</h3>
                       <p>
                         {!item.definitionAvailable
                           ? "현재 정의 없음"

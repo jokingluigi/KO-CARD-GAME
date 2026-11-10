@@ -1,18 +1,12 @@
-import {applyPreparationCondition} from '@/lib/champion-preparation-editor';
 import {ChampionPreparationEditor} from './champion-preparation-editor';
 import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { AWAKENING_CARD_IDS, AWAKENING_QUEST_TEXT } from '@/game/champions/awakening-definitions';
-import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
-import { validChampionQuestCondition } from '@workspace/game-engine';
-import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
-import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useLocation } from "wouter";
 import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Maximize2, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
-import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
 import { CardArtwork } from "./card-artwork";
 import { useToast } from "../hooks/use-toast";
 import {
@@ -69,34 +63,6 @@ type Champion = {
   status: Status; version: number;
 };
 type Form = Omit<Champion, "id" | "status" | "version">;
-type EffectAnalysisKey = "gameStartAbilityText" | "abilityText" | "questRewardText" | "upgradedAbilityText";
-type EffectSlot = "ABILITY" | "QUEST_REWARD" | "UPGRADED_ABILITY";
-type EffectAnalysis = {
-  status?: "success" | "partial" | "failure";
-  outcome?: "supported" | "mechanism_required" | "analysis_failure";
-  effects?: unknown[];
-  condition?: Record<string, unknown>;
-  summaries?: string[];
-  unsupportedSegments?: string[];
-  unsupportedParts?: string[];
-  reason?: string;
-  message?: string;
-};
-type FullSection = {
-  key: string;
-  label: string;
-  status: "SUPPORTED" | "NEW_MECHANIC_REQUIRED" | "ANALYSIS_FAILED";
-  sourceText?: string;
-  analysis?: EffectAnalysis;
-  note?: string;
-};
-type FullAnalysis = {
-  sections: FullSection[];
-  unsupportedParts: string[];
-  fullySupported: boolean;
-  token?: { id: string; name: string; attack: number; health: number; text: string; status: Status };
-  tokenReferenceError?: string;
-};
 const empty: Form = {
   name: "", description: "", imageUrl: null, imageAssetId: null, imageUploadToken: null, imageFileName: null,
   ...DEFAULT_IMAGE_DISPLAY_SETTINGS, maxHealth: 20,
@@ -150,15 +116,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const formRef = useRef<Form>(empty);
   const pendingUploadsRef = useRef<Set<Promise<void>>>(new Set());
   const saveInFlightRef = useRef(false);
-  const [analyzingKey, setAnalyzingKey] = useState<(EffectAnalysisKey | "questText") | null>(null);
-  const [analysisResults, setAnalysisResults] = useState<Partial<Record<EffectAnalysisKey, EffectAnalysis>>>({});
-  const [questAnalysis, setQuestAnalysis] = useState<EffectAnalysis | null>(null);
-  const [prompts, setPrompts] = useState<Partial<Record<EffectAnalysisKey | "questText", string>>>({});
-  const [promptingKey, setPromptingKey] = useState<EffectAnalysisKey | "questText" | null>(null);
-  const [fullAnalysis, setFullAnalysis] = useState<FullAnalysis | null>(null);
-  const [fullPrompt, setFullPrompt] = useState("");
-  const [fullPrompting, setFullPrompting] = useState(false);
-  const [fullAnalyzing, setFullAnalyzing] = useState(false);
+  const [effectDrafts,setEffectDrafts] = useState<Partial<Record<EffectConfigKey,string>>>({});
+  const effectDraftsRef = useRef<Partial<Record<EffectConfigKey,string>>>({});
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const [tokenSearch, setTokenSearch] = useState("");
   const basicPortraitInputRef = useRef<HTMLInputElement>(null);
@@ -247,189 +206,24 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     setForm(next);
   };
   const replaceForm = (next: Form) => {
+    const drafts = {...effectDraftsRef.current};
+    let changed = false;
+    for (const key of Object.keys(drafts) as EffectConfigKey[]) {
+      if (next[key] !== formRef.current[key]) {delete drafts[key];changed=true;}
+    }
+    if(changed){effectDraftsRef.current=drafts;setEffectDrafts(drafts);}
     formRef.current = next;
     setForm(next);
   };
-  async function analyze(textKey: EffectAnalysisKey, effectSlot: EffectSlot) {
-    const text = form[textKey]?.trim();
-    if (!text) { setError("분석할 자연어 효과를 입력해 주세요."); return; }
-    setError("");
-    setAnalyzingKey(textKey);
-    try {
-      const response = await fetch(`${adminApiBase}/effects/analyze`, {
-        method: "POST", credentials: "include", cache: "no-store",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ text, effectContext: effectSlot === "ABILITY"
-           ? "CHAMPION_ABILITY"
-           : effectSlot === "UPGRADED_ABILITY"
-             ? "UPGRADED_CHAMPION_ABILITY"
-            : "QUEST_REWARD" }),
-      });
-      if (response.status === 401) { onUnauthorized(); return; }
-      const result = await response.json() as EffectAnalysis;
-      setAnalysisResults((current) => ({ ...current, [textKey]: result }));
-      setPrompts((current) => ({ ...current, [textKey]: undefined }));
-      if (!response.ok || result.outcome !== "supported") {
-        setError(result.outcome === "mechanism_required"
-          ? `새 메커니즘이 필요합니다: ${(result.unsupportedParts ?? result.unsupportedSegments ?? []).join(", ")}`
-          : result.message ?? result.reason ?? "효과 의도를 충분히 이해하지 못했습니다.");
-        return;
-      }
-      setMessageText("효과 분석이 완료되었습니다. 결과를 확인한 뒤 효과 적용을 눌러 저장할 수 있습니다.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "효과를 분석하지 못했습니다.");
-    } finally {
-      setAnalyzingKey(null);
-    }
-  }
-
-  function applyEffect(textKey: EffectAnalysisKey,
-    effectsKey: "gameStartAbilityEffects" | "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects") {
-    const analysis = analysisResults[textKey];
-    if (!analysis || analysis.outcome !== "supported") return;
-    update(effectsKey, { effects: analysis.effects ?? [] } as Form[typeof effectsKey]);
-    setMessageText("분석 결과를 효과 슬롯에 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
-    setError("");
-  }
-
-  function applyAiEffect(
-    effectsKey: "gameStartAbilityEffects" | "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects",
-    draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] },
-    mode: "replace" | "append",
-  ) {
-    const merged = mergeGeneratedEffectDraft(undefined, form[effectsKey], draft, mode);
-    update(effectsKey, merged.effectConfig as Form[typeof effectsKey]);
-     setMessageText(mode === "append"
-       ? "컴파일된 게임 규칙을 기존 Champion 효과 뒤에 추가했습니다. 저장 버튼을 눌러 보존하세요."
-       : "컴파일된 게임 규칙을 Champion 효과에 적용했습니다. 저장 버튼을 눌러 보존하세요.");
-    setError("");
-  }
-
-  async function generatePrompt(textKey: EffectAnalysisKey | "questText", effectContext: string) {
-    const text = form[textKey]?.trim();
-    if (!text) { setError("프롬프트를 만들 자연어 효과를 입력해 주세요."); return; }
-    setPromptingKey(textKey);
-    setError("");
-    try {
-      const response = await fetch(`${adminApiBase}/effects/replit-prompt`, {
-        method: "POST", credentials: "include", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, effectContext, championName: form.name }),
-      });
-      const body = await response.json() as { prompt?: string; analysis?: EffectAnalysis; message?: string };
-      if (response.status === 401) { onUnauthorized(); return; }
-      if (body.analysis) {
-        if (textKey === "questText") setQuestAnalysis(body.analysis);
-        else setAnalysisResults((current) => ({ ...current, [textKey]: body.analysis }));
-      }
-      if (!response.ok || !body.prompt) throw new Error(body.message ?? "프롬프트를 만들지 못했습니다.");
-      setPrompts((current) => ({ ...current, [textKey]: body.prompt }));
-      setMessageText("Replit 구현 프롬프트를 만들었습니다. 아래에서 확인하고 복사할 수 있습니다.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "프롬프트를 만들지 못했습니다.");
-    } finally {
-      setPromptingKey(null);
-    }
-  }
-
-  async function copyPrompt(textKey: EffectAnalysisKey | "questText") {
-    const prompt = prompts[textKey];
-    if (!prompt) return;
-    try {
-      await navigator.clipboard.writeText(prompt);
-      toast({ title: "Replit Agent용 프롬프트를 복사했습니다." });
-    } catch {
-      toast({ title: "프롬프트를 복사하지 못했습니다.", variant: "destructive" });
-    }
-  }
-
-  async function runFullChampionAnalysis(withPrompt: boolean) {
-    setError("");
-    if (withPrompt) setFullPrompting(true);
-    else setFullAnalyzing(true);
-    try {
-      const response = await fetch(`${adminApiBase}/champions/${withPrompt ? "full-prompt" : "full-analyze"}`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (response.status === 401) { onUnauthorized(); return; }
-      const body = await response.json() as { analysis?: FullAnalysis; prompt?: string; message?: string };
-      if (!response.ok || !body.analysis) throw new Error(body.message ?? "Champion 전체 분석에 실패했습니다.");
-      setFullAnalysis(body.analysis);
-      if (withPrompt) {
-        setFullPrompt(body.prompt ?? "");
-        setMessageText("Champion 전체 구현 프롬프트를 생성했습니다.");
-      } else {
-        setFullPrompt("");
-        setMessageText(body.analysis.fullySupported
-          ? "CHAMPION FULLY SUPPORTED: 최신 Registry 기준으로 모든 영역이 지원됩니다."
-          : "최신 Effect Registry 기준으로 Champion 전체를 다시 분석했습니다.");
-      }
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Champion 전체 분석에 실패했습니다.");
-    } finally {
-      if (withPrompt) setFullPrompting(false);
-      else setFullAnalyzing(false);
-    }
-  }
-
-  async function copyFullPrompt() {
-    if (!fullPrompt) return;
-    try {
-      await navigator.clipboard.writeText(fullPrompt);
-      toast({ title: "Champion 전체 구현 프롬프트를 복사했습니다." });
-    } catch {
-      toast({ title: "Champion 전체 프롬프트를 복사하지 못했습니다.", variant: "destructive" });
-    }
-  }
-
-  async function analyzeQuest() {
-    const text = form.questText?.trim();
-    if (!text) { setError("분석할 피니셔 준비 조건을 입력해 주세요."); return; }
-    setError("");
-    setAnalyzingKey("questText");
-    try {
-      const response = await fetch(`${adminApiBase}/effects/analyze`, {
-        method: "POST", credentials: "include", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, effectContext: "QUEST_CONDITION" }),
-      });
-      if (response.status === 401) { onUnauthorized(); return; }
-      const result = await response.json() as EffectAnalysis;
-      setQuestAnalysis(result);
-      setPrompts((current) => ({ ...current, questText: undefined }));
-      if (result.outcome === "supported") {
-        setMessageText("피니셔 준비 조건 분석이 완료되었습니다. 결과를 확인한 뒤 조건 적용을 눌러 저장할 수 있습니다.");
-      } else {
-        setError(result.outcome === "mechanism_required"
-          ? `새 메커니즘이 필요합니다: ${(result.unsupportedParts ?? result.unsupportedSegments ?? []).join(", ")}`
-          : result.reason ?? "피니셔 준비 조건을 이해하지 못했습니다.");
-      }
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "피니셔 준비 조건을 분석하지 못했습니다.");
-    } finally {
-      setAnalyzingKey(null);
-    }
-  }
-
-  function applyQuestAnalysis() {
-    if (!questAnalysis?.condition || questAnalysis.outcome !== "supported") return;
-    const next = {
-      ...formRef.current,
-      questCondition: applyPreparationCondition(formRef.current.questCondition,questAnalysis.condition),
-      questProgressRequired: typeof questAnalysis.condition?.required === "number"
-        ? questAnalysis.condition.required
-        : formRef.current.questProgressRequired,
-    };
-    formRef.current = next;
-    setForm(next);
-    setMessageText("피니셔 준비 조건 분석 결과를 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
-    setError("");
+  function updateEffectDraft(key:EffectConfigKey,value:string) {
+    effectDraftsRef.current={...effectDraftsRef.current,[key]:value};
+    setEffectDrafts(effectDraftsRef.current);
+    try {update(key,readEffectConfig(value));setError(current=>current.startsWith("효과 설정 JSON") ? "" : current);} catch { /* Keep unfinished JSON visible; save validates it. */ }
   }
   async function save() {
+    try {for (const value of Object.values(effectDraftsRef.current)) readEffectConfig(value!);}
+    catch {setError("효과 설정 JSON을 확인하세요. 잘못된 입력은 저장하지 않았습니다.");return;}
+
     if (saveInFlightRef.current || busy) return;
     saveInFlightRef.current = true;
     setBusy(true);
@@ -459,6 +253,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       : currentForm.hasQuest ? currentForm.questCondition : null;
     const saveForm: Form = {
       ...currentForm,
+      questName: currentForm.hasQuest ? currentForm.questName?.trim() || "피니셔 준비" : currentForm.questName,
       imageAssetId,
       imageUrl,
       questCompletedPortraitAssetId: completedPortraitAssetId,
@@ -541,12 +336,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   );
   const selectedTokenCard = tokenCards.find((card) => card.id === form.championTokenDefinitionId);
    function editor(champion?: Champion) {
-     setAnalysisResults({});
-      setQuestAnalysis(null);
-      setPrompts({});
-      setFullAnalysis(null);
-      setFullPrompt("");
-     setAnalyzingKey(null);
+     effectDraftsRef.current={};setEffectDrafts({});
+
+
+
+
+
+
        setEditing(champion ?? null); setTokenSearch(""); setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
        name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
        imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null,
@@ -730,7 +526,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   };
   useEffect(()=>setListPage(0),[search,status]);
   useEffect(()=>setListPage(p=>Math.min(p,Math.max(0,Math.ceil(champions.length/20)-1))),[champions.length]);
-  const adminDraftDirty=useAdminDraftGuard(open,form);
+  const adminDraftDirty=useAdminDraftGuard(open,{form,effectDrafts});
   const brokenIntroInteractions = introInteractions.filter(hasBrokenIntroReference);
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
@@ -740,7 +536,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <p className="mt-1 text-xs text-neutral-500">새 챔피언은 미공개로 저장되며 기본 최대 체력은 20입니다.</p></div>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
-     <details className="admin-support-tools"><summary>효과 분석 · 구현 도구 (고급)</summary><AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} /></details>
+
     {error && <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div>}
     {messageText && <div className="mb-4 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{messageText}</div>}
     {brokenIntroInteractions.length > 0 && (
@@ -771,13 +567,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           imagePositionY={champion.imagePositionY}
         />
       ) : <div className="h-24 w-20 rounded bg-neutral-900"/>}
-        <div><div className="text-xs text-primary">{STATUS_LABELS[champion.status]} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 line-clamp-2 text-sm">{champion.abilityText}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">피니셔 준비: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
+        <div><div className="text-xs text-primary">{STATUS_LABELS[champion.status]} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 line-clamp-2 text-sm">{champion.abilityText}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">피니셔 준비 (0/{champion.questProgressRequired})</p>}</div></div>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">미공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
 <div className="admin-pagination"><button disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(champions.length/20))} · {champions.length}명</span><button disabled={(listPage+1)*20>=champions.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
     {open && <AdminEditorWorkspace title={editing ? `${form.name || '챔피언'} 편집` : '새 챔피언 만들기'} description={editing ? `현재 버전 v${editing.version} · 능력, 이미지, 대사를 한곳에서 편집합니다.` : '기본 정보와 능력을 설정하세요. 새 챔피언은 미공개로 저장됩니다.'} dirty={adminDraftDirty} isNew={!editing} busy={busy} uploading={basicPortraitUploading||portraitUploading} error={error} onClose={closeEditor} onSave={()=>void save()}>
       <div className="admin-workbench-columns"><div className="admin-workbench-fields">
-        <details className="admin-champion-advanced"><summary>특수 인트로 · 전체 효과 점검</summary>
+        <details className="admin-champion-advanced"><summary>특수 인트로 관계</summary>
         {editing?.id === TOWER_VANILLA_CHAMPION_ID && <p className="mb-4 rounded border border-amber-700 p-3 text-sm text-amber-200">타워 일반 층 전용입니다. 초상화를 설정할 수 있으며, 전투에서는 체력 30·능력 없음·피니셔 준비 없음으로 적용됩니다.</p>}
         {editing && <section className="mb-4 rounded border border-neutral-800 bg-neutral-900/50 p-3">
           <div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-black">이 챔피언의 특수 인트로 관계</h4><button type="button" disabled={introBusy} onClick={() => setIntroDraft({ championOneId: editing.id, championTwoId: champions.find(c => c.id !== editing.id)?.id, lineOne: "", lineTwo: "", firstSpeaker: "ONE", status: "DRAFT" })} className="rounded bg-primary px-2 py-1 text-[11px] font-bold text-black">새 관계</button></div>
@@ -797,15 +593,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             <div className="flex gap-2 md:col-span-2"><button type="button" disabled={introBusy} onClick={() => void saveIntroInteraction()} className="rounded bg-emerald-700 px-3 py-1 text-xs">저장</button><button type="button" onClick={() => setIntroDraft(null)} className="rounded border px-3 py-1 text-xs">취소</button></div>
           </div>}
         </section>}
-       <div className="mb-4 flex flex-wrap gap-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
-         <button type="button" disabled={fullPrompting} onClick={()=>void runFullChampionAnalysis(true)} className="rounded bg-primary px-3 py-2 text-xs font-black text-black disabled:opacity-50">
-           {fullPrompting ? "전체 프롬프트 생성 중..." : "챔피언 전체 구현 프롬프트 생성"}
-         </button>
-         <button type="button" disabled={fullAnalyzing} onClick={()=>void runFullChampionAnalysis(false)} className="rounded border border-emerald-700 px-3 py-2 text-xs font-bold text-emerald-300 disabled:opacity-50">
-           {fullAnalyzing ? "전체 다시 분석 중..." : "전체 구현 완료 - 다시 분석"}
-         </button>
-       </div>
-       <FullAnalysisPanel analysis={fullAnalysis} prompt={fullPrompt} onCopyPrompt={()=>void copyFullPrompt()} />
       </details>
       <div className="grid gap-4 md:grid-cols-2">
         <AdminEditorSections panels={[{"id":"admin-champion-manager-0","label":"기본 정보"},{"id":"admin-champion-manager-1","label":"고유 · 시작 능력"},{"id":"admin-champion-manager-2","label":"피니셔 준비"},{"id":"admin-champion-manager-3","label":"챔피언 토큰"},{"id":"admin-champion-manager-4","label":"대사"},{"id":"admin-champion-manager-5","label":"이미지"}]}>{[<><label>이름<input name="championName" className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
@@ -821,100 +608,15 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           </label></>,
 <>
 <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
-<EffectField
-            title="고유 능력 효과"
-            value={form.abilityText}
-            onChange={v=>update("abilityText",v)}
-            onAnalyze={()=>void analyze("abilityText","ABILITY")}
-            onApply={()=>applyEffect("abilityText","abilityEffects")}
-            onPrompt={()=>void generatePrompt("abilityText","CHAMPION_ABILITY")}
-            onReanalyze={()=>void analyze("abilityText","ABILITY")}
-            analysis={analysisResults.abilityText}
-            prompt={prompts.abilityText}
-            onCopyPrompt={()=>void copyPrompt("abilityText")}
-            analyzing={analyzingKey === "abilityText"}
-            prompting={promptingKey === "abilityText"}
-            sourceId={editing?.id}
-            effectContext="CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.abilityEffects)}
-            onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
-            onUnauthorized={onUnauthorized}
-          />
+<EffectField title="고유 능력 효과" value={form.abilityText} onChange={v=>update("abilityText",v)} configValue={effectDrafts.abilityEffects ?? JSON.stringify(form.abilityEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("abilityEffects",v)} />
 
 <p className="md:col-span-2 text-xs text-neutral-400">초기 손패를 나누기 전에 챔피언당 한 번 자동 발동합니다. 비용이나 고유 능력 사용 횟수를 소모하지 않습니다. 직접 대상 선택이 필요한 효과는 사용할 수 없습니다.</p>
-<EffectField
-            title="게임 시작 능력 효과"
-            value={form.gameStartAbilityText ?? ""}
-            onChange={v=>update("gameStartAbilityText",v)}
-            onAnalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
-            onApply={()=>applyEffect("gameStartAbilityText","gameStartAbilityEffects")}
-            onPrompt={()=>void generatePrompt("gameStartAbilityText","CHAMPION_ABILITY")}
-            onReanalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
-            analysis={analysisResults.gameStartAbilityText}
-            prompt={prompts.gameStartAbilityText}
-            onCopyPrompt={()=>void copyPrompt("gameStartAbilityText")}
-            analyzing={analyzingKey === "gameStartAbilityText"}
-            prompting={promptingKey === "gameStartAbilityText"}
-            sourceId={editing?.id}
-            effectContext="CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.gameStartAbilityEffects)}
-            onApplyAi={(effects, mode) => applyAiEffect("gameStartAbilityEffects", effects, mode)}
-            onUnauthorized={onUnauthorized}
-          /></>,
+<EffectField title="게임 시작 능력 효과" value={form.gameStartAbilityText ?? ""} onChange={v=>update("gameStartAbilityText",v)} configValue={effectDrafts.gameStartAbilityEffects ?? JSON.stringify(form.gameStartAbilityEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("gameStartAbilityEffects",v)} /></>,
 <><ChampionPreparationEditor value={form} onChange={patch=>replaceForm({...formRef.current,...patch})} cards={tokenCards}
- analysisTools={<QuestConditionField compact
-             value={form.questText??""}
-             onChange={v=>update("questText",v)}
-             onAnalyze={()=>void analyzeQuest()}
-             onApply={applyQuestAnalysis}
-             onPrompt={()=>void generatePrompt("questText","QUEST_CONDITION")}
-             onReanalyze={()=>void analyzeQuest()}
-             analysis={questAnalysis}
-             prompt={prompts.questText}
-             onCopyPrompt={()=>void copyPrompt("questText")}
-             analyzing={analyzingKey === "questText"}
-             prompting={promptingKey === "questText"}
-           />}
- reward={<EffectField
-               title="준비 완료 효과"
-               value={form.questRewardText??""}
-               onChange={v=>update("questRewardText",v)}
-               onAnalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
-               onApply={()=>applyEffect("questRewardText","questRewardEffects")}
-               onPrompt={()=>void generatePrompt("questRewardText","QUEST_REWARD")}
-               onReanalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
-               analysis={analysisResults.questRewardText}
-               prompt={prompts.questRewardText}
-               onCopyPrompt={()=>void copyPrompt("questRewardText")}
-               analyzing={analyzingKey === "questRewardText"}
-               prompting={promptingKey === "questRewardText"}
-                sourceId={editing?.id}
-                effectContext="QUEST_REWARD"
-               existingEffectCount={effectConfigEntryCount(form.questRewardEffects)}
-                onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
-                onUnauthorized={onUnauthorized}
-             />}
+ reward={<EffectField title="준비 완료 효과" value={form.questRewardText??""} onChange={v=>update("questRewardText",v)} configValue={effectDrafts.questRewardEffects ?? JSON.stringify(form.questRewardEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("questRewardEffects",v)} />}
  ability={<><label className="md:col-span-2 flex items-center gap-2"><input type="checkbox" checked={Boolean(form.upgradedAbilityName)} onChange={e=>update("upgradedAbilityName",e.target.checked ? "강화 고유 능력" : null)}/>완료 후 강화 고유 능력 사용</label>
 <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
-<EffectField
-             title="강화 고유 능력"
-             value={form.upgradedAbilityText??""}
-             onChange={v=>update("upgradedAbilityText",v)}
-             onAnalyze={()=>void analyze("upgradedAbilityText","UPGRADED_ABILITY")}
-             onApply={()=>applyEffect("upgradedAbilityText","upgradedAbilityEffects")}
-             onPrompt={()=>void generatePrompt("upgradedAbilityText","UPGRADED_CHAMPION_ABILITY")}
-             onReanalyze={()=>void analyze("upgradedAbilityText","UPGRADED_ABILITY")}
-             analysis={analysisResults.upgradedAbilityText}
-             prompt={prompts.upgradedAbilityText}
-             onCopyPrompt={()=>void copyPrompt("upgradedAbilityText")}
-             analyzing={analyzingKey === "upgradedAbilityText"}
-             prompting={promptingKey === "upgradedAbilityText"}
-              sourceId={editing?.id}
-             effectContext="UPGRADED_CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.upgradedAbilityEffects)}
-             onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
-             onUnauthorized={onUnauthorized}
-           /></>}
+<EffectField title="강화 고유 능력" value={form.upgradedAbilityText??""} onChange={v=>update("upgradedAbilityText",v)} configValue={effectDrafts.upgradedAbilityEffects ?? JSON.stringify(form.upgradedAbilityEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("upgradedAbilityEffects",v)} /></>}
  presentation={<AdminAudioField
            title="챔피언 피니셔 준비 완료 음악"
            value={{
@@ -1170,7 +872,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           </div></>]}</AdminEditorSections>
        </div>
 
-       <p className="mt-4 text-xs text-neutral-400">효과 분석·인증 없이 저장할 수 있습니다. 분석은 선택 사항이며, 저장한 효과의 실제 작동을 보증하지는 않습니다.</p>
+       <p className="mt-4 text-xs text-neutral-400">효과 설명은 표시용이며 실제 동작은 저장된 효과 설정을 사용합니다.</p>
       </div>
       <aside className="admin-editor-preview admin-workbench-summary" aria-label="챔피언 미리보기">
        <h4>챔피언 정보 미리보기</h4><div className="admin-workbench-summary-art">{basicPortraitLocalUrl||form.imageUrl?<CardArtwork src={basicPortraitLocalUrl??form.imageUrl!} alt={form.name||'챔피언'} className="h-full w-full" imageDisplayMode={form.imageDisplayMode} imageScale={form.imageScale} imagePositionX={form.imagePositionX} imagePositionY={form.imagePositionY}/>:<span>이미지를 등록하면 여기에 표시됩니다.</span>}</div>
@@ -1203,174 +905,16 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   </div>;
 }
 
-function FullAnalysisPanel({
-  analysis,
-  prompt,
-  onCopyPrompt,
-}: {
-  analysis: FullAnalysis | null;
-  prompt: string;
-  onCopyPrompt: () => void;
-}) {
-  if (!analysis && !prompt) return null;
-  return <div className="mb-4 rounded border border-neutral-700 bg-neutral-950 p-3 text-xs">
-    {analysis && <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <strong className={analysis.fullySupported ? "text-emerald-300" : "text-amber-300"}>
-          {analysis.fullySupported ? "CHAMPION FULLY SUPPORTED" : "CHAMPION IMPLEMENTATION REVIEW"}
-        </strong>
-        {analysis.token && <span className="text-neutral-400">
-          Linked Token: {analysis.token.name} · {analysis.token.attack}/{analysis.token.health} · {analysis.token.status}
-        </span>}
-      </div>
-      {analysis.tokenReferenceError && <p className="mt-2 text-red-300">Champion Token: {analysis.tokenReferenceError}</p>}
-      <div className="mt-3 grid gap-2 md:grid-cols-2">
-        {analysis.sections.map((section) => {
-          const supported = section.status === "SUPPORTED";
-          const failed = section.status === "ANALYSIS_FAILED";
-          return <div key={section.key} className={`rounded border p-2 ${supported ? "border-emerald-900 bg-emerald-950/20" : failed ? "border-red-900 bg-red-950/20" : "border-amber-900 bg-amber-950/20"}`}>
-            <div className="font-bold">{section.label}</div>
-            <div className={`mt-1 ${supported ? "text-emerald-300" : failed ? "text-red-300" : "text-amber-300"}`}>
-              {supported ? "SUPPORTED" : failed ? "ANALYSIS_FAILED" : "NEW_MECHANIC_REQUIRED"}
-            </div>
-            {section.analysis?.summaries?.length ? <ul className="mt-1 list-disc pl-4 text-neutral-300">{section.analysis.summaries.map((summary) => <li key={summary}>{summary}</li>)}</ul> : null}
-            {section.analysis?.reason && <p className="mt-1 text-neutral-300">{section.analysis.reason}</p>}
-          </div>;
-        })}
-      </div>
-      {analysis.unsupportedParts.length > 0 && <div className="mt-3 rounded border border-amber-900 bg-amber-950/20 p-2">
-        <div className="font-bold text-amber-300">중복 제거된 unsupported mechanics</div>
-        <ul className="mt-1 list-disc pl-4 text-amber-100">{analysis.unsupportedParts.map((part) => <li key={part}>{part}</li>)}</ul>
-      </div>}
-    </div>}
-    {prompt && <div className="mt-3">
-      <div className="mb-1 font-bold text-neutral-300">Champion 전체 구현 프롬프트</div>
-      <textarea readOnly value={prompt} className="min-h-72 w-full rounded border border-neutral-700 bg-neutral-900 p-2 text-[10px] leading-relaxed"/>
-      <button type="button" onClick={onCopyPrompt} className="mt-2 rounded border border-neutral-600 px-3 py-1.5">전체 프롬프트 복사</button>
-    </div>}
-  </div>;
+type EffectConfigKey = "abilityEffects" | "gameStartAbilityEffects" | "questRewardEffects" | "upgradedAbilityEffects";
+function readEffectConfig(value: string): Record<string,unknown> {
+  const parsed: unknown = JSON.parse(value);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("효과 설정은 JSON 객체로 입력하세요.");
+  return parsed as Record<string, unknown>;
 }
-
-type AnalysisControlsProps = {
-  analysis?: EffectAnalysis | null;
-  onApply: () => void;
-  applyLabel: string;
-  onPrompt: () => void;
-  onReanalyze: () => void;
-  prompt?: string;
-  onCopyPrompt: () => void;
-  analyzing?: boolean;
-  prompting?: boolean;
-};
-
-function AnalysisControls({
-  analysis,
-  onApply,
-  applyLabel,
-  onPrompt,
-  onReanalyze,
-  prompt,
-  onCopyPrompt,
-  analyzing,
-  prompting,
-}: AnalysisControlsProps) {
-  if (!analysis) return null;
-  const supported = analysis.outcome === "supported";
-  return <div className={`mt-2 rounded border p-3 text-xs ${supported ? "border-emerald-800 bg-emerald-950/30" : "border-amber-800 bg-amber-950/30"}`}>
-    <strong>{supported ? "✓ SUPPORTED" : analysis.outcome === "mechanism_required" ? "⚠ NEW_MECHANIC_REQUIRED" : "⚠ ANALYSIS_FAILED"}</strong>
-    {analysis.summaries && analysis.summaries.length > 0 && <div className="mt-2"><div className="font-bold text-neutral-300">분석 결과</div><ul className="mt-1 list-disc pl-4 text-neutral-200">{analysis.summaries.map((summary) => <li key={summary}>{summary}</li>)}</ul></div>}
-    {analysis.reason && <p className="mt-1 text-neutral-300">{analysis.reason}</p>}
-    {(analysis.unsupportedParts ?? analysis.unsupportedSegments)?.length ? <p className="mt-1 text-amber-200">unsupportedParts: {(analysis.unsupportedParts ?? analysis.unsupportedSegments ?? []).join(", ")}</p> : null}
-    {supported && <pre className="mt-2 max-h-40 overflow-auto text-[10px] leading-relaxed">{JSON.stringify(analysis.condition ? { condition: analysis.condition } : { effects: analysis.effects ?? [] }, null, 2)}</pre>}
-    <div className="mt-3 flex flex-wrap gap-2">
-      {supported && <button type="button" onClick={onApply} className="rounded bg-primary px-3 py-1.5 font-bold text-black">{applyLabel}</button>}
-      {!supported && <button type="button" disabled={prompting} onClick={onPrompt} className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-50">{prompting ? "프롬프트 생성 중..." : "Replit 구현 프롬프트 생성"}</button>}
-      <button type="button" disabled={analyzing} onClick={onReanalyze} className="rounded border border-emerald-700 px-3 py-1.5 font-bold text-emerald-300 disabled:opacity-50">{analyzing ? "다시 분석 중..." : "구현 완료 - 다시 분석"}</button>
-    </div>
-    {prompt && <div className="mt-3"><textarea readOnly value={prompt} className="min-h-48 w-full rounded border border-neutral-700 bg-neutral-950 p-2 text-[10px] leading-relaxed"/><button type="button" onClick={onCopyPrompt} className="mt-2 rounded border border-neutral-600 px-3 py-1.5">프롬프트 복사</button></div>}
-  </div>;
-}
-
-function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting, sourceId, effectContext, existingEffectCount, onApplyAi, onUnauthorized }: {
-  title: string;
-  value: string;
-  onChange: (value: string) => void;
-  onAnalyze: () => void;
-  onApply: () => void;
-  onPrompt: () => void;
-  onReanalyze: () => void;
-  analysis?: EffectAnalysis | null;
-  prompt?: string;
-  onCopyPrompt: () => void;
-  analyzing?: boolean;
-  prompting?: boolean;
-  sourceId?: string;
-  effectContext: "CHAMPION_ABILITY" | "QUEST_REWARD" | "UPGRADED_CHAMPION_ABILITY";
-  existingEffectCount: number;
-  onApplyAi: (draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] }, mode: "replace" | "append") => void;
-  onUnauthorized: () => void;
-}) {
-  return <label className="md:col-span-2">
-    {title}
-    <textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/>
-    <button type="button" onClick={onAnalyze} disabled={analyzing} className="mt-2 rounded border border-primary px-3 py-1.5 text-xs font-bold text-primary disabled:opacity-50">
-      {analyzing ? "분석 중..." : "효과 분석"}
-    </button>
-    <AnalysisControls
-      analysis={analysis}
-      onApply={onApply}
-      applyLabel="효과 적용"
-      onPrompt={onPrompt}
-      onReanalyze={onReanalyze}
-      prompt={prompt}
-      onCopyPrompt={onCopyPrompt}
-      analyzing={analyzing}
-      prompting={prompting}
-    />
-    <AdminEffectAiGenerator
-      defaultText={value}
-      sourceType="CHAMPION"
-       sourceId={sourceId}
-      effectContext={effectContext}
-      existingEffectCount={existingEffectCount}
-       onApply={(draft, mode) => onApplyAi(draft, mode)}
-      onUnauthorized={onUnauthorized}
-    />
-  </label>;
-}
-
-function QuestConditionField({ compact=false,value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting }: {
-  compact?: boolean;
-  value: string;
-  onChange: (value: string) => void;
-  onAnalyze: () => void;
-  onApply: () => void;
-  onPrompt: () => void;
-  onReanalyze: () => void;
-  analysis?: EffectAnalysis | null;
-  prompt?: string;
-  onCopyPrompt: () => void;
-  analyzing?: boolean;
-  prompting?: boolean;
-}) {
-  return <div className="md:col-span-2">
-    {!compact&&<>피니셔 준비 조건
-    <textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/></>}
-    <button type="button" onClick={onAnalyze} disabled={analyzing} className="mt-2 rounded border border-primary px-3 py-1.5 text-xs font-bold text-primary disabled:opacity-50">
-      {analyzing ? "분석 중..." : "피니셔 준비 조건 분석"}
-    </button>
-    <AnalysisControls
-      analysis={analysis}
-      onApply={onApply}
-      applyLabel="조건 적용"
-      onPrompt={onPrompt}
-      onReanalyze={onReanalyze}
-      prompt={prompt}
-      onCopyPrompt={onCopyPrompt}
-      analyzing={analyzing}
-      prompting={prompting}
-    />
-  </div>;
+function EffectField({title,value,onChange,configValue,onConfigChange}:{title:string;value:string;onChange:(v:string)=>void;configValue:string;onConfigChange:(v:string)=>void}) {
+  let invalid = false;
+  try {readEffectConfig(configValue);} catch {invalid=true;}
+  return <section className="md:col-span-2 space-y-3"><label>{title}<textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/></label><details className="rounded border border-neutral-800 p-3"><summary>실제 효과 설정 (고급)</summary><label className="mt-3 block">{title} 설정 JSON<textarea className="min-h-40 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-sm" aria-label={`${title} 설정 JSON`} spellCheck={false} value={configValue} aria-invalid={invalid} onChange={e=>onConfigChange(e.target.value)}/></label><p className={invalid?"text-red-300":"text-neutral-400"}>{invalid?"올바른 JSON 객체가 아니어서 저장할 수 없습니다.":"효과 설명과 실제 동작은 별도입니다. 저장된 효과 정의를 직접 편집합니다."}</p></details></section>;
 }
 
 function ChampionImageDisplayControls({

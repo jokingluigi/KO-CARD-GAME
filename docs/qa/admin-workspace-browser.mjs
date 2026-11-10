@@ -3,12 +3,22 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { startTutorialFixture } from "./tutorial-rewards-fixture.mjs";
 import { chromium } from "./black-gold-playwright.mjs";
+import { championRecordToDefinition } from "../../artifacts/ko-game/src/game/champions/published-champions.ts";
 import { eq } from "../../lib/db/node_modules/drizzle-orm/index.js";
 const out = process.env.ADMIN_QA_OUTPUT ?? "docs/qa/20261110-admin-workspace";
 await mkdir(out, { recursive: true });
 const f = await startTutorialFixture(),
   browser = await chromium.launch({ headless: true }),
   results = [];
+const originalEffects = {
+  effects: [
+    {
+      trigger: "ENTER_FIELD",
+      action: "ADD_NEXT_TURN_GOLD",
+      values: { amount: 1 },
+    },
+  ],
+};
 const originalCondition = {
   event: "CARD_PLAYED",
   progress: 2,
@@ -45,7 +55,9 @@ try {
     {
       id: "workspace-card",
       name: "업무 카드",
-      text: "기존 효과 설명",
+      text: "다음 턴에 골드를 추가로 1 더 받습니다.",
+      effectId: "STRUCTURED_EFFECTS_V1",
+      effectConfig: originalEffects,
       cardType: "WRESTLER",
       rarity: "NORMAL",
       cost: 2,
@@ -91,8 +103,8 @@ try {
       maxHealth: 22,
       abilityName: "기본 능력",
       abilityCost: 1,
-      abilityText: "기존 능력 설명",
-      abilityEffects: { effects: [] },
+      abilityText: "다음 턴에 골드를 추가로 1 더 받습니다.",
+      abilityEffects: originalEffects,
       hasQuest: true,
       questName: "기존 준비",
       questText: "기존 준비 조건 설명",
@@ -147,13 +159,20 @@ try {
       page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [],
-      writes = [];
+      writes = [],
+      removedToolRequests = [];
     let failCard = false;
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/api/**", async (route) => {
       const req = route.request(),
         url = new URL(req.url()),
         path = url.pathname;
+      if (
+        /\/(?:effects\/(?:analyze|ai|library|prompt)|mechanic-requests|champions\/(?:full-analyze|full-prompt))/.test(
+          path,
+        )
+      )
+        removedToolRequests.push(path);
       if (path === "/api/storage/objects/uploads/card-images/workspace.png")
         return route.fulfill({
           contentType: "image/png",
@@ -316,6 +335,39 @@ try {
         0,
       );
     }
+    if (process.env.ASSERT_REMOVED_ANALYSIS) {
+      assert.equal(
+        await editor.getByLabel("준비 조건 이름", { exact: true }).count(),
+        0,
+      );
+      assert.equal(
+        await page.getByRole("button", { name: /분석|프롬프트/ }).count(),
+        0,
+      );
+      await editor
+        .getByRole("tab", { name: "고유 · 시작 능력", exact: true })
+        .click();
+      const field = editor.getByLabel("고유 능력 효과 설정 JSON", {
+        exact: true,
+      });
+      await editor
+        .locator("[data-admin-panel]:not([hidden]) summary")
+        .filter({ hasText: "실제 효과 설정 (고급)" })
+        .first()
+        .click();
+      const currentJSON = await field.inputValue();
+      await field.fill("{broken");
+      const beforeCount = writes.length;
+      await editor
+        .getByRole("button", { name: "수정 저장", exact: true })
+        .click();
+      await editor.getByRole("alert").waitFor();
+      assert.equal(writes.length, beforeCount);
+      await field.fill(currentJSON);
+      await editor
+        .getByRole("tab", { name: "피니셔 준비", exact: true })
+        .click();
+    }
     const prep = editor.getByTestId("champion-preparation-editor");
     await prep.waitFor();
     assert.equal(
@@ -378,6 +430,8 @@ try {
     assert.equal(saved.questProgressRequired, 7);
     assert.equal(saved.upgradedAbilityName, "기존 강화");
     assert.equal(saved.abilityName, "기본 능력");
+    assert.equal(saved.questName, "기존 준비");
+    assert.deepEqual(saved.abilityEffects, originalEffects);
     const optionRow = page.locator("article").filter({
       has: page.getByRole("heading", {
         name: "선택지 검증 챔피언",
@@ -474,6 +528,29 @@ try {
       assert.ok(edited.questCondition.awakening);
       assert.equal(edited.questName, "위기 각성");
     }
+    if (process.env.ASSERT_REMOVED_ANALYSIS && width === 1440) {
+      await noRow.getByRole("button", { name: "수정", exact: true }).click();
+      await editor
+        .getByRole("tab", { name: "피니셔 준비", exact: true })
+        .click();
+      await prep.getByLabel("피니셔 준비 사용").check();
+      assert.equal(
+        await prep.getByLabel("준비 조건 이름", { exact: true }).count(),
+        0,
+      );
+      await editor
+        .getByRole("button", { name: "수정 저장", exact: true })
+        .click();
+      await editor.waitFor({ state: "detached" });
+      const [enabled] = await f.db
+        .select()
+        .from(f.schema.championsTable)
+        .where(eq(f.schema.championsTable.id, "workspace-noquest"));
+      assert.equal(enabled.questName, "피니셔 준비");
+      assert.ok(championRecordToDefinition(enabled).quest);
+    }
+    if (process.env.ASSERT_REMOVED_ANALYSIS)
+      assert.deepEqual(removedToolRequests, []);
     assert.equal(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth + 1,
@@ -484,6 +561,10 @@ try {
     results.push({
       width,
       height,
+      removedAnalysisTools: Boolean(process.env.ASSERT_REMOVED_ANALYSIS),
+      invalidEffectJSONBlocked: Boolean(process.env.ASSERT_REMOVED_ANALYSIS),
+      internalPreparationNameAssigned:
+        Boolean(process.env.ASSERT_REMOVED_ANALYSIS) && width === 1440,
       focusContainment: true,
       editedConditionAndReentry: width === 1440,
       awakeningPresetSaved: width === 1440,

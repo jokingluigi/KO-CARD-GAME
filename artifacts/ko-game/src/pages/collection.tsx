@@ -565,7 +565,7 @@ function ChampionDetail({
         <div className="space-y-4">
           <InfoBlock icon={<Swords className="h-4 w-4" />} label={`고유 능력 · 비용 ${champion.abilityCost} 골드`} text={champion.abilityText || champion.description} />
           {champion.gameStartAbilityText && <InfoBlock label="게임 시작 능력" text={champion.gameStartAbilityText} />}
-          {champion.hasQuest && <InfoBlock label={`피니셔 준비 · ${champion.questName || "준비 조건"}`} text={champion.questText || "준비 조건 정보가 없습니다."} />}
+          {champion.hasQuest && <InfoBlock label="피니셔 준비" text={champion.questText || "준비 조건 정보가 없습니다."} />}
           {champion.hasQuest && champion.questRewardText && <InfoBlock label="피니셔 획득 / 현재 완료 효과" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 고유 능력\n${champion.upgradedAbilityText}` : ""}`} />}
           <RelatedCards id={champion.id} onSelect={setTokenDetail}/>
           <CardDetailDialog card={tokenDetail} open={Boolean(tokenDetail)} onOpenChange={open => {if(!open)setTokenDetail(null);}}/>

@@ -25,9 +25,7 @@ import {
 } from "lucide-react";
 import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
-import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
-import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
-import { effectConfigEntryCount, mergeGeneratedEffectDraft, keywordSettingsAfterTextEdit } from "@/lib/admin-effect-config";
+import { keywordSettingsAfterTextEdit } from "@/lib/admin-effect-config";
 import { useToast } from "../hooks/use-toast";
 import {
   CARD_RARITY_LABELS,
@@ -107,34 +105,6 @@ type CardFormValues = {
   effectId: string;
   effectConfig: string;
 };
-type EffectAnalysis = {
-  status: "success" | "partial" | "failure";
-  outcome: "supported" | "mechanism_required" | "analysis_failure";
-  effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean; minCost?: number }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword; destination?: "HAND" | "DECK"; definitionRef?: { id?: string; name?: string } } }>;
-  keywords: CardKeyword[];
-  countdownTurns?: number;
-  unsupportedSegments: string[];
-  summaries: string[];
-  reason?: string;
-  referencedCards?: Array<{ id: string; name: string; cardType: "WRESTLER" | "TECHNIQUE"; isToken: boolean; isChampionToken: boolean }>;
-  referenceErrors?: Array<{ code: string; name: string; candidateIds?: string[] }>;
-};
-type EffectLibrary = {
-  actions: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number; usageCount: number; requiredConfig: Record<string, unknown> }>;
-  triggers: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number }>;
-  conditions?: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number }>;
-  targetResolvers: Array<{ name: string; description: string; config: Record<string, unknown>; status: "ACTIVE" | "DISABLED"; version: number }>;
-  valueResolvers: Array<{ name: string; description: string; values?: string[]; status: "ACTIVE" | "DISABLED"; version: number }>;
-};
-type CompletionValidation = { status: "recognized" | "partial" | "not_found"; message: string; analysis: EffectAnalysis; checks: Array<{ id: string; passed: boolean; reason: string }>; supportedCapabilities: string[]; unsupportedParts: string[]; structuredEffect?: { effects: EffectAnalysis["effects"] } };
-type MechanicRequest = {
-  id: string;
-  status: "PENDING" | "ANALYZING" | "READY_TO_GENERATE" | "GENERATING" | "TESTING" | "READY_FOR_REVIEW" | "APPROVED" | "REJECTED" | "FAILED";
-  originalCardText: string;
-  unsupportedParts: string[];
-  createdAt: string;
-};
-
 const EMPTY_CARD: CardFormValues = {
   name: "",
   cardType: "WRESTLER",
@@ -187,10 +157,6 @@ function statusClass(status: CardStatus) {
   return "border-amber-700 bg-amber-950 text-amber-300";
 }
 
-function structuredEffectCount(value: string): number {
-  return effectConfigEntryCount(value);
-}
-
 async function responseMessage(response: Response) {
   try {
     const body = (await response.json()) as { message?: string; referenceErrors?: string[]; dependents?: string[] };
@@ -198,139 +164,6 @@ async function responseMessage(response: Response) {
   } catch {
     return "요청을 처리하지 못했습니다.";
   }
-}
-
-function formatActiveLibraryEntries(
-  label: string,
-  entries: Array<{ name: string; description: string; status: "ACTIVE" | "DISABLED" }>,
-) {
-  const activeEntries = entries.filter((entry) => entry.status === "ACTIVE");
-  return `${label}: ${activeEntries.length
-    ? activeEntries.map((entry) => `${entry.name} (${entry.description})`).join(", ")
-    : "관련 ACTIVE 항목 없음"}`;
-}
-
-function buildLocalReplitPrompt(
-  cardName: string,
-  originalCardText: string,
-  analysis: EffectAnalysis,
-  library: EffectLibrary,
-) {
-  const activeActions = library.actions.filter((entry) => entry.status === "ACTIVE");
-  const activeTriggers = library.triggers.filter((entry) => entry.status === "ACTIVE");
-  const activeConditions = (library.conditions ?? []).filter((entry) => entry.status === "ACTIVE");
-  const activeTargetResolvers = library.targetResolvers.filter((entry) => entry.status === "ACTIVE");
-  const activeValueResolvers = library.valueResolvers.filter((entry) => entry.status === "ACTIVE");
-  const hasStats = /공격력|체력|스탯/.test(originalCardText);
-  const hasAmount = /\d+\s*(?:피해|데미지|장|골드|G|회복|치유)/i.test(originalCardText);
-  const hasKeyword = analysis.keywords.length > 0 || /러쉬|기습|도발|회피|연타/.test(originalCardText);
-  const hasTarget = analysis.effects.some((effect) => effect.target) || /손패|필드|선수|캐릭터|카드|대상/.test(originalCardText);
-  const hasCondition = analysis.effects.some((effect) => effect.conditions?.length) || /^조건\s*:|^NEED\s*:/i.test(originalCardText);
-
-  const relevantActions = activeActions.filter((entry) =>
-    analysis.effects.some((effect) => effect.action === entry.name) ||
-    (hasStats && /공격력|체력|스탯|변경/.test(`${entry.label ?? ""} ${entry.description}`)) ||
-    (hasAmount && /피해|회복|드로우|골드|비용|수치/.test(`${entry.label ?? ""} ${entry.description}`)) ||
-    (hasKeyword && /키워드/.test(`${entry.label ?? ""} ${entry.description}`)),
-  );
-  const relevantTriggers = activeTriggers.filter((entry) =>
-    analysis.effects.some((effect) => effect.trigger === entry.name) ||
-    (/등장|필드에 들어|퇴장|액티브|턴 시작|턴 종료/.test(`${entry.label ?? ""} ${entry.description}`) &&
-      /등장|퇴장|액티브|턴/.test(originalCardText)),
-  );
-  const relevantValues = activeValueResolvers.filter((entry) =>
-    (hasStats && /공격력|체력|스탯/.test(`${entry.name} ${entry.description}`)) ||
-    (hasAmount && /수치|골드|피해|회복|드로우|비용/.test(`${entry.name} ${entry.description}`)) ||
-    (hasKeyword && /키워드/.test(`${entry.name} ${entry.description}`)),
-  );
-  const relevantConditions = hasCondition ? activeConditions : [];
-  const supportedEffects = analysis.effects.length
-    ? analysis.effects.map((effect, index) => `${index + 1}. ${JSON.stringify(effect)}`).join("\n")
-    : "- 없음";
-  const supportedSummary = analysis.summaries.length
-    ? analysis.summaries.map((summary) => `- ${summary}`).join("\n")
-    : "- 없음";
-  const unsupportedParts = analysis.unsupportedSegments.length
-    ? analysis.unsupportedSegments.map((part) => `- ${part}`).join("\n")
-    : "- 없음";
-  const referencedCards = analysis.referencedCards?.length
-    ? analysis.referencedCards.map((card) => `- ${card.name} · id=${card.id} · type=${card.cardType} · token=${card.isToken ? "yes" : "no"} · championToken=${card.isChampionToken ? "yes" : "no"}`).join("\n")
-    : "- 없음";
-
-  const inferredTrigger = analysis.effects.map((effect) => effect.trigger).join(", ") ||
-    (/^등장|MAGIC/i.test(originalCardText) ? "ENTER_FIELD" : "현재 문장에서 발동 시점을 확인해 범용 Trigger로 매핑");
-  const inferredAction = analysis.effects.map((effect) => effect.action).join(", ") ||
-    "현재 미지원 동작을 기존 Action 조합으로 표현할 수 있는지 확인한 뒤 필요한 범용 Action만 추가";
-  const inferredTarget = analysis.effects.filter((effect) => effect.target).map((effect) => JSON.stringify(effect.target)).join("\n") ||
-    (hasTarget ? "문장에 나타난 Zone/owner/filter/selection을 보존하는 Target Resolver" : "문장에서 대상 범위를 확인하고 필요하면 범용 Target Resolver 추가");
-  const inferredValue = relevantValues.map((entry) => `${entry.name} (${entry.description})`).join(", ") ||
-    (hasAmount ? "문장별 숫자를 분리해 해석하는 Value Resolver" : "고정값, 현재값, 계산값 중 문장 의미에 맞는 Value Resolver");
-  const inferredCondition = hasCondition ? "현재 분석된 조건 표현과 조건 불충족 시 동작을 보존하는 Condition" : "조건이 있는지 확인하고 필요할 때만 범용 Condition";
-  const inferredListener = /때마다|동안|손패|덱|필드/.test(originalCardText)
-    ? "Zone/이벤트를 감시하고 source 제거 시 정리되는 Listener"
-    : "필요 여부를 확인한 뒤 필요할 때만 범용 Listener";
-  const inferredDuration = /턴\s*동안|동안|다음\s*턴/.test(originalCardText)
-    ? "문장에 명시된 지속 시간과 만료 시점"
-    : "지속 시간이 없으면 Duration을 추가하지 않음";
-  const inferredSequence = analysis.effects.length > 1
-    ? `현재 순서: ${analysis.effects.map((effect) => effect.action).join(" → ")}`
-    : "단일 효과인지, 중첩 트리거가 있는지 확인하고 기존 continuation/sequence 규칙을 재사용";
-
-  return `# KO 카드 효과 메커니즘 수정 요청
-
-이 문서는 외부 AI/API를 호출하거나 코드를 자동 실행하기 위한 것이 아닙니다. 관리자가 현재 Replit Agent 채팅에 그대로 붙여넣는 개발 프롬프트입니다.
-
-## 카드 정보
-카드 이름: ${cardName || "이름 미입력"}
-원본 카드 효과: ${originalCardText}
-
-## 현재 Analyzer가 이해한 내용
-${originalCardText}
-
-## 현재 지원되는 부분
-${supportedSummary}
-
-구조화된 지원 효과:
-${supportedEffects}
-
-## 지원되지 않는 부분
-${unsupportedParts}
-
-## 참조 카드 (CardDefinition ID 기준)
-${referencedCards}
-생성/소환 효과는 문자열 이름이 아니라 definitionRef.id를 사용하세요. 카드 이름이 변경되어도 ID 연결을 유지하고, 미존재·동명이인 카드를 임의 선택하지 마세요.
-
-## 필요한 범용 구성요소 추정
-- Trigger: ${inferredTrigger}
-- Action: ${inferredAction}
-- Target: ${inferredTarget}
-- Value Resolver: ${inferredValue}
-- Condition: ${inferredCondition}
-- Listener: ${inferredListener}
-- Duration: ${inferredDuration}
-- Sequence: ${inferredSequence}
-
-## 현재 실제 ACTIVE Effect Library에서 관련성이 높은 항목
-${formatActiveLibraryEntries("Trigger", relevantTriggers)}
-${formatActiveLibraryEntries("Effect / Action", relevantActions)}
-${formatActiveLibraryEntries("Target Resolver", hasTarget ? activeTargetResolvers : [])}
-${formatActiveLibraryEntries("Value Resolver", relevantValues)}
-${formatActiveLibraryEntries("Condition", relevantConditions)}
-Listener: 현재 ACTIVE Effect Library에 등록된 Listener 항목만 확인하고, 목록에 없는 Listener를 존재한다고 가정하지 마세요.
-
-## 구현 지침
-- 먼저 위의 현재 ACTIVE Effect Library와 프로젝트의 Effect Registry를 다시 확인하고, 이미 존재하는 Effect, Trigger, Target Resolver, Value Resolver, Condition, Listener를 최대한 재사용하세요.
-- 기존 기능 조합으로 표현할 수 없는 부족한 부분일 때만 다른 카드에도 재사용 가능한 범용 Effect/Trigger/Resolver/Condition/Listener를 추가하세요.
-- 새 메커니즘을 구현하면 Effect Registry, Schema, Handler, Analyzer mapping, 필요한 Resolver/Trigger/Condition/Listener/Duration/Sequence와 테스트까지 등록하세요. 다음 유사 효과가 새 코딩 없이 같은 Effect를 재사용할 수 있어야 합니다.
-- 특정 카드 이름, 카드 ID, 또는 이 카드의 문장만을 위한 하드코딩 분기를 추가하지 마세요.
-- 필요한 관련 파일만 최소 수정하세요. 프로젝트 전체 재탐색, 대규모 리팩터링, 정상 기능 삭제는 하지 마세요.
-- 기존 게임 규칙, 저장 흐름, 전투, Champion, Gold, 턴 시스템 및 기존 Effect 동작을 변경하지 마세요.
-- 자연어 문장이나 DB 문자열을 코드로 실행하지 말고, 정식 TypeScript와 Registry/Schema/Handler를 사용하세요.
-- TypeScript 검사와 필요한 관련 테스트를 실행하고 기존 테스트도 통과시키세요.
-- 부분적으로만 이해된 효과를 자동 적용하지 말고, 구조화된 데이터로 안전하게 검증하세요.
-- 이 카드 효과가 실제 게임에서 동작하도록 구현하세요.
-- 기능이 완료되면 추가 작업이나 임의의 기능을 만들지 말고 종료하세요. 수정 파일과 실행한 검사 결과만 간단히 보고하세요.
-`;
 }
 
 export function AdminCardManager({
@@ -377,16 +210,6 @@ export function AdminCardManager({
     uploadToken: null as string | null,
     fileName: null as string | null,
   });
-  const [analysis, setAnalysis] = useState<EffectAnalysis | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [effectLibrary, setEffectLibrary] = useState<EffectLibrary | null>(null);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [mechanicRequests, setMechanicRequests] = useState<MechanicRequest[]>([]);
-  const [createdMechanicRequest, setCreatedMechanicRequest] = useState<MechanicRequest | null>(null);
-  const [isCreatingMechanicRequest, setIsCreatingMechanicRequest] = useState(false);
-  const [replitPrompt, setReplitPrompt] = useState("");
-  const [completion, setCompletion] = useState<CompletionValidation | null>(null);
-  const [isCompleting, setIsCompleting] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
@@ -409,7 +232,6 @@ export function AdminCardManager({
   const loadCards = useCallback(async () => {
     setIsLoading(true);
     setError("");
-    setAnalysis(null);
     const params = new URLSearchParams();
     if (search.trim()) params.set("search", search.trim());
     if (cardType) params.set("cardType", cardType);
@@ -481,37 +303,6 @@ export function AdminCardManager({
     return () => window.clearTimeout(timer);
   }, [loadCards]);
 
-  useEffect(() => {
-    async function loadEffectLibrary() {
-      try {
-        const response = await fetch(`${adminApiBase}/effects/library`, { credentials: "include" });
-        if (response.status === 401) { onUnauthorized(); return; }
-        if (!response.ok) throw new Error(await responseMessage(response));
-        setEffectLibrary(await response.json() as EffectLibrary);
-      } catch (libraryError) {
-        setError(libraryError instanceof Error ? libraryError.message : "Effect Library를 불러오지 못했습니다.");
-      }
-    }
-    void loadEffectLibrary();
-  }, [onUnauthorized]);
-
-  useEffect(() => {
-    async function loadMechanicRequests() {
-      try {
-        const response = await fetch(`${adminApiBase}/mechanic-requests`, {
-          credentials: "include",
-        });
-        if (response.status === 401) { onUnauthorized(); return; }
-        if (!response.ok) throw new Error(await responseMessage(response));
-        const body = await response.json() as { mechanicRequests: MechanicRequest[] };
-        setMechanicRequests(body.mechanicRequests);
-      } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : "메커니즘 요청 목록을 불러오지 못했습니다.");
-      }
-    }
-    void loadMechanicRequests();
-  }, [onUnauthorized]);
-
   function openCreate() {
     setEditingCard(null);
     form.reset(EMPTY_CARD);
@@ -523,10 +314,6 @@ export function AdminCardManager({
     setImageDisplaySettings({ ...DEFAULT_IMAGE_DISPLAY_SETTINGS });
     setEntranceAudio({ assetId: null, url: null, volume: 100, enabled: false, uploadToken: null, fileName: null });
     setError("");
-    setAnalysis(null);
-    setCreatedMechanicRequest(null);
-    setReplitPrompt("");
-    setCompletion(null);
     setIsFormOpen(true);
   }
 
@@ -565,10 +352,6 @@ export function AdminCardManager({
     });
     setTagDraft("");
     setError("");
-    setAnalysis(null);
-    setCreatedMechanicRequest(null);
-    setReplitPrompt("");
-    setCompletion(null);
     setIsFormOpen(true);
   }
 
@@ -650,172 +433,6 @@ export function AdminCardManager({
 
   function removeTag(tag: string) {
     form.setValue("tags", (form.getValues("tags") ?? []).filter((current) => current !== tag), { shouldDirty: true });
-  }
-
-  async function analyzeEffects() {
-    const text = form.getValues("text").trim();
-    if (!text) { setError("분석할 카드 효과 텍스트를 입력해 주세요."); return; }
-    setError(""); setIsAnalyzing(true);
-    try {
-      const response = await fetch(`${adminApiBase}/effects/analyze`, { method: "POST", credentials: "include", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-      if (response.status === 401) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await responseMessage(response));
-      setAnalysis(await response.json() as EffectAnalysis);
-    } catch (analysisError) {
-      setError(analysisError instanceof Error ? analysisError.message : "효과를 분석하지 못했습니다.");
-    } finally { setIsAnalyzing(false); }
-  }
-
-  async function createMechanicRequest(): Promise<MechanicRequest | null> {
-    const originalCardText = form.getValues("text").trim();
-    if (!analysis || analysis.outcome === "supported" || !originalCardText) {
-      setError("현재 엔진에서 완전히 구현할 수 없는 분석 결과가 있어야 합니다.");
-      return null;
-    }
-    setError("");
-    setIsCreatingMechanicRequest(true);
-    try {
-      const response = await fetch(`${adminApiBase}/mechanic-requests`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ originalCardText }),
-      });
-      if (response.status === 401) { onUnauthorized(); return null; }
-      if (!response.ok && response.status !== 409) throw new Error(await responseMessage(response));
-      const body = await response.json() as { mechanicRequest?: MechanicRequest; message?: string };
-      const mechanicRequest = body.mechanicRequest;
-      if (!mechanicRequest) throw new Error(body.message ?? "메커니즘 요청을 만들지 못했습니다.");
-      setCreatedMechanicRequest(mechanicRequest);
-      setMechanicRequests((current) => current.some((item) => item.id === mechanicRequest.id) ? current : [mechanicRequest, ...current]);
-      return mechanicRequest;
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "메커니즘 요청을 만들지 못했습니다.");
-      return null;
-    } finally {
-      setIsCreatingMechanicRequest(false);
-    }
-  }
-
-  function generateReplitPrompt() {
-    if (!analysis || analysis.outcome === "supported") return;
-    if (!effectLibrary) {
-      setError("최신 Effect Library를 불러온 뒤 프롬프트를 만들어 주세요.");
-      return;
-    }
-    setError("");
-    try {
-      const originalCardText = form.getValues("text").trim();
-      const cardName = form.getValues("name").trim();
-      setReplitPrompt(buildLocalReplitPrompt(cardName, originalCardText, analysis, effectLibrary));
-      setMessage("Replit Agent에 붙여넣을 수정 프롬프트를 만들었습니다.");
-    } catch (promptError) {
-      setError(promptError instanceof Error ? promptError.message : "수정 프롬프트를 만들지 못했습니다.");
-    }
-  }
-
-  async function copyReplitPrompt() {
-    try {
-      await navigator.clipboard.writeText(replitPrompt);
-      toast({ title: "Replit Agent용 프롬프트를 복사했습니다." });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "프롬프트를 복사하지 못했습니다.",
-      });
-    }
-  }
-
-  function applyAnalysis() {
-    if (!analysis || analysis.status !== "success") return;
-    if (analysis.keywords.length) {
-      form.setValue("keywords", [...new Set([...form.getValues("keywords"), ...analysis.keywords])], { shouldDirty: true });
-    }
-    if (analysis.effects.length) {
-      form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
-      form.setValue("effectConfig", JSON.stringify(mergeGeneratedEffectDraft(form.getValues("effectId"), form.getValues("effectConfig"), {effectId:"STRUCTURED_EFFECTS_V1",effects:analysis.effects,scripts:[],effectConfig:{countdownTurns:analysis.countdownTurns}}, "replace").effectConfig, null, 2), { shouldDirty: true });
-    }
-    setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 변경 사항을 저장하세요.");
-  }
-
-  function applyAiDraft(
-    draft: {
-      effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
-      effects: unknown[];
-      scripts: unknown[];
-      effectConfig: { effects?: unknown[]; scripts?: unknown[]; countdownTurns?: number };
-      keywords: string[];
-    },
-    mode: "replace" | "append",
-  ) {
-  const merged = mergeGeneratedEffectDraft(
-    form.getValues("effectId"),
-    form.getValues("effectConfig"),
-    draft,
-    mode,
-  );
-  form.setValue("effectId", merged.effectId, { shouldDirty: true });
-  form.setValue("effectConfig", JSON.stringify(merged.effectConfig, null, 2), { shouldDirty: true });
-    if (draft.keywords.length) {
-      form.setValue("keywords", [...new Set([
-        ...form.getValues("keywords"),
-        ...draft.keywords.filter((keyword): keyword is CardKeyword => KEYWORDS.includes(keyword as CardKeyword)),
-      ])], { shouldDirty: true });
-    }
-     setMessage(mode === "append"
-       ? "컴파일된 게임 규칙을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 변경 사항을 저장하세요."
-       : "컴파일된 게임 규칙을 현재 효과에 적용했습니다. 카드 저장을 눌러 변경 사항을 저장하세요.");
-    setError("");
-  }
-
-  async function reanalyzeMechanicCompletion() {
-    setError(""); setIsCompleting(true);
-    try {
-      const text = form.getValues("text").trim();
-      if (!text) {
-        setError("다시 분석할 카드 효과 텍스트를 입력해 주세요.");
-        return;
-      }
-      const response = await fetch(`${adminApiBase}/effects/analyze`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (response.status === 401) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await responseMessage(response));
-      const nextAnalysis = await response.json() as EffectAnalysis;
-      setAnalysis(nextAnalysis);
-      setCompletion(null);
-      if (nextAnalysis.outcome === "supported") {
-        setReplitPrompt("");
-        setMessage("✓ 효과 구현 가능. 최신 Effect Library 기준으로 다시 분석했습니다.");
-      } else {
-        setReplitPrompt("");
-        setMessage("아직 지원되지 않는 부분이 있어 새 분석 결과를 표시했습니다.");
-      }
-    } catch (completionError) {
-      setError(completionError instanceof Error ? completionError.message : "완료 검증을 수행하지 못했습니다.");
-    } finally { setIsCompleting(false); }
-  }
-
-  async function applyCompletedMechanic() {
-    if (!editingCard || editingCard.status !== "DRAFT" || !createdMechanicRequest || completion?.status !== "recognized") return;
-    setBusyId(editingCard.id); setError("");
-    try {
-      const response = await fetch(`${adminApiBase}/cards/${editingCard.id}/apply-mechanic-request`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mechanicRequestId: createdMechanicRequest.id }) });
-      if (response.status === 401) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await responseMessage(response));
-      const body = await response.json() as { card: CardRecord; mechanicRequest: MechanicRequest };
-      setEditingCard(body.card); setCreatedMechanicRequest(body.mechanicRequest);
-      form.setValue("keywords", body.card.keywords); form.setValue("text", body.card.text); form.setValue("effectId", "STRUCTURED_EFFECTS_V1"); form.setValue("effectConfig", JSON.stringify(body.card.effectConfig, null, 2));
-      setMechanicRequests((current) => current.map((item) => item.id === body.mechanicRequest.id ? body.mechanicRequest : item));
-      setMessage("카드 효과를 미공개 카드에 적용하고 메커니즘 요청을 완료했습니다.");
-      setAuditResults(null); setAuditFilter("");
-      await loadCards();
-    } catch (applyError) { setError(applyError instanceof Error ? applyError.message : "카드 효과를 적용하지 못했습니다."); }
-    finally { setBusyId(null); }
   }
 
   function clearLocalPreview() {
@@ -1004,43 +621,10 @@ export function AdminCardManager({
           <p className="mt-1 text-xs text-neutral-500">새 카드는 미공개로 저장됩니다. 공개는 일반 배포, 미공개는 일반 배포 제외, 비활성화는 일반 사용 중지 상태입니다.</p>
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setIsLibraryOpen((open) => !open)} data-testid="button-toggle-effect-library" className="rounded border border-primary px-4 py-2.5 text-sm font-black text-primary hover:bg-primary/10">Effect Library</button>
+
           <button type="button" onClick={openCreate} data-testid="button-create-card" className="flex items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black hover:bg-yellow-400"><Plus className="h-4 w-4" /> 새 카드 추가</button>
         </div>
       </div>
-      <details className="mb-5 border-b border-neutral-800 pb-4"><summary className="min-h-11 cursor-pointer py-2 text-sm text-neutral-400">효과 구현 · 프롬프트 도구</summary><AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} /></details>
-      {isLibraryOpen && (
-        <section data-testid="effect-library" className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 p-4">
-          <h3 className="text-sm font-black">Effect Library</h3>
-          <p className="mt-1 text-xs text-neutral-500">현재 엔진에서 지원하고 즉시 사용할 수 있는 Registry 항목입니다.</p>
-          {!effectLibrary ? <p data-testid="status-loading-effect-library" className="mt-3 text-xs text-neutral-500">라이브러리를 불러오는 중...</p> : (
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <LibraryGroup title="Actions / Effects" items={effectLibrary.actions.map((item) => ({ ...item, name: item.label ? `${item.label} (${item.name})` : item.name, detail: `${item.description} · 설정: ${JSON.stringify(item.requiredConfig)} · v${item.version} · 사용 카드 ${item.usageCount}` }))} />
-              <LibraryGroup title="Triggers" items={effectLibrary.triggers.map((item) => ({ ...item, name: item.label ? `${item.label} (${item.name})` : item.name, detail: item.description }))} />
-              <LibraryGroup title="Target resolvers" items={effectLibrary.targetResolvers.map((item) => ({ ...item, detail: `${item.description} · ${JSON.stringify(item.config)}` }))} />
-              <LibraryGroup title="Value resolvers" items={effectLibrary.valueResolvers.map((item) => ({ ...item, detail: `${item.description}${item.values ? ` · ${item.values.join(", ")}` : ""}` }))} />
-            </div>
-          )}
-           <div className="mt-5 border-t border-neutral-800 pt-4">
-             <h3 className="text-sm font-black">새 메커니즘 요청 기록</h3>
-             <p className="mt-1 text-xs text-neutral-500">요청 생성만 기록합니다. 이 단계에서는 코드 생성 또는 변경이 실행되지 않습니다.</p>
-             {mechanicRequests.length === 0 ? (
-               <p className="mt-3 text-xs text-neutral-600">생성된 요청이 없습니다.</p>
-             ) : (
-               <ul className="mt-3 space-y-2">
-                 {mechanicRequests.map((item) => (
-                   <li key={item.id} className="rounded border border-neutral-800 bg-black/30 p-2 text-xs">
-                     <div className="flex flex-wrap items-center gap-2"><strong>{item.id}</strong><span className="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">{item.status}</span></div>
-                     <p className="mt-1 text-neutral-400">{item.originalCardText}</p>
-                     <p className="mt-1 text-amber-300">지원하지 않음: {item.unsupportedParts.join(", ")}</p>
-                   </li>
-                 ))}
-               </ul>
-             )}
-           </div>
-        </section>
-      )}
-
       <div className="mb-4 grid gap-2 rounded-lg border border-neutral-800 bg-black/40 p-3 md:grid-cols-[minmax(180px,1fr)_repeat(3,minmax(120px,auto))]">
         <label className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-600" />
@@ -1169,22 +753,14 @@ export function AdminCardManager({
 <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
 <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
 <label className="flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm"><input type="checkbox" {...form.register("isStarterGrant")} /> 신규 계정 Starter 카드</label></>,
-<><label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); setCompletion(null); setCreatedMechanicRequest(null); setReplitPrompt(""); form.setValue("effectId", ""); form.setValue("effectConfig", JSON.stringify(keywordSettingsAfterTextEdit(form.getValues("effectConfig")))); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
-<AdminEffectAiGenerator
-                   defaultText={preview.text}
-                   sourceType="CARD"
-                   sourceId={editingCard?.id}
-                   cardType={preview.cardType}
-                   existingEffectCount={effectConfigEntryCount(preview.effectConfig)}
-                   onApply={(draft, mode) => applyAiDraft(draft, mode)}
-                   onUnauthorized={onUnauthorized}
-                 />
+<><label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { form.setValue("effectId", ""); form.setValue("effectConfig", JSON.stringify(keywordSettingsAfterTextEdit(form.getValues("effectConfig")))); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+
 {preview.keywords.includes('CONDITION') && <fieldset className="md:col-span-2"><legend>카드 사용 조건</legend><ChampionQuestConditionEditor value={validChampionQuestCondition(keywordConfig.playCondition) ? keywordConfig.playCondition : {type:'TURN',turn:5}} onChange={v=>updateKeywordConfig('playCondition',v)}/>{!validChampionQuestCondition(keywordConfig.playCondition)&&<button type="button" className="min-h-11 p-2" onClick={()=>updateKeywordConfig('playCondition',{type:'TURN',turn:5})}>전체 5턴 이상 조건 적용</button>}</fieldset>}
 <div className="space-y-2 md:col-span-2">
                  <details className="rounded border border-neutral-800 bg-neutral-900/50 p-3">
                    <summary className="cursor-pointer text-xs font-bold text-neutral-500">고급 효과 설정 (선택 사항)</summary>
                    <div className="mt-3 grid gap-3 md:grid-cols-2">
-                     <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 ID</span><input {...form.register("effectId")} placeholder="자동 적용을 권장합니다" data-testid="input-card-effect-id" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                     <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 ID</span><input {...form.register("effectId")} placeholder="예: STRUCTURED_EFFECTS_V1 또는 SCRIPT_V1" data-testid="input-card-effect-id" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
                      <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 설정 JSON</span><textarea {...form.register("effectConfig")} rows={3} data-testid="input-card-effect-config" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-xs outline-none focus:border-primary" /></label>
                    </div>
                  </details>
@@ -1194,7 +770,7 @@ export function AdminCardManager({
                    : keyword === 'DODGE' ? {key:'dodgeCharges',label:'회피 횟수',aria:'회피 가능 횟수',min:1}
                    : keyword === 'COUNTDOWN' ? {key:'countdownTurns',label:'생존 턴 수',aria:'카운트다운 생존 턴 수',min:1} : undefined;
                  return <div key={keyword} className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" value={keyword} {...form.register("keywords", { onChange:event=>{if(event.target.checked && numeric && keywordConfig[numeric.key]===undefined) updateKeywordConfig(numeric.key,1);} })} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>{preview.keywords.includes(keyword) && numeric && <label className="flex items-center gap-2"><span>{numeric.label}</span><input aria-label={numeric.aria} data-testid={`input-keyword-${keyword}-amount`} type="number" min={numeric.min} max={999} step={1} className="min-h-11 w-20 rounded border border-neutral-700 bg-black px-2" value={Number.isSafeInteger(keywordConfig[numeric.key]) ? Number(keywordConfig[numeric.key]) : numeric.min} onChange={event=>{const value=Number(event.target.value);if(Number.isSafeInteger(value))updateKeywordConfig(numeric.key,Math.min(999,Math.max(numeric.min,value)));}} /></label>}</div>;
-               })}</div>{preview.keywords.includes('COUNTDOWN') && <p className="text-xs text-neutral-400">다음 자기 턴 시작부터 1씩 감소하고, 0이 되면 한 번 발동합니다. 효과 설명에 “카운트다운(N): 효과”를 입력하고 분석 결과를 적용하거나, 효과 발동 시점을 카운트다운으로 설정하세요.</p>}</fieldset>
+               })}</div>{preview.keywords.includes('COUNTDOWN') && <p className="text-xs text-neutral-400">다음 자기 턴 시작부터 1씩 감소하고, 0이 되면 한 번 발동합니다. 실제 효과 설정에서 발동 시점을 카운트다운(COUNTDOWN)으로 설정하세요.</p>}</fieldset>
 <fieldset className="space-y-2 md:col-span-2">
                   <legend className="text-xs font-bold text-neutral-400">태그</legend>
                   <div className="flex flex-wrap gap-2">
@@ -1385,29 +961,6 @@ export function AdminCardManager({
     </div>
   );
 }
-
-function LibraryGroup({
-  title,
-  items,
-}: {
-  title: string;
-  items: Array<{ name: string; detail: string; status: "ACTIVE" | "DISABLED" }>;
-}) {
-  return (
-    <div className="rounded border border-neutral-800">
-      <h4 className="border-b border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-black">{title}</h4>
-      <ul className="divide-y divide-neutral-800">
-        {items.map((item) => (
-          <li key={item.name} data-testid={`effect-library-item-${item.name}`} className="px-3 py-2 text-xs">
-            <div className="flex items-center justify-between gap-2"><strong>{item.name}</strong><span className="rounded border border-emerald-800 bg-emerald-950 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">{item.status}</span></div>
-            <p className="mt-1 break-words text-[11px] leading-relaxed text-neutral-500">{item.detail}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 
 function AdminCardPreview({
   name,

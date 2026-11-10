@@ -17,7 +17,6 @@ export function ChampionPreparationEditor({
   value,
   onChange,
   cards,
-  analysisTools,
   reward,
   ability,
   presentation,
@@ -26,7 +25,6 @@ export function ChampionPreparationEditor({
   value: Fields;
   onChange: (patch: Partial<Fields>) => void;
   cards: { id: string; name: string; cardType: string }[];
-  analysisTools: ReactNode;
   reward: ReactNode;
   ability: ReactNode;
   presentation: ReactNode;
@@ -107,6 +105,9 @@ export function ChampionPreparationEditor({
             const enabled = e.target.checked;
             onChange({
               hasQuest: enabled,
+              questName: enabled
+                ? value.questName?.trim() || "피니셔 준비"
+                : value.questName,
               questProgressRequired: enabled ? required : null,
               questCondition: enabled
                 ? {
@@ -199,14 +200,6 @@ export function ChampionPreparationEditor({
                   <span>1</span>준비 조건
                 </h5>
                 <div className="admin-preparation-fields">
-                  <label>
-                    준비 조건 이름
-                    <input
-                      value={value.questName ?? ""}
-                      onChange={(e) => onChange({ questName: e.target.value })}
-                      placeholder="예: 사령술 강화"
-                    />
-                  </label>
                   <label className="admin-preparation-wide">
                     플레이어에게 보여줄 조건 설명
                     <textarea
@@ -295,7 +288,7 @@ export function ChampionPreparationEditor({
                   ) : (
                     <p className="admin-preparation-warning">
                       현재 복합 조건 형식을 확인할 수 없습니다. 기존 값은
-                      유지됩니다. 조건 분석 도구에서 설정을 확인하세요.
+                      유지됩니다. 판정 방식을 다시 선택해 조건을 설정하세요.
                     </p>
                   ))}
                 {kind === "gold" && (
@@ -358,22 +351,6 @@ export function ChampionPreparationEditor({
                     </p>
                   </details>
                 )}
-                <details className="admin-preparation-tools">
-                  <summary>설명 분석 · 조건 적용 도구</summary>
-                  <p>
-                    위 설명을 분석해서 조건을 제안합니다. ‘조건 적용’을 눌렀을
-                    때 실제 판정 설정을 바꾸며, 설명만 고쳐서는 현재 판정이
-                    변경되지 않습니다.
-                  </p>
-                  {q.awakening ? (
-                    <p>
-                      전용 각성 조건이 연결되어 있습니다. 아래 특수 각성
-                      설정에서 일반 준비 조건으로 전환한 뒤 분석할 수 있습니다.
-                    </p>
-                  ) : (
-                    analysisTools
-                  )}
-                </details>
               </section>
               <section className="admin-preparation-section">
                 <h5>
