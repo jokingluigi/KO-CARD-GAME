@@ -102,13 +102,16 @@ const result = {
   previousHelperPatchRetained: true,
   manualProductionDataWrites: 0,
   schemaChangedByThisRelease: false,
-  scope: "admin-workspace-and-champion-preparation-editor",
+  scope:
+    process.env.QA_RELEASE_SCOPE ??
+    "admin-workspace-and-champion-preparation-editor",
   tagLabelsEndpointAvailable: true,
   productionMatchCreated: false,
   mainMerged: false,
 };
 await writeFile(
-  "docs/qa/20261110-admin-workspace/production-verification.json",
+  process.env.QA_RELEASE_RECEIPT ??
+    "docs/qa/20261110-admin-workspace/production-verification.json",
   JSON.stringify(result, null, 2) + "\n",
 );
 console.log(JSON.stringify(result));

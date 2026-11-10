@@ -1,0 +1,44 @@
+{
+  "checkedAtUTC": "2026-11-10T14:01:01.212Z",
+  "commit": "5f210ab9b548e41a26e9d87d08907cc8f4c61fc3",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbpi6e1srm7s73arikjg",
+      "status": "live",
+      "commit": "5f210ab9b548e41a26e9d87d08907cc8f4c61fc3",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbpi6e3m8hqs73e0a72g",
+      "status": "live",
+      "commit": "5f210ab9b548e41a26e9d87d08907cc8f4c61fc3",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "5f210ab9b548e41a26e9d87d08907cc8f4c61fc3"
+  },
+  "front": {
+    "revision": "5f210ab9b548e41a26e9d87d08907cc8f4c61fc3",
+    "builtAtUTC": "2026-11-10T13:59:58.539Z"
+  },
+  "rootEntryModule": "/assets/index-8jIuBlcR.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-8jIuBlcR.js",
+  "previousHelperPatchRetained": true,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "champion-ability-labels",
+  "tagLabelsEndpointAvailable": true,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
