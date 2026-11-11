@@ -1,0 +1,45 @@
+{
+  "checkedAtUTC": "2026-11-11T01:06:00.203Z",
+  "commit": "72ff32563aa0a884407ab0f4f195db51cf982241",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbprtv0u01pc7391gtu0",
+      "status": "live",
+      "commit": "72ff32563aa0a884407ab0f4f195db51cf982241",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbprtv6k1f9s73cq4o0g",
+      "status": "live",
+      "commit": "72ff32563aa0a884407ab0f4f195db51cf982241",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "72ff32563aa0a884407ab0f4f195db51cf982241"
+  },
+  "front": {
+    "revision": "72ff32563aa0a884407ab0f4f195db51cf982241",
+    "builtAtUTC": "2026-11-11T01:04:35.396Z"
+  },
+  "rootEntryModule": "/assets/index-C5fqCYGq.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-C5fqCYGq.js",
+  "previousHelperPatchRetained": null,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "fixed-upgrade-and-card-ui",
+  "tagLabelsEndpointAvailable": null,
+  "publicCatalogChecksSkippedForMaintenance": true,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
