@@ -1,3 +1,4 @@
+import {FinisherPublicationDialog,type FinisherPublicationCard} from './finisher-publication-dialog';
 import {FinisherLinkEditor} from "./finisher-link-editor";
 import {ChampionPreparationEditor} from './champion-preparation-editor';
 import {AdminEditorWorkspace} from './admin-editor-workspace';
@@ -120,6 +121,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const saveInFlightRef = useRef(false);
   const [effectDrafts,setEffectDrafts] = useState<Partial<Record<EffectConfigKey,string>>>({});
   const effectDraftsRef = useRef<Partial<Record<EffectConfigKey,string>>>({});
+  const [publicationCards,setPublicationCards]=useState<FinisherPublicationCard[]|null>(null);
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const basicPortraitInputRef = useRef<HTMLInputElement>(null);
   const portraitInputRef = useRef<HTMLInputElement>(null);
@@ -221,7 +223,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     setEffectDrafts(effectDraftsRef.current);
     try {update(key,readEffectConfig(value));setError(current=>current.startsWith("효과 설정 JSON") ? "" : current);} catch { /* Keep unfinished JSON visible; save validates it. */ }
   }
-  async function save() {
+  async function save(publishFinisherCards?:Array<{id:string;version:number}>) {
     try {for (const value of Object.values(effectDraftsRef.current)) readEffectConfig(value!);}
     catch {setError("효과 설정 JSON을 확인하세요. 잘못된 입력은 저장하지 않았습니다.");return;}
 
@@ -268,8 +270,12 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       const response = await fetch(editing ? `${adminApiBase}/champions/${editing.id}` : `${adminApiBase}/champions`, {
         method: editing ? "PATCH" : "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editing ? { ...saveForm, version: editing.version } : saveForm),
+        body: JSON.stringify(editing ? { ...saveForm, version: editing.version, ...(publishFinisherCards?{publishFinisherCards}:{}) } : saveForm),
       });
+      if(response.status===422){
+        const detail=await response.clone().json() as {code?:string;cards?:FinisherPublicationCard[]};
+        if(detail.code==='FINISHER_PUBLICATION_REQUIRED'&&detail.cards?.length){setPublicationCards(detail.cards);return;}
+      }
       if (response.status === 401) { onUnauthorized(); return; }
       if (response.status === 403) throw new Error("관리자 권한이 필요합니다.");
       if (response.status === 409) throw new Error(`충돌: ${await classifiedMessage(response)}`);
@@ -277,6 +283,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       if (!response.ok) throw new Error(await classifiedMessage(response));
       setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 미공개로 저장했습니다.");
       setOpen(false);
+      setPublicationCards(null);
+      await loadTokenCards();
       await load();
       await loadIntroInteractions();
     } catch (reason) {
@@ -644,7 +652,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          })}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
 {form.questCondition?.awakening!=null&&<button type="button" className="mt-3 rounded border px-3 py-2" onClick={()=>{const next={...formRef.current.questCondition};delete next.awakening;update('questCondition',next);}}>일반 준비 조건으로 전환</button>}</>}
  /></>,
-<FinisherLinkEditor condition={form.questCondition} cards={tokenCards} hasQuest={form.hasQuest} legacyId={form.championTokenDefinitionId} onChange={value=>update('questCondition',value)}/>,
+<FinisherLinkEditor publishedChampion={editing?.status==='PUBLISHED'} condition={form.questCondition} cards={tokenCards} hasQuest={form.hasQuest} legacyId={form.championTokenDefinitionId} onChange={value=>update('questCondition',value)}/>,
 <><label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
 <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
 <div className="md:col-span-2 border border-neutral-700 p-4"><strong>대전 스프라이트</strong><p className="my-2 text-sm text-neutral-400">등록·배치·표정 반응은 큰 전용 작업 화면에서 관리합니다.</p>{editing?<a className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200" href={`/admin/battle-sprites?champion=${encodeURIComponent(editing.id)}`}>스프라이트 전용 관리 열기</a>:<p>챔피언을 먼저 저장해 주세요.</p>}</div>
@@ -847,6 +855,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          </button>
        </div>
     </AdminEditorWorkspace>}
+    <FinisherPublicationDialog cards={open?publicationCards:null} onCancel={()=>setPublicationCards(null)} onConfirm={()=>{const consent=publicationCards?.map(({id,version})=>({id,version}));setPublicationCards(null);if(consent?.length)void save(consent);}}/>
   </div>;
 }
 

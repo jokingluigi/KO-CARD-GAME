@@ -13,12 +13,14 @@ type Card = {
   imageUrl: string | null;
 };
 export function FinisherLinkEditor({
+  publishedChampion=false,
   condition,
   cards,
   hasQuest,
   legacyId,
   onChange,
 }: {
+  publishedChampion?:boolean;
   condition: Record<string, unknown> | null;
   cards: Card[];
   hasQuest: boolean;
@@ -97,12 +99,13 @@ export function FinisherLinkEditor({
                       c.id === value?.cardDefinitionId),
                 )
                 .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} · {c.cost}G · {c.status}
+                  <option key={c.id} value={c.id} disabled={c.status==='DISABLED'}>
+                    {c.name} · {c.cost}G · {{PUBLISHED:'공개',DRAFT:'미공개',DISABLED:'비활성화'}[c.status]??c.status}
                   </option>
                 ))}
             </select>
           </label>
+          {publishedChampion&&selected?.status==='DRAFT'&&<p role="note" className="rounded border border-amber-700/60 bg-amber-950/20 p-3 text-sm text-amber-200">‘{selected.name}’은 아직 미공개예요. 수정 저장을 누르면 이 피니셔의 공개와 챔피언 연결을 함께 확인할 수 있습니다.</p>}
           {value && (
             <label className="block space-y-2">
               준비 완료 시 처리

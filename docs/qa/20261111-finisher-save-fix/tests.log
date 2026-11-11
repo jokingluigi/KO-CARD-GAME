@@ -1,0 +1,299 @@
+✔ quest completion shows exactly the reward wording stored for Champion inspection (0.704248ms)
+✔ technique PRE_COMMIT probes a clone, cancel is canonical no-op, confirm commits once (12.355454ms)
+✔ optional PRE_COMMIT cancel abandons the action and empty optional choices auto-skip (2.864993ms)
+✔ Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commits once (3.929137ms)
+✔ Active ability PRE_COMMIT cancel leaves use flag unset and confirm consumes it once (2.095358ms)
+✔ ENTER_FIELD cancellation returns the card and refunds its complete play (2.082939ms)
+✔ zero-target ENTER_FIELD choice resolves as a no-op without opening cancel mode (1.756414ms)
+✔ mandatory and script cancellation clears only the authoritative continuation (0.404512ms)
+✔ 상대 챔피언별 승리 대사는 퀘스트 전후를 구분하고 미설정 상대는 기본 대사로 돌아간다 (2.250628ms)
+✔ 필드 소환 능력은 손패 생성 설정을 필드 소환으로 정규화한다 (1.645268ms)
+✔ 판도라 퀘스트는 다른 카드의 리타이어를 고유 능력 킬로 세지 않는다 (0.865158ms)
+✔ DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한다 (1.297651ms)
+✔ 직접 전개는 연결된 명시적 Champion Token ID만 사용한다 (0.347487ms)
+✔ Quest 보상도 연결된 Champion Token ID를 직접 전개 보상으로 보존한다 (0.277894ms)
+✔ 구조화된 Champion Token 보상은 현재 챔피언 연결을 사용하는 전개 effect로 변환한다 (0.356751ms)
+✔ administrator finisher survives legacy champion reward compatibility normalization (0.339345ms)
+✔ 게임 시작 상태에서 각 플레이어가 선택한 챔피언을 가진다 (1.731557ms)
+✔ 퀘스트가 없는 챔피언도 정상적으로 생성된다 (0.648786ms)
+✔ 챔피언 능력은 비용을 지불하고 직접 사용한다 (5.806941ms)
+✔ Pandora-style ALL WRESTLER ability can retire an ally and advance its attributed quest (11.805506ms)
+✔ 퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다음 자기 턴에 적용된다 (2.574611ms)
+✔ authoritative 챔피언 여울은 비용 2를 지불하고 다음 자기 턴에 골드 +1을 한 번 적용한다 (2.835569ms)
+✔ Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의 공격력과 체력을 함께 변경한다 (4.20769ms)
+✔ 챔피언 능력은 같은 턴에 두 번 사용할 수 없고 다음 턴에 다시 사용할 수 있다 (1.366853ms)
+✔ Champion의 SUMMON 능력과 카드 유형 Quest 조건 및 강화 능력이 실제 게임에서 연결된다 (4.103797ms)
+✔ 골드가 부족하면 챔피언 능력을 사용할 수 없다 (1.121568ms)
+✔ 퀘스트는 지정된 게임 이벤트를 감지해 진행되고 완료된다 (1.20312ms)
+✔ 퀘스트 완료 후 강화된 챔피언 능력을 사용한다 (1.002512ms)
+✔ DB 기반 강화 능력은 기본 능력과 다른 비용을 사용할 수 있다 (0.714783ms)
+✔ 퀘스트 완료 보상으로 특별 보상을 지급할 수 있다 (0.651279ms)
+✔ 퀘스트 완료 시 연결된 Champion Token을 직접 전개하고 ENTER_FIELD를 실행한다 (1.333935ms)
+✔ 구조화 퀘스트 보상도 연결된 Champion Token을 전개하고 등장 효과를 실행한다 (0.989172ms)
+✔ 강화와 Champion Token 전개를 함께 포함한 퀘스트 보상을 모두 실행한다 (26.968046ms)
+✔ 분석기의 WRESTLER_RETIRED 조건은 런타임 CARD_RETIRED 이벤트로 진행된다 (0.881782ms)
+✔ Champion Ability 귀속 RETIRE만 sourceActionType 퀘스트를 진행한다 (1.023753ms)
+✔ one Champion ability retirement advances once when the same event suffix is replayed (1.025636ms)
+✔ stable event identity deduplicates a repeated retirement but counts distinct targets (0.757186ms)
+✔ replayed progress at the completion threshold grants the reward once (0.816806ms)
+✔ 11 catalog entries serialize as EPIC techniques with active effects and no combat stats (6.580872ms)
+✔ 처형 destroys enemy without graveyard or retire effects (10.128431ms)
+✔ 만찬 permanently adds current and maximum HP to every ally only (2.934096ms)
+✔ 침묵의 장막 silences every enemy, including already silenced, preserving allies (1.262919ms)
+✔ 복귀 samples at most 3 of 1, moves only choice and resets (1.726399ms)
+✔ 복귀 samples at most 3 of 2, moves only choice and resets (1.185715ms)
+✔ 복귀 samples at most 3 of 3, moves only choice and resets (1.096551ms)
+✔ 복귀 samples at most 3 of 5, moves only choice and resets (1.167557ms)
+✔ 금지된 계약 deals 5 and reserves one free wrestler only during this turn (5.180038ms)
+✔ life-exchange selects both factions, snapshots and swaps currentHealth, stuns both (3.116668ms)
+✔ forced-exchange selects both factions, snapshots and swaps currentAttack, stuns both (1.793829ms)
+✔ 생명의 교환 swaps current and maximum HP independently without clamping to old maxima (1.774901ms)
+✔ 절멸 snapshots current ATK <=3 on both sides, no retire (1.005456ms)
+✔ 탈출 retains numerical stats, heals fully and clears statuses without retirement (1.413143ms)
+✔ 강제 침묵 accepts an already silenced enemy and resets original specs (0.808563ms)
+✔ 밀쳐내기 uses existing stun flag and owner-turn expiry (1.123011ms)
+✔ execution no target rejects before payment and AI has no illegal cast (1.358211ms)
+✔ return no target rejects before payment and AI has no illegal cast (0.825027ms)
+✔ life-exchange no target rejects before payment and AI has no illegal cast (0.725229ms)
+✔ forced-exchange no target rejects before payment and AI has no illegal cast (0.670027ms)
+✔ escape no target rejects before payment and AI has no illegal cast (0.634504ms)
+✔ forced-silence no target rejects before payment and AI has no illegal cast (0.768233ms)
+✔ push no target rejects before payment and AI has no illegal cast (0.737527ms)
+✔ life-exchange missing either faction cannot start a selection (2.349135ms)
+✔ forced-exchange missing either faction cannot start a selection (1.936011ms)
+✔ 복귀 includes token wrestlers and graveyard immunity is not a field state (0.950094ms)
+✔ field IMMUNE remains excluded from targeted new spells (2.720308ms)
+✔ every spell is present in AI legal actions with its required targets (32.258788ms)
+✔ precommit paired exchange pays once and resolves after both targets (2.670634ms)
+✔ field return preserves current cost/attack/max HP, fully heals and clears lifecycle statuses (3.208063ms)
+✔ actual MOVE_TO_HAND retains stats and restores health (7.123679ms)
+✔ actual MOVE_TO_DECK retains stats and restores health (4.676148ms)
+✔ RUSH+SURPRISE entry-turn champion attack legality and server action agree (3.527128ms)
+✔ RUSH entry-turn champion attack legality and server action agree (0.808884ms)
+✔ SURPRISE entry-turn champion attack legality and server action agree (0.445073ms)
+✔ one completed option locks and grants exactly that finisher; legacy reward and ability upgrade do not run (1.072937ms)
+✔ simultaneous conditions require an explicit durable choice; cancellation and other actions are blocked (2.655651ms)
+✔ finisher awarded at full hand uses existing mandatory discard; reconnect does not duplicate it (20.010564ms)
+✔ AI selects one of the actual prepared finishers (14.924827ms)
+✔ choices validate ids, real conditions and minimum count (3.816829ms)
+✔ allied field presence excludes self, but another copy counts; explicit board totals are not changed (2.655431ms)
+✔ structured tag-presence and generic presence exclude source but accept another definition copy (2.020316ms)
+✔ actual play defers finisher decisions until the whole action has emitted all qualifying events (1.548835ms)
+✔ committed intermediate target choices do not prematurely lock a partially completed finisher resolution (2.431929ms)
+✔ single preparation adds the linked finisher, replacing only its configured legacy reward (2.73523ms)
+✔ full-hand acquisition uses mandatory discard and resumes once after serialized reconnect (2.384798ms)
+✔ instant mode casts without base gold or entering hand and preserves full hand (4.676438ms)
+✔ instant casts on the opponent turn and does not transfer turn ownership (0.733201ms)
+✔ targeted instant finisher uses mandatory selection; opponent and duplicate selections fail (2.934205ms)
+✔ no valid instant target does not leave an impossible selector (0.582507ms)
+✔ different prepared options keep independent card and delivery settings; selected instant locks the others (1.032746ms)
+✔ simultaneous conditions offer a choice, including an immediate-cast option to AI (4.820032ms)
+✔ queued instant cast waits for a committed selection and survives reconnect (2.476856ms)
+✔ finisher auto-cast events can complete the other champion preparation in the same resolution (1.038315ms)
+✔ delivery config rejects unsupported modes while accepting old options without a mode (0.655575ms)
+✔ optional auto-cast target may skip while continuing the next authored effect (0.750778ms)
+✔ empty instant finisher does not leave a sentinel frame or lock input (0.629827ms)
+✔ automatic game-start generation can wait for a human discard before dealing opening draws (18.555608ms)
+✔ non-draw generation with free space enters hand (1.344009ms)
+✔ persisted pending arrivals validate identities and reject duplicate cards (1.4851ms)
+✔ full generation waits, rejects cancel/other actions, discards chosen existing card and resumes once after reconnect (6.343748ms)
+✔ several generated cards each require one discard, with no duplicated continuation (1.385922ms)
+✔ draw overflow publicly reveals and removes, never enters hand or resolves CARD_DRAWN prepare effects (0.822644ms)
+✔ two draws with 0 spaces (0.789745ms)
+✔ two draws with 1 spaces (0.789735ms)
+✔ two draws with 2 spaces (0.797476ms)
+✔ non-draw graveyard return uses discard decision, never deck return (1.7271ms)
+✔ AI completes a mandatory full-hand decision (4.165107ms)
+✔ turn-end hand addition finishes before the next player draws or refreshes resources (1.673029ms)
+✔ a draw prepare which adds cards suspends the remaining draws and outer effect (0.732039ms)
+✔ ability override preserves health, readiness and quest, can be replaced repeatedly and survives serialization (19.426675ms)
+✔ AI evaluates the replacement ability, including its lethal effect (7.142887ms)
+✔ an optional turn-duration replacement expires without changing the original ability (0.968592ms)
+✔ a finished match cannot resume a pending discard or award the incoming card (0.835132ms)
+✔ using a saved ENTER_FIELD technique resolves its effect and progresses a technique quest (6.23054ms)
+✔ base 2 + fixed upgrade 1 at gold 2 (24.606332ms)
+✔ base 2 + fixed upgrade 1 at gold 3 (8.040283ms)
+✔ base 2 + fixed upgrade 1 at gold 4 (6.584898ms)
+✔ base 2 + fixed upgrade 1 at gold 6 (6.164161ms)
+✔ actual modified card cost 1 remains separate (3.054214ms)
+✔ actual modified card cost 3 remains separate (6.200446ms)
+✔ no valid target: no payment, targeting or success event (1.206465ms)
+✔ paid target choice cannot be cancelled; invalid/duplicate requests cannot repay (4.816617ms)
+✔ same entry event is attempted only once, even after gold is restored (4.625943ms)
+✔ a failed attempt cannot retroactively trigger on duplicate entry resolution (1.676074ms)
+✔ a new physical entry can pay again (7.260032ms)
+✔ entry semantics preserved for SUMMON (0.842934ms)
+✔ entry semantics preserved for REVIVE (0.523178ms)
+✔ entry semantics preserved for CHAMPION_DEPLOY (0.670498ms)
+✔ ordinary entry effects before and after PROGRAM execute exactly once in definition order (2.294424ms)
+✔ targetless PROGRAM resolves through the same automatic interpreter (0.803505ms)
+✔ PROGRAM spend counts toward existing gold-spent preparation (1.835982ms)
+✔ AI resolves the same mandatory target automatically (9.81279ms)
+✔ invalid or empty program definitions are rejected (0.224795ms)
+✔ unrelated optional effect after paid group can be skipped without rolling back payment (1.894598ms)
+✔ separate program groups pay independently and continue in order (2.311349ms)
+✔ BUFF from upgrade triggers existing stat-change chain once (1.99591ms)
+✔ unavailable summon skips program without payment (0.681954ms)
+✔ AI values affordable upgrade lethal, but chooses stronger body when upgrade is unaffordable (16.031814ms)
+✔ Tower uses the same payment and target interpreter under field restrictions (2.250197ms)
+✔ dedupe identity does not change when another entry ability condition changes (1.82779ms)
+✔ a future spell can reuse automatic paid targeting without an activation approval stage (3.32675ms)
+✔ costless authoring and legacy 0/2/999 all pay exactly one gold (5.661154ms)
+✔ ACTIVE spell deals damage once and pays/removes exactly one card (9.287279ms)
+✔ ENTER_FIELD spell deals damage once and pays/removes exactly one card (0.718028ms)
+✔ heal caps at max HP and buff applies only to intended side (2.523855ms)
+✔ destroy removes a card entirely, lethal damage retires to graveyard (3.285028ms)
+✔ targeted spell precommit cancellation leaves hand, gold and health unchanged (2.961847ms)
+✔ no valid target, wrong turn and insufficient gold reject without consuming a spell (0.53788ms)
+✔ next-spell reservation preserves its gold event and is consumed exactly once (0.88062ms)
+✔ draw and summon spells execute in order and never place the technique itself on the field (1.669884ms)
+✔ spell damage can finish a match through an unprotected enemy champion (1.653631ms)
+✔ queued cost increases cannot create negative gold and failed casts preserve the reservation (0.868051ms)
+✔ queued cost reduction permits a spell affordable only after its reservation (0.859759ms)
+✔ PvP automatic finisher: free cost, mandatory target, both clients, timeout, persisted reconnect and duplicate request (4455.862965ms)
+✔ PvP normal delivery adds exactly one linked card and persists the completed condition (29.67957ms)
+✔ PvP full hand uses one mandatory discard before linked finisher arrival and survives persisted reload (52.593233ms)
+[03:35:17.615] [32mINFO[39m (153725): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 76
+✔ reproduce existing published champion with new unpublished finisher, then explicitly publish and save once (4627.252105ms)
+✔ multiple alternative finishers are published and linked atomically with independent delivery (24.685629ms)
+✔ stale card version rolls back champion changes and every requested publication (18.550221ms)
+✔ unpublished nested reference blocks publication and rolls back champion changes (16.212081ms)
+[03:35:18.182] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 69
+[03:35:18.208] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-0"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 14
+[03:35:18.235] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-0"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[03:35:18.249] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-0"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 6
+[03:35:18.272] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-1"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[03:35:18.290] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-2"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 9
+[03:35:18.308] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-3"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 8
+[03:35:18.319] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-4"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 4
+[03:35:18.328] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-4"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 5
+✔ unrelated publication consent and disabled/incorrect cards remain rejected (27.075375ms)
+[03:35:18.336] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-4"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 4
+[03:35:18.350] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-5"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+✔ already published finisher saves without consent; draft champion remains draft without publishing cards (35.385721ms)
+[03:35:18.371] [32mINFO[39m (153732): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "PATCH",
+      "url": "/api/admin/champions/publish-link-6"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+ℹ tests 161
+ℹ suites 0
+ℹ pass 161
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11703.317083

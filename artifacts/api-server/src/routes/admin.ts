@@ -255,15 +255,25 @@ function containsStructuredAction(value: unknown, action: string): boolean {
     Object.values(record).some((item) => containsStructuredAction(item, action));
 }
 
-async function validateFinisherReferences(condition: Record<string,unknown>|null, published=false): Promise<string|null> {
-  const options=condition?.finisherChoices;
-  const single=condition?.finisher;
-  if(single!==undefined&&!validFinisherReward(single))return '피니셔 연결 설정이 올바르지 않습니다.';
-  if(options!==undefined&&!validFinisherChoices(options))return '피니셔 선택지 설정이 올바르지 않습니다.';
-  const rewards=[...(options===undefined&&single&&validFinisherReward(single)?[{...single,name:"준비 완료 피니셔"}]:[]),...(Array.isArray(options)?options:[])];
-  for(const option of rewards){
-    const [card]=await db.select({id:cardsTable.id,cardType:cardsTable.cardType,rarity:cardsTable.rarity,isChampionToken:cardsTable.isChampionToken,status:cardsTable.status}).from(cardsTable).where(eq(cardsTable.id,option.cardDefinitionId)).limit(1);
-    if(!card||card.cardType!=='TECHNIQUE'||card.rarity!=='CHAMPION'||!card.isChampionToken||card.status==='DISABLED'||published&&card.status!=='PUBLISHED')return `피니셔 '${option.name}'에는 ${published?'공개된 ':''}챔피언 등급 토큰 주문 카드를 연결하세요.`;
+type FinisherPublishConsent = { id: string; version: number };
+type AdminTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+class FinisherLinkSaveError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+function finisherReferences(condition: Record<string,unknown>|null): Array<{cardDefinitionId:string;name:string}> {
+  if(validFinisherChoices(condition?.finisherChoices))return condition.finisherChoices;
+  return condition?.finisherChoices===undefined&&validFinisherReward(condition?.finisher)
+    ? [{...condition.finisher,name:'준비 완료 피니셔'}] : [];
+}
+async function validateFinisherReferences(condition: Record<string,unknown>|null, published=false, publishingIds:ReadonlySet<string>=new Set(), database:typeof db|AdminTransaction=db): Promise<string|null> {
+  if(condition?.finisher!==undefined&&!validFinisherReward(condition.finisher))return '피니셔 연결 설정이 올바르지 않습니다.';
+  if(condition?.finisherChoices!==undefined&&!validFinisherChoices(condition.finisherChoices))return '피니셔 선택지 설정이 올바르지 않습니다.';
+  for(const option of finisherReferences(condition)){
+    const [card]=await database.select({id:cardsTable.id,name:cardsTable.name,cardType:cardsTable.cardType,rarity:cardsTable.rarity,isChampionToken:cardsTable.isChampionToken,status:cardsTable.status}).from(cardsTable).where(eq(cardsTable.id,option.cardDefinitionId)).limit(1);
+    if(!card)return `피니셔 '${option.name}'에 연결된 카드를 찾을 수 없습니다. 다른 피니셔를 선택하세요.`;
+    if(card.cardType!=='TECHNIQUE'||card.rarity!=='CHAMPION'||!card.isChampionToken)return `'${card.name}'은 챔피언 등급 토큰 주문이 아닙니다. 카드 유형·등급·챔피언 토큰 설정을 확인하세요.`;
+    if(card.status==='DISABLED')return `'${card.name}'은 비활성화된 카드입니다. 사용할 수 있는 다른 피니셔를 선택하세요.`;
+    if(published&&card.status!=='PUBLISHED'&&!publishingIds.has(card.id))return `'${card.name}'은 미공개 카드입니다. 공개 챔피언에 연결하려면 이 피니셔를 공개한 뒤 저장해야 합니다.`;
   }
   return null;
 }
@@ -922,8 +932,8 @@ function collectCardDefinitionReferenceIds(value: unknown, ids = new Set<string>
   return ids;
 }
 
-async function validatePublishedCardReferences(rootId: string): Promise<string[]> {
-  const cards = await db.select({
+async function validatePublishedCardReferences(rootId: string, database:typeof db|AdminTransaction=db, publishingIds:ReadonlySet<string>=new Set()): Promise<string[]> {
+  const cards = await database.select({
     id: cardsTable.id,
     name: cardsTable.name,
     status: cardsTable.status,
@@ -940,7 +950,7 @@ async function validatePublishedCardReferences(rootId: string): Promise<string[]
       errors.push(`없는 참조 카드 ID: ${id}`);
       return;
     }
-    if (card.status !== "PUBLISHED" && id !== rootId) {
+    if (card.status !== "PUBLISHED" && id !== rootId && !publishingIds.has(id)) {
       errors.push(`공개되지 않은 참조 카드: ${card.name} (${id})`);
       return;
     }
@@ -1799,8 +1809,23 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: id ? championInputError(request.body) : "챔피언 ID를 확인해 주세요." });
     return;
   }
-  const finisherError=await validateFinisherReferences(input.questCondition,existing.status==='PUBLISHED');
-  if(finisherError){response.status(400).json({message:finisherError});return;}
+  const rawPublication=request.body.publishFinisherCards;
+  const publication:FinisherPublishConsent[]=Array.isArray(rawPublication)?rawPublication:[];
+  const linkedIds=new Set(finisherReferences(input.questCondition).map(option=>option.cardDefinitionId));
+  if(rawPublication!==undefined&&(!Array.isArray(rawPublication)||publication.length<1||publication.length>8||existing.status!=='PUBLISHED'||new Set(publication.map(card=>card?.id)).size!==publication.length||publication.some(card=>!card||typeof card.id!=='string'||!linkedIds.has(card.id)||!Number.isInteger(card.version)||card.version<1))){
+    response.status(400).json({message:'공개할 피니셔 목록과 버전을 확인하세요.'});return;
+  }
+  const publishingIds=new Set(publication.map(card=>card.id));
+  const finisherError=await validateFinisherReferences(input.questCondition,existing.status==='PUBLISHED',publishingIds);
+  if(finisherError){
+    if(existing.status==='PUBLISHED'&&!publication.length&&linkedIds.size){
+      const drafts=await db.select({id:cardsTable.id,name:cardsTable.name,version:cardsTable.version}).from(cardsTable).where(and(inArray(cardsTable.id,[...linkedIds]),eq(cardsTable.status,'DRAFT')));
+      if(drafts.length&&!await validateFinisherReferences(input.questCondition,true,new Set(drafts.map(card=>card.id)))){
+        response.status(422).json({code:'FINISHER_PUBLICATION_REQUIRED',field:'questCondition.finisher',message:'연결할 피니셔가 아직 미공개입니다. 아래 카드를 공개하고 챔피언 연결을 함께 저장할 수 있습니다.',cards:drafts});return;
+      }
+    }
+    response.status(400).json({message:finisherError,field:'questCondition.finisher'});return;
+  }
   try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
   expectedVersion ??= existing.version;
   const versionCheck = expectedVersion === null
@@ -1848,13 +1873,33 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues
   } = input;
-  const champion = await db.transaction(async transaction => {
+  let champion;
+  try {champion = await db.transaction(async transaction => {
     const [updated] = await transaction.update(championsTable).set({
       ...championValues, isCraftable: request.body.isCraftable === undefined ? existing.isCraftable : input.isCraftable, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
     }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
+    if(!updated)throw new FinisherLinkSaveError(409,'다른 관리자 변경이 있어 최신 챔피언을 다시 불러온 뒤 저장해 주세요.');
+    if(publication.length){
+      const cards=await transaction.select().from(cardsTable).where(inArray(cardsTable.id,[...linkedIds])).orderBy(asc(cardsTable.id)).for('update');
+      for(const consent of publication){
+        const card=cards.find(card=>card.id===consent.id);
+        if(!card||card.status!=='DRAFT'||card.version!==consent.version)throw new FinisherLinkSaveError(409,'피니셔 카드가 변경되었습니다. 수정 저장을 다시 눌러 최신 카드를 확인하세요.');
+        const errors=await validatePublishedCardReferences(card.id,transaction,publishingIds);
+        if(errors.length)throw new FinisherLinkSaveError(422,`'${card.name}'의 참조 카드를 먼저 공개해야 합니다. ${errors.join(' / ')}`);
+      }
+      const referenceError=await validateFinisherReferences(input.questCondition,true,publishingIds,transaction);
+      if(referenceError)throw new FinisherLinkSaveError(400,referenceError);
+      for(const consent of publication){
+        const card=cards.find(card=>card.id===consent.id)!;
+        await transaction.update(cardsTable).set({status:'PUBLISHED',...(repairedKnownPublishedEffect(card)??{}),version:sql`${cardsTable.version} + 1`,updatedAt:new Date()}).where(and(eq(cardsTable.id,card.id),eq(cardsTable.version,consent.version)));
+      }
+    }
     // Editing a champion must never recreate administrator-deleted card rows.
     return updated;
-  });
+  });} catch(error){
+    if(error instanceof FinisherLinkSaveError){response.status(error.status).json({message:error.message,field:"questCondition.finisher"});return;}
+    throw error;
+  }
   if (!champion) {
     response.status(409).json({
       message: "다른 관리자 변경이 있어 최신 버전을 다시 불러온 뒤 저장해 주세요.",

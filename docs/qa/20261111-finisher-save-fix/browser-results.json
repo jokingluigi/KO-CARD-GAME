@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "publishedChampionWithNewDraftFinisher": true,
+      "reviewBeforePublication": true,
+      "cancelKeepsDraft": true,
+      "atomicPublicationAndSave": true,
+      "saveReentry": true,
+      "multipleAlternatives": true,
+      "failedRequestPreservesDraft": true,
+      "errors": []
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "publishedChampionWithNewDraftFinisher": true,
+      "reviewBeforePublication": true,
+      "cancelKeepsDraft": true,
+      "atomicPublicationAndSave": true,
+      "saveReentry": true,
+      "multipleAlternatives": true,
+      "failedRequestPreservesDraft": false,
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "publishedChampionWithNewDraftFinisher": true,
+      "reviewBeforePublication": true,
+      "cancelKeepsDraft": true,
+      "atomicPublicationAndSave": true,
+      "saveReentry": true,
+      "multipleAlternatives": true,
+      "failedRequestPreservesDraft": false,
+      "errors": []
+    }
+  ],
+  "productionWrites": 0
+}

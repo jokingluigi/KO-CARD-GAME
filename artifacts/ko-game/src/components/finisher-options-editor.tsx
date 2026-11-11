@@ -10,7 +10,7 @@ export function FinisherOptionsEditor({
   embedded?: boolean;
   value: FinisherChoice[];
   onChange: (value: FinisherChoice[] | undefined) => void;
-  cards: { id: string; name: string; cardType: string }[];
+  cards: { id: string; name: string; cardType: string; status?:string;rarity?:string;isChampionToken?:boolean }[];
 }) {
   const set = (index: number, patch: Partial<FinisherChoice>) =>
     onChange(value.map((o, i) => (i === index ? { ...o, ...patch } : o)));
@@ -110,10 +110,10 @@ export function FinisherOptionsEditor({
                 >
                   <option value="">주문 카드 선택</option>
                   {cards
-                    .filter((c) => c.cardType === "TECHNIQUE")
+                    .filter((c) => c.cardType === "TECHNIQUE" && (!c.rarity||c.rarity==="CHAMPION") && c.isChampionToken!==false)
                     .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
+                      <option key={c.id} value={c.id} disabled={c.status==='DISABLED'}>
+                        {c.name}{c.status?` · ${{PUBLISHED:'공개',DRAFT:'미공개',DISABLED:'비활성화'}[c.status]??c.status}`:''}
                       </option>
                     ))}
                 </select>
