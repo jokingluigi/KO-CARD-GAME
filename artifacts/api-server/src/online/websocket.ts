@@ -74,7 +74,18 @@ function runWebSocketBackgroundTask(
 }
 
 export function attachOnlineMatchWebSocket(server: HttpServer): void {
-  const webSockets = new WebSocketServer({ noServer: true });
+  const webSockets = new WebSocketServer({
+    noServer: true,
+    // Browsers negotiate this transparently. Full authoritative snapshots
+    // remain compatible with older clients and reconnects.
+    perMessageDeflate: {
+      threshold: 1024,
+      serverNoContextTakeover: true,
+      clientNoContextTakeover: true,
+      concurrencyLimit: 2,
+      zlibDeflateOptions: { level: 1 },
+    },
+  });
   const alive = new WeakSet<WebSocket>();
   webSockets.on('connection', socket => {
     alive.add(socket);

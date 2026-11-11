@@ -41,7 +41,7 @@ import {
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { isTestAccountUser } from "../lib/test-account";
-import { processMatchEventsForDailyQuests } from "../lib/daily-quest-service";
+import { loadQuestProcessingContext, processMatchEventsForDailyQuests } from "../lib/daily-quest-service";
 import { grantReward, isFinishedMatchRewardEligible } from "../lib/reward-service";
 import { logger } from "../lib/logger";
 import { runOnlineBackgroundTask } from "./background-task";
@@ -225,7 +225,9 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
       .returning({ id: onlineMatchesTable.id });
     if (!updated) return false;
 
-    if (eventStart !== undefined) {
+    // Target previews/cancellations with no new events cannot advance a quest.
+    if (eventStart !== undefined && (finished || eventStart < runtime.state.events.length)) {
+      const questContext = await loadQuestProcessingContext(tx);
       await processMatchEventsForDailyQuests(
         runtime.snapshot.player1UserId,
         "PLAYER_ONE",
@@ -233,7 +235,7 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
         runtime.state,
         eventStart,
         tx,
-        undefined, "PVP",
+        undefined, "PVP", questContext,
       );
       await processMatchEventsForDailyQuests(
         runtime.snapshot.player2UserId,
@@ -242,7 +244,7 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
         runtime.state,
         eventStart,
         tx,
-        undefined, "PVP",
+        undefined, "PVP", questContext,
       );
     }
     return true;
@@ -1201,6 +1203,7 @@ export async function applyMatchAction(
   payload: OnlineActionPayload,
   connection?: OnlineMatchConnection,
 ): Promise<ActionExecution> {
+  const receivedAt = performance.now();
   const runtime = await getRuntime(matchId);
   if (!runtime) {
     throw new Error("온라인 매치를 찾을 수 없습니다.");
@@ -1211,6 +1214,7 @@ export async function applyMatchAction(
   }
 
   return withRuntimeLock(runtime, async () => {
+    const lockAcquiredAt = performance.now();
     if (!connection && runtime.primaryConnections.has(userId)) {
       return {
         ok: false,
@@ -1281,6 +1285,7 @@ export async function applyMatchAction(
     ) {
       return { ok: false, runtime, requestId, code: "NOT_YOUR_TURN", message: "현재 행동할 수 있는 턴이 아닙니다." };
     }
+    const validationStartedAt = performance.now();
     const legalActions = action.type === "SURRENDER" || action.type === "EMOTE" ? [action] : getLegalActions(runtime.state, playerId);
     const actionToValidate: GameAction = action.type === "BEGIN_TARGETED_ACTION"
       ? { ...action.action, playerId }
@@ -1300,6 +1305,7 @@ export async function applyMatchAction(
       };
     }
 
+    const executionStartedAt = performance.now();
     const candidateState = structuredClone(runtime.state);
     const result = executeAction(candidateState, action);
     if (!result.success) {
@@ -1316,7 +1322,9 @@ export async function applyMatchAction(
     }
 
     const eventStart = runtime.state.events.length;
+    const persistenceStartedAt = performance.now();
     const transition = await commitTransition(runtime, result.state, eventStart);
+    const persistedAt = performance.now();
     runtime.requestIds.set(requestId, {
       userId,
       version: transition.version,
@@ -1328,6 +1336,18 @@ export async function applyMatchAction(
       if (!oldest) break;
       runtime.requestIds.delete(oldest);
     }
+    const completedAt = performance.now();
+    if (completedAt-receivedAt >= 250) logger.warn({
+      event: "online-action-slow", matchId, requestId, actionType: action.type,
+      version: transition.version,
+      totalMs: Math.round(completedAt-receivedAt),
+      queueMs: Math.round(lockAcquiredAt-receivedAt),
+      validationMs: Math.round(executionStartedAt-validationStartedAt),
+      engineMs: Math.round(persistenceStartedAt-executionStartedAt),
+      persistenceMs: Math.round(persistedAt-persistenceStartedAt),
+      cacheMs: Math.round(completedAt-persistedAt),
+      eventCount: result.state.events.length-eventStart,
+    }, "Slow authoritative multiplayer action");
     return { ok: true, runtime, requestId, version: transition.version, eventStart, duplicate: false };
   });
 }

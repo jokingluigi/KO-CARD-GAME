@@ -1,0 +1,50 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "multiTargetTouch": true,
+    "persistedSelectionAfterReload": true,
+    "catalogDiscovery": true,
+    "readableChoiceWithoutBoardMask": true,
+    "opponentWait": true,
+    "exactZeroRetireAndHeal": true,
+    "placeholderArt": true,
+    "completedBranchLowHealthBothClientsRestored": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "multiTargetTouch": true,
+    "persistedSelectionAfterReload": true,
+    "catalogDiscovery": true,
+    "readableChoiceWithoutBoardMask": true,
+    "opponentWait": true,
+    "exactZeroRetireAndHeal": true,
+    "placeholderArt": true,
+    "completedBranchLowHealthBothClientsRestored": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "multiTargetTouch": true,
+    "persistedSelectionAfterReload": true,
+    "catalogDiscovery": true,
+    "readableChoiceWithoutBoardMask": true,
+    "opponentWait": true,
+    "exactZeroRetireAndHeal": true,
+    "placeholderArt": true,
+    "completedBranchLowHealthBothClientsRestored": true,
+    "productionWrites": 0,
+    "errors": []
+  }
+]

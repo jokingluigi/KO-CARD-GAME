@@ -7,6 +7,7 @@ import {
   dailyQuestProgressEventsTable, questSeasonsTable, questPlatformSettingsTable,
   db,
   type DailyQuestAssignmentRecord,
+  type DailyQuestDefinitionRecord,
 } from "@workspace/db";
 import {
   validateQuestCondition,
@@ -28,6 +29,20 @@ export const DAILY_QUEST_OBJECTIVES = [
 export type DailyQuestObjective = (typeof DAILY_QUEST_OBJECTIVES)[number];
 export const DAILY_QUEST_STATUSES = ["ASSIGNED", "IN_PROGRESS", "COMPLETED", "CLAIMED"] as const;
 type QuestConfigRecord = { schemaVersion?: string; condition?: unknown };
+
+/** Request/transaction scoped only: never retain admin settings across actions. */
+type QuestProcessingContext = {
+ settings: Awaited<ReturnType<typeof questSettings>>;
+ definitions: DailyQuestDefinitionRecord[];
+ seasons: (typeof questSeasonsTable.$inferSelect)[];
+};
+export async function loadQuestProcessingContext(executor: RewardExecutor): Promise<QuestProcessingContext> {
+ const settings = await questSettings(executor);
+ const definitions = await executor.select().from(dailyQuestDefinitionsTable)
+  .orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id));
+ const seasons = await executor.select().from(questSeasonsTable);
+ return {settings, definitions, seasons};
+}
 
 function eventCardMetadata(state: GameState, event: GameEvent) {
   if (event.tags) return { cardMetadataAvailable: true as const, cardTags: event.tags };
@@ -88,6 +103,7 @@ export async function ensureDailyQuestAssignments(
   userId: string,
   assignmentDate = dailyDate(),
   executor: RewardExecutor = db,
+  context?: QuestProcessingContext,
 ): Promise<DailyQuestAssignmentRecord[]> {
   const existing = await executor.select().from(dailyQuestAssignmentsTable)
     .where(and(
@@ -95,11 +111,11 @@ export async function ensureDailyQuestAssignments(
       eq(dailyQuestAssignmentsTable.assignmentDate, assignmentDate),
     ))
     .orderBy(asc(dailyQuestAssignmentsTable.slot));
-  const [settings] = await executor.select().from(questPlatformSettingsTable).where(eq(questPlatformSettingsTable.id, "default"));
+  const settings = context?.settings ?? await questSettings(executor);
   const availableSlots = Array.from({length: settings?.dailyCount ?? 3}, (_, i) => i).filter(slot => !existing.some(assignment => assignment.slot === slot));
   if (!availableSlots.length) return existing;
 
-  const definitions = await executor.select().from(dailyQuestDefinitionsTable)
+  const definitions = context?.definitions.filter(definition=>definition.enabled) ?? await executor.select().from(dailyQuestDefinitionsTable)
     .where(eq(dailyQuestDefinitionsTable.enabled, true))
     .orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id));
   const selected = selectDailyQuestDefinitions(definitions.filter(definition => { const p = readPlatform(definition); return p.questType === "DAILY" && !p.deletedAt && !p.archived && (!p.activationAt || Date.parse(p.activationAt) <= Date.now()) && !existing.some(assignment => assignment.definitionId === definition.id); }), userId, assignmentDate, availableSlots.length).slice(0, availableSlots.length);
@@ -140,13 +156,14 @@ export async function ensureDailyQuestAssignments(
 export async function processMatchEventsForDailyQuests(
  userId: string, playerId: string, matchId: string, state: GameState, eventStart: number,
  executor: RewardExecutor, assignmentDate?: string, mode: QuestMode = "AI",
+ context?: QuestProcessingContext,
 ): Promise<void> {
  const transactional = executor as RewardExecutor & {execute?: typeof db.execute};
  if (transactional.execute) await transactional.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"quest:"+userId}))`);
- const settings = await questSettings(executor);
+ const settings = context?.settings ?? await questSettings(executor);
  const date = assignmentDate ?? dailyDate(new Date(), settings.timezone);
- const assignments = [...await ensureDailyQuestAssignments(userId,date,executor), ...await ensureSeasonQuestAssignments(userId,executor)];
- const definitions = await executor.select().from(dailyQuestDefinitionsTable);
+ const assignments = [...await ensureDailyQuestAssignments(userId,date,executor,context), ...await ensureSeasonQuestAssignments(userId,executor,new Date(),context)];
+ const definitions = context?.definitions ?? await executor.select().from(dailyQuestDefinitionsTable);
  const outcome = state.status === "FINISHED" ? (state.winnerId === playerId ? "WIN" : "LOSS") : null;
  for (const assignment of assignments) {
   const definition = definitions.find(d=>d.id===assignment.definitionId);
@@ -157,13 +174,25 @@ export async function processMatchEventsForDailyQuests(
   const first = readPlatform(assignment).result !== "ANY" ? 0 : eventStart;
   const events = state.events.slice(first).map((event,offset)=>({event,key:"EVENT:"+(first+offset)}));
   if (state.status === "FINISHED" && assignment.schemaVersion !== QUEST_CONDITION_SCHEMA_VERSION) events.push({event:{type:"TURN_ENDED",playerId,reason:"QUEST_MATCH_FINISHED"},key:"FINISHED"});
+  const progressEvents: (typeof dailyQuestProgressEventsTable.$inferInsert)[] = [];
   for (const {event,key} of events) {
    const metadata=eventCardMetadata(state,event);
    const enriched=metadata.cardMetadataAvailable ? {...event,tags:metadata.cardTags} : event;
    const increment=questDiagnostic(assignment,enriched,playerId,mode,outcome,cardRarity(state,event)).increment;
    if (!Number.isSafeInteger(increment) || increment <= 0) continue;
-   const [record] = await executor.insert(dailyQuestProgressEventsTable).values({id:randomUUID(),assignmentId:assignment.id,occurrenceKey:assignment.id+":"+matchId+":"+key,increment}).onConflictDoNothing({target:dailyQuestProgressEventsTable.occurrenceKey}).returning({id:dailyQuestProgressEventsTable.id});
-   if (!record) continue;
+   progressEvents.push({id:randomUUID(),assignmentId:assignment.id,occurrenceKey:assignment.id+":"+matchId+":"+key,increment});
+  }
+  // Keep the unique occurrence ledger and progress update in the caller's
+  // transaction. Only newly inserted events count, including on replay.
+  let increment = 0;
+  for (let start=0;start<progressEvents.length;start+=500) {
+   const inserted = await executor.insert(dailyQuestProgressEventsTable)
+    .values(progressEvents.slice(start,start+500))
+    .onConflictDoNothing({target:dailyQuestProgressEventsTable.occurrenceKey})
+    .returning({increment:dailyQuestProgressEventsTable.increment});
+   for (const record of inserted) increment = Math.min(assignment.targetValue,increment+record.increment);
+  }
+  if (increment > 0) {
    await executor.update(dailyQuestAssignmentsTable).set({
     progress: sql`LEAST(${dailyQuestAssignmentsTable.progress} + ${increment}, ${dailyQuestAssignmentsTable.targetValue})`,
     status: sql`CASE WHEN ${dailyQuestAssignmentsTable.progress} + ${increment} >= ${dailyQuestAssignmentsTable.targetValue} THEN 'COMPLETED' ELSE 'IN_PROGRESS' END`,
@@ -211,19 +240,21 @@ export function validateDailyQuestInput(value: unknown) {
  return {title,description,objectiveType,cardType,targetValue,...reward,enabled:input.enabled!==false,schemaVersion,condition,platform};
 }
 /** One account lock serializes concurrent late-season assignment creation. */
-export async function ensureSeasonQuestAssignments(userId: string, executor: RewardExecutor = db, now=new Date()) {
- const seasons=await executor.select().from(questSeasonsTable);
- const definitions=await executor.select().from(dailyQuestDefinitionsTable).orderBy(asc(dailyQuestDefinitionsTable.id));
+export async function ensureSeasonQuestAssignments(userId: string, executor: RewardExecutor = db, now=new Date(), context?: QuestProcessingContext) {
+ const seasons=context?.seasons ?? await executor.select().from(questSeasonsTable);
+ const definitions=context ? [...context.definitions].sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0) : await executor.select().from(dailyQuestDefinitionsTable).orderBy(asc(dailyQuestDefinitionsTable.id));
  const assignments: DailyQuestAssignmentRecord[]=[];
  for (const season of seasons.filter(s=>s.status==="ACTIVE" && s.startsAt<=now && now<s.endsAt)) {
   const period="SEASON:"+season.id;
   const existing=await executor.select().from(dailyQuestAssignmentsTable).where(and(eq(dailyQuestAssignmentsTable.userId,userId),eq(dailyQuestAssignmentsTable.assignmentDate,period)));
   let slot=Math.max(-1,...existing.map(a=>a.slot))+1;
+  let inserted = false;
   for (const d of definitions.filter(d=>{const p=readPlatform(d);return d.enabled && !p.deletedAt && !p.archived && p.questType==="SEASON" && p.seasonId===season.id && (!p.activationAt || new Date(p.activationAt)<=now) && !existing.some(a=>a.definitionId===d.id);})) {
    const {id,createdAt,updatedAt,enabled,...snapshot}=d;
    await executor.insert(dailyQuestAssignmentsTable).values({...snapshot,id:randomUUID(),userId,definitionId:id,assignmentDate:period,slot:slot++,platform:readPlatform(d)}).onConflictDoNothing();
+   inserted = true;
   }
-  assignments.push(...await executor.select().from(dailyQuestAssignmentsTable).where(and(eq(dailyQuestAssignmentsTable.userId,userId),eq(dailyQuestAssignmentsTable.assignmentDate,period))).orderBy(asc(dailyQuestAssignmentsTable.slot)));
+  assignments.push(...(inserted ? await executor.select().from(dailyQuestAssignmentsTable).where(and(eq(dailyQuestAssignmentsTable.userId,userId),eq(dailyQuestAssignmentsTable.assignmentDate,period))).orderBy(asc(dailyQuestAssignmentsTable.slot)) : existing.sort((a,b)=>a.slot-b.slot)));
  }
  return assignments;
 }

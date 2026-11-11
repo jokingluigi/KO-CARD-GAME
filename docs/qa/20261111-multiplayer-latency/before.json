@@ -1,0 +1,37 @@
+{
+  "baseline": true,
+  "sqlDelayMs": 10,
+  "actions": [
+    {
+      "sqlQueries": 19,
+      "elapsedMs": 243.4,
+      "bytes": 275544
+    },
+    {
+      "sqlQueries": 19,
+      "elapsedMs": 228.2,
+      "bytes": 276476
+    },
+    {
+      "sqlQueries": 19,
+      "elapsedMs": 238.6,
+      "bytes": 277072
+    },
+    {
+      "sqlQueries": 19,
+      "elapsedMs": 231.6,
+      "bytes": 277987
+    },
+    {
+      "sqlQueries": 19,
+      "elapsedMs": 234.7,
+      "bytes": 278578
+    },
+    {
+      "sqlQueries": 19,
+      "elapsedMs": 233.9,
+      "bytes": 279493
+    }
+  ],
+  "batchQueries": 169
+}

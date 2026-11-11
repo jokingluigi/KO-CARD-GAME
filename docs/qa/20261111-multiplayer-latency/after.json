@@ -1,0 +1,43 @@
+{
+  "baseline": false,
+  "sqlDelayMs": 10,
+  "actions": [
+    {
+      "sqlQueries": 10,
+      "elapsedMs": 138.4,
+      "bytes": 275544
+    },
+    {
+      "sqlQueries": 10,
+      "elapsedMs": 130.3,
+      "bytes": 276476
+    },
+    {
+      "sqlQueries": 10,
+      "elapsedMs": 133.2,
+      "bytes": 277072
+    },
+    {
+      "sqlQueries": 10,
+      "elapsedMs": 132.1,
+      "bytes": 277987
+    },
+    {
+      "sqlQueries": 10,
+      "elapsedMs": 129.4,
+      "bytes": 278578
+    },
+    {
+      "sqlQueries": 10,
+      "elapsedMs": 143.1,
+      "bytes": 279493
+    }
+  ],
+  "batchQueries": 12,
+  "webSocket": {
+    "rawBytes": 275525,
+    "wireBytes": 53346,
+    "legacyClient": true,
+    "bothViews": true
+  }
+}
