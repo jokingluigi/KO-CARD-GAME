@@ -39,6 +39,8 @@ All write tests ran against isolated PGlite fixtures. Temporary artwork was serv
 
 Screenshots, browser results and logs are in this directory. Deployment verification is recorded separately after release.
 
-## Release status
+## Release status — completed after Render recovered
 
-Source commit: `42196db64c75259ff5f96de39af12fb09d13aa0a`, pushed fast-forward to the production source branch. Render authenticated management requests repeatedly timed out (Node proxy, cache-busted requests and curl), including read-only service/deployment-status calls. Public API and frontend still report the previous `0925584771f394b6c9694255c57aefdcfb32f8a0` revision. **Deployment is not complete or verified.** Frontend deployment was not started because the API must deploy first. No main merge or manual Production DB change. See `production-verification.json`.
+Source commit: `42196db64c75259ff5f96de39af12fb09d13aa0a`. Initial authenticated Render API calls timed out, and both public services stayed on the previous release. On retry after recovery, API deployment `dep-dbq6pfe1egvs73b20nt0` completed first, then frontend deployment `dep-dbq6qelbedkc73fbtr7g`. Both are live on the exact source commit.
+
+Read-only production checks confirmed both service revisions and pinned deployment configuration, the actual HTML entry module revision, the new uncached champion lookup through the frontend proxy, six wrestler skin options, and the delivered AI editor chunk containing shared-code import and skin controls. The first immediate post-deploy HTML check observed transition propagation; a subsequent check passed for the root and admin route. No production champion/deck mutation or match creation was used for release verification. No main merge or manual Production DB change. See `production-verification.json` and `production-feature-checks.json`.

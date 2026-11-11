@@ -1,26 +1,45 @@
 {
-  "checkedAtUTC": "2026-11-11T12:46:43.386Z",
-  "sourceCommit": "42196db64c75259ff5f96de39af12fb09d13aa0a",
-  "status": "deployment_not_verified_render_api_timeout",
-  "productionBranchPushed": true,
-  "publicServing": [
+  "checkedAtUTC": "2026-11-11T13:28:55.730Z",
+  "commit": "42196db64c75259ff5f96de39af12fb09d13aa0a",
+  "services": [
     {
-      "url": "https://ko-card-game.onrender.com/api/healthz",
-      "status": 200,
-      "body": {
-        "status": "ok",
-        "revision": "0925584771f394b6c9694255c57aefdcfb32f8a0"
-      }
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbq6pfe1egvs73b20nt0",
+      "status": "live",
+      "commit": "42196db64c75259ff5f96de39af12fb09d13aa0a",
+      "branch": "production",
+      "autoDeploy": "no"
     },
     {
-      "url": "https://ko-card-game-vr69.onrender.com/version.json",
-      "status": 200,
-      "body": {
-        "revision": "0925584771f394b6c9694255c57aefdcfb32f8a0",
-        "builtAtUTC": "2026-11-11T11:33:40.649Z"
-      }
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbq6qelbedkc73fbtr7g",
+      "status": "live",
+      "commit": "42196db64c75259ff5f96de39af12fb09d13aa0a",
+      "branch": "production",
+      "autoDeploy": "no"
     }
   ],
-  "productionDataWrites": 0,
+  "api": {
+    "status": "ok",
+    "revision": "42196db64c75259ff5f96de39af12fb09d13aa0a"
+  },
+  "front": {
+    "revision": "42196db64c75259ff5f96de39af12fb09d13aa0a",
+    "builtAtUTC": "2026-11-11T13:28:03.620Z"
+  },
+  "rootEntryModule": "/assets/index-D7VvBe_3.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-D7VvBe_3.js",
+  "latestHelperWordingPreserved": true,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "champion-save-ai-skins-and-shared-code",
+  "tagLabelsEndpointAvailable": true,
+  "publicCatalogChecksSkippedForMaintenance": false,
+  "productionMatchCreated": false,
   "mainMerged": false
 }
