@@ -38,3 +38,7 @@ All write tests ran against isolated PGlite fixtures. Temporary artwork was serv
 - `docs/qa/champion-save-ai-skins-20261111.test.mjs`
 
 Screenshots, browser results and logs are in this directory. Deployment verification is recorded separately after release.
+
+## Release status
+
+Source commit: `42196db64c75259ff5f96de39af12fb09d13aa0a`, pushed fast-forward to the production source branch. Render authenticated management requests repeatedly timed out (Node proxy, cache-busted requests and curl), including read-only service/deployment-status calls. Public API and frontend still report the previous `0925584771f394b6c9694255c57aefdcfb32f8a0` revision. **Deployment is not complete or verified.** Frontend deployment was not started because the API must deploy first. No main merge or manual Production DB change. See `production-verification.json`.
