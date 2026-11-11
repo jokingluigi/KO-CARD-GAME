@@ -1,0 +1,46 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "selectionDim": true,
+    "validHolesOnly": true,
+    "inputPassThrough": true,
+    "rotateAndCancel": true,
+    "actualSpell": true,
+    "actualChampionBuffAllThree": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "selectionDim": true,
+    "validHolesOnly": true,
+    "inputPassThrough": true,
+    "rotateAndCancel": true,
+    "actualSpell": true,
+    "actualChampionBuffAllThree": true,
+    "errors": []
+  },
+  {
+    "width": 740,
+    "height": 360,
+    "selectionDim": true,
+    "validHolesOnly": true,
+    "inputPassThrough": true,
+    "rotateAndCancel": true,
+    "actualSpell": true,
+    "actualChampionBuffAllThree": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "selectionDim": true,
+    "validHolesOnly": true,
+    "inputPassThrough": true,
+    "rotateAndCancel": true,
+    "actualSpell": true,
+    "actualChampionBuffAllThree": true,
+    "errors": []
+  }
+]

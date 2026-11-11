@@ -22,3 +22,7 @@ Before: `before/discovery-390.png`. After: `after/discovery-selected-390.png`, `
 - `docs/qa/balance-content-20261111-browser.mjs` (expanded visibility assertions)
 
 Release receipts are added after deployment. API changes are not required for this frontend-only patch.
+
+## Release completed
+
+Frontend source `318210674b5bd7f2b01b8b81dfbe3f61963b8286` is live, deployment `dep-dbq7ntrbc2fs7397e6n0`. Read-only verification confirmed the actual HTML entry revision and delivered battle module's new choice layers. The first immediate HTML check observed rollout propagation; the repeated check passed. API remains on the compatible existing `42196db64c75259ff5f96de39af12fb09d13aa0a` release because this fix changes only the frontend. Main was not merged and Production DB data was not changed. See `production-verification.json`.
