@@ -7,10 +7,12 @@ export const FittedCardRulesContext = createContext(true);
 /** Fit a card-face snippet; the detail dialog continues to render the full effect. */
 export function FittedCardRules({
   text,
+  fitFull = false,
   interactive,
   className,
 }: {
   text: string;
+  fitFull?: boolean;
   interactive: boolean;
   className: string;
 }) {
@@ -31,6 +33,7 @@ export function FittedCardRules({
     const measure = () => {
       frame = 0;
       if (disposed) return;
+      if (fitFull) element.style.fontSize = "";
       const style = getComputedStyle(element),
         parent = getComputedStyle(box);
       const line = parseFloat(style.lineHeight);
@@ -60,6 +63,23 @@ export function FittedCardRules({
       probe.style.width = `${width}px`;
       const limit = Math.max(1, Math.floor(height / line)) * line;
       probe.textContent = text;
+      if (fitFull) {
+        const base = parseFloat(style.fontSize),
+          ratio = line / base;
+        let chosen = base;
+        for (; chosen > 8; chosen -= 0.25) {
+          probe.style.fontSize = `${chosen}px`;
+          probe.style.lineHeight = `${chosen * ratio}px`;
+          if (probe.getBoundingClientRect().height <= height + 0.5) break;
+        }
+        element.style.fontSize = `${Math.max(8, chosen)}px`;
+        setCopy((previous) =>
+          previous.original === text && previous.value === text
+            ? previous
+            : { original: text, value: text },
+        );
+        return;
+      }
       let value = text;
       if (probe.getBoundingClientRect().height > limit + 0.5) {
         const characters = Array.from(text);
@@ -96,7 +116,7 @@ export function FittedCardRules({
       document.fonts.removeEventListener("loadingdone", schedule);
       probe.remove();
     };
-  }, [text, className]);
+  }, [text, className, fitFull]);
   return (
     <span
       ref={ref}

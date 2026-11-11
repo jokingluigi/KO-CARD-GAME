@@ -5,7 +5,7 @@ import { startTutorialFixture } from "./tutorial-rewards-fixture.mjs";
 import { chromium } from "./black-gold-playwright.mjs";
 const f = await startTutorialFixture(),
   browser = await chromium.launch(),
-  out = "docs/qa/20261111-upgrade-card-ui";
+  out = process.env.FRAME_QA_OUTPUT ?? "docs/qa/20261111-upgrade-card-ui";
 await mkdir(out, { recursive: true });
 const results = [];
 // Independently measured centers of transparent stat openings in bundled PNGs (% of source).

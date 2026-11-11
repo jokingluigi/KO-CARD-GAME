@@ -1,0 +1,134 @@
+[
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rarity": "NORMAL",
+    "actualFrame": "/assets/card-frame-normal.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rarity": "EPIC",
+    "actualFrame": "/assets/card-frame-normal.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rarity": "LEGENDARY",
+    "actualFrame": "/assets/card-frame-legendary.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "rarity": "CHAMPION",
+    "actualFrame": "/assets/card-frame-champion.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rarity": "NORMAL",
+    "actualFrame": "/assets/card-frame-normal.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rarity": "EPIC",
+    "actualFrame": "/assets/card-frame-normal.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rarity": "LEGENDARY",
+    "actualFrame": "/assets/card-frame-legendary.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "rarity": "CHAMPION",
+    "actualFrame": "/assets/card-frame-champion.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "rarity": "NORMAL",
+    "actualFrame": "/assets/card-frame-normal.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "rarity": "EPIC",
+    "actualFrame": "/assets/card-frame-normal.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "rarity": "LEGENDARY",
+    "actualFrame": "/assets/card-frame-legendary.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "rarity": "CHAMPION",
+    "actualFrame": "/assets/card-frame-champion.png",
+    "statCentersInOpenings": true,
+    "nameAndRulesAligned": true,
+    "offsetsFollowFrame": true
+  }
+]

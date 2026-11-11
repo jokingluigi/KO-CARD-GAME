@@ -1,3 +1,4 @@
+import {CardRulesText} from "./card-rules-text";
 import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {useTagLabels} from '@/lib/tag-labels';
 import {TagLabel} from './tag-label';
@@ -197,6 +198,8 @@ export function AdminCardManager({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageUploadToken, setImageUploadToken] = useState<string | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [imageUploadError,setImageUploadError]=useState("");
+  const selectedImageFile=useRef<File|null>(null);
   const [tagDraft, setTagDraft] = useState("");
   const [imageDisplaySettings, setImageDisplaySettings] = useState<ImageDisplaySettings>({
     ...DEFAULT_IMAGE_DISPLAY_SETTINGS,
@@ -304,6 +307,7 @@ export function AdminCardManager({
   }, [loadCards]);
 
   function openCreate() {
+    setImageUploadError("");selectedImageFile.current=null;
     setEditingCard(null);
     form.reset(EMPTY_CARD);
     setTagDraft("");
@@ -318,6 +322,7 @@ export function AdminCardManager({
   }
 
   function openEdit(card: CardRecord) {
+    setImageUploadError("");selectedImageFile.current=null;
     setEditingCard(card);
     form.reset({
       name: card.name,
@@ -357,6 +362,7 @@ export function AdminCardManager({
 
   async function submitCard(values: CardFormValues) {
     if(saveRequest.current || isUploadingImage)return;
+    if(imageUploadError){setError("이미지 업로드가 완료되지 않았습니다. 미리보기 아래에서 다시 업로드하거나 이미지를 제거해 주세요.");return;}
     setError("");
     let effectConfig: Record<string, unknown>;
     try {
@@ -453,6 +459,7 @@ export function AdminCardManager({
   }
 
   function removeImage() {
+    setImageUploadError("");selectedImageFile.current=null;
     void discardPendingImage();
     clearLocalPreview();
     setImageAssetId(null);
@@ -479,13 +486,14 @@ export function AdminCardManager({
       return;
     }
 
-    await discardPendingImage();
+    selectedImageFile.current=file;
     clearLocalPreview();
     const objectUrl = URL.createObjectURL(file);
     setLocalPreviewUrl(objectUrl);
-    setError("");
+    setError("");setImageUploadError("");
     setIsUploadingImage(true);
     try {
+      await discardPendingImage();
       const requestResponse = await fetch(`${adminApiBase}/cards/images/upload-url`, {
         method: "POST",
         credentials: "include",
@@ -498,7 +506,7 @@ export function AdminCardManager({
       });
       if (requestResponse.status === 401) {
         onUnauthorized();
-        return;
+        throw new Error("다시 로그인한 뒤 이미지를 업로드해 주세요.");
       }
       if (!requestResponse.ok) {
         throw new Error(await responseMessage(requestResponse));
@@ -526,7 +534,7 @@ export function AdminCardManager({
       });
       if (completeResponse.status === 401) {
         onUnauthorized();
-        return;
+        throw new Error("다시 로그인한 뒤 이미지 업로드를 완료해 주세요.");
       }
       if (!completeResponse.ok) {
         throw new Error(await responseMessage(completeResponse));
@@ -541,7 +549,7 @@ export function AdminCardManager({
       setImageUploadToken(asset.imageUploadToken);
       setMessage("이미지를 업로드했습니다. 카드 저장을 눌러 적용하세요.");
     } catch (uploadError) {
-      clearLocalPreview();
+      setImageUploadError(uploadError instanceof Error ? uploadError.message : "이미지 업로드에 실패했습니다.");
       setError(
         uploadError instanceof Error
           ? uploadError.message
@@ -953,6 +961,8 @@ export function AdminCardManager({
                   imageDisplaySettings={imageDisplaySettings}
                   onImagePositionChange={(position) => setImageDisplaySettings((current) => ({ ...current, ...position }))}
                />
+               {imageUploadError&&<div role="alert" className="mt-3 rounded border border-red-800 p-3 text-sm text-red-200"><p>{imageUploadError} 선택한 이미지의 로컬 미리보기는 유지됩니다.</p><button type="button" className="mt-2 min-h-11 rounded border px-3" disabled={isUploadingImage} onClick={()=>{if(selectedImageFile.current)void uploadImage(selectedImageFile.current);}}>이미지 다시 업로드</button></div>}
+               <section className="mt-4 rounded border border-neutral-700 p-3" aria-label="효과 설명 전체"><h5 className="mb-2 text-xs text-amber-200">효과 설명 전체</h5><p className="whitespace-pre-wrap break-words text-sm leading-7 text-neutral-100"><CardRulesText text={preview.text||"효과 없음"}/></p></section>
                <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-600">미리보기 전용 카드입니다.<br />게임 액션은 실행되지 않습니다.</p>
              </aside>
              </div>

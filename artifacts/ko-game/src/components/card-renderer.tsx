@@ -1,3 +1,5 @@
+import {FittedCardName} from "./fitted-card-name";
+import {frameWindowsFromImage,type DetectedFrameWindows} from "@/lib/card-frame-windows";
 import {cardSilenceProtection} from '../lib/card-protection-display';
 import {SILENCE_IMMUNITY_DESCRIPTION} from './silence-immunity-notice';
 import {getCardDefinition} from '../game/cards/test-cards';
@@ -266,8 +268,9 @@ export function CardRenderer({
     : frameOverride
       ? { ...remoteFrame, ...frameOverride }
       : remoteFrame;
-  const frameLayout = frameLayouts[layoutRarity];
-  const frameScale = frameSettings?.frameScale ?? frameLayout.scale;
+  const baseFrameLayout = frameLayouts[layoutRarity];
+  const [detectedFrame,setDetectedFrame]=useState<{src:string;windows:DetectedFrameWindows}|null>(null);
+  const frameScale = frameSettings?.frameScale ?? baseFrameLayout.scale;
   const frameOffsetX = frameSettings?.frameOffsetX ?? 0;
   const frameOffsetY = frameSettings?.frameOffsetY ?? 0;
   const bundledFrameUrl = frameAssetUrl(layoutRarity);
@@ -276,6 +279,11 @@ export function CardRenderer({
     setFrameFailed(false);
   }, [frameSettings?.frameUrl, normalizedCardType, normalizedRarity]);
   const frameUrl = frameFailed ? bundledFrameUrl : frameSettings?.frameUrl ?? bundledFrameUrl;
+  const windows=frameSettings?.frameUrl && detectedFrame?.src===frameUrl ? detectedFrame.windows : null;
+  const frameLayout=windows?{...baseFrameLayout,...windows}:baseFrameLayout;
+  const artCutout=windows?.opaqueArtWindow;
+  const cutout=artCutout?`polygon(evenodd,0% 0%,100% 0%,100% 100%,0% 100%,0% 0%,${artCutout.left}% ${artCutout.top}%,${100-artCutout.right}% ${artCutout.top}%,${100-artCutout.right}% ${100-artCutout.bottom}%,${artCutout.left}% ${100-artCutout.bottom}%,${artCutout.left}% ${artCutout.top}%)`:undefined;
+
   const silenceProtection=cardSilenceProtection({rarity,isToken,isChampionToken,isSilenceImmune},cardId?getCardDefinition(cardId):undefined);
   const keywordBadges: string[] = [
     ...(silenceProtection.immune?["SILENCE_IMMUNE"]:[]),
@@ -300,6 +308,7 @@ export function CardRenderer({
     MULTI_STRIKE: "연타",
   };
   const fitRules = useContext(FittedCardRulesContext);
+  const fullRules = size === "admin" || size === "detail";
   const nameClass =
     fitRules && size === "detail" ? "text-[16px] leading-[1.1]" :
     name.length > 22
@@ -347,6 +356,7 @@ export function CardRenderer({
     <div
       className={`ko-card-depth relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
+      data-frame-layout={windows?"registered":"default"}
       data-card-definition={cardId}
       onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
       data-card-highlight={highlight}
@@ -380,11 +390,13 @@ export function CardRenderer({
         {frameUrl && (
           <img
             src={frameUrl}
+            onLoad={e=>{if(e.currentTarget.currentSrc&&e.currentTarget.currentSrc!==new URL(frameUrl,document.baseURI).href)return;if(frameSettings?.frameUrl&&!frameFailed){const windows=frameWindowsFromImage(e.currentTarget);if(windows)setDetectedFrame({src:frameUrl,windows});}}}
             alt=""
             aria-hidden="true"
             className="ko-card-frame pointer-events-none absolute inset-0 z-10 h-full w-full"
             style={{
               transform: `translate(${frameOffsetX}%, ${frameOffsetY}%) scale(${frameScale})`,
+              clipPath:cutout,
               transformOrigin: "center",
               filter:
                 highlight === "selected"
@@ -411,9 +423,7 @@ export function CardRenderer({
               color: !frameSettings?.frameUrl && layoutRarity === "LEGENDARY" ? "#21180a" : "#ffffff",
             }}
           >
-            <span className={`line-clamp-2 w-full break-words font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${nameClass}`}>
-              {name || "카드 이름"}
-            </span>
+            <FittedCardName text={name || "카드 이름"} className={`font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${nameClass}`}/>
           </div>
         )}
 
@@ -432,7 +442,9 @@ export function CardRenderer({
 
         {showRules && (
           <div data-card-rules
-            className={`pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] text-center text-neutral-100 ${fitRules ? "py-0" : "py-[1%]"}`}
+            className={`absolute z-20 flex justify-center px-[5%] text-center text-neutral-100 ${fullRules ? "pointer-events-auto items-start overflow-y-auto" : "pointer-events-none items-center overflow-hidden"} ${fitRules ? "py-0" : "py-[1%]"}`}
+            onPointerDown={fullRules ? e=>e.stopPropagation() : undefined}
+            onClick={fullRules ? e=>e.stopPropagation() : undefined}
             style={{
               left: `${scalePercent(frameLayout.rules.left, frameScale, frameOffsetX)}%`,
               right: `${scaleInset(frameLayout.rules.right, frameScale, frameOffsetX)}%`,
@@ -442,7 +454,7 @@ export function CardRenderer({
             }}
           >
             {fitRules ? <FittedCardRules
-              text={displayRulesText || "효과 없음"} interactive={size !== "board" && highlight !== "target"}
+              text={displayRulesText || "효과 없음"} fitFull={fullRules} interactive={size !== "board" && highlight !== "target"}
               className={`w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${size === "detail" ? "text-[16px]" : size === "admin" ? "text-[10px]" : "text-[8px]"} leading-tight`}
             /> : <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
               <CardRulesText text={displayRulesText || "효과 없음"} interactive={size !== "board" && highlight !== "target"}/>

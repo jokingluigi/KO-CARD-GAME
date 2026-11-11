@@ -1,0 +1,20 @@
+✔ maintenance blocks guests and ordinary sessions with explicit 503 while admin recovery stays available (1.902482ms)
+✔ maintenance store failure reaches error handling and does not grant access (0.318925ms)
+✔ maintenance shares only the verified user within the same request (0.303311ms)
+✔ maintenance keeps public card image reads available without opening writes or gameplay (0.44298ms)
+✔ actual registered PNG windows: WRESTLER-CHAMPION (67.277985ms)
+✔ actual registered PNG windows: WRESTLER-NORMAL (52.920211ms)
+✔ actual registered PNG windows: WRESTLER-EPIC (35.129934ms)
+✔ actual registered PNG windows: WRESTLER-LEGENDARY (39.492581ms)
+✔ actual registered PNG windows: TECHNIQUE-NORMAL (32.584119ms)
+✔ actual registered PNG windows: TECHNIQUE-EPIC (30.881797ms)
+✔ unrecognizable and malformed images do not invent a layout (0.582737ms)
+✔ an opaque black artwork opening can be cut out without changing the nameplate or cost (27.543743ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1116.236121

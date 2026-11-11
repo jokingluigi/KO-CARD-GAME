@@ -1,0 +1,50 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "newImagePreviewDecoded": true,
+    "failedUploadRetainsLocalImage": true,
+    "failedUploadCannotSave": true,
+    "retryAndRealSave": true,
+    "savedImageRestoredOnReentry": true,
+    "registeredFrameWindows": true,
+    "registeredCostAndNameAligned": true,
+    "fullCardRules": true,
+    "longRulesScrollableWithoutEllipsis": true,
+    "titleWithinActualNameplate": true,
+    "fullReadableText": true,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "newImagePreviewDecoded": true,
+    "failedUploadRetainsLocalImage": true,
+    "failedUploadCannotSave": true,
+    "retryAndRealSave": true,
+    "savedImageRestoredOnReentry": true,
+    "registeredFrameWindows": true,
+    "registeredCostAndNameAligned": true,
+    "fullCardRules": true,
+    "longRulesScrollableWithoutEllipsis": true,
+    "titleWithinActualNameplate": true,
+    "fullReadableText": true,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 1000,
+    "newImagePreviewDecoded": true,
+    "failedUploadRetainsLocalImage": true,
+    "failedUploadCannotSave": true,
+    "retryAndRealSave": true,
+    "savedImageRestoredOnReentry": true,
+    "registeredFrameWindows": true,
+    "registeredCostAndNameAligned": true,
+    "fullCardRules": true,
+    "longRulesScrollableWithoutEllipsis": true,
+    "titleWithinActualNameplate": true,
+    "fullReadableText": true,
+    "errors": []
+  }
+]
