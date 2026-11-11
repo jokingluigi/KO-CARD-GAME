@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-11-11T23:36:38.500Z",
+  "expected": {
+    "api": "90d80ae6f5f6d53be32d358e2ab28618ec0ee2f8",
+    "front": "a9cf8ab289047aaf913b7e18aebe3b86f07c03cf"
+  },
+  "observations": [
+    {
+      "role": "api",
+      "commit": "90d80ae6f5f6d53be32d358e2ab28618ec0ee2f8",
+      "deployId": "dep-dbqfjtijnfac738i6ih0",
+      "status": "live"
+    },
+    {
+      "role": "front",
+      "commit": "a9cf8ab289047aaf913b7e18aebe3b86f07c03cf",
+      "deployId": "dep-dbqfn6mc6qcc73f6k78g",
+      "status": "live"
+    },
+    {
+      "champion": "판도라",
+      "version": 44,
+      "abilityText": "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다."
+    }
+  ],
+  "serving": {
+    "paths": [
+      {
+        "path": "/",
+        "entry": "/assets/index-BwlD8I-J.js"
+      },
+      {
+        "path": "/admin/champions",
+        "entry": "/assets/index-BwlD8I-J.js"
+      },
+      {
+        "path": "/online/match/release-check",
+        "entry": "/assets/index-BwlD8I-J.js"
+      }
+    ],
+    "onlineChunk": "assets/online-match-DHOjcnBA.js"
+  },
+  "productionCombatActionsCreated": 0,
+  "productionMultiplayerFrameRateMeasured": false
+}

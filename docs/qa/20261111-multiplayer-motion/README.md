@@ -47,4 +47,4 @@ KO_LATENCY_RENDER_PROBE=1 KO_MOTION_SCENARIOS=1 FINISHER_QA_OUTPUT=/tmp/ko-motio
 
 Local artifacts: `/workspace/ko-multiplayer-motion-20261111/mobile.webm`, `concurrent-summons-390.png`, `attack-motion-390.png`. They show local Chromium online-page verification, not a physical phone or production match.
 
-Production serving verification is recorded in `production-release.json` after release.
+Production serving verification completed at **2026-11-11 23:36 UTC**. API `90d80ae6f5f6d53be32d358e2ab28618ec0ee2f8` and frontend `a9cf8ab289047aaf913b7e18aebe3b86f07c03cf` are live. Verified both pinned build configurations, API health revision, Pandora's version-44 public text, actual main/admin/online route entry revisions, and the new online-match JS chunk. Receipt: `production-release.json`. No production match was created or played during this read-only release check.
