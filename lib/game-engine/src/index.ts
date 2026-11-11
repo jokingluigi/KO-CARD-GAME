@@ -1,4 +1,4 @@
-export {hasPendingProgram} from '../../../artifacts/ko-game/src/game/engine/program';
+export {hasPendingProgram,hasPendingFinisherCast} from '../../../artifacts/ko-game/src/game/engine/program';
 /**
  * Server-safe adapter for the existing KO rules engine.
  *
@@ -139,4 +139,4 @@ export {hasPendingHandAddition} from '../../../artifacts/ko-game/src/game/engine
 
 export {normalizeHelperHealing} from '../../../artifacts/ko-game/src/game/cards/helper-healing';
 
-export { validFinisherChoices } from '../../../artifacts/ko-game/src/game/champions/finisher-preparation';
+export { validFinisherChoices, validFinisherReward } from '../../../artifacts/ko-game/src/game/champions/finisher-config';

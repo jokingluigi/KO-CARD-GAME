@@ -356,6 +356,7 @@ export function ChampionPreparationEditor({
                 <h5>
                   <span>2</span>준비 완료 시 적용할 효과
                 </h5>
+                {q.finisher ? <p>‘피니셔 연결’ 탭에 연결한 주문이 완료 보상입니다. 손패 획득 또는 즉시 발동 방식도 해당 탭에서 설정합니다.</p> : <>
                 <p>
                   이미 설정된 완료 효과와 기존 강화 능력을 편집합니다. 새 피니셔
                   카드를 임의로 생성하지 않습니다.
@@ -365,6 +366,7 @@ export function ChampionPreparationEditor({
                   <summary>기존 강화 고유 능력 설정</summary>
                   <div className="admin-preparation-fields">{ability}</div>
                 </details>
+                </>}
                 <details className="admin-preparation-tools">
                   <summary>특수 각성 템플릿 · 기존 연쇄 설정</summary>
                   {Boolean(q.awakening) && (

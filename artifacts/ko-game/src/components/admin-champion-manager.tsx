@@ -1,3 +1,4 @@
+import {FinisherLinkEditor} from "./finisher-link-editor";
 import {ChampionPreparationEditor} from './champion-preparation-editor';
 import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
@@ -31,6 +32,7 @@ type TokenCard = {
   imageUrl: string | null;
   status: Status;
   isChampionToken: boolean;
+  rarity?: string;
    isCraftable?: boolean;
    isStarterGrant?: boolean;
 };
@@ -119,7 +121,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [effectDrafts,setEffectDrafts] = useState<Partial<Record<EffectConfigKey,string>>>({});
   const effectDraftsRef = useRef<Partial<Record<EffectConfigKey,string>>>({});
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
-  const [tokenSearch, setTokenSearch] = useState("");
   const basicPortraitInputRef = useRef<HTMLInputElement>(null);
   const portraitInputRef = useRef<HTMLInputElement>(null);
   const [basicPortraitLocalUrl, setBasicPortraitLocalUrl] = useState<string | null>(null);
@@ -331,19 +332,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setBusy(false);
     }
   }
-  const visibleTokenCards = tokenCards.filter((card) =>
-    !tokenSearch.trim() || card.name.toLowerCase().includes(tokenSearch.trim().toLowerCase()),
-  );
-  const selectedTokenCard = tokenCards.find((card) => card.id === form.championTokenDefinitionId);
    function editor(champion?: Champion) {
      effectDraftsRef.current={};setEffectDrafts({});
-
-
-
-
-
-
-       setEditing(champion ?? null); setTokenSearch(""); setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
+       setEditing(champion ?? null);  setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
        name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
        imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null,
        imageDisplayMode: champion.imageDisplayMode ?? DEFAULT_IMAGE_DISPLAY_SETTINGS.imageDisplayMode,
@@ -595,7 +586,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         </section>}
       </details>
       <div className="grid gap-4 md:grid-cols-2">
-        <AdminEditorSections panels={[{"id":"admin-champion-manager-0","label":"기본 정보"},{"id":"admin-champion-manager-1","label":"고유 · 시작 능력"},{"id":"admin-champion-manager-2","label":"피니셔 준비"},{"id":"admin-champion-manager-3","label":"챔피언 토큰"},{"id":"admin-champion-manager-4","label":"대사"},{"id":"admin-champion-manager-5","label":"이미지"}]}>{[<><label>이름<input name="championName" className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
+        <AdminEditorSections panels={[{"id":"admin-champion-manager-0","label":"기본 정보"},{"id":"admin-champion-manager-1","label":"고유 · 시작 능력"},{"id":"admin-champion-manager-2","label":"피니셔 준비"},{"id":"admin-champion-manager-3","label":"피니셔 연결"},{"id":"admin-champion-manager-4","label":"대사"},{"id":"admin-champion-manager-5","label":"이미지"}]}>{[<><label>이름<input name="championName" className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
 <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
 <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
 <label className="flex items-center gap-2 text-sm">
@@ -653,53 +644,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          })}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
 {form.questCondition?.awakening!=null&&<button type="button" className="mt-3 rounded border px-3 py-2" onClick={()=>{const next={...formRef.current.questCondition};delete next.awakening;update('questCondition',next);}}>일반 준비 조건으로 전환</button>}</>}
  /></>,
-<><div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
-           <div className="mb-2 text-xs font-bold text-neutral-400">연결할 챔피언 토큰</div>
-           <input
-             className={input}
-             value={tokenSearch}
-             onChange={e=>setTokenSearch(e.target.value)}
-             placeholder="Champion Token 카드 검색"
-             aria-label="Champion Token 카드 검색"
-           />
-           <select
-             className={`${input} mt-2`}
-             value={form.championTokenDefinitionId ?? ""}
-             onChange={e=>update("championTokenDefinitionId", e.target.value || null)}
-             aria-label="연결할 챔피언 토큰"
-           >
-             <option value="">연결하지 않음</option>
-             {visibleTokenCards.map((card) => (
-               <option key={card.id} value={card.id}>
-                 {card.name} · {card.cost}G · {card.attack}/{card.health} · {card.status}
-               </option>
-             ))}
-           </select>
-           {selectedTokenCard ? (
-             <div className="mt-3 flex items-center gap-3 rounded border border-primary/30 bg-black/30 p-3">
-               {selectedTokenCard.imageUrl
-                 ? <img src={selectedTokenCard.imageUrl} alt="" className="h-16 w-12 rounded object-cover" />
-                 : <div className="h-16 w-12 rounded bg-neutral-800" />}
-               <div className="min-w-0 text-xs">
-                 <div className="font-black text-primary">{selectedTokenCard.name}</div>
-                 <div className="mt-1 text-neutral-300">{selectedTokenCard.cost}G · {selectedTokenCard.attack}/{selectedTokenCard.health}</div>
-                 <div className="mt-1 text-neutral-500">Champion Token · {selectedTokenCard.status}</div>
-                 <div className="mt-2 text-neutral-400">카드 이름·스탯·효과·이미지는 선수 카드 관리자에서 편집합니다.</div>
-               </div>
-             </div>
-           ) : form.championTokenDefinitionId ? (
-             <div className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-200">
-               연결된 Champion Token 카드를 찾을 수 없습니다. 삭제되었거나 Champion Token이 아닌 카드일 수 있습니다.
-             </div>
-           ) : (
-             <div className="mt-2 text-xs text-neutral-500">Card Admin에서 `챔피언 토큰`으로 만든 카드만 선택할 수 있습니다.</div>
-           )}
-           {selectedTokenCard?.status === "DISABLED" && (
-             <div className="mt-2 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs text-amber-200">
-               이 카드는 비활성 상태입니다. Champion을 공개하려면 Card Admin에서 먼저 공개 가능한 상태로 바꾸세요.
-             </div>
-           )}
-         </div></>,
+<FinisherLinkEditor condition={form.questCondition} cards={tokenCards} hasQuest={form.hasQuest} legacyId={form.championTokenDefinitionId} onChange={value=>update('questCondition',value)}/>,
 <><label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
 <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
 <div className="md:col-span-2 border border-neutral-700 p-4"><strong>대전 스프라이트</strong><p className="my-2 text-sm text-neutral-400">등록·배치·표정 반응은 큰 전용 작업 화면에서 관리합니다.</p>{editing?<a className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200" href={`/admin/battle-sprites?champion=${encodeURIComponent(editing.id)}`}>스프라이트 전용 관리 열기</a>:<p>챔피언을 먼저 저장해 주세요.</p>}</div>

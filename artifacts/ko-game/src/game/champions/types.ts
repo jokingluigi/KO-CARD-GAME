@@ -24,7 +24,11 @@ export interface ChampionAbility {
   effects: ChampionEffect[];
 }
 
+export type FinisherDelivery = 'HAND' | 'CAST';
+export type FinisherReward = {cardDefinitionId:string;delivery?:FinisherDelivery};
+
 export type ChampionQuestReward =
+  | ({type:'FINISHER'} & FinisherReward)
   | {
       type: 'UPGRADE_ABILITY';
        effects?: Array<Extract<ChampionEffect, { type: 'STRUCTURED' | 'SCRIPT' }>>;
@@ -37,6 +41,7 @@ export type ChampionQuestReward =
     };
 
 export interface FinisherChoice {
+  delivery?: FinisherDelivery;
   id: string;
   name: string;
   description: string;
@@ -45,6 +50,7 @@ export interface FinisherChoice {
 }
 
 export interface ChampionQuest {
+  finisher?: FinisherReward;
   finisherChoices?: FinisherChoice[];
   awakening?: import('./awakening-types').AwakeningQuestConfig;
   goldSpent?: boolean;
@@ -168,5 +174,5 @@ export function championVoiceLine(
 
 /** Per-match replacement wins over legacy preparation-completion upgrades. */
 export function currentChampionAbility(champion: ChampionState | null | undefined): ChampionAbility | null {
- return champion ? champion.abilityOverride ?? (champion.questCompleted && !champion.quest?.finisherChoices?.length && champion.upgradedAbility ? champion.upgradedAbility : champion.ability) : null;
+ return champion ? champion.abilityOverride ?? (champion.questCompleted && !champion.quest?.finisherChoices?.length && !champion.quest?.finisher && champion.upgradedAbility ? champion.upgradedAbility : champion.ability) : null;
 }

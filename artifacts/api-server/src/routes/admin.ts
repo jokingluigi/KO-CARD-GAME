@@ -1,4 +1,4 @@
-import { validFinisherChoices } from '@workspace/game-engine';
+import { validFinisherChoices, validFinisherReward } from '@workspace/game-engine';
 import {removeHomeMenuImage} from "../lib/home-menu-media";
 import {verifyCatalogAssets} from "./cosmetics";
 import {parseBattleSprite} from "@workspace/cosmetics";
@@ -203,6 +203,8 @@ function parseChampionInput(value: unknown, existing: Record<string, unknown> = 
   result.isCraftable = input.isCraftable !== false;
   result.imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]) ? input.imageDisplayMode : 'COVER';
   for (const key of ['abilityEffects','gameStartAbilityEffects','questCondition','questRewardEffects','upgradedAbilityEffects','presentationLines']) result[key] = input[key] ?? (key === 'abilityEffects' || key === 'presentationLines' ? {} : null);
+  const finisher=(result.questCondition as Record<string,unknown>|null)?.finisher;
+  if(finisher!==undefined&&!validFinisherReward(finisher))return null;
   const choices=(result.questCondition as Record<string,unknown>|null)?.finisherChoices;
   if (choices !== undefined && !validFinisherChoices(choices)) return null;
   const sprite=(result.presentationLines as Record<string,unknown>|null)?.BATTLE_SPRITE;
@@ -255,9 +257,11 @@ function containsStructuredAction(value: unknown, action: string): boolean {
 
 async function validateFinisherReferences(condition: Record<string,unknown>|null, published=false): Promise<string|null> {
   const options=condition?.finisherChoices;
-  if(options===undefined)return null;
-  if(!validFinisherChoices(options))return '피니셔 선택지 설정이 올바르지 않습니다.';
-  for(const option of options){
+  const single=condition?.finisher;
+  if(single!==undefined&&!validFinisherReward(single))return '피니셔 연결 설정이 올바르지 않습니다.';
+  if(options!==undefined&&!validFinisherChoices(options))return '피니셔 선택지 설정이 올바르지 않습니다.';
+  const rewards=[...(options===undefined&&single&&validFinisherReward(single)?[{...single,name:"준비 완료 피니셔"}]:[]),...(Array.isArray(options)?options:[])];
+  for(const option of rewards){
     const [card]=await db.select({id:cardsTable.id,cardType:cardsTable.cardType,rarity:cardsTable.rarity,isChampionToken:cardsTable.isChampionToken,status:cardsTable.status}).from(cardsTable).where(eq(cardsTable.id,option.cardDefinitionId)).limit(1);
     if(!card||card.cardType!=='TECHNIQUE'||card.rarity!=='CHAMPION'||!card.isChampionToken||card.status==='DISABLED'||published&&card.status!=='PUBLISHED')return `피니셔 '${option.name}'에는 ${published?'공개된 ':''}챔피언 등급 토큰 주문 카드를 연결하세요.`;
   }

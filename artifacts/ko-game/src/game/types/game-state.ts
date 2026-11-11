@@ -79,6 +79,7 @@ export interface PlayerState {
 }
 
 export interface GameState {
+  pendingFinisherCasts?: Array<{playerId:string;card:CardInstance}>;
   consumedNewCardEventKeys?: string[];
   overhealByTurn?: Record<string, number>;
   ownTurnHealing?: Record<string, {champion?: boolean; wrestler?: boolean}>;
@@ -125,9 +126,11 @@ export interface GameState {
   waitingForHandDiscardPlayerId?: string;
   waitingForFinisherPlayerId?: string;
   waitingForProgramPlayerId?: string;
+  waitingForFinisherCastPlayerId?: string;
   targetingState?: {
     finisherChoice?: { optionIds: string[] };
     programPaid?: boolean;
+    finisherAutoCast?: boolean;
     handAddition?: { playerId: string; cards: import('../engine/hand-addition').HandArrival[]; completion?: import('../engine/hand-addition').HandCompletion };
     /** Display-only identity of this serialized effect processing unit. */
     presentationResolutionId?: string;

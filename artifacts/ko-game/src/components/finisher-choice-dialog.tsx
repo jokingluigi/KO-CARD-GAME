@@ -71,6 +71,7 @@ export function FinisherChoiceDialog({
                   {option.name}
                 </strong>
                 <span className="block text-xs">{option.description}</span>
+                <span className="mt-1 block text-xs text-amber-200">{option.delivery==='CAST'?'즉시 발동 · 기본 비용 없음':'손패에 추가'}</span>
                 <span className="mt-2 block whitespace-pre-line text-sm">
                   {card?.rulesText}
                 </span>

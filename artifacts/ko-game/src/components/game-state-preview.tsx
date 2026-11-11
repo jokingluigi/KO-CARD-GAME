@@ -1,7 +1,7 @@
 import {FinisherProgress} from './finisher-progress';
 import {FinisherChoiceDialog} from './finisher-choice-dialog';
 import { SpellUseButton } from './spell-use-button';
-import { hasPendingProgram } from '../game/engine/program';
+import { hasPendingProgram, hasPendingFinisherCast } from '../game/engine/program';
 import { ChampionProtection } from './champion-protection';
 import { isChampionProtectedByToken } from '@/game/engine/direct-champion';
 import { HandOverflowDialog } from './hand-overflow-dialog';
@@ -306,7 +306,7 @@ export function GameStatePreview({
       if (tutorialStep !== null) setTutorialStep(null);
       else if (openGraveyardPlayerId) setOpenGraveyardPlayerId(null);
       else if (settingsOpen) { setSettingsOpen(false); setSurrenderConfirming(false); }
-      else if (state.targetingState?.active) {if(!hasPendingProgram(state)&&!state.targetingState.finisherChoice&&!state.targetingState.handAddition&&!state.targetingState.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState.cancelable))onCancelEffectTargeting();}
+      else if (state.targetingState?.active) {if((!hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState?.cancelable))&&!state.targetingState.finisherChoice&&!state.targetingState.handAddition&&!state.targetingState.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState.cancelable))onCancelEffectTargeting();}
       else if (selectedCardId) onSelectCard(selectedCardId);
       else if (selectedAttackerId) onSelectAttacker(selectedAttackerId);
     };
@@ -1140,6 +1140,7 @@ export function GameStatePreview({
       <p role="status" aria-live="polite" aria-atomic="true" className="ko-battle-event-reader" data-testid="battle-event-caption">{eventCaption}</p>
       <OverdrawReveal state={state}/>
       {state.status==='IN_PROGRESS' && state.targetingState?.finisherChoice && state.targetingState.playerId===me.id && <FinisherChoiceDialog key={state.gameId+':'+state.targetingState.sourceInstanceId} state={state} playerId={me.id} onConfirm={onEffectTarget}/>}
+      {state.status==='IN_PROGRESS' && state.waitingForFinisherCastPlayerId && state.waitingForFinisherCastPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 피니셔 효과의 대상을 선택하고 있어요.</div>}
       {state.status==='IN_PROGRESS' && state.waitingForFinisherPlayerId && state.waitingForFinisherPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 피니셔를 선택하고 있어요.</div>}
       {state.status==='IN_PROGRESS' && state.targetingState?.handAddition && state.targetingState.playerId===me.id && <HandOverflowDialog key={state.gameId+':'+state.targetingState.handAddition.cards[0]?.card.instanceId} state={state} playerId={me.id} onConfirm={onEffectTarget}/>}
       {state.status==='IN_PROGRESS' && state.waitingForProgramPlayerId && state.waitingForProgramPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 업그레이드 효과의 대상을 선택하고 있어요.</div>}
@@ -1157,7 +1158,7 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-effect-targeting={Boolean(effectTargeting&&state.targetingState?.playerId===me.id)} data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if(!hasPendingProgram(state)&&!state.targetingState!.finisherChoice&&!state.targetingState!.handAddition&&!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
+      <div data-effect-targeting={Boolean(effectTargeting&&state.targetingState?.playerId===me.id)} data-hand-selection={Boolean(selectedCardId)} data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} onClick={event=>{const target=event.target as Element;if(target!==event.currentTarget&&!target.matches('.ko-opponent-board-row,.ko-player-board-row,.ko-board-cards'))return;if(effectTargeting){if((!hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState?.cancelable))&&!state.targetingState!.finisherChoice&&!state.targetingState!.handAddition&&!state.targetingState!.championRewardReplacement&&(!hasCommittedFusion(state.targetingState)||state.targetingState!.cancelable))onCancelEffectTargeting();}else if(selectedCardId)onSelectCard(selectedCardId);else if(selectedAttackerId)onSelectAttacker(selectedAttackerId);}} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage ${blackGold ? "ko-champion-arena" : ""} relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,
@@ -1334,10 +1335,10 @@ export function GameStatePreview({
                  {state.targetingState!.fusion?.stage === 'CHOOSE' ? '합체 대상 선택 · 취소하면 카드와 골드 복원' : state.targetingState!.championRewardReplacement ? '준비 완료 토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요' : <>대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})</>}
                  {state.targetingState!.championRewardReplacement && <span className="block">손패가 가득 차면 기존 손패 1장을 골라 버린 뒤 받습니다.</span>}
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
-                 {!hasPendingProgram(state) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
+                 {(!hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState?.cancelable)) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
                </div>
              )}
-             {!blackGold && effectTargeting && !hasPendingProgram(state) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
+             {!blackGold && effectTargeting && (!hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState?.cancelable)) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
                <button type="button" onClick={onCancelEffectTargeting} className="ko-mobile-target-cancel hidden rounded border border-amber-600 text-amber-200">취소</button>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">
@@ -1418,7 +1419,7 @@ export function GameStatePreview({
               <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
               {!tutorialGuide&&contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
-                : effectTargeting ? !hasPendingProgram(state) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
+                : effectTargeting ? (!hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState?.cancelable)) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
                 : selectedCardId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectCard(selectedCardId);}}>선택 취소</button>
                 : selectedAttackerId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectAttacker(selectedAttackerId);}}>선택 취소</button> : !tutorialGuide&&!controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
             </div>}

@@ -1,4 +1,4 @@
-import {hasPendingProgram,hasPendingHandAddition} from '@workspace/game-engine';
+import {hasPendingProgram,hasPendingFinisherCast,hasPendingHandAddition} from '@workspace/game-engine';
 import {ownedImageEmote} from '../lib/owned-image-emote';
 import {withFrozenLaunchDeck,type FrozenLaunchDeck} from "../lib/frozen-launch-deck";
 import {CosmeticEmoteChannel} from '../lib/cosmetic-emotes';
@@ -697,7 +697,7 @@ async function commitTransition(
 
 async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<void> {
   if (runtime.state.status === "FINISHED" || !runtime.state.activePlayerId) return;
-  if (hasPendingHandAddition(runtime.state) || hasPendingProgram(runtime.state) || runtime.state.targetingState?.finisherChoice) return;
+  if (hasPendingHandAddition(runtime.state) || hasPendingProgram(runtime.state) || hasPendingFinisherCast(runtime.state) || runtime.state.targetingState?.finisherChoice) return;
   if (runtime.state.openingMulligan) {
     let next = runtime.state;
     for (const player of next.players) {
@@ -1256,7 +1256,7 @@ export async function applyMatchAction(
     }
 
     if (
-      actionIsNotSurrender(payload) && !hasPendingHandAddition(runtime.state) && !hasPendingProgram(runtime.state) && !runtime.state.targetingState?.finisherChoice &&
+      actionIsNotSurrender(payload) && !hasPendingHandAddition(runtime.state) && !hasPendingProgram(runtime.state) && !hasPendingFinisherCast(runtime.state) && !runtime.state.targetingState?.finisherChoice &&
       runtime.turnDeadlineAt !== null &&
       Date.now() >= runtime.turnDeadlineAt &&
       runtime.state.activePlayerId === playerId

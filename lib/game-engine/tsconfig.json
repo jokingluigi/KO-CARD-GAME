@@ -40,6 +40,7 @@
     "../../artifacts/ko-game/src/game/cards/published-cards.ts",
     "../../artifacts/ko-game/src/game/champions/quests.ts",
     "../../artifacts/ko-game/src/game/champions/finisher-preparation.ts",
+    "../../artifacts/ko-game/src/game/champions/finisher-config.ts",
     "../../artifacts/ko-game/src/game/champions/awakening*.ts",
     "../../artifacts/ko-game/src/game/champions/test-champions.ts",
     "../../artifacts/ko-game/src/game/champions/types.ts",

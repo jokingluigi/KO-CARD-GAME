@@ -85,9 +85,24 @@ export function FinisherOptionsEditor({
                 />
               </label>
               <label className="block">
-                획득할 챔피언 토큰 주문
+                완료 시 처리
+                <select
+                  aria-label={`피니셔 ${index + 1} 완료 처리`}
+                  className="min-h-11 w-full bg-black/40 p-2"
+                  value={option.delivery ?? "HAND"}
+                  onChange={(e) =>
+                    set(index, { delivery: e.target.value as "HAND" | "CAST" })
+                  }
+                >
+                  <option value="HAND">손패에 추가</option>
+                  <option value="CAST">즉시 발동 (기본 비용 없음)</option>
+                </select>
+              </label>
+              <label className="block">
+                연결할 피니셔
                 <select
                   className="min-h-11 w-full bg-black/40 p-2"
+                  aria-label={`피니셔 ${index + 1} 카드`}
                   value={option.cardDefinitionId}
                   onChange={(e) =>
                     set(index, { cardDefinitionId: e.target.value })

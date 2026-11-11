@@ -170,3 +170,8 @@ test("구조화된 Champion Token 보상은 현재 챔피언 연결을 사용하
     }],
   });
 });
+
+test('administrator finisher survives legacy champion reward compatibility normalization',()=>{
+ const record={id:'delivery-calavera',name:'챔피언 라 칼라베라',description:'',imageAssetId:null,imageUrl:null,maxHealth:25,abilityName:'기본',abilityCost:1,abilityText:'',abilityEffects:{effects:[]},hasQuest:true,questName:'준비',questText:'아군 리타이어',questCondition:{event:'CARD_RETIRED',required:10,finisher:{cardDefinitionId:'linked-finisher',delivery:'CAST' as const}},questProgressRequired:10,questRewardText:'기존 강화',questRewardEffects:null,upgradedAbilityName:null,upgradedAbilityCost:null,upgradedAbilityText:null,upgradedAbilityEffects:null,championTokenDefinitionId:null,status:'DRAFT' as const,version:1};
+ const definition=championRecordToDefinition(record);assert.equal(definition.quest?.trackedEvent,'CARD_RETIRED');assert.equal(definition.quest?.requiredProgress,10);assert.deepEqual(definition.quest?.finisher,record.questCondition.finisher);assert.equal(definition.quest?.reward.type,'FINISHER');
+});

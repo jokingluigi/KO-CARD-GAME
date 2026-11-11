@@ -1,0 +1,36 @@
+{
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844,
+      "saveReenter": true,
+      "handAndCast": true,
+      "unlinkLegacyRestored": true,
+      "independentOptions": true,
+      "preservedConditions": true,
+      "errors": []
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "saveReenter": true,
+      "handAndCast": true,
+      "unlinkLegacyRestored": true,
+      "independentOptions": true,
+      "preservedConditions": true,
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "saveReenter": true,
+      "handAndCast": true,
+      "unlinkLegacyRestored": true,
+      "independentOptions": true,
+      "preservedConditions": true,
+      "errors": []
+    }
+  ],
+  "invalidConfigRejections": 3,
+  "productionWrites": 0
+}

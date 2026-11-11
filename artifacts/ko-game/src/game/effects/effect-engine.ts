@@ -1,6 +1,6 @@
 import { UPGRADE_GOLD_COST } from "@workspace/effect-registry";
 import {validProgramValues} from '@workspace/effect-registry';
-import {hasPendingProgram} from '../engine/program';
+import {hasPendingProgram,hasPendingFinisherCast} from '../engine/program';
 import { validAbilityReplacement } from '@workspace/effect-registry';
 import { addCardsToHand, resumeHandAddition, selectHandDiscard } from '../engine/hand-addition';
 import {championTokenSilenceImmune} from '../cards/silence-immunity';
@@ -2026,7 +2026,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
-  if (hasPendingProgram(state) || pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
+  if (hasPendingProgram(state) || (hasPendingFinisherCast(state) && !pending.cancelable) || pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
   if (hasCommittedFusion(pending) && !pending.cancelable) return state;
   if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };

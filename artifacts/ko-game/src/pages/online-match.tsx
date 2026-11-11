@@ -608,7 +608,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   }, [awaitingAuthoritativeMatch, matchId, state?.status]);
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
   const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
-  const canAct = Boolean(isConnected && (!state?.waitingForFinisherPlayerId || state.waitingForFinisherPlayerId===me?.id) && (!state?.waitingForProgramPlayerId || state.waitingForProgramPlayerId===me?.id) && (!state?.waitingForHandDiscardPlayerId || state.waitingForHandDiscardPlayerId===me?.id) && introFinished && (state?.targetingState?.active ? state.targetingState.playerId === me?.id : isMyTurn) && !state?.openingMulligan && !pendingAction && !presentationBusy);
+  const canAct = Boolean(isConnected && (!state?.waitingForFinisherCastPlayerId || state.waitingForFinisherCastPlayerId===me?.id) && (!state?.waitingForFinisherPlayerId || state.waitingForFinisherPlayerId===me?.id) && (!state?.waitingForProgramPlayerId || state.waitingForProgramPlayerId===me?.id) && (!state?.waitingForHandDiscardPlayerId || state.waitingForHandDiscardPlayerId===me?.id) && introFinished && (state?.targetingState?.active ? state.targetingState.playerId === me?.id : isMyTurn) && !state?.openingMulligan && !pendingAction && !presentationBusy);
   const secondsRemaining = turnDeadlineAt === null
     ? TURN_TIME_LIMIT_SECONDS
     : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));

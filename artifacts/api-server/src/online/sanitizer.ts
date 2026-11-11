@@ -1,4 +1,4 @@
-import {hasPendingProgram} from '@workspace/game-engine';
+import {hasPendingProgram,hasPendingFinisherCast} from '@workspace/game-engine';
 import type { GameEvent, GameState } from "@workspace/game-engine";
 
 function hiddenCardCount(cards: unknown[]): { hidden: true; count: number } {
@@ -99,6 +99,7 @@ function sanitizeTargetingState(
 export function sanitizeGameStateForViewer(state: GameState, viewerId: string): unknown {
   const {usageObservation:_usageObservation,...withoutUsageObservation}=state as GameState & {usageObservation?:unknown};
   const {
+    pendingFinisherCasts: _pendingFinisherCasts,
     randomSeed: _randomSeed,
     championQuestEventCursorByPlayer: _questEventCursors,
     championQuestProcessedEventIdentitiesByPlayer: _processedQuestEventIdentities,
@@ -123,6 +124,7 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     : undefined;
   return {
     ...publicState,
+    waitingForFinisherCastPlayerId: hasPendingFinisherCast(state) ? state.targetingState?.playerId : undefined,
     waitingForFinisherPlayerId: state.targetingState?.finisherChoice ? state.targetingState.playerId : undefined,
     waitingForHandDiscardPlayerId: state.targetingState?.handAddition ? state.targetingState.playerId : undefined,
     waitingForProgramPlayerId: hasPendingProgram(state) ? state.targetingState?.playerId : undefined,

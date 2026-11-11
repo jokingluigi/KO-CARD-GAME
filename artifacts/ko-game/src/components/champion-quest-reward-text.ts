@@ -2,6 +2,8 @@ import type { ChampionState } from '@/game';
 
 /** The quest inspector and completion banner share the same reward copy. */
 export function championQuestRewardText(champion: ChampionState): string {
+  const finisher=champion.quest?.finisher;
+  if(finisher&&!champion.quest?.finisherChoices?.length)return finisher.delivery==='CAST'?'연결한 피니셔를 기본 골드 비용 없이 즉시 발동합니다.':'연결한 피니셔를 손패에 추가합니다. 손패가 가득 차면 버릴 카드를 선택합니다.';
   const reward = champion.quest?.reward;
   if (!reward) return '보상 없음';
   if (champion.quest?.rewardText) return champion.quest.rewardText;

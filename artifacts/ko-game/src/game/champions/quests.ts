@@ -1,4 +1,4 @@
-import { preparationCompletionReward, processFinisherChoices } from './finisher-preparation';
+import { preparationCompletionReward, processFinisherChoices, grantPreparedFinisher } from './finisher-preparation';
 import { evaluateChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { towerQuestProgressBonus, towerQuestComplete, refreshTowerAuras } from '../tower/relics';
 import type { GameEvent } from '../events/types';
@@ -202,7 +202,8 @@ function processChampionQuestEventPass(
         : resolvedState.latestQuestCompletedChampionId,
     };
     if (questCompleted) resolvedState = towerQuestComplete(resolvedState, originalPlayer.id);
-    if (questCompleted && quest.awakening) resolvedState = beginAwakeningSequence(resolvedState, originalPlayer.id);
+    if (questCompleted && quest.awakening && !quest.finisher) resolvedState = beginAwakeningSequence(resolvedState, originalPlayer.id);
+    if(questCompleted && completionReward.type==='FINISHER')resolvedState=grantPreparedFinisher(resolvedState,originalPlayer.id,completionReward,quest.id);
     if (questCompleted && completionReward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
       resolvedState = tryDirectDeployChampionToken(
         resolvedState,
@@ -291,6 +292,9 @@ export function processChampionQuestEvents(previousState: GameState, nextState: 
     resolved = processChampionQuestEventPass(previousState, resolved);
     if (resolved.events.length === before.events.length) break;
   }
-  return processFinisherChoices(previousState, resolved);
+  const prepared=processFinisherChoices(previousState,resolved);
+  // Automatic casts are committed effects; resolve any preparation they themselves completed now.
+  if(prepared.events.slice(resolved.events.length).some(e=>e.reason==='FINISHER_AUTO_CAST'))return processChampionQuestEvents(resolved,prepared);
+  return prepared;
 }
 import {interceptImmediateBonusGold} from '../engine/reviewed-field-rules';

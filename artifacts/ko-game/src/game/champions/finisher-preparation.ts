@@ -1,8 +1,12 @@
+export { validFinisherChoices, validFinisherReward } from "./finisher-config";
+import { evaluateChampionQuestCondition } from "../../../../../lib/game-engine/src/champion-quest-conditions";
 import {
-  evaluateChampionQuestCondition,
-  validChampionQuestCondition,
-} from "../../../../../lib/game-engine/src/champion-quest-conditions";
-import type { ChampionQuest, FinisherChoice } from "./types";
+  resolvePendingEffects,
+  resolveQueuedEffectsForPlayedTechnique,
+} from "../effects/effect-engine";
+import { resolveCommittedTechnique } from "../engine/resolve-technique";
+import { resetCardForGraveyard } from "../cards/zone-state";
+import type { ChampionQuest, FinisherChoice, FinisherReward } from "./types";
 import type { GameState } from "../types/game-state";
 import { generateCardInstance } from "../cards/generation";
 import { addCardsToHand } from "../engine/hand-addition";
@@ -23,50 +27,117 @@ export function deferFinisherChoiceResolution<T>(run: () => T): T {
 export function preparationCompletionReward(
   quest: ChampionQuest,
 ): ChampionQuest["reward"] {
-  return quest.reward;
+  return quest.finisher
+    ? { type: "FINISHER", ...quest.finisher }
+    : quest.reward;
 }
 
-export function validFinisherChoices(
-  value: unknown,
-): value is FinisherChoice[] {
-  if (!Array.isArray(value) || value.length < 2 || value.length > 8)
-    return false;
-  const ids = new Set<string>();
-  return value.every((entry) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry))
-      return false;
-    if (
-      Object.keys(entry).some(
-        (key) =>
-          ![
-            "id",
-            "name",
-            "description",
-            "condition",
-            "cardDefinitionId",
-          ].includes(key),
-      )
-    )
-      return false;
-    if (
-      typeof entry.id !== "string" ||
-      !/^[a-zA-Z0-9_-]{1,80}$/.test(entry.id) ||
-      ids.has(entry.id)
-    )
-      return false;
-    ids.add(entry.id);
-    return (
-      typeof entry.name === "string" &&
-      entry.name.trim().length > 0 &&
-      entry.name.length <= 120 &&
-      typeof entry.description === "string" &&
-      entry.description.length <= 2000 &&
-      typeof entry.cardDefinitionId === "string" &&
-      entry.cardDefinitionId.length > 0 &&
-      entry.cardDefinitionId.length <= 120 &&
-      validChampionQuestCondition(entry.condition)
-    );
+/** Deterministic once-only arrival; instant casts are durable and wait behind committed selections. */
+export function grantPreparedFinisher(
+  state: GameState,
+  playerId: string,
+  reward: FinisherReward,
+  key: string,
+): GameState {
+  const definition = state.cardPool?.find(
+    (d) => d.id === reward.cardDefinitionId,
+  );
+  if (
+    !definition ||
+    definition.cardType !== "TECHNIQUE" ||
+    definition.rarity !== "CHAMPION" ||
+    !definition.isChampionToken
+  )
+    return state;
+  const card = generateCardInstance(definition, {
+    instanceId: `${state.gameId}:finisher:${playerId}:${key}`,
+    isGenerated: true,
   });
+  if (reward.delivery === "CAST")
+    return {
+      ...state,
+      pendingFinisherCasts: [
+        ...(state.pendingFinisherCasts ?? []),
+        { playerId, card },
+      ],
+    };
+  return addCardsToHand(state, playerId, [{ card }]);
+}
+
+function resolvePreparedFinisherCasts(state: GameState): GameState {
+  let next = state;
+  while (
+    next.status === "IN_PROGRESS" &&
+    !next.targetingState?.active &&
+    !next.pendingComboAttack &&
+    !next.openingMulligan &&
+    next.pendingFinisherCasts?.length
+  ) {
+    const [pending, ...rest] = next.pendingFinisherCasts;
+    next = { ...next, pendingFinisherCasts: rest.length ? rest : undefined };
+    const owner = next.players.find((p) => p.id === pending.playerId);
+    if (!owner || owner.health <= 0) continue;
+    next = {
+      ...next,
+      players: next.players.map((p) =>
+        p.id === owner.id
+          ? {
+              ...p,
+              graveyard: [...p.graveyard, resetCardForGraveyard(pending.card)],
+            }
+          : p,
+      ),
+      events: [
+        ...next.events,
+        {
+          type: "CARD_PLAYED",
+          playerId: owner.id,
+          cardInstanceId: pending.card.instanceId,
+          cardDefinitionId: pending.card.definitionId,
+          cardType: "TECHNIQUE",
+          source: { type: "SYSTEM" },
+          target: { type: "CARD", cardInstanceId: pending.card.instanceId },
+          reason: "FINISHER_AUTO_CAST",
+          tags: pending.card.tags ? [...pending.card.tags] : [],
+        },
+      ],
+    };
+    next = {
+      ...next,
+      targetingState: {
+        active: true,
+        finisherAutoCast: true,
+        playerId: owner.id,
+        sourceInstanceId: pending.card.instanceId,
+        sourceCard: pending.card,
+        effects: [],
+        effectIndex: 0,
+        selectedTargetIds: [],
+        lastTargetIds: [],
+        validTargetIds: [],
+        minTargets: 0,
+        maxTargets: 0,
+        mandatory: true,
+        cancelable: false,
+      },
+    };
+    next = resolveQueuedEffectsForPlayedTechnique(
+      next,
+      owner.id,
+      pending.card.instanceId,
+    );
+    const source =
+      next.players
+        .find((p) => p.id === owner.id)
+        ?.graveyard.find((c) => c.instanceId === pending.card.instanceId) ??
+      pending.card;
+    next = resolveCommittedTechnique(next, owner.id, source, false);
+    if (next.targetingState?.finisherAutoCast)
+      next = resolvePendingEffects(next);
+  }
+  return next.status !== "IN_PROGRESS" && next.pendingFinisherCasts
+    ? { ...next, pendingFinisherCasts: undefined }
+    : next;
 }
 
 export function finisherTargetId(optionId: string): string {
@@ -136,12 +207,7 @@ export function selectPreparedFinisher(
       },
     ],
   };
-  // Same non-draw arrival path, including mandatory discard and reconnect, as every generated card.
-  const card = generateCardInstance(definition, {
-    instanceId: `${state.gameId}:finisher:${playerId}:${option.id}`,
-    isGenerated: true,
-  });
-  return addCardsToHand(next, playerId, [{ card }]);
+  return grantPreparedFinisher(next, playerId, option, option.id);
 }
 
 /** Evaluate all alternatives against one completed effect/action before deciding the winner. */
@@ -267,5 +333,5 @@ export function processFinisherChoices(
       };
     }
   }
-  return next;
+  return resolvePreparedFinisherCasts(next);
 }

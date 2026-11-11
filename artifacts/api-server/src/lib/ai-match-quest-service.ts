@@ -229,6 +229,16 @@ export async function completeAIMatchQuestProgress(input: {
     ...userDeck.cardDefinitionIds,
     ...aiDeck.cardDefinitionIds,
   ]);
+  const selectedChampionIds = new Set([
+    userDeck.championDefinitionId,
+    aiDeck.championDefinitionId,
+  ]);
+  championRecords
+    .filter((champion) => selectedChampionIds.has(champion.id))
+    .forEach((champion) => {
+      collectCardReferences(champion.questCondition, requiredCardIds);
+      if (champion.championTokenDefinitionId) requiredCardIds.add(champion.championTokenDefinitionId);
+    });
   // Follow generated-card and token references transitively, including DRAFT
   // definitions that the selected AI deck is allowed to use.
   const visitedReferences = new Set<string>();
@@ -244,15 +254,6 @@ export async function completeAIMatchQuestProgress(input: {
     }
   }
   expandNamedCardReferences(cardRecords, requiredCardIds);
-  const selectedChampionIds = new Set([
-    userDeck.championDefinitionId,
-    aiDeck.championDefinitionId,
-  ]);
-  championRecords
-    .filter((champion) => selectedChampionIds.has(champion.id))
-    .forEach((champion) => {
-      if (champion.championTokenDefinitionId) requiredCardIds.add(champion.championTokenDefinitionId);
-    });
 
   const cardDefinitions = cardRecords
     .filter((record) => record.status === "PUBLISHED" || requiredCardIds.has(record.id))

@@ -1,8 +1,9 @@
+import {resolveCommittedTechnique} from "./resolve-technique";
 import { canPlayConditionalCard } from './keyword-rules';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
-import { hasMandatoryPlayerChoice, resolveQueuedEffectsForPlayedTechnique, resolveRegisteredRuleListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { hasMandatoryPlayerChoice, resolveQueuedEffectsForPlayedTechnique } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 import { resetCardForGraveyard } from '../cards/zone-state';
@@ -51,22 +52,5 @@ export function playTechniqueFromHand(
       source: { type: 'PLAYER', playerId }, target: { type: 'CARD', cardInstanceId }, reason: 'PLAY_FROM_HAND',
       tags: card.tags ? [...card.tags] : [] }],
   };
-  // Technique-cast abilities are resolved before the technique's own effects.
-  const listenerResolved = resolveRegisteredRuleListeners(
-    paid,
-    'TECHNIQUE_PLAYED',
-    playerId,
-    cardInstanceId,
-    'TECHNIQUE',
-  );
-  const spellListeners = (queuedCard.baseCost ?? queuedCard.currentCost) >= 1
-    ? queuedPlayer.board.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-      .reduce((next, source) => resolveTriggeredAbilities(next, playerId, source, 'TECHNIQUE_CAST', {
-        playedFromHand: true, baseCost: card.baseCost ?? card.currentCost,
-      }), listenerResolved)
-    : listenerResolved;
-  const resolved = body.length
-    ? resolveTriggeredAbilities(spellListeners, playerId, { ...queuedCard, abilities: [{ trigger: 'ACTIVE', effects: body }] }, 'ACTIVE')
-    : spellListeners;
-  return actionSuccess(processChampionQuestEvents(state, resolved));
+  return actionSuccess(processChampionQuestEvents(state, resolveCommittedTechnique(paid,playerId,queuedCard,true)));
 }
