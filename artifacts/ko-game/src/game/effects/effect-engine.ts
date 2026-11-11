@@ -1,3 +1,4 @@
+import { effectCanPinfall } from '../engine/pinfall';
 import { UPGRADE_GOLD_COST } from "@workspace/effect-registry";
 import {validProgramValues} from '@workspace/effect-registry';
 import {applyBalanceEffect,upgradeGoldCost,exactZeroDamage,applyGeneratedTagAuras,reviewedUpgradeValues,balanceUpgradeEligible} from '../engine/balance-effects';
@@ -3320,6 +3321,7 @@ function applyEffectInternal(
         );
         const attribution: EventAttribution = effect.values?.destroyOnLethal
           ? {...damageAttribution, retireAsDestroyTargetId: current.instanceId} : damageAttribution;
+        const pinfallEligible = effectCanPinfall(sourceCard, attribution);
         const preventedDamage = (preparedState.preventedDamageTargetIds?.includes(current.instanceId) ?? false) || (hasEntryDefense(preparedCurrent, preparedState.turn));
         const clearDamageMarker = (stateWithMarker: GameState): GameState => ({
           ...stateWithMarker,
@@ -3362,7 +3364,7 @@ function applyEffectInternal(
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
               : player),
-            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, pinfallEligible, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
           };
           const damagedCard = damagedState.players.find((player) => player.id === targetOwner)?.board
             .find((card) => card?.instanceId === current.instanceId) ?? current;
@@ -3400,7 +3402,7 @@ function applyEffectInternal(
           // Make damage causality available before SELF_DAMAGED can summon and settle deaths.
           events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId,
             source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId },
-            reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
+            reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, pinfallEligible, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
         };
         const selfDamaged = resolveTriggeredAbilities(
           lethalDamagedState,
@@ -3449,7 +3451,7 @@ function applyEffectInternal(
              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
-            { type: 'CARD_RETIRED', cardDefinitionId: current.definitionId, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', exactZero:health===0&&effectiveDamage>0, sourceContext: attribution },
+            { type: 'CARD_RETIRED', cardDefinitionId: current.definitionId, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', exactZero:health===0&&effectiveDamage>0&&pinfallEligible, sourceContext: attribution },
           ],
         };
         const removedWanted = protectedState.players.find(player => player.id === targetOwner)?.board.find(card => card?.instanceId === current.instanceId);

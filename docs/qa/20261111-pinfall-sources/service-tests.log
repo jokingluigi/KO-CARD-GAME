@@ -1,0 +1,24 @@
+[22:16:16.646] INFO (256239): request completed
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 61
+REJECT cancel INVALID_ACTION 현재 상태에서 허용되지 않는 action입니다.
+✔ actual catalog PvP Pandora selection survives persisted reconnect, hides opponent targets and resolves exactly once (3957.243115ms)
+✔ actual catalog PvP Mimic candidates are private, persisted and mandatory; chosen finisher is synchronized once (123.963265ms)
+✔ PvP PLAIN_SPELL pinfall eligibility, preparation and both views persist after reconnect (89.867131ms)
+✔ PvP PLAIN_CARD pinfall eligibility, preparation and both views persist after reconnect (82.022398ms)
+✔ PvP PIN_CARD pinfall eligibility, preparation and both views persist after reconnect (82.565386ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6237.03985

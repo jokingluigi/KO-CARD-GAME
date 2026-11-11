@@ -74,7 +74,10 @@ export interface GameEvent {
   target?: EventSubject;
   reason?: string;
   amount?: number;
+  /** A retirement caused by eligible pinfall damage landing at exactly zero health. */
   exactZero?:boolean;
+  /** Effect-source eligibility captured at the actual damage application. */
+  pinfallEligible?:boolean;
   excessDamage?: number;
   boardSlot?: 0 | 1 | 2 | 3;
   tags?: string[];

@@ -1,3 +1,4 @@
+import { damageCanPinfall } from './pinfall';
 import { canEnterTowerField } from "../tower/relics";
 import { MAX_HAND_SIZE } from "../rules/constants";
 import type { GameState } from "../types/game-state";
@@ -927,7 +928,7 @@ export function applyBalanceEffect(
     }
   }
 }
-/** Raw post-mitigation health is retained on damage events; retirement must actually happen. */
+/** Pinfall requires exact post-mitigation damage and an explicitly allowed damage source. */
 export function exactZeroDamage(state: GameState, card: CardInstance): boolean {
   if (card.currentHealth !== 0) return false;
   const last = [...state.events]
@@ -936,13 +937,15 @@ export function exactZeroDamage(state: GameState, card: CardInstance): boolean {
       (e) =>
         e.target?.type === "CARD" &&
         e.target.cardInstanceId === card.instanceId &&
-        (e.type === "DAMAGE_DEALT" || e.type === "STAT_CHANGED"),
+        (e.type === "DAMAGE_DEALT" || (e.type === "STAT_CHANGED" &&
+          ["health", "currentHealth", "maxHealth"].includes(e.stat ?? ""))),
     );
   return Boolean(
     last?.type === "DAMAGE_DEALT" &&
     Number(last.amount) > 0 &&
     last.after === 0 &&
-    Number(last.before) > 0,
+    Number(last.before) > 0 &&
+    damageCanPinfall(state, last),
   );
 }
 /** Creation in hand/deck is separate from field entry; a generated summon is buffed by entry only. */

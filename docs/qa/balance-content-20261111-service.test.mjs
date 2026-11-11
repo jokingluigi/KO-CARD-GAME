@@ -138,7 +138,7 @@ async function fixture(mode = "CAST", full = false) {
       : []),
   ];
   s.cardPool = [...cards, unit];
-  if (mode === "PANDORA") {
+  if (["PANDORA", "PLAIN_SPELL", "PLAIN_CARD", "PIN_CARD"].includes(mode)) {
     const c = champions.find((c) => c.name === "챔피언 판도라");
     s.players[0].champion = {
       ...c,
@@ -157,6 +157,56 @@ async function fixture(mode = "CAST", full = false) {
         boardSlot: i,
       }))
       .concat([null, null]);
+    if (mode !== "PANDORA") {
+      const technique = mode === "PLAIN_SPELL";
+      const source = {
+        ...unit,
+        id: "pinfall-service-source-" + mode,
+        cardType: technique ? "TECHNIQUE" : "WRESTLER",
+        abilities: [
+          {
+            trigger: technique ? "ACTIVE" : "ENTER_FIELD",
+            effects: [
+              {
+                type: "STRUCTURED",
+                action: "DAMAGE",
+                target: {
+                  zone: "BOARD",
+                  owner: "ENEMY",
+                  selection: "ALL",
+                  count: 4,
+                },
+                values: { amount: 1 },
+              },
+            ],
+          },
+          ...(mode === "PIN_CARD"
+            ? [
+                {
+                  trigger: "EXACT_ZERO_DAMAGE",
+                  effects: [
+                    {
+                      type: "STRUCTURED",
+                      action: "BUFF",
+                      target: {
+                        zone: "BOARD",
+                        owner: "SELF",
+                        selection: "SELF",
+                        count: 1,
+                      },
+                      values: { attack: 3, health: 0 },
+                    },
+                  ],
+                },
+              ]
+            : []),
+        ],
+      };
+      s.cardPool.push(source);
+      s.players[0].hand = [
+        generateCardInstance(source, { instanceId: "pinfall-source" }),
+      ];
+    }
   } else {
     s.players[0].hand = [
       generateCardInstance(
@@ -304,3 +354,50 @@ test("actual catalog PvP Mimic candidates are private, persisted and mandatory; 
     1,
   );
 });
+
+for (const mode of ["PLAIN_SPELL", "PLAIN_CARD", "PIN_CARD"]) {
+  test(`PvP ${mode} pinfall eligibility, preparation and both views persist after reconnect`, async () => {
+    let r = await fixture(mode);
+    const result = await act(
+      r,
+      "source-play",
+      mode === "PLAIN_SPELL"
+        ? { type: "PLAY_TECHNIQUE", cardInstanceId: "pinfall-source" }
+        : {
+            type: "PLAY_WRESTLER",
+            cardInstanceId: "pinfall-source",
+            boardSlot: 0,
+          },
+    );
+    assert.ok(result.ok, result.message);
+    const expected = mode === "PIN_CARD" ? 2 : 0;
+    assert.equal(r.state.players[1].graveyard.length, 2);
+    assert.equal(
+      r.state.players[0].champion.questConditionCounts?.root ?? 0,
+      expected,
+    );
+    if (mode !== "PLAIN_SPELL")
+      assert.equal(
+        r.state.players[0].board[0].currentAttack,
+        mode === "PIN_CARD" ? 8 : 2,
+      );
+    const matchId = r.matchId;
+    service.cleanupMatchRuntime(matchId);
+    r = await service.getRuntime(matchId);
+    assert.equal(
+      r.state.players[0].champion.questConditionCounts?.root ?? 0,
+      expected,
+    );
+    for (const viewer of ["tutorial-user", "delivery-opponent"]) {
+      const snapshot = service.snapshotMessage(r, viewer).state;
+      assert.equal(
+        snapshot.players[0].champion.questConditionCounts?.root ?? 0,
+        expected,
+      );
+      const retirements = snapshot.events.filter(
+        (e) => e.type === "CARD_RETIRED",
+      );
+      assert.equal(retirements.filter((e) => e.exactZero).length, expected);
+    }
+  });
+}
