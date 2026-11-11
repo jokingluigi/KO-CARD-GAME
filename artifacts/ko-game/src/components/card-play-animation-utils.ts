@@ -23,6 +23,7 @@ export function techniqueStageGeometry(source: CardAnimationRect, viewport: {wid
 export type CardPlayAnimationState =
   | {
       kind: "WRESTLER";
+      batchId?: string;
       card: CardInstance;
       geometry: CardPlayGeometry & { target: CardAnimationRect };
       impactLevel: LandingImpactLevel;
@@ -30,6 +31,7 @@ export type CardPlayAnimationState =
     }
   | {
       kind: "TECHNIQUE";
+      batchId?: string;
       card: CardInstance;
       geometry: CardPlayGeometry;
       playerId?: string;

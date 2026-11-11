@@ -161,6 +161,7 @@ export function CardPlayAnimation({
 
   return (
     <div
+      data-play-instance={animation.card.instanceId}
       data-play-landed={landed ? "true" : "false"}
       aria-hidden={animation.kind === "WRESTLER"}
       className={`card-play-animation ${animation.kind==='WRESTLER'?'ko-summon-motion':''} ${animation.kind==='WRESTLER'&&(animation.card.currentCost>=6||definition?.rarity==='CHAMPION'||definition?.rarity==='LEGENDARY')?'ko-summon-heavy':''} ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}

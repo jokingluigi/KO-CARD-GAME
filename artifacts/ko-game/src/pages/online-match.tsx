@@ -2,6 +2,9 @@ import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import { currentChampionAbility } from '@/game/champions/types';
 import {launchDeckEditor} from "@/lib/launch-deck";
 import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
+import {useDeadlineReached} from "@/lib/use-deadline-reached";
+import {BattleTurnClock} from "@/components/battle-turn-clock";
+import {preloadExternalVfx} from "@/components/battle-vfx";
 import {watchActionAcknowledgement} from "@/lib/action-recovery";
 import {confirmedCounterDamage} from "@/components/attack-animation-utils";
 import { prepareIntroPortraits } from '@/game/match-assets';
@@ -124,6 +127,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const [abandoningMatch, setAbandoningMatch] = useState(false);
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [state, setState] = useState<GameState | null>(null);
+  const [presentationEpoch, setPresentationEpoch] = useState(0);
   const [recap, setRecap] = useState<MatchRecap | null>(null);
   const [version, setVersion] = useState<number | null>(null);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
@@ -141,7 +145,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const [introFirstSpeaker, setIntroFirstSpeaker] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [introSkipped, setIntroSkipped] = useState(false);
   const [serverOffset, setServerOffset] = useState(0);
-  const [clock, setClock] = useState(() => Date.now());
   const [connectionStates, setConnectionStates] = useState<Record<"PLAYER_ONE" | "PLAYER_TWO", ConnectionStatus> | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sessionReplaced, setSessionReplaced] = useState(false);
@@ -179,8 +182,17 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
 
   const noticeTimerRef = useRef<number | null>(null);
   const noticeTokenRef = useRef(0);
-  const playAnimationTimerRef = useRef<number | null>(null);
   const activeBgmKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Prepare the fixed hit textures before an actual attack needs them.
+    if (window.requestIdleCallback) {
+      const idle = window.requestIdleCallback(preloadExternalVfx, {timeout: 1500});
+      return () => window.cancelIdleCallback(idle);
+    }
+    const timer = window.setTimeout(preloadExternalVfx, 500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,10 +213,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     };
   }, []);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setClock(Date.now()), 250);
-    return () => window.clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const unsubscribeConnection = client.onConnectionState((next) => {
@@ -260,6 +268,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         const nextSeat = message.type === "MATCH_SNAPSHOT" ? message.seat : seatRef.current;
         if (!nextSeat || !matchId) return;
         if (message.type === "MATCH_SNAPSHOT" || message.type === "RESYNC_REQUIRED") {
+          // Full restoration cancels old local flights and feedback queues.
+          setPresentationEpoch(epoch => epoch + 1);
           lastEventSequence.current = -1;
           setPlayAnimation(null);
           setAttackAnimation(null);
@@ -420,7 +430,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       audioManager.stopGameAudio();
       pendingOpponentAttacksRef.current = [];
       if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-      if (playAnimationTimerRef.current !== null) window.clearTimeout(playAnimationTimerRef.current);
     };
   }, [client, matchId]);
 
@@ -609,11 +618,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     return () => window.clearTimeout(timer);
   }, [awaitingAuthoritativeMatch, matchId, state?.status]);
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
-  const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
+  const introFinished = useDeadlineReached(gameplayStartsAt, serverOffset);
   const canAct = Boolean(isConnected && (!state?.waitingForFinisherCastPlayerId || state.waitingForFinisherCastPlayerId===me?.id) && (!state?.waitingForFinisherPlayerId || state.waitingForFinisherPlayerId===me?.id) && (!state?.waitingForProgramPlayerId || state.waitingForProgramPlayerId===me?.id) && (!state?.waitingForHandDiscardPlayerId || state.waitingForHandDiscardPlayerId===me?.id) && introFinished && (state?.targetingState?.active ? state.targetingState.playerId === me?.id : isMyTurn) && !state?.openingMulligan && !pendingAction && !presentationBusy);
-  const secondsRemaining = turnDeadlineAt === null
-    ? TURN_TIME_LIMIT_SECONDS
-    : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
 
   function prepareOwnAttackAnimation(previous: GameState | null, next: GameState) {
     const pending = pendingAttackRef.current;
@@ -936,7 +942,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
 
   return (
     <>
-      {gameplayStartsAt !== null && clock + serverOffset < gameplayStartsAt && !introSkipped && (
+      {gameplayStartsAt !== null && !introFinished && !introSkipped && (
         <MatchIntroOverlay
           self={{
             displayName: selfPublicPlayer?.displayName ?? "Player",
@@ -955,7 +961,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           onSkipRequest={() => setIntroSkipped(true)}
         />
       )}
-      {gameplayStartsAt !== null && clock + serverOffset < gameplayStartsAt && introSkipped && (
+      {gameplayStartsAt !== null && !introFinished && introSkipped && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/80 text-sm font-bold text-amber-200" data-testid="match-intro-wait">
           매치 시작을 기다리는 중… 서버 시각에 맞춰 곧 게임이 시작됩니다.
         </div>
@@ -966,7 +972,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         </span>
         <span data-testid="text-online-match-version">v{version ?? "-"}</span>
         <span>{seat ?? "SEAT UNKNOWN"}</span>
-        {state.status === "IN_PROGRESS" && <span className={secondsRemaining <= 10 ? "text-red-300" : "text-amber-300"} data-testid="text-online-turn-timer">{secondsRemaining}s</span>}
+        {state.status === "IN_PROGRESS" && <BattleTurnClock compact seconds={TURN_TIME_LIMIT_SECONDS} deadline={turnDeadlineAt} offset={serverOffset} />}
         {connectionStates && <span className="hidden sm:inline">{connectionStates.PLAYER_ONE === "CONNECTED" && connectionStates.PLAYER_TWO === "CONNECTED" ? "LIVE" : "GRACE"}</span>}
       </div>
       {(playError || notice || !isConnected) && (
@@ -1015,13 +1021,16 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         </section>
       )}
       <GameStatePreview cosmetics={cosmetics} imageEmotes={imageEmotes} onImageEmote={isConnected?(slot)=>{if(matchId)client.send({type:"IMAGE_EMOTE",matchId,requestId:crypto.randomUUID(),...(typeof slot==='string'?{itemId:slot}:{slot})});}:undefined}
+        key={`${matchId}:${presentationEpoch}`}
         state={state}
         selectedCardId={selectedCardId}
         selectedAttackerId={selectedAttackerId}
         mediaCatalog={mediaCatalog}
         interactionStatus={pendingAction ? "행동 결과를 서버에서 확인 중이에요." : !isConnected ? "연결을 복구하고 있어요." : presentationBusy ? "전투 연출 중이에요. 잠시 후 다음 행동을 할 수 있어요." : null}
         playError={playError}
-        turnSecondsRemaining={secondsRemaining}
+        turnSecondsRemaining={TURN_TIME_LIMIT_SECONDS}
+        turnDeadlineAt={turnDeadlineAt}
+        serverOffset={serverOffset}
         onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
         onMulligan={(cardInstanceIds) => sendAction({ type: "MULLIGAN", cardInstanceIds }, { allowOffTurn: true })}
         introActive={!introFinished}
@@ -1055,11 +1064,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
             }
             pendingEntranceAudioRef.current = null;
           }
-          if (playAnimationTimerRef.current !== null) window.clearTimeout(playAnimationTimerRef.current);
-          playAnimationTimerRef.current = window.setTimeout(() => {
-            setPlayAnimation(null);
-            playAnimationTimerRef.current = null;
-          }, 180);
+          setPlayAnimation(null);
         }}
         attackAnimation={attackAnimation}
         attackImpactTriggered={attackImpactTriggered}

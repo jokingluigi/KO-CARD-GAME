@@ -356,36 +356,38 @@ try {
           .querySelector(".ko-champion-ability")
           ?.getAttribute("aria-disabled") === "false",
     );
+    let idleBoardRenders;
+    if (process.env.KO_LATENCY_RENDER_PROBE === "1") {
+      await own.waitForTimeout(1200);
+      const cdp = await own.context().newCDPSession(own);
+      await cdp.send("Profiler.enable");
+      await cdp.send("Profiler.startPreciseCoverage", { callCount: true, detailed: false });
+      await own.waitForTimeout(2600);
+      const coverage = await cdp.send("Profiler.takePreciseCoverage");
+      idleBoardRenders = coverage.result
+        .filter(script => script.url.includes("/src/components/game-state-preview.tsx"))
+        .flatMap(script => script.functions)
+        .filter(fn => fn.functionName === "GameStatePreview")
+        .reduce((sum, fn) => sum + fn.ranges[0].count, 0);
+      await cdp.send("Profiler.stopPreciseCoverage");
+      await cdp.detach();
+      console.log("IDLE_BOARD_RENDERS", JSON.stringify({ width, idleBoardRenders, sampleMs: 2600 }));
+    }
     await own.screenshot({ path: `${out}/before-${width}.png` });
     await own.locator(".ko-champion-ability").click();
     const dialog = own.getByRole("dialog");
-    await dialog.waitFor();
-    await assertReadableChoice(own);
-    await dialog
-      .getByRole("button", { name: /검증 상대 선수/ })
-      .nth(0)
-      .click();
-    await dialog
-      .getByRole("button", { name: /검증 상대 선수/ })
-      .nth(1)
-      .click();
-    assert.equal(runtime.state.targetingState.selectedTargetIds.length, 2);
-    await opponent
-      .getByText("상대가 피니셔 효과의 대상을 선택하고 있어요.")
-      .waitFor();
-    await own.screenshot({ path: `${out}/multi-${width}.png` });
+    await own.waitForFunction(() => document.querySelector('.ko-game-stage')?.getAttribute('data-effect-targeting')==='true');
+    assert.equal(runtime.state.targetingState.maxTargets,1);
+    assert.equal(runtime.state.targetingState.selectedTargetIds.length,0);
+    await own.screenshot({path:`${out}/single-target-${width}.png`});
     await own.reload();
-    await own.getByRole("dialog").waitFor();
-    assert.equal(
-      await own.getByRole("dialog").locator("[aria-pressed=true]").count(),
-      2,
-    );
-    await own
-      .getByRole("button", { name: "선택한 선수에게 효과 발동" })
-      .click();
-    await own.getByRole("dialog").waitFor({ state: "hidden" });
-    assert.equal(runtime.state.players[0].health, 14);
-    assert.equal(runtime.state.players[1].graveyard.length, 2);
+    await own.waitForFunction(() => document.querySelector('.ko-game-stage')?.getAttribute('data-effect-targeting')==='true');
+    assert.equal(runtime.state.targetingState.maxTargets,1);
+    await own.locator('.ko-opponent-board-row [data-card-instance-id="enemy-0"]').click({position:{x:25,y:60}});
+    await own.waitForFunction(() => document.querySelector('.ko-game-stage')?.getAttribute('data-effect-targeting')==='false');
+    assert.equal(runtime.state.players[0].health,12);
+    assert.equal(runtime.state.players[1].graveyard.length,1);
+    assert.equal(runtime.state.players[1].board[1].currentHealth,1);
     await own.waitForTimeout(2200);
     await own
       .locator(
@@ -424,13 +426,21 @@ try {
       assert.equal(await actor.getAttribute('data-sprite-set'),'awakened');
     }
     await own.screenshot({path:`${out}/branch-low-restored-${width}.png`});
+    let motion;
+    if (process.env.KO_MOTION_SCENARIOS === "1") {
+      const { motionScenarios } = await import("./multiplayer-motion-scenarios.mjs");
+      motion = await motionScenarios({f,service,runtime,own,opponent,out,width,baseCard:body,setRuntime:r=>runtime=r});
+      console.log("MOTION_SCENARIOS",JSON.stringify({width,...motion}));
+    }
     assert.deepEqual(errors, []);
     results.push({
+      ...(motion ? { motion } : {}),
+      ...(idleBoardRenders !== undefined ? { idleBoardRenders, idleSampleMs: 2600 } : {}),
       width,
       height,
       actualOnlinePages: true,
       authoritativeServiceAndIsolatedDB: true,
-      multiTargetTouch: true,
+      singleTargetPandora: true,
       persistedSelectionAfterReload: true,
       catalogDiscovery: true,
       readableChoiceWithoutBoardMask: true,

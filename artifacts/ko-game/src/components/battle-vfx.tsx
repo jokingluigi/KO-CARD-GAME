@@ -18,7 +18,7 @@ const cache=new Map<string,HTMLImageElement>();
 function texture(name:string) {
  const url=import.meta.env.BASE_URL+(name.startsWith('effekseer:')?'vendor/effekseer/'+name.slice(10):'vendor/kenney/particle/'+name);
  let image=cache.get(url);
- if(!image){image=new Image();image.src=url;cache.set(url,image);}
+ if(!image){image=new Image();image.onload=()=>{preparedTexture(image!);};image.src=url;cache.set(url,image);}
  return image;
 }
 // Effekseer's contact texture is RGB additive art, unlike the RGBA smoke.
@@ -39,6 +39,19 @@ function contactTexture(image: HTMLImageElement): CanvasImageSource {
  context.putImageData(pixels,0,0); additiveCache.set(image,canvas); return canvas;
 }
 export function preloadExternalVfx() { for(const name of new Set(Object.values(assets).flat()))texture(name); }
+// Bake unchanged color filters once, rather than filtering smoke/emission for
+// every particle on every animation frame (particularly expensive on phones).
+const preparedTextures = new WeakMap<HTMLImageElement, CanvasImageSource>();
+function preparedTexture(image: HTMLImageElement): CanvasImageSource {
+ const cached = preparedTextures.get(image); if (cached) return cached;
+ if (!image.complete || !image.naturalWidth) return image;
+ const filter=image.src.endsWith('/Smoke.png')?'sepia(1) saturate(.55) brightness(.72)':image.src.endsWith('/HitEffect01_Yellow.png')?'brightness(3)':null;
+ if (!filter) return image;
+ const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+ const ctx=canvas.getContext('2d');if(!ctx)return image;
+ ctx.filter=filter;ctx.drawImage(contactTexture(image),0,0);
+ preparedTextures.set(image,canvas);return canvas;
+}
 /** External Kenney CC0 textures. Canvas only positions/animates the supplied art. */
 export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,direction}:{kind:BattleVfxKind;left:number;top:number;strength?:number;seed:string;delay?:number;duration?:number;direction?:{x:number;y:number}}) {
  const ref=useRef<HTMLCanvasElement>(null);
@@ -46,6 +59,7 @@ export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,di
   const canvas=ref.current;if(!canvas||prefersReducedMotion())return;
   const ctx=canvas.getContext('2d');if(!ctx)return;
   const budget=vfxBudget(matchMedia('(pointer: coarse)').matches,false,strength);
+  const flash=readCombatPreferences().flash;
   const dpr=Math.min(devicePixelRatio||1,budget.dpr),size=budget.size;
   canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+'px';canvas.style.height=size+'px';ctx.scale(dpr,dpr);
   const images=assets[kind].map(texture),particles=vfxParticles(seed,budget.particles);
@@ -59,13 +73,11 @@ export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,di
    const stamp=(image:HTMLImageElement,x:number,y:number,w:number,rotation:number,alpha:number)=>{
     if(!image.complete||!image.naturalWidth)return;
     ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalAlpha=Math.max(0,alpha);
-    if(image.src.endsWith('/Smoke.png'))ctx.filter='sepia(1) saturate(.55) brightness(.72)';
-    if(image.src.endsWith('/HitEffect01_Yellow.png'))ctx.filter='brightness(3)';
-    ctx.drawImage(contactTexture(image),-w/2,-w/2,w,w);ctx.restore();
+    ctx.drawImage(preparedTexture(image),-w/2,-w/2,w,w);ctx.restore();
    };
    if(kind==='IMPACT') {
     // A short bright contact, then an expanding, settling cloud of authored smoke art.
-    stamp(images[0],size/2,size/2,(100+60*t)*force,axis,Math.max(0,1-t/.2)*readCombatPreferences().flash);
+    stamp(images[0],size/2,size/2,(100+60*t)*force,axis,Math.max(0,1-t/.2)*flash);
     const clouds=particles.slice(0,Math.min(strength>=6?5:3,particles.length));
     for(const [i,p] of clouds.entries()) {
      const a=p.angle,reach=(12+40*t)*force;

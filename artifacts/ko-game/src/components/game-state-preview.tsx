@@ -17,6 +17,9 @@ import {BattleAttention} from "./player-ux/battle-attention";
 import {HandReader,BattleHelp} from "./player-ux/battle-reading";
 import {handUnavailableReason} from "./player-ux/policy";
 import {readCombatPreferences} from "./combat-preferences";
+import {BattleTurnClock} from "./battle-turn-clock";
+import {secondsUntil} from "../lib/battle-clock";
+import {generatedPlayBatch} from "./generated-play-batch";
 import "./player-ux/player-ux.css";
 import {SaveBattleImage} from "./player-tools/result-tools";
 import {PublicCards,usePublicCardIds} from "./player-tools/battle-tools";
@@ -90,7 +93,7 @@ import {
 } from './alt-inspector';
 import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
 import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
-import { enqueuePresentation } from './presentation-policy';
+import { enqueuePresentation, presentationBatch } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
@@ -125,6 +128,8 @@ interface GameStatePreviewProps {
   selectedAttackerId: string | null;
   playError: string | null;
   turnSecondsRemaining: number;
+  turnDeadlineAt?: number | null;
+  serverOffset?: number;
   showTurnTimer?: boolean;
   autoPresentOwnActions?: boolean;
   onEndTurn: () => void;
@@ -184,6 +189,8 @@ export function GameStatePreview({
   selectedAttackerId,
   playError,
   turnSecondsRemaining,
+  turnDeadlineAt,
+  serverOffset = 0,
   showTurnTimer = true,
   autoPresentOwnActions = false,
   onEndTurn,
@@ -345,6 +352,11 @@ export function GameStatePreview({
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const spellDropTargetRef=React.useRef<{cardId:string;targetId:string;gameId:string;turn:number;createdAt:number}|null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
+  const activeGeneratedPlays = React.useMemo(() => generatedPlayBatch(generatedPlayAnimations), [generatedPlayAnimations]);
+  const opponentAttackPresentationRef = React.useRef(onOpponentAttackPresentation);
+  opponentAttackPresentationRef.current = onOpponentAttackPresentation;
+  const selfPlayPresentationRef = React.useRef(onSelfPlayPresentation);
+  selfPlayPresentationRef.current = onSelfPlayPresentation;
   React.useEffect(()=>{
     const head=wrestlerSpeech[0];
     const combatAction=attackAnimation || playAnimation?.kind==='TECHNIQUE' || generatedPlayAnimations[0]?.kind==='TECHNIQUE';
@@ -364,6 +376,7 @@ export function GameStatePreview({
     return () => window.clearTimeout(timer);
   }, [drawFlights]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
+  const activePresentationCues = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
   const effectFinisherTimerRef = React.useRef<number | null>(null);
@@ -399,8 +412,8 @@ export function GameStatePreview({
   React.useEffect(()=>{lastHandPositionsRef.current.clear();},[state.gameId]);
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number; maxHealth:number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
-  const handlePresentationQueueComplete = React.useCallback(() => {
-    setPresentationQueue((current) => current.slice(1));
+  const handlePresentationQueueComplete = React.useCallback((id: string) => {
+    setPresentationQueue((current) => current.filter(cue => cue.id !== id));
   }, []);
   const startedDamageCueRef=React.useRef('');
   const handlePresentationCueStart=React.useCallback((cue:PresentationCue)=>{
@@ -434,7 +447,7 @@ export function GameStatePreview({
       attackAnimation ||
       generatedPlayAnimations.length ||
       cardLeaveAnimations.length ||
-      presentationBlocksActions(presentationQueue) ||
+      presentationBlocksActions(activePresentationCues) ||
       pendingEffectFinisher ||
       effectFinisher || defeatPhase==='WAITING' || defeatPhase==='PLAYING' || koSpeechActive,
     ));
@@ -444,7 +457,7 @@ export function GameStatePreview({
     generatedPlayAnimations.length,
     onPresentationBusyChange,
     playAnimation,
-    presentationQueue,
+    activePresentationCues,
     pendingEffectFinisher,
     effectFinisher,
     defeatPhase,
@@ -595,7 +608,7 @@ export function GameStatePreview({
         event.type === "ATTACK_DECLARED" &&
         (event.playerId === state.players[1]?.id || (autoPresentOwnActions && event.playerId === state.players[0]?.id)) &&
         event.cardInstanceId &&
-        onOpponentAttackPresentation
+        opponentAttackPresentationRef.current
       ) {
         const attacker = previousCards.get(event.cardInstanceId);
         const source = savedRect(event.cardInstanceId);
@@ -622,7 +635,7 @@ export function GameStatePreview({
         if (attacker && source && targetRect) {
           const currentAttack = event.sourceSnapshot?.currentAttack ?? attacker.currentAttack;
           const damage = damageEvent?.amount ?? 0;
-          onOpponentAttackPresentation({
+          opponentAttackPresentationRef.current({
             attackerPlayerId: event.sourceSnapshot?.playerId ?? event.playerId,
             targetPlayerId: event.targetSnapshot?.playerId ?? targetPlayerId,
             attacker,
@@ -710,18 +723,21 @@ export function GameStatePreview({
           });
         }
       }
-      if (event.type !== 'ENTER_FIELD' || !event.source || event.source.type !== 'CARD' || event.boardSlot === undefined) continue;
+      if (event.type !== 'ENTER_FIELD' || event.boardSlot === undefined) continue;
       const enterFieldEvent = event as EnterFieldEvent;
       const enteredCard = state.players
         .flatMap((player) => player.board)
         .find((card): card is CardInstance => card?.instanceId === event.cardInstanceId);
       if (
         enteredCard &&
-        onSelfPlayPresentation &&
+        selfPlayPresentationRef.current &&
         event.playerId === me.id &&
         enterFieldEvent.entryCause === "PLAY_FROM_HAND"
       ) {
-        onSelfPlayPresentation(enteredCard, me.id);
+        selfPlayPresentationRef.current(enteredCard, me.id);
+        // The owned hand-play overlay already presents this exact card, even
+        // if it was originally generated. Do not fly a second copy over it.
+        continue;
       }
       const shouldAnimateOpponentPlay =
         (event.playerId === opp.id || (autoPresentOwnActions && event.playerId === me.id)) &&
@@ -737,7 +753,7 @@ export function GameStatePreview({
         ? handCardRefs.current.get(event.cardInstanceId)
         : opponentHandRef.current;
       const sourceElement =
-        boardCardRefs.current.get(event.source.cardInstanceId) ??
+        (event.source?.type === 'CARD' ? boardCardRefs.current.get(event.source.cardInstanceId) : undefined) ??
         ownerHandElement;
       const source = sourceElement
         ? rectSnapshot(sourceElement.getBoundingClientRect())
@@ -758,7 +774,8 @@ export function GameStatePreview({
     }
 
     if (animations.length) {
-      setGeneratedPlayAnimations((current) => [...current, ...animations]);
+      const batchId = `${state.gameId}:${state.events.length}`;
+      setGeneratedPlayAnimations((current) => [...current, ...animations.map(animation => ({...animation, batchId}))]);
     }
     if (leaveAnimations.length) {
       setCardLeaveAnimations((current) => [
@@ -856,7 +873,7 @@ export function GameStatePreview({
         return fresh.length ? enqueuePresentation(current, fresh) : current;
       });
     }
-  }, [autoPresentOwnActions, onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
+  }, [autoPresentOwnActions, state.gameId, state.events, state.players]);
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
@@ -1312,7 +1329,7 @@ export function GameStatePreview({
                      )}
                       animating={
                         playAnimation?.card.instanceId === card?.instanceId ||
-                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
+                        activeGeneratedPlays.some((animation) => animation.card.instanceId === card?.instanceId) ||
                         attackAnimation?.attacker.instanceId === card?.instanceId ||
                         attackAnimation?.target?.instanceId === card?.instanceId
                       }
@@ -1361,20 +1378,7 @@ export function GameStatePreview({
                    {isMyTurn ? '내 턴' : '상대 턴'}
                  </div>
                </div>
-               {showTurnTimer && <div
-                 data-time-pressure={turnSecondsRemaining<=5?"critical":turnSecondsRemaining<=10?"warning":"normal"}
-                 data-testid="battle-turn-timer"
-                 style={{"--timer-remaining":Math.max(0,Math.min(1,turnSecondsRemaining/10))} as React.CSSProperties}
-                 className={`ko-battle-time rounded border px-2 py-1 text-center font-display text-sm font-black md:text-lg ${
-                   turnSecondsRemaining <= 10
-                     ? 'border-red-500 bg-red-950/80 text-red-300'
-                     : 'border-neutral-700 bg-neutral-900/90 text-primary'
-                 }`}
-                 aria-label={`남은 턴 시간 ${Math.floor(turnSecondsRemaining / 60)}분 ${turnSecondsRemaining % 60}초`}
-               >
-                 {String(Math.floor(turnSecondsRemaining / 60)).padStart(2, '0')}:
-                 {String(turnSecondsRemaining % 60).padStart(2, '0')}
-              </div>}
+               {showTurnTimer && <BattleTurnClock seconds={turnSecondsRemaining} deadline={turnDeadlineAt} offset={serverOffset} />}
             </div>
             <button
               type="button"
@@ -1383,7 +1387,7 @@ export function GameStatePreview({
               aria-label={confirmEndTurn?'남은 행동이 있지만 턴 종료 확정':`턴 종료${remainingActions.length&&isMyTurn?' · 사용 가능한 공격 또는 능력 남음':''}`}
               onClick={() => {
                 if(selectedCardId||selectedAttackerId){if(selectedCardId)onSelectCard(selectedCardId);if(selectedAttackerId)onSelectAttacker(selectedAttackerId);setAttackHint('선택을 해제했어요. 턴을 끝내려면 다시 눌러주세요.');return;}
-                if (readCombatPreferences().confirmEndTurn && remainingActions.length && turnSecondsRemaining > 10 && !confirmEndTurn) {
+                if (readCombatPreferences().confirmEndTurn && remainingActions.length && secondsUntil(turnDeadlineAt,serverOffset,Date.now(),turnSecondsRemaining) > 10 && !confirmEndTurn) {
                   setConfirmEndTurn(true);
                   return;
                 }
@@ -1459,7 +1463,7 @@ export function GameStatePreview({
                     animating={
                       (playAnimation?.kind === "WRESTLER" &&
                         playAnimation.card.instanceId === card?.instanceId) ||
-                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
+                      activeGeneratedPlays.some((animation) => animation.card.instanceId === card?.instanceId) ||
                          attackAnimation?.attacker.instanceId === card?.instanceId ||
                          attackAnimation?.target?.instanceId === card?.instanceId
                     }
@@ -1840,19 +1844,18 @@ export function GameStatePreview({
           viewerPlayerId={me.id}
         />
       )}
-      {generatedPlayAnimations[0] && (
+      {activeGeneratedPlays.map(animation => (
         <CardPlayAnimation
-          key={`generated-play-${generatedPlayAnimations[0].card.instanceId}-${generatedPlayAnimations[0].kind}`}
-          animation={generatedPlayAnimations[0]}
+          key={`generated-play-${animation.batchId}-${animation.card.instanceId}-${animation.kind}`}
+          animation={animation}
           hapticsEnabled={hapticsEnabled}
           viewerPlayerId={me.id}
           onLand={markSpeechLanding}
           onComplete={() => {
-            const completed = generatedPlayAnimations[0];
-            setGeneratedPlayAnimations((current) => current.slice(1).filter((entry) => entry.card.instanceId !== completed.card.instanceId || entry.kind !== completed.kind));
+            setGeneratedPlayAnimations((current) => current.filter(entry => entry !== animation));
           }}
         />
-      )}
+      ))}
       {(!attackAnimation || attackImpactTriggered) && !playAnimation && !generatedPlayAnimations.length && cardLeaveAnimations.map((animation) => (
         <CardLeaveAnimation
           key={animation.id}
@@ -1895,18 +1898,18 @@ export function GameStatePreview({
       {spokenLine && state.status!=="FINISHED" && !koSpeechActive && !introActive && !effectTargeting && !selectedCardId && !selectedAttackerId && !settingsOpen && !historyOpen && !emoteOpen && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <React.Fragment>
         <ChampionSpeechBubble key={spokenLine.id} anchor={spokenLine.playerId===me.id?playerChampionRef:championRef} playerId={spokenLine.playerId} speaker={spokenLine.speaker} text={spokenLine.text} quest={spokenLine.questCompletion} label={spokenLine.questCompletion?'피니셔 준비 완료 / 챔피언':'챔피언'} />
       </React.Fragment>}
-      {presentationQueue[0] &&
-        (presentationQueue[0].kind !== 'QUEST_COMPLETE' || questPresentationAllowed) &&
+      {activePresentationCues.map(cue =>
+        (cue.kind !== 'QUEST_COMPLETE' || questPresentationAllowed) &&
         !introActive &&
         !state.openingMulligan &&
         !canMulligan(state, me.id) &&
         !playAnimation &&
         !generatedPlayAnimations.length &&
         (!attackAnimation || attackImpactTriggered) && (
-        presentationQueue[0].kind === "QUEST_COMPLETE"
-          ? <QuestPresentation cue={presentationQueue[0]} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={handlePresentationQueueComplete} />
-          : <PresentationFeedback key={presentationQueue[0].id} lethal={state.status==='FINISHED' && presentationQueue[0].playerId===state.loserId} cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
-      )}
+        cue.kind === "QUEST_COMPLETE"
+          ? <QuestPresentation key={cue.id} cue={cue} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={() => handlePresentationQueueComplete(cue.id)} />
+          : <PresentationFeedback key={cue.id} lethal={state.status==='FINISHED' && cue.playerId===state.loserId} cue={cue} onStart={handlePresentationCueStart} onComplete={() => handlePresentationQueueComplete(cue.id)} />
+      ))}
     </div>
     </AltInspectProvider></CinematicProvider></RenderCardCatalog.Provider></BattleCosmeticsContext.Provider>
   );

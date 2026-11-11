@@ -12,6 +12,19 @@ export type ShakeLevel=typeof SHAKE_LEVELS[number];
 export function strongerShake(a:ShakeLevel,b:ShakeLevel):ShakeLevel {return SHAKE_LEVELS[Math.max(SHAKE_LEVELS.indexOf(a),SHAKE_LEVELS.indexOf(b))];}
 export function shakePixels(level:ShakeLevel) {return [0,3,5.5,9.5,14,20][SHAKE_LEVELS.indexOf(level)];}
 export type QueueEntry={id:string;kind:string;duration:number};
+/** Independent targets can show feedback together; never overlap repeated
+ * numbers on one target or start an awakening/transform underneath other cues. */
+export function presentationBatch<T extends QueueEntry & {cardInstanceId?:string;playerId?:string}>(queue:T[]):T[] {
+ const result:T[]=[],targets=new Set<string>();
+ for(const cue of queue){
+  const exclusive=cue.kind==='QUEST_COMPLETE'||cue.kind==='TRANSFORM';
+  if(exclusive)return result.length ? result : [cue];
+  const target=cue.cardInstanceId??cue.playerId??'hud';
+  if(targets.has(target)||result.length===4)break;
+  targets.add(target);result.push(cue);
+ }
+ return result;
+}
 export function enqueuePresentation<T extends QueueEntry>(pending:T[],incoming:T[]):T[] {
  const ids=new Set(pending.map(c=>c.id));
  const fresh=incoming.filter(c=>{if(ids.has(c.id))return false;ids.add(c.id);return true;});
