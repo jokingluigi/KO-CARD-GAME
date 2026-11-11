@@ -4,7 +4,7 @@ import {ChampionPreparationEditor} from './champion-preparation-editor';
 import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
-import { AWAKENING_CARD_IDS, AWAKENING_QUEST_TEXT } from '@/game/champions/awakening-definitions';
+import { AWAKENING_CARD_IDS } from '@/game/champions/awakening-definitions';
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useLocation } from "wouter";
 import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Maximize2, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
@@ -119,8 +119,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const formRef = useRef<Form>(empty);
   const pendingUploadsRef = useRef<Set<Promise<void>>>(new Set());
   const saveInFlightRef = useRef(false);
-  const [effectDrafts,setEffectDrafts] = useState<Partial<Record<EffectConfigKey,string>>>({});
-  const effectDraftsRef = useRef<Partial<Record<EffectConfigKey,string>>>({});
   const [publicationCards,setPublicationCards]=useState<FinisherPublicationCard[]|null>(null);
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const basicPortraitInputRef = useRef<HTMLInputElement>(null);
@@ -209,24 +207,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     setForm(next);
   };
   const replaceForm = (next: Form) => {
-    const drafts = {...effectDraftsRef.current};
-    let changed = false;
-    for (const key of Object.keys(drafts) as EffectConfigKey[]) {
-      if (next[key] !== formRef.current[key]) {delete drafts[key];changed=true;}
-    }
-    if(changed){effectDraftsRef.current=drafts;setEffectDrafts(drafts);}
     formRef.current = next;
     setForm(next);
   };
-  function updateEffectDraft(key:EffectConfigKey,value:string) {
-    effectDraftsRef.current={...effectDraftsRef.current,[key]:value};
-    setEffectDrafts(effectDraftsRef.current);
-    try {update(key,readEffectConfig(value));setError(current=>current.startsWith("효과 설정 JSON") ? "" : current);} catch { /* Keep unfinished JSON visible; save validates it. */ }
-  }
   async function save(publishFinisherCards?:Array<{id:string;version:number}>) {
-    try {for (const value of Object.values(effectDraftsRef.current)) readEffectConfig(value!);}
-    catch {setError("효과 설정 JSON을 확인하세요. 잘못된 입력은 저장하지 않았습니다.");return;}
-
     if (saveInFlightRef.current || busy) return;
     saveInFlightRef.current = true;
     setBusy(true);
@@ -341,7 +325,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     }
   }
    function editor(champion?: Champion) {
-     effectDraftsRef.current={};setEffectDrafts({});
        setEditing(champion ?? null);  setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
        name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
        imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null,
@@ -525,7 +508,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   };
   useEffect(()=>setListPage(0),[search,status]);
   useEffect(()=>setListPage(p=>Math.min(p,Math.max(0,Math.ceil(champions.length/20)-1))),[champions.length]);
-  const adminDraftDirty=useAdminDraftGuard(open,{form,effectDrafts});
+  const adminDraftDirty=useAdminDraftGuard(open,form);
   const brokenIntroInteractions = introInteractions.filter(hasBrokenIntroReference);
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
@@ -606,16 +589,17 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             신규 계정 Starter Champion
           </label></>,
 <>
+<p className="md:col-span-2 text-sm text-neutral-400">효과 설명을 적어 저장하세요. 설명을 바꿔도 기존 동작은 유지되며, 새로운 효과는 별도로 구현합니다.</p>
 <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
-<EffectField title="고유 능력 효과" value={form.abilityText} onChange={v=>update("abilityText",v)} configValue={effectDrafts.abilityEffects ?? JSON.stringify(form.abilityEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("abilityEffects",v)} />
+<EffectField title="고유 능력 효과" value={form.abilityText} onChange={v=>update("abilityText",v)} />
 
 <p className="md:col-span-2 text-xs text-neutral-400">초기 손패를 나누기 전에 챔피언당 한 번 자동 발동합니다. 비용이나 고유 능력 사용 횟수를 소모하지 않습니다. 직접 대상 선택이 필요한 효과는 사용할 수 없습니다.</p>
-<EffectField title="게임 시작 능력 효과" value={form.gameStartAbilityText ?? ""} onChange={v=>update("gameStartAbilityText",v)} configValue={effectDrafts.gameStartAbilityEffects ?? JSON.stringify(form.gameStartAbilityEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("gameStartAbilityEffects",v)} /></>,
+<EffectField title="게임 시작 능력 효과" value={form.gameStartAbilityText ?? ""} onChange={v=>update("gameStartAbilityText",v)} /></>,
 <><ChampionPreparationEditor value={form} onChange={patch=>replaceForm({...formRef.current,...patch})} cards={tokenCards}
- reward={<EffectField title="준비 완료 효과" value={form.questRewardText??""} onChange={v=>update("questRewardText",v)} configValue={effectDrafts.questRewardEffects ?? JSON.stringify(form.questRewardEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("questRewardEffects",v)} />}
+ reward={<EffectField title="준비 완료 효과" value={form.questRewardText??""} onChange={v=>update("questRewardText",v)} />}
  ability={<><label className="md:col-span-2 flex items-center gap-2"><input type="checkbox" checked={Boolean(form.upgradedAbilityName)} onChange={e=>update("upgradedAbilityName",e.target.checked ? "강화 고유 능력" : null)}/>완료 후 강화 고유 능력 사용</label>
 <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
-<EffectField title="강화 고유 능력" value={form.upgradedAbilityText??""} onChange={v=>update("upgradedAbilityText",v)} configValue={effectDrafts.upgradedAbilityEffects ?? JSON.stringify(form.upgradedAbilityEffects ?? {}, null, 2)} onConfigChange={v=>updateEffectDraft("upgradedAbilityEffects",v)} /></>}
+<EffectField title="강화 고유 능력" value={form.upgradedAbilityText??""} onChange={v=>update("upgradedAbilityText",v)} /></>}
  presentation={<AdminAudioField
            title="챔피언 피니셔 준비 완료 음악"
            value={{
@@ -643,14 +627,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              setMessageText(messageText);
            }}
          />}
- awakeningTools={<><div className="md:col-span-2"><button type="button" className="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200" onClick={() => replaceForm({ ...formRef.current,
-           hasQuest: true, questName: '위기 각성', questText: AWAKENING_QUEST_TEXT, questProgressRequired: 1,
-           questCondition: { event: 'STATE_CONDITION', required: 1, condition: { type: 'ALL', conditions: [
-             { type: 'HEALTH', owner: 'SELF', op: 'GTE', value: 1 }, { type: 'HEALTH', owner: 'SELF', op: 'LTE', value: 5 },
-           ] }, awakening: { stageCardIds: { ...AWAKENING_CARD_IDS }, fullBoardPolicy: 'WAIT_WITHOUT_INVULNERABILITY' } },
-           questRewardEffects: null, questRewardText: '각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 각성 선수가 필드에 있는 동안 내 챔피언은 무적입니다. 소환 대기 중에는 무적이 보류됩니다.',
-         })}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
-{form.questCondition?.awakening!=null&&<button type="button" className="mt-3 rounded border px-3 py-2" onClick={()=>{const next={...formRef.current.questCondition};delete next.awakening;update('questCondition',next);}}>일반 준비 조건으로 전환</button>}</>}
+
  /></>,
 <FinisherLinkEditor publishedChampion={editing?.status==='PUBLISHED'} condition={form.questCondition} cards={tokenCards} hasQuest={form.hasQuest} legacyId={form.championTokenDefinitionId} onChange={value=>update('questCondition',value)}/>,
 <><label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
@@ -859,16 +836,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   </div>;
 }
 
-type EffectConfigKey = "abilityEffects" | "gameStartAbilityEffects" | "questRewardEffects" | "upgradedAbilityEffects";
-function readEffectConfig(value: string): Record<string,unknown> {
-  const parsed: unknown = JSON.parse(value);
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("효과 설정은 JSON 객체로 입력하세요.");
-  return parsed as Record<string, unknown>;
-}
-function EffectField({title,value,onChange,configValue,onConfigChange}:{title:string;value:string;onChange:(v:string)=>void;configValue:string;onConfigChange:(v:string)=>void}) {
-  let invalid = false;
-  try {readEffectConfig(configValue);} catch {invalid=true;}
-  return <section className="md:col-span-2 space-y-3"><label>{title}<textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/></label><details className="rounded border border-neutral-800 p-3"><summary>실제 효과 설정 (고급)</summary><label className="mt-3 block">{title} 설정 JSON<textarea className="min-h-40 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-sm" aria-label={`${title} 설정 JSON`} spellCheck={false} value={configValue} aria-invalid={invalid} onChange={e=>onConfigChange(e.target.value)}/></label><p className={invalid?"text-red-300":"text-neutral-400"}>{invalid?"올바른 JSON 객체가 아니어서 저장할 수 없습니다.":"효과 설명과 실제 동작은 별도입니다. 저장된 효과 정의를 직접 편집합니다."}</p></details></section>;
+function EffectField({title,value,onChange}:{title:string;value:string;onChange:(value:string)=>void}) {
+  return <section className="md:col-span-2"><label className="block space-y-2">{title}<textarea aria-label={title} className="min-h-28 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={event=>onChange(event.target.value)} placeholder="원하는 효과를 문장으로 적어주세요."/></label></section>;
 }
 
 function ChampionImageDisplayControls({

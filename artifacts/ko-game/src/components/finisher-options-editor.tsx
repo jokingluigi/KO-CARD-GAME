@@ -1,5 +1,4 @@
 import type { FinisherChoice } from "@/game/champions/types";
-import { ChampionQuestConditionEditor } from "./champion-quest-condition-editor";
 
 export function FinisherOptionsEditor({
   value,
@@ -10,7 +9,14 @@ export function FinisherOptionsEditor({
   embedded?: boolean;
   value: FinisherChoice[];
   onChange: (value: FinisherChoice[] | undefined) => void;
-  cards: { id: string; name: string; cardType: string; status?:string;rarity?:string;isChampionToken?:boolean }[];
+  cards: {
+    id: string;
+    name: string;
+    cardType: string;
+    status?: string;
+    rarity?: string;
+    isChampionToken?: boolean;
+  }[];
 }) {
   const set = (index: number, patch: Partial<FinisherChoice>) =>
     onChange(value.map((o, i) => (i === index ? { ...o, ...patch } : o)));
@@ -61,24 +67,10 @@ export function FinisherOptionsEditor({
                 {option.cardDefinitionId ? "카드 연결됨" : "카드 선택 필요"}
               </summary>
               <label className="block">
-                선택지 ID
-                <input
-                  className="min-h-11 w-full bg-black/40 p-2"
-                  value={option.id}
-                  onChange={(e) => set(index, { id: e.target.value })}
-                />
-              </label>
-              <label className="block">
-                선택지 이름
-                <input
-                  className="min-h-11 w-full bg-black/40 p-2"
-                  value={option.name}
-                  onChange={(e) => set(index, { name: e.target.value })}
-                />
-              </label>
-              <label className="block">
                 준비 조건 설명
                 <textarea
+                  aria-label={`피니셔 ${index + 1} 준비 조건 설명`}
+                  placeholder="이 피니셔를 얻을 조건을 문장으로 적어주세요."
                   className="w-full bg-black/40 p-2"
                   value={option.description}
                   onChange={(e) => set(index, { description: e.target.value })}
@@ -110,18 +102,26 @@ export function FinisherOptionsEditor({
                 >
                   <option value="">주문 카드 선택</option>
                   {cards
-                    .filter((c) => c.cardType === "TECHNIQUE" && (!c.rarity||c.rarity==="CHAMPION") && c.isChampionToken!==false)
+                    .filter(
+                      (c) =>
+                        c.cardType === "TECHNIQUE" &&
+                        (!c.rarity || c.rarity === "CHAMPION") &&
+                        c.isChampionToken !== false,
+                    )
                     .map((c) => (
-                      <option key={c.id} value={c.id} disabled={c.status==='DISABLED'}>
-                        {c.name}{c.status?` · ${{PUBLISHED:'공개',DRAFT:'미공개',DISABLED:'비활성화'}[c.status]??c.status}`:''}
+                      <option
+                        key={c.id}
+                        value={c.id}
+                        disabled={c.status === "DISABLED"}
+                      >
+                        {c.name}
+                        {c.status
+                          ? ` · ${{ PUBLISHED: "공개", DRAFT: "미공개", DISABLED: "비활성화" }[c.status] ?? c.status}`
+                          : ""}
                       </option>
                     ))}
                 </select>
               </label>
-              <ChampionQuestConditionEditor
-                value={option.condition}
-                onChange={(condition) => set(index, { condition })}
-              />
               <button
                 type="button"
                 disabled={value.length <= 2}

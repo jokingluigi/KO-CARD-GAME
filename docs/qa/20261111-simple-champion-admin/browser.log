@@ -1,0 +1,1317 @@
+[06:17:42.152] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 71
+[06:17:42.600] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:42.632] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:42.632] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:42.633] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:42.638] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 5
+[06:17:42.638] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:42.638] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:42.638] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 6
+[06:17:42.639] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 7
+[06:17:42.639] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[06:17:42.880] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:43.171] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:43.232] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:43.515] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:43.520] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[06:17:43.702] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:43.713] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:44.322] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "PATCH",
+      "url": "/api/admin/champions/simple-single"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[06:17:44.352] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:44.404] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:44.419] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:44.429] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:44.478] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:44.481] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:44.481] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:44.481] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:44.483] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 2
+[06:17:44.483] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:44.483] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:44.483] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 3
+[06:17:44.483] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 3
+[06:17:44.483] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:44.622] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:44.918] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:44.958] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:45.250] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:45.252] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:45.440] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:45.447] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:46.235] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:46.236] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:46.236] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:46.236] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:46.237] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 1
+[06:17:46.237] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:46.238] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:46.238] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[06:17:46.238] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 2
+[06:17:46.238] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:46.339] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:46.638] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:46.674] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:46.970] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:46.973] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 31,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:47.162] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 32,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:47.170] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 33,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:48.078] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 34,
+      "method": "PATCH",
+      "url": "/api/admin/champions/simple-options"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[06:17:48.091] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 35,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:48.123] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 36,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:48.131] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 37,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:48.139] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 38,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:48.358] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 39,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:48.360] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:48.360] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:48.360] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:48.363] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 3
+[06:17:48.364] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:48.364] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:48.364] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 4
+[06:17:48.365] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 5
+[06:17:48.365] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 40,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[06:17:48.566] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 41,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:48.861] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 42,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:48.905] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 43,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:49.195] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 44,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:49.200] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 45,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:49.392] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 46,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:49.407] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 47,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:50.416] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 48,
+      "method": "PATCH",
+      "url": "/api/admin/champions/simple-single"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[06:17:50.427] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 49,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:50.466] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 50,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[06:17:50.475] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 51,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:50.487] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 52,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:50.547] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 53,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:50.550] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:50.550] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:50.550] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:50.552] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 2
+[06:17:50.552] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:50.552] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:50.552] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[06:17:50.552] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 2
+[06:17:50.552] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 54,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:50.684] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 55,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:50.978] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 56,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:51.009] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 57,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:51.308] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 58,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:51.313] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 59,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:51.502] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 60,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:51.512] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 61,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:52.313] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 62,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:52.317] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:52.317] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:52.317] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:52.319] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 2
+[06:17:52.319] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:52.319] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:52.319] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[06:17:52.320] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 3
+[06:17:52.320] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 63,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:52.441] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 64,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:52.741] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 65,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:52.774] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 66,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:53.073] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 67,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:53.079] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 68,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:53.268] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 69,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:53.283] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 70,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:53.768] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 71,
+      "method": "PATCH",
+      "url": "/api/admin/champions/simple-options"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[06:17:53.782] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 72,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:53.825] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 73,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[06:17:53.839] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 74,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:54.090] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 75,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:54.091] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:54.091] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:54.091] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:54.096] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 5
+[06:17:54.097] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:54.097] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:54.097] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 6
+[06:17:54.097] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 6
+[06:17:54.097] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 76,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:54.342] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 77,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:54.633] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 78,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:54.700] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 79,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:54.966] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 80,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:54.972] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 81,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:55.160] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 82,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:55.170] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 83,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:55.849] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 84,
+      "method": "PATCH",
+      "url": "/api/admin/champions/simple-single"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[06:17:55.861] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 85,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:55.904] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 86,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:55.916] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 87,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:55.979] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 88,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:55.980] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:55.980] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:55.980] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:55.982] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 2
+[06:17:55.982] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:55.982] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:55.982] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[06:17:55.983] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 3
+[06:17:55.983] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 89,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:56.127] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 90,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:56.424] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 91,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:56.455] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 92,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:56.757] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 93,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[06:17:56.765] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 94,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[06:17:56.947] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 95,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[06:17:56.955] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 96,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:57.761] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 97,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:57.770] [32mINFO[39m (166573): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[06:17:57.770] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[06:17:57.770] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[06:17:57.772] [32mINFO[39m (166573): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 2
+[06:17:57.772] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[06:17:57.772] [32mINFO[39m (166573): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[06:17:57.772] [32mINFO[39m (166573): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[06:17:57.772] [32mINFO[39m (166573): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 2
+[06:17:57.772] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 98,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[06:17:57.891] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 99,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[06:17:58.188] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 100,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:58.220] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 101,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[06:17:58.525] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 102,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:58.528] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 103,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[06:17:58.715] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 104,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:58.723] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 105,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[{"width":390,"height":844,"textEditSaveReenter":true,"advancedEditorsRemoved":true,"allFourEffectConfigsPreserved":true,"compoundAndEventFiltersPreserved":true,"choiceIdsAndConditionsPreserved":true,"cardAndDeliveryEditable":true,"errors":[]},{"width":844,"height":390,"textEditSaveReenter":true,"advancedEditorsRemoved":true,"allFourEffectConfigsPreserved":true,"compoundAndEventFiltersPreserved":true,"choiceIdsAndConditionsPreserved":true,"cardAndDeliveryEditable":true,"errors":[]},{"width":1440,"height":900,"textEditSaveReenter":true,"advancedEditorsRemoved":true,"allFourEffectConfigsPreserved":true,"compoundAndEventFiltersPreserved":true,"choiceIdsAndConditionsPreserved":true,"cardAndDeliveryEditable":true,"errors":[]}]
+[06:17:59.707] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 106,
+      "method": "PATCH",
+      "url": "/api/admin/champions/simple-options"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[06:17:59.723] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 107,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[06:17:59.765] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 108,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[06:17:59.773] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 109,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[06:17:59.783] [32mINFO[39m (166573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 110,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2

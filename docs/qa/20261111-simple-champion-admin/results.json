@@ -1,0 +1,38 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "textEditSaveReenter": true,
+      "advancedEditorsRemoved": true,
+      "allFourEffectConfigsPreserved": true,
+      "compoundAndEventFiltersPreserved": true,
+      "choiceIdsAndConditionsPreserved": true,
+      "cardAndDeliveryEditable": true,
+      "errors": []
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "textEditSaveReenter": true,
+      "advancedEditorsRemoved": true,
+      "allFourEffectConfigsPreserved": true,
+      "compoundAndEventFiltersPreserved": true,
+      "choiceIdsAndConditionsPreserved": true,
+      "cardAndDeliveryEditable": true,
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "textEditSaveReenter": true,
+      "advancedEditorsRemoved": true,
+      "allFourEffectConfigsPreserved": true,
+      "compoundAndEventFiltersPreserved": true,
+      "choiceIdsAndConditionsPreserved": true,
+      "cardAndDeliveryEditable": true,
+      "errors": []
+    }
+  ],
+  "productionWrites": 0
+}

@@ -156,12 +156,7 @@ export function FinisherLinkEditor({
           )}
         </>
       )}
-      {legacy?.cardType === "WRESTLER" && (
-        <details>
-          <summary>기존 능력용 선수 토큰 연결</summary>
-          <p>{legacy.name} · 기존 고유 능력과 카드 효과의 연결은 유지합니다.</p>
-        </details>
-      )}
+
     </section>
   );
 }
