@@ -1,0 +1,53 @@
+✔ ordinary WRESTLER exact effect kill does not count as pinfall (8.198489ms)
+✔ ordinary TECHNIQUE exact effect kill does not count as pinfall (0.642276ms)
+✔ pinfall card effect 0 damage vs 2 health (0.62456ms)
+✔ pinfall card effect 1 damage vs 2 health (0.549808ms)
+✔ pinfall card effect 2 damage vs 2 health (2.606008ms)
+✔ pinfall card effect 3 damage vs 2 health (0.6923ms)
+✔ post-mitigation actual health damage decides exactness (3.228604ms)
+✔ physical attack by a vanilla wrestler qualifies even without its own pinfall ability (0.694694ms)
+✔ attack-triggered ordinary effect cannot borrow ATTACK provenance (0.791788ms)
+✔ Pandora ability exact retirements heal and only enemy retirements advance preparation (3.251989ms)
+✔ another champion ability cannot qualify even with the same damage operation (0.930134ms)
+✔ ordinary reacting card cannot inherit Pandora eligibility from its parent chain (0.84023ms)
+✔ nested lethal SELF_DAMAGED resolution preserves the exact source eligibility once (0.827301ms)
+✔ silenced and disabled pinfall cards cannot qualify ordinary effect damage (0.86024ms)
+✔ active granted pinfall text qualifies and survives source cleanup (0.714974ms)
+✔ exact damage replaced by destruction does not count (0.82008ms)
+✔ health reduction without damage does not count (0.469609ms)
+✔ inherited champion context needs the actual ability source, not just its champion id (0.313557ms)
+✔ eligibility is captured before the damaged target silences its source (1.161398ms)
+✔ an unmarked effect source remains ineligible even if it gains pinfall during a later reaction (0.834442ms)
+✖ Pandora does not heal for a pinfall caused by a reacting card during her ability (1.799798ms)
+✔ other cards' physical and effect pinfalls do not give Pandora her ability heal (1.204422ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 21
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1125.585253
+
+✖ failing tests:
+
+test at artifacts/ko-game/src/game/engine/pinfall-sources.test.ts:364:1
+✖ Pandora does not heal for a pinfall caused by a reacting card during her ability (1.799798ms)
+  AssertionError [ERR_ASSERTION]: Pandora's own hit was 2→1, so the child card's 1→0 cannot heal her
+  
+  17 !== 15
+  
+      at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/artifacts/ko-game/src/game/engine/pinfall-sources.test.ts:382:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 17,
+    expected: 15,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

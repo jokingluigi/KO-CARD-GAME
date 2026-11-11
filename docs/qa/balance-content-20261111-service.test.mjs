@@ -138,7 +138,15 @@ async function fixture(mode = "CAST", full = false) {
       : []),
   ];
   s.cardPool = [...cards, unit];
-  if (["PANDORA", "PLAIN_SPELL", "PLAIN_CARD", "PIN_CARD"].includes(mode)) {
+  if (
+    [
+      "PANDORA",
+      "PANDORA_REACTION",
+      "PLAIN_SPELL",
+      "PLAIN_CARD",
+      "PIN_CARD",
+    ].includes(mode)
+  ) {
     const c = champions.find((c) => c.name === "챔피언 판도라");
     s.players[0].champion = {
       ...c,
@@ -157,7 +165,34 @@ async function fixture(mode = "CAST", full = false) {
         boardSlot: i,
       }))
       .concat([null, null]);
-    if (mode !== "PANDORA") {
+    if (mode === "PANDORA_REACTION") {
+      Object.assign(s.players[1].board[0], {
+        currentHealth: 2,
+        maxHealth: 2,
+        abilities: [
+          { trigger: "EXACT_ZERO_DAMAGE", effects: [] },
+          {
+            trigger: "SELF_DAMAGED",
+            oncePerTurn: true,
+            effects: [
+              {
+                type: "STRUCTURED",
+                action: "DAMAGE",
+                target: {
+                  zone: "BOARD",
+                  owner: "SELF",
+                  selection: "SELF",
+                  count: 1,
+                },
+                values: { amount: 1 },
+              },
+            ],
+          },
+        ],
+      });
+      s.players[1].board[1] = null;
+    }
+    if (!["PANDORA", "PANDORA_REACTION"].includes(mode)) {
       const technique = mode === "PLAIN_SPELL";
       const source = {
         ...unit,
@@ -401,3 +436,48 @@ for (const mode of ["PLAIN_SPELL", "PLAIN_CARD", "PIN_CARD"]) {
     }
   });
 }
+
+test("Pandora cannot heal from another card's nested pinfall; both clients and persisted state agree", async () => {
+  let r = await fixture("PANDORA_REACTION");
+  assert.ok(
+    (await act(r, "nested-ability", { type: "USE_CHAMPION_ABILITY" })).ok,
+  );
+  assert.ok(
+    (
+      await act(r, "nested-pick", {
+        type: "SELECT_EFFECT_TARGET",
+        targetId: "enemy-0",
+      })
+    ).ok,
+  );
+  const version = r.version;
+  assert.ok(
+    (
+      await act(r, "nested-confirm", {
+        type: "SELECT_EFFECT_TARGET",
+        targetId: "effect:confirm",
+      })
+    ).ok,
+  );
+  const retired = r.state.events.find((e) => e.type === "CARD_RETIRED");
+  assert.ok(retired?.exactZero);
+  assert.deepEqual(retired.source, { type: "CARD", cardInstanceId: "enemy-0" });
+  assert.equal(r.state.players[0].health, 10);
+  assert.ok(
+    (
+      await act(
+        r,
+        "nested-confirm",
+        { type: "SELECT_EFFECT_TARGET", targetId: "effect:confirm" },
+        "tutorial-user",
+        version,
+      )
+    ).duplicate,
+  );
+  assert.equal(r.state.players[0].health, 10);
+  const id = r.matchId;
+  service.cleanupMatchRuntime(id);
+  r = await service.getRuntime(id);
+  for (const user of ["tutorial-user", "delivery-opponent"])
+    assert.equal(service.snapshotMessage(r, user).state.players[0].health, 10);
+});

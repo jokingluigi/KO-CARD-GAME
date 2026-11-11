@@ -1,4 +1,4 @@
-import { damageCanPinfall } from './pinfall';
+import { damageCanPinfall, isPandoraAbilitySource } from './pinfall';
 import { canEnterTowerField } from "../tower/relics";
 import { MAX_HAND_SIZE } from "../rules/constants";
 import type { GameState } from "../types/game-state";
@@ -887,7 +887,13 @@ export function applyBalanceEffect(
               (e) =>
                 e.type === "CARD_RETIRED" &&
                 e.cardInstanceId === id &&
-                e.exactZero,
+                e.exactZero &&
+                e.source?.type === "CARD" &&
+                e.source.cardInstanceId === source.instanceId &&
+                e.sourceContext?.sourcePlayerId === playerId &&
+                isPandoraAbilitySource(source, e.sourceContext) &&
+                (!context?.sourceContext?.rootSourceEventId ||
+                  e.sourceContext.rootSourceEventId === context.sourceContext.rootSourceEventId),
             )
         )
           n = apply(

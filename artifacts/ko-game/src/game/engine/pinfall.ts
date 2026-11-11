@@ -5,19 +5,24 @@ import type { GameState } from "../types/game-state";
 
 const PANDORA_CHAMPION_ID = "bcffab96-f61f-497e-b60b-de5a869837d3";
 
+/** Identify the actual ability source, not a child card sharing its parent context. */
+export function isPandoraAbilitySource(
+  source: CardInstance,
+  context?: EventAttribution,
+): boolean {
+  return Boolean(
+    context?.sourceActionType === "USE_CHAMPION_ABILITY" &&
+    context.sourceChampionDefinitionId === PANDORA_CHAMPION_ID &&
+    context.sourceChampionInstanceId === source.instanceId,
+  );
+}
+
 /** Snapshot effect eligibility at damage application, before reactions change its source. */
 export function effectCanPinfall(
   source: CardInstance,
   context?: EventAttribution,
 ): boolean {
-  // A child card effect may inherit its parent's attribution. Only the actual
-  // ability proxy qualifies as Pandora's ability, never another card in that chain.
-  if (
-    context?.sourceActionType === "USE_CHAMPION_ABILITY" &&
-    context.sourceChampionDefinitionId === PANDORA_CHAMPION_ID &&
-    context.sourceChampionInstanceId === source.instanceId
-  )
-    return true;
+  if (isPandoraAbilitySource(source, context)) return true;
   return (
     !source.isAbilityDisabled &&
     getActiveCardAbilities(source).some(

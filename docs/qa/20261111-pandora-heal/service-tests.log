@@ -1,0 +1,25 @@
+[22:30:40.292] INFO (258572): request completed
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 59
+REJECT cancel INVALID_ACTION 현재 상태에서 허용되지 않는 action입니다.
+✔ actual catalog PvP Pandora selection survives persisted reconnect, hides opponent targets and resolves exactly once (4002.61006ms)
+✔ actual catalog PvP Mimic candidates are private, persisted and mandatory; chosen finisher is synchronized once (127.5376ms)
+✔ PvP PLAIN_SPELL pinfall eligibility, preparation and both views persist after reconnect (89.368546ms)
+✔ PvP PLAIN_CARD pinfall eligibility, preparation and both views persist after reconnect (85.387091ms)
+✔ PvP PIN_CARD pinfall eligibility, preparation and both views persist after reconnect (86.074185ms)
+✔ Pandora cannot heal from another card's nested pinfall; both clients and persisted state agree (136.262682ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6728.27107

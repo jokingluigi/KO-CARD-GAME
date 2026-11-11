@@ -441,3 +441,68 @@ test("an unmarked effect source remains ineligible even if it gains pinfall duri
   );
   assert.deepEqual(flags(n), [false]);
 });
+
+test("Pandora does not heal for a pinfall caused by a reacting card during her ability", () => {
+  const s = setup();
+  const target = put(s, 1, 0, {
+    currentHealth: 2,
+    abilities: [
+      { trigger: "EXACT_ZERO_DAMAGE", effects: [] },
+      {
+        trigger: "SELF_DAMAGED",
+        oncePerTurn: true,
+        effects: [
+          {
+            type: "STRUCTURED",
+            action: "DAMAGE",
+            target: {
+              zone: "BOARD",
+              owner: "SELF",
+              selection: "SELF",
+              count: 1,
+            },
+            values: { amount: 1 },
+          },
+        ],
+      },
+    ],
+  });
+  const n = chooseAbility(s, [target.instanceId]);
+  const retire = n.events.find((e) => e.type === "CARD_RETIRED");
+  assert.ok(
+    retire?.exactZero,
+    "the reacting pinfall card made its own exact kill",
+  );
+  assert.deepEqual(retire.source, {
+    type: "CARD",
+    cardInstanceId: target.instanceId,
+  });
+  assert.equal(
+    n.players[0].health,
+    15,
+    "Pandora's own hit was 2→1, so the child card's 1→0 cannot heal her",
+  );
+});
+
+test("other cards' physical and effect pinfalls do not give Pandora her ability heal", () => {
+  for (const physical of [true, false]) {
+    const s = setup(),
+      source = put(s, 0, 0, { abilities: [pin] }),
+      target = put(s, 1, 0, { currentHealth: 2, currentAttack: 0 });
+    const n = physical
+      ? executeAction(s, {
+          type: "ATTACK",
+          playerId: "player-1",
+          attackerInstanceId: source.instanceId,
+          target: {
+            type: "WRESTLER",
+            playerId: "player-2",
+            cardInstanceId: target.instanceId,
+          },
+        }).state
+      : damage(s, source, target, 2);
+    assert.deepEqual(flags(n), [true]);
+    assert.equal(progress(n), 1);
+    assert.equal(n.players[0].health, 15);
+  }
+});
