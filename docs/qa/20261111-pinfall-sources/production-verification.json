@@ -1,0 +1,56 @@
+{
+  "checkedAtUTC": "2026-11-11T22:21:12.331Z",
+  "commit": "060ae4c34f19227b11b08910cdf5afd9a8dc0cec",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbqej50n74is73bv7c30",
+      "status": "live",
+      "commit": "060ae4c34f19227b11b08910cdf5afd9a8dc0cec"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbqek2ajnfac738fgfc0",
+      "status": "live",
+      "commit": "060ae4c34f19227b11b08910cdf5afd9a8dc0cec"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "060ae4c34f19227b11b08910cdf5afd9a8dc0cec"
+  },
+  "frontend": {
+    "revision": "060ae4c34f19227b11b08910cdf5afd9a8dc0cec",
+    "builtAtUTC": "2026-11-11T22:20:37.845Z"
+  },
+  "documents": [
+    {
+      "path": "/",
+      "entry": "/assets/index-DIWOyXBR.js",
+      "current": true,
+      "cacheControl": "no-cache, no-store, must-revalidate"
+    },
+    {
+      "path": "/admin/champions",
+      "entry": "/assets/index-DIWOyXBR.js",
+      "current": true,
+      "cacheControl": "public, max-age=0, s-maxage=300"
+    }
+  ],
+  "engineModule": "awakening-_jH5rrDJ.js",
+  "eligibilitySnapshotInDeliveredEngine": true,
+  "observations": [
+    {
+      "at": "2026-11-11T22:21:11.682Z",
+      "version": "060ae4c34f19227b11b08910cdf5afd9a8dc0cec",
+      "root": true,
+      "admin": true
+    }
+  ],
+  "productionDataWrites": 0,
+  "productionMatchCreated": false,
+  "schemaChanged": false,
+  "mainMerged": false
+}

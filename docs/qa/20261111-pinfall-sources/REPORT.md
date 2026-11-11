@@ -30,3 +30,7 @@ No Production DB writes, production match creation or schema change. Test defini
 - `docs/qa/balance-content-20261111-service.test.mjs`
 
 Deployment receipts will be recorded after API-first/frontend-second release; main is not merged.
+
+## Release verified
+
+Source `060ae4c34f19227b11b08910cdf5afd9a8dc0cec` is live on API (`dep-dbqej50n74is73bv7c30`) and frontend (`dep-dbqek2ajnfac738fgfc0`). Read-only checks verified both actual served revisions, root and administrator HTML entry revisions, pinned deployment configuration, and the delivered shared engine's `pinfallEligible` snapshot logic. No production match was created and no Production DB data was modified by verification. See `production-verification.json`. Main remains unmerged.
