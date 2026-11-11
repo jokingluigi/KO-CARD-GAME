@@ -12,6 +12,23 @@ const out =
     process.env.FINISHER_QA_OUTPUT ?? "docs/qa/20261111-balance-content/branch-battle",
   origin = process.env.KO_BALANCE_QA_ORIGIN ?? "http://127.0.0.1:5186";
 await mkdir(out, { recursive: true });
+async function assertReadableChoice(page) {
+  await page.waitForFunction(() => !document.querySelector('[data-testid="effect-target-focus"]'));
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('.ko-battle-card-choice');
+    return dialog && getComputedStyle(dialog).opacity === '1';
+  });
+  const layers = await page.locator('.ko-battle-card-choice').evaluate(node => {
+    const dialog = getComputedStyle(node);
+    const backdrop = getComputedStyle(document.querySelector('.ko-card-choice-backdrop'));
+    return { dialog: Number(dialog.zIndex), backdrop: Number(backdrop.zIndex),
+      opacity: dialog.opacity, filter: dialog.filter, background: backdrop.backgroundColor };
+  });
+  assert.ok(layers.dialog > layers.backdrop && layers.backdrop > 190);
+  assert.equal(layers.opacity, '1');
+  assert.equal(layers.filter, 'none');
+  assert.match(layers.background, /(?:0\.5\)|50%\))/);
+}
 const results = [],
   ids = [];
 const artRecords = process.env.KO_FINISHER_ART_DATA
@@ -343,6 +360,7 @@ try {
     await own.locator(".ko-champion-ability").click();
     const dialog = own.getByRole("dialog");
     await dialog.waitFor();
+    await assertReadableChoice(own);
     await dialog
       .getByRole("button", { name: /검증 상대 선수/ })
       .nth(0)
@@ -381,8 +399,11 @@ try {
       runtime.state.targetingState.catalogChoice.definitionIds.length,
       3,
     );
+    await assertReadableChoice(own);
     await own.screenshot({ path: `${out}/discovery-${width}.png` });
     await own.getByRole("dialog").locator("[aria-pressed]").first().click();
+    assert.ok(await own.getByRole("button", { name: "선택한 카드 받기" }).isEnabled());
+    await own.screenshot({ path: `${out}/discovery-selected-${width}.png` });
     await own.getByRole("button", { name: "선택한 카드 받기" }).click();
     await own.getByRole("dialog").waitFor({ state: "hidden" });
     assert.equal(runtime.state.players[0].hand.length, 1);
@@ -412,6 +433,7 @@ try {
       multiTargetTouch: true,
       persistedSelectionAfterReload: true,
       catalogDiscovery: true,
+      readableChoiceWithoutBoardMask: true,
       opponentWait: true,
       exactZeroRetireAndHeal: true,
       placeholderArt: true,

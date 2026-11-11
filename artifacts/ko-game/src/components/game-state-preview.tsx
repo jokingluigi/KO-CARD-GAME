@@ -875,6 +875,14 @@ export function GameStatePreview({
   },[state,onEffectTarget,playError]);
 
   const effectTargeting = state.targetingState?.active;
+  // Modal card choices own their backdrop; the board spotlight must not cover them.
+  const cardChoiceDialogOpen = Boolean(
+    state.status === "IN_PROGRESS" && effectTargeting &&
+    state.targetingState?.playerId === me.id &&
+    (state.targetingState.catalogChoice ||
+      (state.targetingState.minTargets > 0 &&
+        state.targetingState.maxTargets > state.targetingState.minTargets)),
+  );
   const validEffectTargetIds = new Set(state.targetingState?.playerId === me.id ? state.targetingState.validTargetIds : []);
   const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
 
@@ -1141,7 +1149,7 @@ export function GameStatePreview({
       <LocalActionFeedback message={!settingsOpen&&!historyOpen&&!emoteOpen?localReason?.message??null:null} node={localReason?.id===me.id?playerChampionRef.current:localReason?.id===opp.id?championRef.current:localReason?handCardRefs.current.get(localReason.id)??boardCardRefs.current.get(localReason.id)??null:null}/>
       <p role="status" aria-live="polite" aria-atomic="true" className="ko-battle-event-reader" data-testid="battle-event-caption">{eventCaption}</p>
       <OverdrawReveal state={state}/>
-      {state.status==='IN_PROGRESS' && state.targetingState?.active && state.targetingState.playerId===me.id && (state.targetingState.catalogChoice || (state.targetingState.minTargets>0 && state.targetingState.maxTargets>state.targetingState.minTargets)) && <BattleCardChoiceDialog key={state.gameId+':'+state.targetingState.sourceInstanceId+':'+state.targetingState.effectIndex} state={state} playerId={me.id} onSelect={onEffectTarget}/>}
+      {cardChoiceDialogOpen && <BattleCardChoiceDialog key={state.gameId+':'+state.targetingState?.sourceInstanceId+':'+state.targetingState?.effectIndex} state={state} playerId={me.id} onSelect={onEffectTarget}/>}
       {state.status==='IN_PROGRESS' && state.targetingState?.finisherChoice && state.targetingState.playerId===me.id && <FinisherChoiceDialog key={state.gameId+':'+state.targetingState.sourceInstanceId} state={state} playerId={me.id} onConfirm={onEffectTarget}/>}
       {state.status==='IN_PROGRESS' && state.waitingForFinisherCastPlayerId && state.waitingForFinisherCastPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 피니셔 효과의 대상을 선택하고 있어요.</div>}
       {state.status==='IN_PROGRESS' && state.waitingForFinisherPlayerId && state.waitingForFinisherPlayerId!==me.id && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 피니셔를 선택하고 있어요.</div>}
@@ -1168,7 +1176,7 @@ export function GameStatePreview({
       } as React.CSSProperties}>
 
          {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/><BattleAttention state={state}/></>}
-         <TargetSelectionFocus active={Boolean(effectTargeting&&!state.targetingState?.finisherChoice&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
+         <TargetSelectionFocus active={Boolean(effectTargeting&&!cardChoiceDialogOpen&&!state.targetingState?.finisherChoice&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
          <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">

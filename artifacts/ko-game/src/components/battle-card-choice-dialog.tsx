@@ -50,7 +50,8 @@ export function BattleCardChoiceDialog({
   return (
     <Dialog open onOpenChange={() => {}}>
       <DialogContent
-        className="[&>.ko-game-dialog-close]:hidden max-h-[90dvh] overflow-y-auto sm:max-w-3xl"
+        overlayClassName="ko-card-choice-backdrop z-[200] bg-black/50"
+        className="ko-battle-card-choice z-[201] [&>.ko-game-dialog-close]:hidden max-h-[90dvh] overflow-y-auto sm:max-w-3xl"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
