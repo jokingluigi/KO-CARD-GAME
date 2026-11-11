@@ -1,0 +1,97 @@
+{
+  "checkedAtUTC": "2026-11-11T01:45:21.949Z",
+  "commit": "4f473859b0b3649d31a962987606611c7dc19b96",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbpsg9m7bikc73b9eqag",
+      "status": "live",
+      "commit": "4f473859b0b3649d31a962987606611c7dc19b96",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbpsg9gu01pc7393ciig",
+      "status": "live",
+      "commit": "4f473859b0b3649d31a962987606611c7dc19b96",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "4f473859b0b3649d31a962987606611c7dc19b96"
+  },
+  "front": {
+    "revision": "4f473859b0b3649d31a962987606611c7dc19b96",
+    "builtAtUTC": "2026-11-11T01:43:42.071Z"
+  },
+  "rootEntryModule": "/assets/index-iQpXWOdB.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-iQpXWOdB.js",
+  "previousHelperPatchRetained": null,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "registered-frame-preview",
+  "tagLabelsEndpointAvailable": null,
+  "publicCatalogChecksSkippedForMaintenance": true,
+  "productionMatchCreated": false,
+  "mainMerged": false,
+  "registeredAssets": [
+    {
+      "cardType": "TECHNIQUE",
+      "rarity": "NORMAL",
+      "url": "https://ko-card-game-vr69.onrender.com/api/storage/objects/uploads/card-images/0dbeea0d-ea59-4dea-b675-b750eedef700.png",
+      "status": 200,
+      "sha256": "0fecaedde5653cbe46499615113ed96cc58ae3f4acd312ee96ef48cd50aae93d",
+      "matchesTestedAsset": true
+    },
+    {
+      "cardType": "WRESTLER",
+      "rarity": "CHAMPION",
+      "url": "https://ko-card-game-vr69.onrender.com/api/storage/objects/uploads/card-images/215ed114-687d-4a46-8551-d4cf0e035286.png",
+      "status": 200,
+      "sha256": "ae9c5d0897f3b893e996ce4ec850388becd3dbba8b2c8f8b844f24e969702140",
+      "matchesTestedAsset": true
+    },
+    {
+      "cardType": "WRESTLER",
+      "rarity": "NORMAL",
+      "url": "https://ko-card-game-vr69.onrender.com/api/storage/objects/uploads/card-images/aa057260-1ead-4ee1-b1f0-42f0cb9dccb7.png",
+      "status": 200,
+      "sha256": "62eaefcea4c3ea0d48abfc5fd5232945104be4ffa18f3f1fed71c9176f0a4bc1",
+      "matchesTestedAsset": true
+    },
+    {
+      "cardType": "WRESTLER",
+      "rarity": "EPIC",
+      "url": "https://ko-card-game-vr69.onrender.com/api/storage/objects/uploads/card-images/263037f8-ee05-426a-ae30-5c92cbdfee5a.png",
+      "status": 200,
+      "sha256": "964682a9013caaaef46a6629d6f7abdee82dfd67bd147ccfc22c21b7c08c01e9",
+      "matchesTestedAsset": true
+    },
+    {
+      "cardType": "WRESTLER",
+      "rarity": "LEGENDARY",
+      "url": "https://ko-card-game-vr69.onrender.com/api/storage/objects/uploads/card-images/1e8acbff-f140-43d9-ae75-e32eb1dc6bfe.png",
+      "status": 200,
+      "sha256": "b3b31dbc8109f38acad75f4265463337cca4f2b371980d7f9401ace54b3131c5",
+      "matchesTestedAsset": true
+    },
+    {
+      "cardType": "TECHNIQUE",
+      "rarity": "EPIC",
+      "url": "https://ko-card-game-vr69.onrender.com/api/storage/objects/uploads/card-images/3aa7d581-c9f2-4595-aeb9-d13a92499535.png",
+      "status": 200,
+      "sha256": "7c65ae381054b79a84158db5a6f238bbbb0e9cf61559ac997d2cf11a0861670c",
+      "matchesTestedAsset": true
+    }
+  ],
+  "maintenanceEnabled": true,
+  "productionUploadPerformed": false
+}
