@@ -774,7 +774,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
 }
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
-  PROGRAM: "남은 골드와 유효 대상을 검사한 뒤 추가 비용을 자동 지불하고 효과를 해결합니다.",
+  PROGRAM: "남은 골드와 유효 대상을 검사한 뒤 1골드를 자동으로 추가 소비하고 효과를 해결합니다.",
   REPLACE_CHAMPION_ABILITY: "현재 챔피언의 고유 능력을 변경합니다. 사용 횟수와 체력은 유지합니다.",
   FUSION: "필드의 원본 선수와 다른 아군 선수가 합체합니다. 현재 공격력·체력을 이전하고 양쪽 합체 효과 후 재료가 소멸합니다.", VANISH: "리타이어·파괴·묘지와 무관하게 현재 전투에서 완전히 제거합니다.",
   BUFF: "명시된 공격력/체력 채널만 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", MODIFY_MAX_HEALTH: "대상의 최대 체력만 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
@@ -812,7 +812,7 @@ export const EFFECT_LIBRARY = {
   actions: ACTIONS.map((name) => {
     const schema = ACTION_SCHEMAS[name];
     const values = {
-       ...(schema.program ? {programCost:"integer 0..999",programEffects:"StructuredQueuedEffect[] (1..10)"} : {}),
+       ...(schema.program ? {programCost:"optional legacy field; upgrade always costs 1 gold",programEffects:"StructuredQueuedEffect[] (1..10)"} : {}),
        ...(schema.abilityReplacement ? { abilityReplacement: '{ variant: "BASE" | "UPGRADED" } 또는 { ability: { id, name, description, cost, effects: StructuredEffect[] } }' } : {}),
        ...(schema.amount ? { amount: schema.signedAmount ? "number (-999..999)" : "number (0..999)" } : {}),
        ...(schema.stat ? { stat: [...STAT_NAMES] } : {}),
@@ -884,20 +884,23 @@ export function validAbilityReplacementConfig(value:unknown):boolean {
  };return walk(value,0);
 }
 
+/** Upgrade always spends one extra gold. Legacy programCost fields remain readable. */
+export const UPGRADE_GOLD_COST = 1;
+export function upgradeDisplayText(text: string): string {
+  return text.replace(/(?:업그레이드|프로그램|PROGRAM)\s*\(\s*\d+\s*\)/gi,"업그레이드").replace(/(?:프로그램|PROGRAM)(?=\s*[:：])/gi,"업그레이드");
+}
 /** PROGRAM is a paid, automatic effect group, never an activation button. */
 export function validProgramValues(
   value: unknown,
   depth = 0,
 ): value is Record<string, unknown> & {
-  programCost: number;
+  programCost?: number;
   programEffects: StructuredQueuedEffect[];
 } {
   if (
     depth > SCRIPT_MAX_DEPTH ||
     !isRecord(value) ||
-    !Number.isSafeInteger(value.programCost) ||
-    Number(value.programCost) < 0 ||
-    Number(value.programCost) > 999 ||
+    (value.programCost !== undefined && (!Number.isSafeInteger(value.programCost) || Number(value.programCost) < 0 || Number(value.programCost) > 999)) ||
     !Array.isArray(value.programEffects) ||
     value.programEffects.length < 1 ||
     value.programEffects.length > 10
@@ -928,7 +931,7 @@ export function validProgramConfig(value: unknown, depth = 0): boolean {
 export function programTextClauses(
   input: string,
 ): Array<{ text: string; cost?: number }> | null {
-  if (!/(?:업그레이드|프로그램|PROGRAM)\s*\(/i.test(input)) return null;
+  if (!/(?:업그레이드|프로그램|PROGRAM)(?:\s*\(\s*\d+\s*\))?\s*[:：]/i.test(input)) return null;
   return input
     .trim()
     .split(/\r?\n+/)
@@ -937,10 +940,10 @@ export function programTextClauses(
       const match = line
         .trim()
         .match(
-          /^(?:등장\s*(?:[—–-]|:)\s*)?(?:업그레이드|프로그램|PROGRAM)\s*\(\s*(\d+)\s*\)\s*[:：]\s*(.+)$/i,
+          /^(?:등장\s*(?:[—–-]|:)\s*)?(?:업그레이드|프로그램|PROGRAM)(?:\s*\(\s*\d+\s*\))?\s*[:：]\s*(.+)$/i,
         );
       return match
-        ? { cost: Number(match[1]), text: match[2] }
+        ? { cost: UPGRADE_GOLD_COST, text: match[1] }
         : { text: line };
     });
 }

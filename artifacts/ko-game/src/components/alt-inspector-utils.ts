@@ -5,7 +5,7 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords, getVisibleCardRulesTex
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
-  PROGRAM: "업그레이드(X): 지정된 조건을 만족했을 때 남은 골드가 X 이상이면 X골드를 자동으로 소비하고 효과를 발동합니다.",
+  PROGRAM: "업그레이드: 지정된 조건을 만족했을 때 남은 골드가 1 이상이면 1골드를 자동으로 추가 소비하고 효과를 발동합니다.",
   FUSION: '빈 필드 슬롯과 다른 아군 선수가 있어야 손에서 낼 수 있습니다. 등장 후 아군에게 현재 공격력·체력을 더하고 양쪽 합체 효과를 처리한 뒤 재료가 소멸합니다. 취소하면 카드와 골드를 복원합니다.',
   VANISH: '리타이어·파괴가 아니며 묘지에 가지 않고 현재 전투에서 완전히 제거됩니다.',
   CANNOT_ATTACK: '공격을 선언할 수 없습니다. 카드 효과와 반격은 정상 작동합니다. 침묵하면 제거됩니다.',

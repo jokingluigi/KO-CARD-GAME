@@ -4,7 +4,7 @@ import {getCardDefinition} from '../game/cards/test-cards';
 import {rememberCardOrigin} from "./physical-feedback";
 import "./physical-card.css";
 import {useCosmeticImage} from './cosmetic-battle';
-import { configuredCountdownTurns } from '@workspace/effect-registry';
+import { configuredCountdownTurns, upgradeDisplayText } from '@workspace/effect-registry';
 import { getCardDefinitions } from '../game/cards/test-cards';
 import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-repair';
 import { MotionNumber } from './presentation-motion';
@@ -83,43 +83,41 @@ type FrameLayout = {
 const frameLayouts: Record<CardRarity, FrameLayout> = {
   NORMAL: {
     scale: 1.1,
-    name: { left: 20, right: 7, top: 5.5, height: 7.8 },
+    name: { left: 26, right: 12, top: 7.2, height: 5.6 },
     cost: { centerX: 13.68, centerY: 10.04, size: 14 },
-    rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
+    rules: { left: 20, right: 20, top: 70.5, bottom: 13.5 },
     attack: { centerX: 12.26, centerY: 86.52, size: 14 },
     health: { centerX: 87.66, centerY: 86.52, size: 14 },
   },
   EPIC: {
-    scale: 1.1, name: { left: 20, right: 7, top: 5.5, height: 7.8 },
+    scale: 1.1, name: { left: 26, right: 12, top: 7.2, height: 5.6 },
     cost: { centerX: 13.68, centerY: 10.04, size: 14 },
-    rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
+    rules: { left: 20, right: 20, top: 70.5, bottom: 13.5 },
     attack: { centerX: 12.26, centerY: 86.52, size: 14 },
     health: { centerX: 87.66, centerY: 86.52, size: 14 },
   },
   LEGENDARY: {
     scale: 1.1,
-    name: { left: 18.5, right: 7.5, top: 5.5, height: 8.2 },
+    name: { left: 26, right: 13, top: 8.5, height: 5.2 },
     cost: { centerX: 12.74, centerY: 10.85, size: 14 },
-    rules: { left: 11, right: 11, top: 59, bottom: 13.5 },
+    rules: { left: 21, right: 21, top: 64, bottom: 14 },
     attack: { centerX: 12.64, centerY: 85.45, size: 14 },
     health: { centerX: 85.75, centerY: 85.45, size: 14 },
   },
-  // The champion frame has the same broad panel structure as the legendary
-  // frame. It keeps its own entry so it can be tuned without touching card
-  // data or the renderer call sites.
+  // Crown and lower description plate have different bounds on the champion frame.
   CHAMPION: {
     scale: 1.1,
-    name: { left: 18.5, right: 7.5, top: 5.5, height: 8.2 },
-    cost: { centerX: 12.74, centerY: 10.85, size: 14 },
-    rules: { left: 11, right: 11, top: 59, bottom: 13.5 },
-    attack: { centerX: 12.64, centerY: 85.45, size: 14 },
-    health: { centerX: 85.75, centerY: 85.45, size: 14 },
+    name: { left: 26, right: 18, top: 10.5, height: 4.4 },
+    cost: { centerX: 13.2, centerY: 11.51, size: 14 },
+    rules: { left: 21, right: 21, top: 69, bottom: 15 },
+    attack: { centerX: 13.1, centerY: 84.13, size: 14 },
+    health: { centerX: 86.58, centerY: 84.12, size: 14 },
   },
   TOKEN: {
     scale: 1.1,
-    name: { left: 20, right: 7, top: 5.5, height: 7.8 },
+    name: { left: 26, right: 12, top: 7.2, height: 5.6 },
     cost: { centerX: 13.68, centerY: 10.04, size: 14 },
-    rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
+    rules: { left: 20, right: 20, top: 70.5, bottom: 13.5 },
     attack: { centerX: 12.26, centerY: 86.52, size: 14 },
     health: { centerX: 87.66, centerY: 86.52, size: 14 },
   },
@@ -255,18 +253,13 @@ export function CardRenderer({
   const armorValue = keywordConfig?.armor ?? getCardDefinitions().find(card => card.name === name)?.effectConfig?.armor;
   const countdownValue = countdownRemaining ?? configuredCountdownTurns({countdownTurns:countdownTurns ?? keywordConfig?.countdownTurns ?? getCardDefinitions().find(card=>card.name===name)?.effectConfig?.countdownTurns});
   const armoredRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
-  const displayRulesText = visibleRuntimeKeywords.includes('COUNTDOWN') ? armoredRulesText.replace(/카운트다운(?:\s*\(\d+\)|\s+\d+\s*턴)?/g, `카운트다운(${countdownValue})`) : armoredRulesText;
+  const displayRulesText = upgradeDisplayText(visibleRuntimeKeywords.includes('COUNTDOWN') ? armoredRulesText.replace(/카운트다운(?:\s*\(\d+\)|\s+\d+\s*턴)?/g, `카운트다운(${countdownValue})`) : armoredRulesText);
   const normalizedRarity = isChampionToken && cardType !== "TECHNIQUE"
     ? "CHAMPION"
     : normalizeCardRarityForType(cardType, rarity, { isChampionToken });
   const normalizedCardType = cardType ?? "WRESTLER";
-  // Content coordinates are canonical for every WRESTLER frame. Only the
-  // frame artwork changes by rarity; frame offsets remain independent.
-  const layoutRarity = normalizedCardType === "WRESTLER"
-    ? "NORMAL"
-    : normalizedRarity === "TOKEN"
-      ? "NORMAL"
-      : normalizedRarity;
+  // Every rarity uses the coordinates of its own bundled artwork.
+  const layoutRarity = normalizedRarity === "TOKEN" ? "NORMAL" : normalizedRarity;
   const remoteFrame = useCardFrameDefinition(normalizedCardType, normalizedRarity);
   const frameSettings = frameOverride?.enabled === false
     ? null
@@ -408,16 +401,17 @@ export function CardRenderer({
         )}
 
         {showName && (
-          <div
+          <div data-card-name
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"
             style={{
-              left: `${scaleInset(frameLayout.name.left, frameScale, frameOffsetX)}%`,
-              right: `${scaleInset(frameLayout.name.right, frameScale, -frameOffsetX)}%`,
-              top: `${scaleInset(frameLayout.name.top, frameScale, frameOffsetY)}%`,
+              left: `${scalePercent(frameLayout.name.left, frameScale, frameOffsetX)}%`,
+              right: `${scaleInset(frameLayout.name.right, frameScale, frameOffsetX)}%`,
+              top: `${scalePercent(frameLayout.name.top, frameScale, frameOffsetY)}%`,
               height: `${scaleSize(frameLayout.name.height, frameScale)}%`,
+              color: !frameSettings?.frameUrl && layoutRarity === "LEGENDARY" ? "#21180a" : "#ffffff",
             }}
           >
-            <span className={`line-clamp-2 w-full break-words font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${nameClass}`}>
+            <span className={`line-clamp-2 w-full break-words font-black leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${nameClass}`}>
               {name || "카드 이름"}
             </span>
           </div>
@@ -438,12 +432,13 @@ export function CardRenderer({
 
         {showRules && (
           <div data-card-rules
-            className={`pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] text-center text-neutral-100 ${fitRules ? "py-0" : "py-[3%]"}`}
+            className={`pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] text-center text-neutral-100 ${fitRules ? "py-0" : "py-[1%]"}`}
             style={{
-              left: `${scaleInset(frameLayout.rules.left, frameScale, frameOffsetX)}%`,
-              right: `${scaleInset(frameLayout.rules.right, frameScale, -frameOffsetX)}%`,
-              top: `${scaleInset(frameLayout.rules.top, frameScale, frameOffsetY)}%`,
-              bottom: `${scaleInset(frameLayout.rules.bottom, frameScale, -frameOffsetY)}%`,
+              left: `${scalePercent(frameLayout.rules.left, frameScale, frameOffsetX)}%`,
+              right: `${scaleInset(frameLayout.rules.right, frameScale, frameOffsetX)}%`,
+              top: `${scalePercent(frameLayout.rules.top, frameScale, frameOffsetY)}%`,
+              bottom: `${scaleInset(frameLayout.rules.bottom, frameScale, frameOffsetY)}%`,
+              color: !frameSettings?.frameUrl && layoutRarity === "LEGENDARY" ? "#21180a" : undefined,
             }}
           >
             {fitRules ? <FittedCardRules

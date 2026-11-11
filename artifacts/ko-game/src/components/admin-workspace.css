@@ -1116,3 +1116,14 @@
 .admin-workbench-heading h2 {
   overflow-wrap: anywhere;
 }
+
+/* Card artwork editing needs its live preview in the same scrolling workspace. */
+.admin-workbench[data-inline-preview] .admin-workbench-view {display:none;}
+@media (max-width: 900px) {
+  .admin-workbench[data-inline-preview] .admin-editor-preview {display:block;position:static;margin:18px auto 0;width:100%;}
+  .admin-workbench[data-inline-preview] .admin-workbench-fields {display:grid;}
+}
+.admin-workbench[data-inline-preview] .admin-workbench-body {scroll-padding-top:16px;scroll-padding-bottom:150px;}
+.admin-workbench[data-inline-preview] .admin-editor-preview {isolation:isolate;}
+.admin-workbench[data-inline-preview] .admin-editor-footer {z-index:60;}
+.admin-workbench[data-inline-preview] .admin-workbench-shortcut {z-index:61;}

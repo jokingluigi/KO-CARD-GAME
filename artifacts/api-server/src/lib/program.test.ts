@@ -48,7 +48,7 @@ test("visible name is 업그레이드 while serialized PROGRAM remains compatibl
     );
     assert.equal(r.status, "success", JSON.stringify(r));
     assert.equal(r.effects[0]?.action, "PROGRAM");
-    assert.equal(r.effects[0]?.values?.programCost, 2);
+    assert.equal(r.effects[0]?.values?.programCost, 1);
     assert.equal(
       isStructuredEffects({ effects: r.effects }),
       true,
@@ -98,4 +98,12 @@ test("committed automatic upgrade supports targets in future spell/ability group
     isStructuredEffects({ effects: [{ ...effect, trigger: "ACTIVE" }] }),
     true,
   );
+});
+
+test("bare upgrade syntax and legacy numeric notation both compile to fixed one gold", () => {
+  for(const marker of ["업그레이드","업그레이드(9)","프로그램","PROGRAM(0)"]){
+    const r=analyzeEffectText(`등장 — ${marker}: 다른 아군 좀비 1장에게 +2/+2를 부여합니다.`);
+    assert.equal(r.status,"success",JSON.stringify(r));assert.equal(r.effects[0]?.values?.programCost,1);
+  }
+  const {programCost,...values}=effect.values;assert.equal(validProgramConfig({effects:[{...effect,values}]}),true);
 });

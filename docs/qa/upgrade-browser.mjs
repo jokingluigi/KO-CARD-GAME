@@ -8,7 +8,7 @@ import { auditSetup } from "./ui-audit-fixture.mjs";
 const f = await startTutorialFixture(),
   service = await import("../../artifacts/api-server/src/online/service.ts"),
   browser = await chromium.launch();
-const out = "qa-results/upgrade-keyword",
+const out = process.env.UPGRADE_QA_OUTPUT ?? "qa-results/upgrade-keyword",
   origin = "http://127.0.0.1:5186";
 await mkdir(out, { recursive: true });
 const results = [],
@@ -285,7 +285,7 @@ try {
     await opponent
       .getByText("상대가 업그레이드 효과의 대상을 선택하고 있어요.")
       .waitFor();
-    assert.equal(runtime.state.players[0].currentGold, 0);
+    assert.equal(runtime.state.players[0].currentGold, 1);
     assert.equal(runtime.state.targetingState.programPaid, true);
     assert.equal(
       await own.getByRole("button", { name: /^(취소|선택 취소)$/ }).count(),
@@ -306,7 +306,7 @@ try {
       .waitFor({ state: "hidden" });
     assert.equal(runtime.state.players[0].board[0].currentAttack, 4);
     assert.equal(runtime.state.players[0].board[0].currentHealth, 5);
-    assert.equal(runtime.state.players[0].currentGold, 0);
+    assert.equal(runtime.state.players[0].currentGold, 1);
     assert.equal(
       runtime.state.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
       1,
@@ -327,7 +327,7 @@ try {
       .click();
     await own
       .getByText(
-        "업그레이드(X): 지정된 조건을 만족했을 때 남은 골드가 X 이상이면 X골드를 자동으로 소비하고 효과를 발동합니다.",
+        "업그레이드: 지정된 조건을 만족했을 때 남은 골드가 1 이상이면 1골드를 자동으로 추가 소비하고 효과를 발동합니다.",
         { exact: true },
       )
       .waitFor();
@@ -338,7 +338,7 @@ try {
       height,
       actualOnlinePages: true,
       authoritativeServiceAndIsolatedDB: true,
-      base2ThenUpgrade2: true,
+      base2ThenUpgrade1: true,
       mobileTargetTouch: width < 1000,
       opponentWait: true,
       reloadChoice: true,

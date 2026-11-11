@@ -71,23 +71,36 @@ const adminJS = await get(
   new URL(adminEntry, "https://ko-card-game-vr69.onrender.com").href,
 ).then((r) => r.text());
 assert.ok(adminJS.includes(commit));
-const cards = await get(
-  "https://ko-card-game.onrender.com/api/cards?release=" + commit,
-).then((r) => r.json());
-assert.ok(
-  cards.cards
-    .find((c) => c.id === "5f1fd584-7129-4f39-91a4-22f02ba677e5")
-    ?.text.includes("하나라도"),
-  "previous Helper healing patch remains live",
-);
-const tagCatalog = await get(
-  "https://ko-card-game.onrender.com/api/card-tags?release=" + commit,
-).then((r) => r.json());
-assert.ok(
-  tagCatalog.labels &&
-    typeof tagCatalog.labels === "object" &&
-    !Array.isArray(tagCatalog.labels),
-);
+async function catalog(path) {
+  const response = await fetch(
+    "https://ko-card-game.onrender.com/api/" + path + "?release=" + commit,
+    { cache: "no-store", signal: AbortSignal.timeout(45000) },
+  );
+  const body = await response.json();
+  if (
+    response.status === 503 &&
+    process.env.QA_ALLOW_MAINTENANCE === "1" &&
+    body.code === "SERVER_MAINTENANCE"
+  )
+    return null;
+  assert.equal(response.status, 200);
+  return body;
+}
+const cards = await catalog("cards");
+if (cards)
+  assert.ok(
+    cards.cards
+      .find((c) => c.id === "5f1fd584-7129-4f39-91a4-22f02ba677e5")
+      ?.text.includes("하나라도"),
+    "previous Helper patch remains live",
+  );
+const tagCatalog = await catalog("card-tags");
+if (tagCatalog)
+  assert.ok(
+    tagCatalog.labels &&
+      typeof tagCatalog.labels === "object" &&
+      !Array.isArray(tagCatalog.labels),
+  );
 const result = {
   checkedAtUTC: new Date().toISOString(),
   commit,
@@ -99,13 +112,14 @@ const result = {
   actualEntryContainsRevision: true,
   adminRouteEntryContainsRevision: true,
   adminRouteEntryModule: adminEntry,
-  previousHelperPatchRetained: true,
+  previousHelperPatchRetained: cards ? true : null,
   manualProductionDataWrites: 0,
   schemaChangedByThisRelease: false,
   scope:
     process.env.QA_RELEASE_SCOPE ??
     "admin-workspace-and-champion-preparation-editor",
-  tagLabelsEndpointAvailable: true,
+  tagLabelsEndpointAvailable: tagCatalog ? true : null,
+  publicCatalogChecksSkippedForMaintenance: !cards || !tagCatalog,
   productionMatchCreated: false,
   mainMerged: false,
 };

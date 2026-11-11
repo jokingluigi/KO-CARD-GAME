@@ -1,0 +1,43 @@
+✔ authoring accepts reusable upgrade group, rejects corrupt costs and payloads (2.679257ms)
+✔ visible name is 업그레이드 while serialized PROGRAM remains compatible (36.208834ms)
+✔ normal entry and upgrade text compile to independent ordered effects (5.680583ms)
+✔ published upgrade definitions retain their group rather than generic text repairs (1.84128ms)
+✔ committed automatic upgrade supports targets in future spell/ability groups (0.368458ms)
+✔ bare upgrade syntax and legacy numeric notation both compile to fixed one gold (2.596283ms)
+✔ upgrade tooltip, log and short highlight share the new display name (2.291269ms)
+✔ base 2 + fixed upgrade 1 at gold 2 (7.145953ms)
+✔ base 2 + fixed upgrade 1 at gold 3 (5.21573ms)
+✔ base 2 + fixed upgrade 1 at gold 4 (1.436397ms)
+✔ base 2 + fixed upgrade 1 at gold 6 (1.266855ms)
+✔ actual modified card cost 1 remains separate (1.947497ms)
+✔ actual modified card cost 3 remains separate (1.255057ms)
+✔ no valid target: no payment, targeting or success event (0.903965ms)
+✔ paid target choice cannot be cancelled; invalid/duplicate requests cannot repay (2.472359ms)
+✔ same entry event is attempted only once, even after gold is restored (1.575033ms)
+✔ a failed attempt cannot retroactively trigger on duplicate entry resolution (1.267556ms)
+✔ a new physical entry can pay again (1.605519ms)
+✔ entry semantics preserved for SUMMON (0.535978ms)
+✔ entry semantics preserved for REVIVE (0.441536ms)
+✔ entry semantics preserved for CHAMPION_DEPLOY (0.384462ms)
+✔ ordinary entry effects before and after PROGRAM execute exactly once in definition order (2.268696ms)
+✔ targetless PROGRAM resolves through the same automatic interpreter (0.562808ms)
+✔ PROGRAM spend counts toward existing gold-spent preparation (1.264621ms)
+✔ AI resolves the same mandatory target automatically (6.894537ms)
+✔ invalid or empty program definitions are rejected (0.218906ms)
+✔ unrelated optional effect after paid group can be skipped without rolling back payment (9.146199ms)
+✔ separate program groups pay independently and continue in order (1.53217ms)
+✔ BUFF from upgrade triggers existing stat-change chain once (1.224642ms)
+✔ unavailable summon skips program without payment (0.418463ms)
+✔ AI values affordable upgrade lethal, but chooses stronger body when upgrade is unaffordable (6.051002ms)
+✔ Tower uses the same payment and target interpreter under field restrictions (1.289498ms)
+✔ dedupe identity does not change when another entry ability condition changes (0.95444ms)
+✔ a future spell can reuse automatic paid targeting without an activation approval stage (1.869642ms)
+✔ costless authoring and legacy 0/2/999 all pay exactly one gold (3.307081ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1623.451212

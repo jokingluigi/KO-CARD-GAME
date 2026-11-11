@@ -93,16 +93,16 @@ export function select(s: ReturnType<typeof fixture>) {
   return r.state;
 }
 for (const gold of [2, 3, 4, 6])
-  test(`base 2 + PROGRAM 2 at gold ${gold}`, () => {
+  test(`base 2 + fixed upgrade 1 at gold ${gold}`, () => {
     const s = play(fixture(gold));
-    assert.equal(s.players[0].currentGold, gold - 2 - (gold >= 4 ? 2 : 0));
+    assert.equal(s.players[0].currentGold, gold - 2 - (gold >= 3 ? 1 : 0));
     assert.ok(s.players[0].board[1]);
     assert.equal(
       s.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
-      gold >= 4 ? 1 : 0,
+      gold >= 3 ? 1 : 0,
     );
-    assert.equal(Boolean(s.targetingState), gold >= 4);
-    if (gold >= 4) {
+    assert.equal(Boolean(s.targetingState), gold >= 3);
+    if (gold >= 3) {
       const n = select(s);
       assert.equal(n.players[0].board[0]?.currentAttack, 4);
       assert.equal(n.players[0].board[0]?.currentHealth, 5);
@@ -111,13 +111,13 @@ for (const gold of [2, 3, 4, 6])
   });
 for (const cost of [1, 3])
   test(`actual modified card cost ${cost} remains separate`, () => {
-    const s = fixture(cost + 2);
+    const s = fixture(cost + 1);
     s.players[0].hand[0].currentCost = cost;
     const n = select(play(s));
     assert.equal(n.players[0].currentGold, 0);
     assert.deepEqual(
       n.events.filter((e) => e.type === "GOLD_CHANGED").map((e) => e.amount),
-      [-cost, -2],
+      [-cost, -1],
     );
   });
 test("no valid target: no payment, targeting or success event", () => {
@@ -137,7 +137,7 @@ test("paid target choice cannot be cancelled; invalid/duplicate requests cannot 
     targetId: "invalid",
   });
   assert.equal(invalid.success, false);
-  assert.equal(invalid.state.players[0].currentGold, 0);
+  assert.equal(invalid.state.players[0].currentGold, 1);
   const cancel = executeAction(s, {
     type: "CANCEL_EFFECT_TARGET",
     playerId: "player-1",
@@ -155,7 +155,7 @@ test("paid target choice cannot be cancelled; invalid/duplicate requests cannot 
     n.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
     1,
   );
-  assert.equal(n.players[0].currentGold, 0);
+  assert.equal(n.players[0].currentGold, 1);
 });
 test("same entry event is attempted only once, even after gold is restored", () => {
   const s = select(play());
@@ -199,7 +199,7 @@ test("a new physical entry can pay again", () => {
     undefined,
     "CHAMPION_DEPLOY",
   );
-  assert.equal(s.players[0].currentGold, 0);
+  assert.equal(s.players[0].currentGold, 1);
   assert.equal(
     s.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
     2,
@@ -218,7 +218,7 @@ for (const cause of ["SUMMON", "REVIVE", "CHAMPION_DEPLOY"] as const)
       undefined,
       cause,
     );
-    assert.equal(n.players[0].currentGold, cause === "CHAMPION_DEPLOY" ? 2 : 4);
+    assert.equal(n.players[0].currentGold, cause === "CHAMPION_DEPLOY" ? 3 : 4);
     assert.equal(Boolean(n.targetingState), cause === "CHAMPION_DEPLOY");
   });
 test("ordinary entry effects before and after PROGRAM execute exactly once in definition order", () => {
@@ -234,12 +234,12 @@ test("ordinary entry effects before and after PROGRAM execute exactly once in de
     },
   ];
   const paid = play(s);
-  assert.equal(paid.players[0].currentGold, 0);
+  assert.equal(paid.players[0].currentGold, 1);
   const n = select(paid);
-  assert.equal(n.players[0].currentGold, 1);
+  assert.equal(n.players[0].currentGold, 2);
   assert.deepEqual(
     n.events.filter((e) => e.type === "GOLD_CHANGED").map((e) => e.amount),
-    [-2, 1, -2, 1],
+    [-2, 1, -1, 1],
   );
 });
 test("targetless PROGRAM resolves through the same automatic interpreter", () => {
@@ -252,7 +252,7 @@ test("targetless PROGRAM resolves through the same automatic interpreter", () =>
       programEffects: [{ action: "ADD_GOLD", values: { amount: 1 } }],
     },
   });
-  assert.equal(n.players[0].currentGold, 1);
+  assert.equal(n.players[0].currentGold, 2);
   assert.equal(n.targetingState, undefined);
 });
 test("PROGRAM spend counts toward existing gold-spent preparation", () => {
@@ -267,8 +267,8 @@ test("PROGRAM spend counts toward existing gold-spent preparation", () => {
     rewardEffects: [],
   } as any;
   const n = play(s);
-  assert.equal(n.players[0].champion!.questProgress, 4);
-  assert.equal(select(n).players[0].champion!.questProgress, 4);
+  assert.equal(n.players[0].champion!.questProgress, 3);
+  assert.equal(select(n).players[0].champion!.questProgress, 3);
 });
 test("AI resolves the same mandatory target automatically", () => {
   const s = play();
@@ -317,7 +317,7 @@ test("unrelated optional effect after paid group can be skipped without rolling 
     playerId: "player-1",
   });
   assert.ok(result.success);
-  assert.equal(result.state.players[0].currentGold, 0);
+  assert.equal(result.state.players[0].currentGold, 1);
   assert.equal(result.state.players[0].board[0]?.currentAttack, 4);
   assert.equal(result.state.players[0].hand.length, 0);
 });
@@ -325,7 +325,7 @@ test("separate program groups pay independently and continue in order", () => {
   const s = fixture(6);
   s.players[0].hand[0].abilities[0].effects.push(program);
   const first = select(play(s));
-  assert.equal(first.players[0].currentGold, 0);
+  assert.equal(first.players[0].currentGold, 2);
   const n = select(first);
   assert.equal(n.players[0].board[0]?.currentAttack, 6);
   assert.equal(
@@ -340,7 +340,7 @@ test("BUFF from upgrade triggers existing stat-change chain once", () => {
     { trigger: "STAT_CHANGED", effects: [{ type: "GAIN_GOLD", amount: 1 }] },
   ];
   const n = select(play(s));
-  assert.equal(n.players[0].currentGold, 1);
+  assert.equal(n.players[0].currentGold, 2);
   assert.equal(
     n.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
     1,
@@ -375,7 +375,7 @@ test("unavailable summon skips program without payment", () => {
   );
 });
 test("AI values affordable upgrade lethal, but chooses stronger body when upgrade is unaffordable", () => {
-  for (const gold of [2, 4]) {
+  for (const gold of [2, 3, 4]) {
     const s = fixture(gold, false);
     s.players[0].champion!.abilityUsedThisTurn = true;
     s.players[1].health = 3;
@@ -420,13 +420,13 @@ test("AI values affordable upgrade lethal, but chooses stronger body when upgrad
     assert.equal(chosen.type, "PLAY_WRESTLER");
     assert.equal(
       (chosen as any).cardInstanceId,
-      gold === 4 ? "program" : "body",
+      gold >= 3 ? "program" : "body",
     );
-    if (gold === 4) {
+    if (gold >= 3) {
       const n = executeAction(s, chosen);
       assert.ok(n.success);
       assert.equal(n.state.winnerId, "player-1");
-      assert.equal(n.state.players[0].currentGold, 0);
+      assert.equal(n.state.players[0].currentGold, gold - 3);
     }
   }
 });
@@ -437,7 +437,7 @@ test("Tower uses the same payment and target interpreter under field restriction
     relics: [{ id: "two", effectType: "MAX_FIELD_TWO", values: {} }],
   } as any;
   const n = select(play(s));
-  assert.equal(n.players[0].currentGold, 0);
+  assert.equal(n.players[0].currentGold, 1);
   assert.equal(n.players[0].board[0]?.currentAttack, 4);
   assert.equal(
     n.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
@@ -483,9 +483,18 @@ test("a future spell can reuse automatic paid targeting without an activation ap
     action: { type: "PLAY_TECHNIQUE", cardInstanceId: "program" },
   });
   assert.ok(result.success, JSON.stringify(result));
-  assert.equal(result.state.players[0].currentGold, 0);
+  assert.equal(result.state.players[0].currentGold, 1);
   assert.equal(result.state.players[0].hand.length, 0);
   assert.equal(result.state.targetingState?.phase, undefined);
   assert.equal(result.state.targetingState?.programPaid, true);
   assert.equal(select(result.state).players[0].board[0]?.currentAttack, 4);
+});
+
+test("costless authoring and legacy 0/2/999 all pay exactly one gold", () => {
+  for(const cost of [undefined,0,2,999]){
+    const s=fixture(3);const values=(s.players[0].hand[0].abilities[0].effects[0] as any).values;
+    if(cost===undefined)delete values.programCost;else values.programCost=cost;
+    const n=select(play(s));assert.equal(n.players[0].currentGold,0);
+    assert.equal(n.events.find(e=>e.type==='PROGRAM_ACTIVATED')?.amount,1);
+  }
 });

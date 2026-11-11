@@ -259,17 +259,29 @@ try {
     const chooserPromise = page.waitForEvent("filechooser");
     await editor.getByTestId("button-change-card-image").click();
     await chooserPromise;
-    if (width < 901) {
+    const cardPreview = editor.getByRole("complementary", {
+      name: "카드 미리보기",
+    });
+    assert.equal(await cardPreview.isVisible(), true);
+    assert.equal(
       await editor
         .getByRole("button", { name: "미리보기", exact: true })
-        .click();
-      await editor
-        .getByRole("complementary", { name: "카드 미리보기" })
-        .waitFor({ state: "visible" });
-      await editor
-        .getByRole("button", { name: "설정 편집", exact: true })
-        .click();
-    }
+        .isVisible(),
+      false,
+    );
+    const imageScale = editor.getByTestId("input-image-scale");
+    await imageScale.focus();
+    await imageScale.press("ArrowRight");
+    assert.ok(Number(await imageScale.inputValue()) > 1);
+    await cardPreview.scrollIntoViewIfNeeded();
+    const renderedScale = await cardPreview
+      .locator("img")
+      .first()
+      .evaluate((n) => n.style.transform);
+    assert.equal(renderedScale, `scale(${await imageScale.inputValue()})`);
+    await page.screenshot({
+      path: `${out}/inline-card-preview-${width}x${height}.png`,
+    });
     await editor.getByRole("tab", { name: "기본 정보", exact: true }).click();
     await editor.getByTestId("input-card-name").fill("");
     await editor.getByRole("tab", { name: "이미지", exact: true }).click();

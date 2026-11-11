@@ -1977,7 +1977,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       if (clause.cost === undefined) return result;
       const values = {programCost: clause.cost, programEffects: result.effects.map(({trigger, ...effect}) => effect)};
       if (result.status !== 'success' || !validProgramValues(values)) return {...result, status: 'failure' as const, outcome: 'analysis_failure' as const, effects: [], reason: '업그레이드 비용과 내부 효과를 확인해 주세요.'};
-      return {...result, effects: [{trigger: 'ENTER_FIELD' as const, action: 'PROGRAM' as const, values}], keywords: [...new Set([...result.keywords, 'PROGRAM' as Keyword])], summaries: [`업그레이드(${clause.cost}) · ${result.summaries.join(' / ')}`]};
+      return {...result, effects: [{trigger: 'ENTER_FIELD' as const, action: 'PROGRAM' as const, values}], keywords: [...new Set([...result.keywords, 'PROGRAM' as Keyword])], summaries: [`업그레이드 · ${result.summaries.join(' / ')}`]};
     });
     const failed = results.find(result => result.status !== 'success');
     return {...(failed ?? results[0]), effects: failed ? [] : results.flatMap(result => result.effects), keywords: [...new Set(results.flatMap(result => result.keywords))], summaries: results.flatMap(result => result.summaries), unsupportedSegments: results.flatMap(result => result.unsupportedSegments)};

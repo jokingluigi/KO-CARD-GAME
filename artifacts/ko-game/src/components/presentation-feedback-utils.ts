@@ -190,7 +190,7 @@ export function presentationCueDrafts(
         });
         break;
       case "PROGRAM_ACTIVATED":
-        drafts.push({id,kind:"EFFECT",label:`업그레이드(${event.amount ?? 0})`,...target,duration:450});
+        drafts.push({id,kind:"EFFECT",label:'업그레이드',...target,duration:450});
         break;
       case "GOLD_CHANGED":
         if ((event.amount ?? 0) !== 0) {

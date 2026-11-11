@@ -1,3 +1,4 @@
+import { UPGRADE_GOLD_COST } from "@workspace/effect-registry";
 import {validProgramValues} from '@workspace/effect-registry';
 import {hasPendingProgram} from '../engine/program';
 import { validAbilityReplacement } from '@workspace/effect-registry';
@@ -1820,7 +1821,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       );
       const owner = next.players.find((p) => p.id === pending.playerId);
       const attempted = { ...next, consumedNewCardEventKeys: [...consumed, key] };
-      if (!eligible || !owner || owner.currentGold < values.programCost)
+      if (!eligible || !owner || owner.currentGold < UPGRADE_GOLD_COST)
         return resolvePendingEffects({
           ...attempted,
           targetingState: { ...pending, effectIndex: index + 1 },
@@ -1829,7 +1830,7 @@ export function resolvePendingEffects(state: GameState): GameState {
         ...attempted,
         players: attempted.players.map((p) =>
           p.id === owner.id
-            ? { ...p, currentGold: p.currentGold - values.programCost }
+            ? { ...p, currentGold: p.currentGold - UPGRADE_GOLD_COST }
             : p,
         ),
         events: [
@@ -1840,7 +1841,7 @@ export function resolvePendingEffects(state: GameState): GameState {
             source: { type: 'CARD', cardInstanceId: source.instanceId },
             target: { type: 'PLAYER', playerId: owner.id },
             reason: 'CARD_EFFECT_COST',
-            amount: -values.programCost,
+            amount: -UPGRADE_GOLD_COST,
           },
           {
             type: 'PROGRAM_ACTIVATED',
@@ -1850,7 +1851,7 @@ export function resolvePendingEffects(state: GameState): GameState {
             source: { type: 'CARD', cardInstanceId: source.instanceId },
             target: { type: 'CARD', cardInstanceId: source.instanceId },
             reason: 'PROGRAM',
-            amount: values.programCost,
+            amount: UPGRADE_GOLD_COST,
           },
         ],
         targetingState: {

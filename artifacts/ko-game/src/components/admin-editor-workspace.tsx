@@ -17,6 +17,7 @@ import "./admin-workspace.css";
 
 /** One accessible editor surface. Existing forms, saves and image controls remain the source of truth. */
 export function AdminEditorWorkspace({
+  inlinePreview = false,
   title,
   description,
   dirty,
@@ -28,6 +29,7 @@ export function AdminEditorWorkspace({
   onSave,
   children,
 }: {
+  inlinePreview?: boolean;
   title: string;
   description: string;
   dirty: boolean;
@@ -83,6 +85,7 @@ export function AdminEditorWorkspace({
       <DialogContent
         ref={root}
         data-admin-workbench
+        data-inline-preview={inlinePreview || undefined}
         data-view={view}
         className="admin-editor-dialog admin-workbench"
         onPointerDownOutside={(e) => e.preventDefault()}

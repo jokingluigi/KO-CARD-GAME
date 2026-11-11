@@ -164,12 +164,12 @@ test("PvP commits before choice, syncs public gold, blocks cancellation and oppo
     boardSlot: 1,
   });
   assert.ok(result.ok, result.message);
-  assert.equal(r.state.players[0].currentGold, 0);
+  assert.equal(r.state.players[0].currentGold, 1);
   assert.equal(r.state.targetingState.programPaid, true);
   const own = service.snapshotMessage(r, "tutorial-user"),
     other = service.snapshotMessage(r, "upgrade-opponent");
   assert.equal(own.state.targetingState.programPaid, true);
-  assert.equal(other.state.players[0].currentGold, 0);
+  assert.equal(other.state.players[0].currentGold, 1);
   assert.equal(other.state.targetingState, undefined);
   assert.equal(other.state.waitingForProgramPlayerId, "PLAYER_ONE");
   assert.equal(
@@ -191,7 +191,7 @@ test("PvP commits before choice, syncs public gold, blocks cancellation and oppo
   service.cleanupMatchRuntime(id);
   r = await service.getRuntime(id);
   assert.ok(r.state.targetingState.programPaid);
-  assert.equal(r.state.players[0].currentGold, 0);
+  assert.equal(r.state.players[0].currentGold, 1);
   r.turnDeadlineAt = Date.now() - 1;
   const version = r.version;
   result = await act(r, "choose", {
@@ -200,7 +200,7 @@ test("PvP commits before choice, syncs public gold, blocks cancellation and oppo
   });
   assert.ok(result.ok, result.message);
   assert.equal(r.state.players[0].board[0].currentAttack, 4);
-  assert.equal(r.state.players[0].currentGold, 0);
+  assert.equal(r.state.players[0].currentGold, 1);
   assert.equal(r.state.targetingState, undefined);
   assert.equal(
     r.state.events.filter((e) => e.type === "PROGRAM_ACTIVATED").length,
@@ -222,14 +222,14 @@ test("PvP commits before choice, syncs public gold, blocks cancellation and oppo
   );
 });
 test("PvP insufficient gold still commits base summon without pending selection", async () => {
-  const r = await fixture(3);
+  const r = await fixture(2);
   const result = await act(r, "base-only", {
     type: "PLAY_WRESTLER",
     cardInstanceId: "source",
     boardSlot: 1,
   });
   assert.ok(result.ok, result.message);
-  assert.equal(r.state.players[0].currentGold, 1);
+  assert.equal(r.state.players[0].currentGold, 0);
   assert.ok(r.state.players[0].board[1]);
   assert.equal(r.state.targetingState, undefined);
 });

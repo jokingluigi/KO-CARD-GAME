@@ -1,3 +1,4 @@
+import {upgradeDisplayText} from "@workspace/effect-registry";
 import {useTagLabels,displayTagReferences} from '@/lib/tag-labels';
 import { cardSilenceProtection } from '../lib/card-protection-display';
 import { SilenceImmunityNotice } from './silence-immunity-notice';
@@ -12,7 +13,7 @@ import type { CardDefinition } from '../game/cards/types';
 /** Uses real catalog entries, never invented cards, for references in effect text. */
 export function CardRulesText({text,interactive=true}:{text:string;interactive?:boolean}) {
  const tagLabels=useTagLabels();
- text=displayTagReferences(text,tagLabels);
+ text=displayTagReferences(upgradeDisplayText(text),tagLabels);
  const indexRef=useRef<{cards:CardDefinition[];pattern:RegExp|null;byName:Map<string,CardDefinition>}|null>(null);
  const [detail,setDetail]=useState<{title:string;text:string;card?:CardDefinition}|null>(null);
  const [publicCards,setPublicCards]=useState<CardDefinition[]>([]);
