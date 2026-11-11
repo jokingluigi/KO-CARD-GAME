@@ -103,7 +103,7 @@ export async function readAIDeckCosmetics(deckIds: string[]) {
 export async function aiSkinCatalog() {
  const [items,legacy]=await Promise.all([
   db.select().from(cosmeticItemsTable).where(and(eq(cosmeticItemsTable.isActive,true),inArray(cosmeticItemsTable.type,['CHAMPION_SKIN','CARD_SKIN']))),
-  db.select({skin:cardSkinDefinitionsTable}).from(cardSkinDefinitionsTable).innerJoin(cardsTable,eq(cardsTable.id,cardSkinDefinitionsTable.cardDefinitionId)).where(and(eq(cardSkinDefinitionsTable.status,'PUBLISHED'),eq(cardsTable.status,'PUBLISHED'),eq(cardsTable.isToken,false),eq(cardsTable.isChampionToken,false)))
+  db.select({skin:cardSkinDefinitionsTable}).from(cardSkinDefinitionsTable).innerJoin(cardsTable,eq(cardsTable.id,cardSkinDefinitionsTable.cardDefinitionId)).where(and(eq(cardSkinDefinitionsTable.status,'PUBLISHED'),sql`${cardsTable.status} <> 'DISABLED'`,eq(cardsTable.isToken,false),eq(cardsTable.isChampionToken,false)))
  ]);
  // The legacy source is authoritative. A stale/inactive bridge must not hide or revive it.
  return [...items.filter(item=>!legacySkinId(item.id)),...legacy.map(({skin})=>legacySkinItem(skin))] as CosmeticItem[];

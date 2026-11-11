@@ -1,3 +1,6 @@
+import {AIDeckCodeImport} from './ai-deck-code-import';
+import {compatibleAISkins} from '@/lib/ai-deck-import';
+import {AIDeckSkinEditor} from './ai-deck-skin-editor';
 import {useAdminList,AdminListControls} from './admin-list-controls';
 import {AdminEditorSections} from './admin-editor-sections';
 import {useAdminMutableDraft} from './admin-editor-sections';
@@ -132,6 +135,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
     setDraft((current) => ({
       ...current,
       cardDefinitionIds: [...current.cardDefinitionIds.slice(0, index), ...current.cardDefinitionIds.slice(index + 1)],
+      cosmeticIds:current.cardDefinitionIds.filter(id=>id===card.id).length>1?current.cosmeticIds:current.cosmeticIds.filter(id=>!options?.cosmetics?.some(item=>item.id===id&&item.type==='CARD_SKIN'&&item.targetId===card.id)),
     }));
   }
 
@@ -237,39 +241,23 @@ return (
         </div>
 
         <div className="space-y-5 rounded-xl border border-neutral-800 bg-black/30 p-5">
-          <AdminEditorSections panels={[{"id":"admin-ai-deck-manager-0","label":"기본 · 난이도"},{"id":"admin-ai-deck-manager-1","label":"25장 덱 구성"}]}>{[<><div className="grid gap-4 md:grid-cols-2">
+          <AdminEditorSections panels={[{"id":"admin-ai-deck-manager-0","label":"기본 · 난이도"},{"id":"admin-ai-deck-manager-1","label":"덱 구성"},{"id":"admin-ai-deck-manager-2","label":"스킨 · 외형"}]}>{[<><div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm font-bold">이름<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" placeholder="예: Rush Pressure" /></label>
             <label className="text-sm font-bold">Champion
               <div className="mt-1 flex gap-1">
                 <input value={championSearch} onChange={(event) => setChampionSearch(event.target.value)} placeholder="Champion 검색" className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" />
                 <select value={championStatus} onChange={(event) => setChampionStatus(event.target.value as StatusFilter)} className="rounded border border-neutral-700 bg-neutral-950 px-2 py-2.5 text-xs"><option value="ALL">전체</option><option value="PUBLISHED">공개</option><option value="DRAFT">DRAFT</option></select>
               </div>
-              <select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{filteredChampions.map((champion) => <option key={champion.id} value={champion.id}>{champion.name}{champion.status === "DRAFT" ? " [DRAFT]" : ""}</option>)}</select>
+              <select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null,cosmeticIds:draft.cosmeticIds.filter(id=>!options?.cosmetics?.some(item=>item.id===id&&item.type==='CHAMPION_SKIN'&&item.targetId!==event.target.value)) })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{filteredChampions.map((champion) => <option key={champion.id} value={champion.id}>{champion.name}{champion.status === "DRAFT" ? " [DRAFT]" : ""}</option>)}</select>
             </label>
           </div>
-<fieldset className="space-y-3 rounded border border-neutral-700 p-3" disabled={busy||options?.aiCosmeticsAvailable!==true}>
-  <legend className="px-2 text-sm font-black text-amber-200">AI 스킨</legend>
-  {options?.aiCosmeticsAvailable!==true&&<p className="text-xs text-amber-200">AI 스킨 저장 테이블이 아직 없습니다. 서버 DB 업데이트(0055)가 필요합니다. 설정을 저장한 뒤 새 대전에서 적용됩니다.</p>}
-  {[...(draft.championDefinitionId?[{id:draft.championDefinitionId,name:options?.champions.find(c=>c.id===draft.championDefinitionId)?.name??'챔피언',type:'CHAMPION_SKIN'}]:[]),...Array.from(new Set(draft.cardDefinitionIds)).map(id=>({id,name:options?.cards.find(c=>c.id===id)?.name??id,type:'CARD_SKIN'}))].map(target=>{
-    const items=(options?.cosmetics??[]).filter(item=>item.type===target.type&&item.targetId===target.id);
-    const selected=items.find(item=>draft.cosmeticIds.includes(item.id));
-    if(!items.length)return null;
-    return <label key={target.type+target.id} className="block text-sm">{target.name}
-      <select aria-label={target.name+' 스킨'} className="mt-1 min-h-11 w-full border border-neutral-700 bg-neutral-950 p-2" value={selected?.id??''} onChange={event=>setDraft({...draft,cosmeticIds:[...draft.cosmeticIds.filter(id=>!items.some(item=>item.id===id)),...(event.target.value?[event.target.value]:[])]})}>
-        <option value="">기본 일러스트</option>{items.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
-      </select>
-      {selected&&<img className="mt-2 h-24 w-20 object-contain" src={selected.imageAssets.art??selected.imageAssets.portrait??selected.imageAssets.intro} alt={selected.name}/>}
-    </label>;
-  })}
-  {draft.cosmeticIds.filter(id=>!(options?.cosmetics??[]).some(item=>item.id===id&&(item.type==='CHAMPION_SKIN'?item.targetId===draft.championDefinitionId:draft.cardDefinitionIds.includes(item.targetId??'')))).map(id=><button type="button" key={id} className="min-h-11 border border-red-800 p-2 text-xs text-red-200" onClick={()=>setDraft({...draft,cosmeticIds:draft.cosmeticIds.filter(value=>value!==id)})}>덱과 맞지 않거나 삭제된 스킨 제거</button>)}
-  <p className="text-xs leading-5 text-neutral-400">장착한 스킨은 AI의 인트로·전투·대사에 적용됩니다. 플레이어에게 스킨이 지급되지는 않습니다.</p>
-</fieldset>
+
 <div className="rounded border border-amber-800/70 bg-amber-950/20 p-3"><p className="text-sm font-bold text-amber-200">최고 난이도</p><p className="mt-1 text-xs leading-relaxed text-neutral-400">모든 AI 덱은 최고 수준의 판단을 사용합니다. 카드·챔피언 능력치와 게임 규칙은 플레이어와 같습니다.</p></div>
 <div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <label className="text-sm font-bold">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
             <label className="text-sm font-bold">순서<input type="number" value={draft.displayOrder} onChange={(event) => setDraft({ ...draft, displayOrder: Number(event.target.value) || 0 })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
           </div></>,
-<><div className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-950 p-3">
+<><AIDeckCodeImport options={options} busy={busy} onApply={imported=>{if(!options)return;setDraft(current=>({...current,name:current.name.trim()?current.name:imported.name,championDefinitionId:imported.championDefinitionId,cardDefinitionIds:imported.cardDefinitionIds,cosmeticIds:compatibleAISkins(current.cosmeticIds,options,imported.championDefinitionId,imported.cardDefinitionIds)}));setSearch('');setChampionSearch('');setChampionStatus('ALL');setFilterType('ALL');setFilterRarity('ALL');setFilterStatus('ALL');}}/><div className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-950 p-3">
             <div className="relative min-w-52 flex-1"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-600" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-black py-2 pl-9 pr-3 text-sm" /></div>
             <select value={filterType} onChange={(event) => setFilterType(event.target.value as FilterType)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 타입</option><option value="WRESTLER">WRESTLER</option><option value="TECHNIQUE">TECHNIQUE</option></select>
             <select value={filterRarity} onChange={(event) => setFilterRarity(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 등급</option><option value="NORMAL">NORMAL</option><option value="EPIC">EPIC</option><option value="LEGENDARY">LEGENDARY</option></select>
@@ -292,6 +280,7 @@ return (
                     </div>
                   </div>
                   <p className="mt-1 text-xs text-neutral-500">{card.cardType} · {card.rarity} · 비용 {card.cost} · {card.attack}/{card.health}</p>
+                  {count>0 && <button type="button" className="mt-2 min-h-11 rounded border border-amber-700 px-3 text-xs text-amber-200" onClick={()=>document.getElementById('ai-skin-'+card.id)?.dispatchEvent(new Event('ko-admin-reveal-field',{bubbles:true}))}>스킨 설정{draft.cosmeticIds.some(id=>options?.cosmetics?.some(item=>item.id===id&&item.targetId===card.id))?' · 적용됨':''}</button>}
                 </div>
               );
             })}
@@ -313,7 +302,7 @@ return (
                 {selectedDeck.requiredCardDefinitionIds.filter((id) => !options?.cards.some((card) => card.id === id)).map((id) => <span key={id} className="rounded border border-red-800 px-2 py-1">{id}</span>)}
               </div>
             </div>
-          )}</>]}</AdminEditorSections>
+          )}</>,<AIDeckSkinEditor options={options} championId={draft.championDefinitionId} cardIds={draft.cardDefinitionIds} selectedIds={draft.cosmeticIds} onChange={cosmeticIds=>setDraft(current=>({...current,cosmeticIds}))} busy={busy}/>]}</AdminEditorSections>
 <div className="flex flex-wrap gap-2 border-t border-neutral-800 pt-4">
             <button type="button" disabled={busy} onClick={() => void save()} className="flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black disabled:opacity-50"><Save className="h-4 w-4" /> 저장</button>
             {draft.id && <><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void test(deck); }} className="flex items-center gap-2 rounded border border-amber-600 px-4 py-2.5 text-sm font-black text-amber-300 disabled:opacity-50"><WandSparkles className="h-4 w-4" /> AI 테스트</button><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void toggleEnabled(deck); }} className="rounded border border-emerald-700 px-4 py-2.5 text-sm font-black text-emerald-300 disabled:opacity-50">{draft.enabled ? "비활성화" : "활성화"}</button><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void duplicate(deck); }} className="flex items-center gap-2 rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-300 disabled:opacity-50"><Copy className="h-4 w-4" /> 복제</button><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void remove(deck); }} className="flex items-center gap-2 rounded border border-red-900 px-4 py-2.5 text-sm font-black text-red-300 disabled:opacity-50"><Trash2 className="h-4 w-4" /> 삭제</button></>}

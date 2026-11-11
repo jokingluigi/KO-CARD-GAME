@@ -1,0 +1,771 @@
+✔ Champion fixture updates advance the version exactly once across 20 saves (2.038904ms)
+✔ stale Champion fixture update is rejected with a version conflict (0.171075ms)
+✔ existing KO1 code and shared URL fill champion and exactly 25 card copies without ownership checks (2.798585ms)
+✔ invalid, missing, disabled and token cards are rejected without fallback replacement (0.72582ms)
+✔ balance changes use the current card and warn instead of silently treating old revisions as current (0.336832ms)
+✔ import retains skins only for definitions included in the imported AI deck (0.204955ms)
+✔ normal save returns immediately with no list/intro/catalog refresh (28.300901ms)
+✔ recover committed save after 503 using one read and no second write (1.127257ms)
+✔ recover committed save after network using one read and no second write (0.69876ms)
+✔ recover committed save after timeout using one read and no second write (0.789855ms)
+✔ recover committed save after invalid response using one read and no second write (1.257812ms)
+✔ unchanged or different saved values cannot masquerade as a successful write (1.31708ms)
+✔ validation and genuine conflicts remain errors (0.739981ms)
+✔ new champion requests keep a stable idempotency key and recover by that exact id (0.698549ms)
+✔ confirmation compares nested values and normalizes saved asset URLs without trusting a name alone (9.476171ms)
+✔ compact UTF-8 UUID snapshot round-trips identically through a URL without I/O (12.448003ms)
+✔ original edits cannot mutate an encoded snapshot; stable ID remains and revisions warn of current changes (1.336889ms)
+✔ damaged, oversized, unknown-version, malformed and hostile inputs are rejected (2.686608ms)
+✔ malicious valid-checksum duplicate records are rejected by the decoder (0.355389ms)
+✔ public catalog only; hidden cards, tokens, missing cards, copy/legendary limits cannot be exported (0.500625ms)
+✔ recipient uses their own quantities/champion ownership; missing and disabled items remain previewable but unsavable (0.47008ms)
+✔ unchanged registered sprite URLs are not downloaded during a champion text save; stale versions reject before image verification (4116.796248ms)
+✔ committed champion save returns success even when unused audio deletion fails (25.138736ms)
+✔ creation replay and concurrent retries with the same idempotency key create exactly one champion (31.23035ms)
+[12:40:39.541] INFO (208867): request completed
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 76
+[12:40:39.568] INFO (208867): request completed
+    req: {
+      "id": 2,
+      "method": "PATCH",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 14
+[12:40:39.578] INFO (208867): request completed
+    req: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 5
+[12:40:39.587] INFO (208867): request completed
+    req: {
+      "id": 4,
+      "method": "PATCH",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 5
+[12:40:39.606] WARN (208867): Champion saved; unused asset cleanup deferred
+    championId: "reward-champion"
+    err: {
+      "type": "Error",
+      "message": "isolated storage cleanup failure",
+      "stack":
+          Error: isolated storage cleanup failure
+              at AudioStorage.remove (file:///workspace/KO-CARD-GAME/docs/qa/champion-save-ai-skins-20261111.test.mjs:120:11)
+              at removeAudioIfUnreferenced (file:///workspace/KO-CARD-GAME/artifacts/api-server/src/routes/admin.ts:376:28)
+              at async Promise.allSettled (index 0)
+    }
+[12:40:39.607] INFO (208867): request completed
+    req: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:40:39.615] INFO (208867): request completed
+    req: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:40:39.628] INFO (208867): request completed
+    req: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/admin/champions"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 10
+[12:40:39.634] INFO (208867): request completed
+    req: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/admin/champions"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:40:39.646] INFO (208867): request completed
+    req: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/admin/champions"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 5
+[12:40:39.661] INFO (208867): request completed
+    req: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/admin/ai-decks/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:40:39.689] INFO (208867): request completed
+    req: {
+      "id": 11,
+      "method": "POST",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 24
+[12:40:39.700] INFO (208867): request completed
+    req: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+✔ native and card-pack wrestler skins persist on an AI deck including draft base cards without publishing or granting them (78.655969ms)
+[12:40:39.722] INFO (208867): request completed
+    req: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:40:40.539] INFO (208867): request completed
+    req: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:40.544] INFO (208867): auth/me REQUEST_RECEIVED
+    authStage: "REQUEST_RECEIVED"
+    durationMs: 0
+[12:40:40.544] INFO (208867): auth/me AUTH_MIDDLEWARE_ENTER
+    authStage: "AUTH_MIDDLEWARE_ENTER"
+    durationMs: 0
+[12:40:40.544] INFO (208867): auth/me SESSION_VERIFY_START
+    authStage: "SESSION_VERIFY_START"
+    durationMs: 0
+[12:40:40.546] INFO (208867): auth/me SESSION_VERIFY_END
+    authStage: "SESSION_VERIFY_END"
+    durationMs: 2
+[12:40:40.546] INFO (208867): auth/me USER_LOOKUP_START
+    authStage: "USER_LOOKUP_START"
+    durationMs: 0
+[12:40:40.546] INFO (208867): auth/me USER_LOOKUP_END
+    authStage: "USER_LOOKUP_END"
+    durationMs: 0
+[12:40:40.546] INFO (208867): auth/me AUTH_MIDDLEWARE_EXIT
+    authStage: "AUTH_MIDDLEWARE_EXIT"
+    durationMs: 2
+[12:40:40.546] INFO (208867): auth/me RESPONSE_SENT
+    authStage: "RESPONSE_SENT"
+    durationMs: 2
+[12:40:40.546] INFO (208867): request completed
+    req: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:40.765] INFO (208867): request completed
+    req: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:41.057] INFO (208867): request completed
+    req: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:40:41.117] INFO (208867): request completed
+    req: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:40:41.404] INFO (208867): request completed
+    req: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/admin/champion-intro-interactions"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:40:41.408] INFO (208867): request completed
+    req: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:40:41.591] INFO (208867): request completed
+    req: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:40:41.599] INFO (208867): request completed
+    req: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/admin/draft/champion-selection"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:41.881] INFO (208867): request completed
+    req: {
+      "id": 23,
+      "method": "PATCH",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:40:41.891] INFO (208867): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:41.944] INFO (208867): request completed
+    req: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/admin/champions/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:42.091] INFO (208867): request completed
+    req: {
+      "id": 26,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:42.095] INFO (208867): auth/me REQUEST_RECEIVED
+    authStage: "REQUEST_RECEIVED"
+    durationMs: 0
+[12:40:42.095] INFO (208867): auth/me AUTH_MIDDLEWARE_ENTER
+    authStage: "AUTH_MIDDLEWARE_ENTER"
+    durationMs: 0
+[12:40:42.095] INFO (208867): auth/me SESSION_VERIFY_START
+    authStage: "SESSION_VERIFY_START"
+    durationMs: 0
+[12:40:42.097] INFO (208867): auth/me SESSION_VERIFY_END
+    authStage: "SESSION_VERIFY_END"
+    durationMs: 2
+[12:40:42.098] INFO (208867): auth/me USER_LOOKUP_START
+    authStage: "USER_LOOKUP_START"
+    durationMs: 0
+[12:40:42.098] INFO (208867): auth/me USER_LOOKUP_END
+    authStage: "USER_LOOKUP_END"
+    durationMs: 0
+[12:40:42.098] INFO (208867): auth/me AUTH_MIDDLEWARE_EXIT
+    authStage: "AUTH_MIDDLEWARE_EXIT"
+    durationMs: 3
+[12:40:42.098] INFO (208867): auth/me RESPONSE_SENT
+    authStage: "RESPONSE_SENT"
+    durationMs: 3
+[12:40:42.098] INFO (208867): request completed
+    req: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:42.225] INFO (208867): request completed
+    req: {
+      "id": 28,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:42.522] INFO (208867): request completed
+    req: {
+      "id": 29,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:42.554] INFO (208867): request completed
+    req: {
+      "id": 30,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:42.863] INFO (208867): request completed
+    req: {
+      "id": 31,
+      "method": "GET",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+[12:40:42.871] INFO (208867): request completed
+    req: {
+      "id": 32,
+      "method": "GET",
+      "url": "/api/admin/ai-decks/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 18
+[12:40:43.353] INFO (208867): request completed
+    req: {
+      "id": 33,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/a582b7f4-5e84-4dcd-b930-f862b1bbd992"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 32
+[12:40:43.759] INFO (208867): request completed
+    req: {
+      "id": 34,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/a582b7f4-5e84-4dcd-b930-f862b1bbd992"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 30
+[12:40:43.870] INFO (208867): request completed
+    req: {
+      "id": 35,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:43.876] INFO (208867): auth/me REQUEST_RECEIVED
+    authStage: "REQUEST_RECEIVED"
+    durationMs: 0
+[12:40:43.876] INFO (208867): auth/me AUTH_MIDDLEWARE_ENTER
+    authStage: "AUTH_MIDDLEWARE_ENTER"
+    durationMs: 0
+[12:40:43.876] INFO (208867): auth/me SESSION_VERIFY_START
+    authStage: "SESSION_VERIFY_START"
+    durationMs: 0
+[12:40:43.877] INFO (208867): auth/me SESSION_VERIFY_END
+    authStage: "SESSION_VERIFY_END"
+    durationMs: 1
+[12:40:43.877] INFO (208867): auth/me USER_LOOKUP_START
+    authStage: "USER_LOOKUP_START"
+    durationMs: 0
+[12:40:43.877] INFO (208867): auth/me USER_LOOKUP_END
+    authStage: "USER_LOOKUP_END"
+    durationMs: 0
+[12:40:43.877] INFO (208867): auth/me AUTH_MIDDLEWARE_EXIT
+    authStage: "AUTH_MIDDLEWARE_EXIT"
+    durationMs: 1
+[12:40:43.878] INFO (208867): auth/me RESPONSE_SENT
+    authStage: "RESPONSE_SENT"
+    durationMs: 2
+[12:40:43.878] INFO (208867): request completed
+    req: {
+      "id": 36,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:40:44.015] INFO (208867): request completed
+    req: {
+      "id": 37,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:44.311] INFO (208867): request completed
+    req: {
+      "id": 38,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:40:44.345] INFO (208867): request completed
+    req: {
+      "id": 39,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:40:44.648] INFO (208867): request completed
+    req: {
+      "id": 40,
+      "method": "GET",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:40:44.657] INFO (208867): request completed
+    req: {
+      "id": 41,
+      "method": "GET",
+      "url": "/api/admin/ai-decks/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:40:45.010] INFO (208867): request completed
+    req: {
+      "id": 42,
+      "method": "GET",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:40:45.495] INFO (208867): request completed
+    req: {
+      "id": 43,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/a582b7f4-5e84-4dcd-b930-f862b1bbd992"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 23
+[12:40:45.591] INFO (208867): request completed
+    req: {
+      "id": 44,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 1
+[12:40:45.593] INFO (208867): auth/me REQUEST_RECEIVED
+    authStage: "REQUEST_RECEIVED"
+    durationMs: 0
+[12:40:45.593] INFO (208867): auth/me AUTH_MIDDLEWARE_ENTER
+    authStage: "AUTH_MIDDLEWARE_ENTER"
+    durationMs: 0
+[12:40:45.593] INFO (208867): auth/me SESSION_VERIFY_START
+    authStage: "SESSION_VERIFY_START"
+    durationMs: 0
+[12:40:45.595] INFO (208867): auth/me SESSION_VERIFY_END
+    authStage: "SESSION_VERIFY_END"
+    durationMs: 2
+[12:40:45.595] INFO (208867): auth/me USER_LOOKUP_START
+    authStage: "USER_LOOKUP_START"
+    durationMs: 0
+[12:40:45.595] INFO (208867): auth/me USER_LOOKUP_END
+    authStage: "USER_LOOKUP_END"
+    durationMs: 0
+[12:40:45.595] INFO (208867): auth/me AUTH_MIDDLEWARE_EXIT
+    authStage: "AUTH_MIDDLEWARE_EXIT"
+    durationMs: 2
+[12:40:45.595] INFO (208867): auth/me RESPONSE_SENT
+    authStage: "RESPONSE_SENT"
+    durationMs: 2
+[12:40:45.595] INFO (208867): request completed
+    req: {
+      "id": 45,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:45.725] INFO (208867): request completed
+    req: {
+      "id": 46,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:46.136] INFO (208867): request completed
+    req: {
+      "id": 47,
+      "method": "GET",
+      "url": "/api/decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 16
+[12:40:46.170] INFO (208867): request completed
+    req: {
+      "id": 48,
+      "method": "GET",
+      "url": "/api/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 45
+[12:40:46.178] INFO (208867): request completed
+    req: {
+      "id": 49,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 21
+[12:40:46.181] INFO (208867): request completed
+    req: {
+      "id": 51,
+      "method": "GET",
+      "url": "/api/game-media"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:46.184] INFO (208867): request completed
+    req: {
+      "id": 50,
+      "method": "GET",
+      "url": "/api/admin/champions"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:40:46.192] INFO (208867): request completed
+    req: {
+      "id": 52,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:40:46.203] INFO (208867): request completed
+    req: {
+      "id": 53,
+      "method": "GET",
+      "url": "/api/minion-a/cards"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:40:46.600] INFO (208867): request completed
+    req: {
+      "id": 54,
+      "method": "POST",
+      "url": "/api/daily-quests/ai-match-start"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 48
+[12:40:46.669] INFO (208867): request completed
+    req: {
+      "id": 55,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 19
+[12:40:46.777] INFO (208867): request completed
+    req: {
+      "id": 57,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:40:46.780] INFO (208867): request completed
+    req: {
+      "id": 58,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:46.781] INFO (208867): request completed
+    req: {
+      "id": 56,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+[12:40:50.726] INFO (208867): request completed
+    req: {
+      "id": 59,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:40:51.229] INFO (208867): request completed
+    req: {
+      "id": 60,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:40:55.736] INFO (208867): request completed
+    req: {
+      "id": 61,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:41:00.744] INFO (208867): request completed
+    req: {
+      "id": 62,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+✔ mobile champion save recovers a lost committed response; AI skin editing and shared-code import save/reopen and render in a real AI match (23685.310924ms)
+[12:41:03.137] INFO (208867): request completed
+    req: {
+      "id": 63,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30140.916966

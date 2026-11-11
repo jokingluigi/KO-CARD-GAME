@@ -1,0 +1,232 @@
+
+> workspace@0.0.0 build /workspace/KO-CARD-GAME
+> pnpm run typecheck && pnpm -r --if-present run build
+
+
+> workspace@0.0.0 typecheck /workspace/KO-CARD-GAME
+> pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --filter "./scripts" --if-present run typecheck
+
+
+> workspace@0.0.0 typecheck:libs /workspace/KO-CARD-GAME
+> tsc --build
+
+Scope: 4 of 12 workspace projects
+artifacts/ko-game typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+scripts typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+scripts typecheck: Done
+artifacts/mockup-sandbox typecheck: Done
+artifacts/ko-game typecheck: Done
+artifacts/api-server typecheck: Done
+Scope: 11 of 12 workspace projects
+artifacts/mockup-sandbox build$ vite build
+artifacts/mockup-sandbox build: vite v7.3.6 building client environment for production...
+artifacts/mockup-sandbox build: transforming...
+artifacts/mockup-sandbox build: ✓ 30 modules transformed.
+artifacts/mockup-sandbox build: rendering chunks...
+artifacts/mockup-sandbox build: computing gzip size...
+artifacts/mockup-sandbox build: dist/index.html                   4.42 kB │ gzip:  1.23 kB
+artifacts/mockup-sandbox build: dist/assets/index-C4GxwS3y.css   88.37 kB │ gzip: 14.82 kB
+artifacts/mockup-sandbox build: dist/assets/index-CqOx4XgY.js   187.72 kB │ gzip: 59.51 kB
+artifacts/mockup-sandbox build: ✓ built in 834ms
+artifacts/mockup-sandbox build: Done
+artifacts/api-server build$ node ./build.mjs
+artifacts/ko-game build$ vite build --config vite.config.ts
+artifacts/ko-game build: vite v7.3.6 building client environment for production...
+artifacts/ko-game build: transforming...
+artifacts/api-server build:   dist/index.mjs                       5.2mb ⚠️
+artifacts/api-server build:   dist/pino-worker.mjs               153.4kb
+artifacts/api-server build:   dist/pino-file.mjs                 142.1kb
+artifacts/api-server build:   dist/pino-pretty.mjs               114.4kb
+artifacts/api-server build:   dist/thread-stream-worker.mjs        7.3kb
+artifacts/api-server build:   dist/index.mjs.map                   9.0mb
+artifacts/api-server build:   dist/pino-worker.mjs.map           256.9kb
+artifacts/api-server build:   dist/pino-file.mjs.map             229.0kb
+artifacts/api-server build:   dist/pino-pretty.mjs.map           203.6kb
+artifacts/api-server build:   dist/thread-stream-worker.mjs.map   12.0kb
+artifacts/api-server build: ⚡ Done in 453ms
+artifacts/api-server build: Done
+artifacts/ko-game build: src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+artifacts/ko-game build: src/components/ui/dropdown-menu.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+artifacts/ko-game build: ✓ 2262 modules transformed.
+artifacts/ko-game build: Export "LESSONS" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/components/tutorial/tutorial-client.ts" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "lessonUnavailable" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/components/tutorial/tutorial-client.ts" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "tutorialCatalog" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/components/tutorial/tutorial-client.ts" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "LESSONS" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/components/tutorial/lesson-ui.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "lessonUnavailable" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/components/tutorial/lesson-ui.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "tutorialGoal" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/pages/home.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "LESSONS" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/pages/home.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "lessonUnavailable" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/pages/home.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "createTutorialLesson" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/pages/home.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: Export "tutorialActionAllowed" of module "../../lib/game-engine/src/tutorial.ts" was reexported through module "../../lib/game-engine/src/index.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+artifacts/ko-game build: Either change the import in "src/pages/home.tsx" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+artifacts/ko-game build: rendering chunks...
+artifacts/ko-game build: computing gzip size...
+artifacts/ko-game build: dist/public/version.json                                            0.07 kB │ gzip:   0.09 kB
+artifacts/ko-game build: dist/public/index.html                                              1.54 kB │ gzip:   0.67 kB
+artifacts/ko-game build: dist/public/assets/oswald-latin-700-normal-vy6hmKSr.woff2          12.67 kB
+artifacts/ko-game build: dist/public/assets/oswald-latin-500-normal-B-eyT0Dw.woff2          12.70 kB
+artifacts/ko-game build: dist/public/assets/neodgm-pro-1.020-3kqB7DAE.woff2                 38.14 kB
+artifacts/ko-game build: dist/public/assets/walnut-material-portrait-DH-wYOEp.webp         104.38 kB
+artifacts/ko-game build: dist/public/assets/walnut-material-wide-PiyMySER.webp             133.45 kB
+artifacts/ko-game build: dist/public/assets/ai-decision.worker-DqX1foIR.js                 275.76 kB
+artifacts/ko-game build: dist/public/assets/noto-sans-kr-korean-900-normal-DBM0ezAo.woff2  489.25 kB
+artifacts/ko-game build: dist/public/assets/noto-sans-kr-korean-400-normal-CmjJz_gz.woff2  541.86 kB
+artifacts/ko-game build: dist/public/assets/noto-sans-kr-korean-700-normal-DvnDzSjd.woff2  559.19 kB
+artifacts/ko-game build: dist/public/assets/screen-impact-CpHhjk4D.css                       1.28 kB │ gzip:   0.50 kB
+artifacts/ko-game build: dist/public/assets/claim-all-rewards-CxVY8INY.css                   2.29 kB │ gzip:   0.83 kB
+artifacts/ko-game build: dist/public/assets/draft-Cac3xVTd.css                               2.74 kB │ gzip:   0.90 kB
+artifacts/ko-game build: dist/public/assets/admin-usage-statistics-zIUkQJsY.css              2.89 kB │ gzip:   0.92 kB
+artifacts/ko-game build: dist/public/assets/card-catalog-filters-CNCTOSZC.css                3.36 kB │ gzip:   1.07 kB
+artifacts/ko-game build: dist/public/assets/online-BNIDShBc.css                              3.50 kB │ gzip:   0.96 kB
+artifacts/ko-game build: dist/public/assets/player-ux-6Sji1bxz.css                           3.56 kB │ gzip:   1.13 kB
+artifacts/ko-game build: dist/public/assets/game-guide-BPxGQUUH.css                          3.61 kB │ gzip:   1.17 kB
+artifacts/ko-game build: dist/public/assets/admin-battle-sprites-BUAmiLrS.css                6.76 kB │ gzip:   1.64 kB
+artifacts/ko-game build: dist/public/assets/champion-battle-actor-BuHPU4vu.css               7.99 kB │ gzip:   1.51 kB
+artifacts/ko-game build: dist/public/assets/cosmetics-8oip41O_.css                           9.78 kB │ gzip:   2.51 kB
+artifacts/ko-game build: dist/public/assets/online-match-intro-BfPpEPdc.css                 10.93 kB │ gzip:   3.04 kB
+artifacts/ko-game build: dist/public/assets/wishlist-BcCFA8dh.css                           11.19 kB │ gzip:   3.31 kB
+artifacts/ko-game build: dist/public/assets/champion-sprite-visual-DajIsJB2.css             12.38 kB │ gzip:   3.36 kB
+artifacts/ko-game build: dist/public/assets/home-CxDZWsh2.css                               17.23 kB │ gzip:   3.42 kB
+artifacts/ko-game build: dist/public/assets/battle-mode-button-Cg6_GT_-.css                 17.97 kB │ gzip:   3.75 kB
+artifacts/ko-game build: dist/public/assets/game-page-header-Bqu-c6f7.css                   19.99 kB │ gzip:   4.33 kB
+artifacts/ko-game build: dist/public/assets/admin-CMNSBw6R.css                              34.99 kB │ gzip:   7.03 kB
+artifacts/ko-game build: dist/public/assets/match-result-overlay-BNdQnzQO.css               73.37 kB │ gzip:  14.73 kB
+artifacts/ko-game build: dist/public/assets/index-Dqc-y44w.css                             307.31 kB │ gzip:  53.65 kB
+artifacts/ko-game build: dist/public/assets/constants-ysKgAj7o.js                            0.12 kB │ gzip:   0.13 kB
+artifacts/ko-game build: dist/public/assets/check-BO8l-wlW.js                                0.13 kB │ gzip:   0.14 kB
+artifacts/ko-game build: dist/public/assets/chevron-down-aEDuK2ZV.js                         0.13 kB │ gzip:   0.14 kB
+artifacts/ko-game build: dist/public/assets/chevron-right-BEpRLCbt.js                        0.13 kB │ gzip:   0.14 kB
+artifacts/ko-game build: dist/public/assets/loader-circle-CTG_7gCN.js                        0.15 kB │ gzip:   0.15 kB
+artifacts/ko-game build: dist/public/assets/plus-B9QztK-H.js                                 0.15 kB │ gzip:   0.15 kB
+artifacts/ko-game build: dist/public/assets/arrow-left-CDFAcne2.js                           0.17 kB │ gzip:   0.16 kB
+artifacts/ko-game build: dist/public/assets/power-CIBjZGaf.js                                0.17 kB │ gzip:   0.17 kB
+artifacts/ko-game build: dist/public/assets/search-DildBzK4.js                               0.18 kB │ gzip:   0.17 kB
+artifacts/ko-game build: dist/public/assets/circle-check-BbUu5ArU.js                         0.18 kB │ gzip:   0.17 kB
+artifacts/ko-game build: dist/public/assets/rotate-ccw-MUedieaB.js                           0.20 kB │ gzip:   0.18 kB
+artifacts/ko-game build: dist/public/assets/log-out-DKJECkuc.js                              0.23 kB │ gzip:   0.19 kB
+artifacts/ko-game build: dist/public/assets/upload-D1yj1LbJ.js                               0.23 kB │ gzip:   0.19 kB
+artifacts/ko-game build: dist/public/assets/copy-CfbKXWtO.js                                 0.24 kB │ gzip:   0.21 kB
+artifacts/ko-game build: dist/public/assets/circle-alert-Cxj2DpQ_.js                         0.25 kB │ gzip:   0.19 kB
+artifacts/ko-game build: dist/public/assets/triangle-alert-Dzb-4XaY.js                       0.27 kB │ gzip:   0.21 kB
+artifacts/ko-game build: dist/public/assets/square--uqdabKX.js                               0.27 kB │ gzip:   0.22 kB
+artifacts/ko-game build: dist/public/assets/shield-D4WoNhxQ.js                               0.27 kB │ gzip:   0.23 kB
+artifacts/ko-game build: dist/public/assets/coins-YLDwWpiy.js                                0.28 kB │ gzip:   0.22 kB
+artifacts/ko-game build: dist/public/assets/shield-check-DhVDzdgX.js                         0.32 kB │ gzip:   0.25 kB
+artifacts/ko-game build: dist/public/assets/save-BuMtjAml.js                                 0.33 kB │ gzip:   0.23 kB
+artifacts/ko-game build: dist/public/assets/routes-B2uPogcz.js                               0.33 kB │ gzip:   0.25 kB
+artifacts/ko-game build: dist/public/assets/bot-BNcS_FA5.js                                  0.33 kB │ gzip:   0.23 kB
+artifacts/ko-game build: dist/public/assets/trash-2-B-FY1NTl.js                              0.33 kB │ gzip:   0.22 kB
+artifacts/ko-game build: dist/public/assets/calendar-check-2-D1U8vtK4.js                     0.33 kB │ gzip:   0.23 kB
+artifacts/ko-game build: dist/public/assets/tower-vanilla-WE7zpbUS.js                        0.36 kB │ gzip:   0.30 kB
+artifacts/ko-game build: dist/public/assets/image-plus-DJ-b9Vnw.js                           0.36 kB │ gzip:   0.25 kB
+artifacts/ko-game build: dist/public/assets/pack-probabilities-REvKwi_I.js                   0.37 kB │ gzip:   0.27 kB
+artifacts/ko-game build: dist/public/assets/package-D5zqzZN3.js                              0.37 kB │ gzip:   0.26 kB
+artifacts/ko-game build: dist/public/assets/direct-champion-COKCt3Sc.js                      0.47 kB │ gzip:   0.26 kB
+artifacts/ko-game build: dist/public/assets/star-Drnfl7HP.js                                 0.47 kB │ gzip:   0.29 kB
+artifacts/ko-game build: dist/public/assets/sparkles-BtlY8ACt.js                             0.50 kB │ gzip:   0.28 kB
+artifacts/ko-game build: dist/public/assets/launch-deck-dczHW_Aj.js                          0.65 kB │ gzip:   0.43 kB
+artifacts/ko-game build: dist/public/assets/display-labels-CKIrqrCl.js                       0.77 kB │ gzip:   0.39 kB
+artifacts/ko-game build: dist/public/assets/game-guide-yt4jPCev.js                           0.92 kB │ gzip:   0.63 kB
+artifacts/ko-game build: dist/public/assets/not-found-C1VIFtFd.js                            0.99 kB │ gzip:   0.64 kB
+artifacts/ko-game build: dist/public/assets/online-game-state-Wmaos2DX.js                    1.01 kB │ gzip:   0.56 kB
+artifacts/ko-game build: dist/public/assets/types-C2Y9wVRF.js                                1.04 kB │ gzip:   0.51 kB
+artifacts/ko-game build: dist/public/assets/finisher-config-DR6NuSGb.js                      1.04 kB │ gzip:   0.48 kB
+artifacts/ko-game build: dist/public/assets/ai-decks-client-DAPVSya8.js                      1.19 kB │ gzip:   0.59 kB
+artifacts/ko-game build: dist/public/assets/cosmetics-client-66zOa0Vm.js                     1.20 kB │ gzip:   0.79 kB
+artifacts/ko-game build: dist/public/assets/draft-3m9p3jys.js                                1.20 kB │ gzip:   0.75 kB
+artifacts/ko-game build: dist/public/assets/reward-display-DhQwxXs6.js                       1.23 kB │ gzip:   0.62 kB
+artifacts/ko-game build: dist/public/assets/game-page-header-DIHJwelm.js                     1.34 kB │ gzip:   0.66 kB
+artifacts/ko-game build: dist/public/assets/admin-list-controls-aFndP3jE.js                  1.52 kB │ gzip:   0.83 kB
+artifacts/ko-game build: dist/public/assets/battle-mode-button-DyMKYvnj.js                   1.60 kB │ gzip:   0.79 kB
+artifacts/ko-game build: dist/public/assets/rewards-client-Bwl2g33P.js                       1.62 kB │ gzip:   0.79 kB
+artifacts/ko-game build: dist/public/assets/cosmetic-preview-Cp0s64Ct.js                     1.78 kB │ gzip:   0.92 kB
+artifacts/ko-game build: dist/public/assets/decks-client-Ddd0neGj.js                         1.92 kB │ gzip:   1.05 kB
+artifacts/ko-game build: dist/public/assets/shop-deck-detail-DiWZF8ul.js                     2.15 kB │ gzip:   1.26 kB
+artifacts/ko-game build: dist/public/assets/tower-dialogue-view-CAOxV8Z5.js                  2.22 kB │ gzip:   1.18 kB
+artifacts/ko-game build: dist/public/assets/collection-action-animation-DU6ofU3A.js          2.29 kB │ gzip:   1.22 kB
+artifacts/ko-game build: dist/public/assets/index-CmzsmusN.js                                2.47 kB │ gzip:   1.02 kB
+artifacts/ko-game build: dist/public/assets/account-recovery-LtOsKpF3.js                     2.56 kB │ gzip:   1.35 kB
+artifacts/ko-game build: dist/public/assets/card-artwork-CKahRn48.js                         2.81 kB │ gzip:   1.31 kB
+artifacts/ko-game build: dist/public/assets/collection-client-CGsKcA7j.js                    3.00 kB │ gzip:   1.47 kB
+artifacts/ko-game build: dist/public/assets/presentation-motion-mS4rc21o.js                  3.27 kB │ gzip:   1.41 kB
+artifacts/ko-game build: dist/public/assets/deck-share-code-Q3jzE7fq.js                      3.40 kB │ gzip:   1.78 kB
+artifacts/ko-game build: dist/public/assets/tower-music-editor-Dm67LiUZ.js                   3.70 kB │ gzip:   1.73 kB
+artifacts/ko-game build: dist/public/assets/match-recap-panel-CYXBl7TQ.js                    3.71 kB │ gzip:   1.39 kB
+artifacts/ko-game build: dist/public/assets/settings-AtI-gTLo.js                             3.86 kB │ gzip:   1.81 kB
+artifacts/ko-game build: dist/public/assets/effects-CQ8J2Y6u.js                              4.04 kB │ gzip:   2.14 kB
+artifacts/ko-game build: dist/public/assets/alert-dialog-Bz3ucLiY.js                         4.53 kB │ gzip:   1.64 kB
+artifacts/ko-game build: dist/public/assets/shelf-wTiEdED2.js                                4.81 kB │ gzip:   2.00 kB
+artifacts/ko-game build: dist/public/assets/skin-battle-preview-De1qbVHi.js                  4.83 kB │ gzip:   2.33 kB
+artifacts/ko-game build: dist/public/assets/online-WrlJPFrf.js                               5.34 kB │ gzip:   2.31 kB
+artifacts/ko-game build: dist/public/assets/draft-client-9m3MMnfs.js                         5.46 kB │ gzip:   2.14 kB
+artifacts/ko-game build: dist/public/assets/card-catalog-filters-Dia8nZkX.js                 5.55 kB │ gzip:   2.45 kB
+artifacts/ko-game build: dist/public/assets/alt-inspector-utils-CSKHT14J.js                  6.05 kB │ gzip:   2.82 kB
+artifacts/ko-game build: dist/public/assets/admin-tower-test-D0mds6B9.js                     6.38 kB │ gzip:   2.80 kB
+artifacts/ko-game build: dist/public/assets/attendance-HoJ8O6Hw.js                           6.66 kB │ gzip:   2.83 kB
+artifacts/ko-game build: dist/public/assets/configured-effects-BmRdbOEU.js                   7.13 kB │ gzip:   2.64 kB
+artifacts/ko-game build: dist/public/assets/admin-dashboard-CY4h6fHT.js                      7.65 kB │ gzip:   3.04 kB
+artifacts/ko-game build: dist/public/assets/online-quick-BC3zbXIV.js                         7.76 kB │ gzip:   3.27 kB
+artifacts/ko-game build: dist/public/assets/combat-settings-Usw_nAG6.js                      7.81 kB │ gzip:   2.95 kB
+artifacts/ko-game build: dist/public/assets/tower-sandbox-CS0TgZ09.js                        7.89 kB │ gzip:   3.38 kB
+artifacts/ko-game build: dist/public/assets/launch-deck-banner-DOcMiG13.js                   7.95 kB │ gzip:   3.42 kB
+artifacts/ko-game build: dist/public/assets/online-match-intro-D72LUSO2.js                   8.09 kB │ gzip:   3.45 kB
+artifacts/ko-game build: dist/public/assets/admin-notices-manager-Dx02sro8.js                8.62 kB │ gzip:   3.12 kB
+artifacts/ko-game build: dist/public/assets/player-notebook-CgWzBckY.js                      8.63 kB │ gzip:   3.32 kB
+artifacts/ko-game build: dist/public/assets/admin-audio-field-BExnHbwr.js                    8.68 kB │ gzip:   3.52 kB
+artifacts/ko-game build: dist/public/assets/daily-quests-Ca_S2eJY.js                         9.84 kB │ gzip:   3.89 kB
+artifacts/ko-game build: dist/public/assets/pack-detail-dialog-DZ58U5hn.js                  10.04 kB │ gzip:   3.36 kB
+artifacts/ko-game build: dist/public/assets/online-lobby-ui-GHInc3I6.js                     10.18 kB │ gzip:   3.57 kB
+artifacts/ko-game build: dist/public/assets/admin-rewards-manager-Cf6U2bPe.js               10.49 kB │ gzip:   3.75 kB
+artifacts/ko-game build: dist/public/assets/cosmetics-Dh5j2IOW.js                           11.42 kB │ gzip:   4.26 kB
+artifacts/ko-game build: dist/public/assets/packs-DnLrkWsn.js                               11.54 kB │ gzip:   4.63 kB
+artifacts/ko-game build: dist/public/assets/admin-tag-manager-CKWNr_P2.js                   11.57 kB │ gzip:   4.24 kB
+artifacts/ko-game build: dist/public/assets/admin-usage-statistics-CjsQqmlh.js              11.59 kB │ gzip:   4.26 kB
+artifacts/ko-game build: dist/public/assets/card-detail-dialog-SVhyfgjj.js                  11.72 kB │ gzip:   4.42 kB
+artifacts/ko-game build: dist/public/assets/online-friendly-C5ZfI6v2.js                     11.77 kB │ gzip:   3.87 kB
+artifacts/ko-game build: dist/public/assets/admin-card-frame-manager-CblhtDRY.js            12.04 kB │ gzip:   4.34 kB
+artifacts/ko-game build: dist/public/assets/champion-battle-actor-B9T0hZ5n.js               13.16 kB │ gzip:   4.98 kB
+artifacts/ko-game build: dist/public/assets/index-0pJihu0A.js                               13.36 kB │ gzip:   5.32 kB
+artifacts/ko-game build: dist/public/assets/pack-opening-BfqAfsQU.js                        13.64 kB │ gzip:   4.59 kB
+artifacts/ko-game build: dist/public/assets/admin-prism-manager-Q6vWscQa.js                 13.88 kB │ gzip:   4.04 kB
+artifacts/ko-game build: dist/public/assets/champion-sprite-visual-B5tXpJTu.js              14.58 kB │ gzip:   6.13 kB
+artifacts/ko-game build: dist/public/assets/admin-pack-manager-9EcngL3j.js                  15.93 kB │ gzip:   5.28 kB
+artifacts/ko-game build: dist/public/assets/shop-BrXVv3K0.js                                16.60 kB │ gzip:   6.23 kB
+artifacts/ko-game build: dist/public/assets/published-champions-oKPrV-Sk.js                 17.20 kB │ gzip:   5.52 kB
+artifacts/ko-game build: dist/public/assets/screen-impact-DNZ93_ZG.js                       17.56 kB │ gzip:   7.15 kB
+artifacts/ko-game build: dist/public/assets/claim-all-rewards-BUTz57e1.js                   18.09 kB │ gzip:   6.94 kB
+artifacts/ko-game build: dist/public/assets/alt-inspector-cO5p7gOv.js                       18.18 kB │ gzip:   6.54 kB
+artifacts/ko-game build: dist/public/assets/admin-shop-manager-LVnQFoHZ.js                  18.74 kB │ gzip:   5.77 kB
+artifacts/ko-game build: dist/public/assets/admin-quest-manager-PjjKUfva.js                 19.94 kB │ gzip:   6.06 kB
+artifacts/ko-game build: dist/public/assets/tower-BYjfwdnc.js                               21.03 kB │ gzip:   7.67 kB
+artifacts/ko-game build: dist/public/assets/admin-ai-deck-manager-C6XoNnWv.js               21.68 kB │ gzip:   7.01 kB
+artifacts/ko-game build: dist/public/assets/dialog-B4Xs2uFX.js                              24.05 kB │ gzip:   8.80 kB
+artifacts/ko-game build: dist/public/assets/admin-draft-manager-DXcNVaal.js                 24.23 kB │ gzip:   7.57 kB
+artifacts/ko-game build: dist/public/assets/game-guide-content-BNh-0cdX.js                  24.43 kB │ gzip:   8.72 kB
+artifacts/ko-game build: dist/public/assets/online-match-BBzTRlMw.js                        27.24 kB │ gzip:   9.62 kB
+artifacts/ko-game build: dist/public/assets/collection-6-VFnj5A.js                          27.50 kB │ gzip:   8.51 kB
+artifacts/ko-game build: dist/public/assets/admin-game-media-manager-BJq1ihLS.js            28.10 kB │ gzip:   9.29 kB
+artifacts/ko-game build: dist/public/assets/admin-battle-sprites-BQ98iYlL.js                34.69 kB │ gzip:  11.23 kB
+artifacts/ko-game build: dist/public/assets/wishlist-DH9_3F4b.js                            40.34 kB │ gzip:  15.10 kB
+artifacts/ko-game build: dist/public/assets/decks-BZ8jHkrw.js                               53.89 kB │ gzip:  17.15 kB
+artifacts/ko-game build: dist/public/assets/admin-BAX29Bv0.js                               55.02 kB │ gzip:  17.81 kB
+artifacts/ko-game build: dist/public/assets/admin-champion-manager-7a_EvEtA.js              57.58 kB │ gzip:  15.53 kB
+artifacts/ko-game build: dist/public/assets/admin-tower-manager-Y60a6rjT.js                 60.19 kB │ gzip:  16.73 kB
+artifacts/ko-game build: dist/public/assets/admin-card-manager-BQR8dS_4.js                  74.41 kB │ gzip:  24.06 kB
+artifacts/ko-game build: dist/public/assets/home-CY6eSvSu.js                               120.57 kB │ gzip:  39.14 kB
+artifacts/ko-game build: dist/public/assets/create-initial-game-state-1ln6-EkW.js          169.02 kB │ gzip:  40.80 kB
+artifacts/ko-game build: dist/public/assets/awakening-CM0RX8As.js                          194.27 kB │ gzip:  52.78 kB
+artifacts/ko-game build: dist/public/assets/match-result-overlay-BgKJxetW.js               258.22 kB │ gzip:  77.67 kB
+artifacts/ko-game build: dist/public/assets/index-DmdF0hdt.js                              404.04 kB │ gzip: 131.16 kB
+artifacts/ko-game build: ✓ built in 6.71s
+artifacts/ko-game build: Done

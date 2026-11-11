@@ -1,0 +1,26 @@
+{
+  "lostCommittedResponseRecovered": true,
+  "championWriteCount": 1,
+  "postSaveListReads": 0,
+  "aiCardSkinsPersist": true,
+  "legacyDraftBaseSkin": true,
+  "sharedCodeImportPersist": true,
+  "actualAIMatchWrestlerSkin": true,
+  "viewports": [
+    [
+      390,
+      844
+    ],
+    [
+      844,
+      390
+    ],
+    [
+      1440,
+      900
+    ]
+  ],
+  "placeholderArt": true,
+  "productionWrites": 0,
+  "errors": []
+}

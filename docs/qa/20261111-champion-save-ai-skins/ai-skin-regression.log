@@ -1,0 +1,2342 @@
+✔ authentication: anonymous and ordinary accounts cannot manage or grant cosmetics (109.698153ms)
+[12:34:22.237] INFO (207419): request completed
+    req: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/COSMETICS"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 7
+[12:34:22.251] INFO (207419): request completed
+    req: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/Admin/Cosmetics"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 6
+[12:34:22.255] INFO (207419): request completed
+    req: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 1
+[12:34:22.267] INFO (207419): request completed
+    req: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 9
+[12:34:22.273] INFO (207419): request completed
+    req: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 2
+[12:34:22.278] INFO (207419): request completed
+    req: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 2
+[12:34:22.285] INFO (207419): request completed
+    req: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 4
+[12:34:22.292] INFO (207419): request completed
+    req: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 4
+[12:34:22.297] INFO (207419): request completed
+    req: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 4
+[12:34:22.304] INFO (207419): request completed
+    req: {
+      "id": 10,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 4
+[12:34:22.309] INFO (207419): request completed
+    req: {
+      "id": 11,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 2
+[12:34:22.321] INFO (207419): request completed
+    req: {
+      "id": 12,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 6
+[12:34:22.327] INFO (207419): request completed
+    req: {
+      "id": 13,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 4
+[12:34:22.338] INFO (207419): request completed
+    req: {
+      "id": 14,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:22.352] INFO (207419): request completed
+    req: {
+      "id": 15,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads/complete"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:22.356] INFO (207419): request completed
+    req: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/storage/objects/uploads/cosmetics/1b5b4232-c655-4e4d-a777-8d9f2829003b.png"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:34:22.363] INFO (207419): request completed
+    req: {
+      "id": 17,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:22.372] INFO (207419): request completed
+    req: {
+      "id": 18,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads/complete"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 5
+✔ actual storage upload: signed PUT, decoded PNG verification, durable serving, invalid types rejected (68.160468ms)
+[12:34:22.379] INFO (207419): request completed
+    req: {
+      "id": 19,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 5
+[12:34:22.392] INFO (207419): request completed
+    req: {
+      "id": 20,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 11
+[12:34:22.408] INFO (207419): request completed
+    req: {
+      "id": 21,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 14
+[12:34:22.418] INFO (207419): request completed
+    req: {
+      "id": 22,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 7
+[12:34:22.427] INFO (207419): request completed
+    req: {
+      "id": 23,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 7
+[12:34:22.438] INFO (207419): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:22.443] INFO (207419): request completed
+    req: {
+      "id": 25,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 3
+✔ admin registers all four types, selects real DB targets, rejects unsupported tokens and unsafe assets (68.623909ms)
+[12:34:22.447] INFO (207419): request completed
+    req: {
+      "id": 26,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:22.462] INFO (207419): request completed
+    req: {
+      "id": 27,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:22.472] INFO (207419): request completed
+    req: {
+      "id": 28,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:22.490] INFO (207419): request completed
+    req: {
+      "id": 29,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 16
+[12:34:22.507] INFO (207419): request completed
+    req: {
+      "id": 30,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 15
+[12:34:22.519] INFO (207419): request completed
+    req: {
+      "id": 31,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:22.543] INFO (207419): request completed
+    req: {
+      "id": 32,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:22.556] INFO (207419): request completed
+    req: {
+      "id": 33,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:22.572] INFO (207419): request completed
+    req: {
+      "id": 34,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 14
+[12:34:22.585] INFO (207419): request completed
+    req: {
+      "id": 35,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:22.595] INFO (207419): request completed
+    req: {
+      "id": 36,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:22.605] INFO (207419): request completed
+    req: {
+      "id": 37,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 7
+[12:34:22.619] INFO (207419): request completed
+    req: {
+      "id": 38,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+[12:34:22.633] INFO (207419): request completed
+    req: {
+      "id": 39,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:22.645] INFO (207419): request completed
+    req: {
+      "id": 40,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:22.657] INFO (207419): request completed
+    req: {
+      "id": 41,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:22.660] INFO (207419): request completed
+    req: {
+      "id": 42,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:22.668] INFO (207419): request completed
+    req: {
+      "id": 43,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 6
+[12:34:22.699] INFO (207419): request completed
+    req: {
+      "id": 44,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:22.711] INFO (207419): request completed
+    req: {
+      "id": 45,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:22.730] INFO (207419): request completed
+    req: {
+      "id": 46,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:22.742] INFO (207419): request completed
+    req: {
+      "id": 47,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:22.762] INFO (207419): request completed
+    req: {
+      "id": 48,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 9
+✔ idempotent grants, own inventory isolation, authoritative equip and four distinct persistent emote slots (348.150653ms)
+[12:34:22.775] INFO (207419): request completed
+    req: {
+      "id": 49,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:22.803] INFO (207419): request completed
+    req: {
+      "id": 50,
+      "method": "POST",
+      "url": "/api/auth/logout"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+✔ actual session logout/login preserves database equipment (73.946344ms)
+[12:34:22.856] INFO (207419): request completed
+    req: {
+      "id": 51,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 51
+[12:34:22.868] INFO (207419): request completed
+    req: {
+      "id": 52,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:22.876] INFO (207419): request completed
+    req: {
+      "id": 53,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:34:22.886] INFO (207419): request completed
+    req: {
+      "id": 54,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/uploads/complete"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:22.899] INFO (207419): request completed
+    req: {
+      "id": 55,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 11
+[12:34:22.911] INFO (207419): request completed
+    req: {
+      "id": 56,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-b/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:22.929] INFO (207419): request completed
+    req: {
+      "id": 57,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 7
+✔ two-user actual PvP start freezes both loadouts without changing card/champion definitions or hidden state (142.127324ms)
+[12:34:22.940] INFO (207419): request completed
+    req: {
+      "id": 58,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-b/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+✔ WebSocket image emotes broadcast to both accounts, reject spoofed slots, dedupe and rate limit, leave RNG/turn/state/version untouched (279.028187ms)
+✔ server runtime eviction/recovery restores frozen cosmetics and exact existing combat state (4.810011ms)
+[12:34:23.309] INFO (207419): request completed
+    req: {
+      "id": 59,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:6a8e79f3-26d1-409d-87fe-7e79b5dc6e8d"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:23.320] INFO (207419): request completed
+    req: {
+      "id": 60,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:23.333] INFO (207419): request completed
+    req: {
+      "id": 61,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-b/grants"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 6
+[12:34:23.341] INFO (207419): request completed
+    req: {
+      "id": 62,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 6
+[12:34:23.358] INFO (207419): request completed
+    req: {
+      "id": 63,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:6a8e79f3-26d1-409d-87fe-7e79b5dc6e8d"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:23.375] INFO (207419): request completed
+    req: {
+      "id": 64,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:6a8e79f3-26d1-409d-87fe-7e79b5dc6e8d"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:23.387] INFO (207419): request completed
+    req: {
+      "id": 65,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:6a8e79f3-26d1-409d-87fe-7e79b5dc6e8d"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:23.411] INFO (207419): request completed
+    req: {
+      "id": 66,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+✔ disable preserves ownership, prevents new grants/equipment, original fallback; re-targeting unequips and revocation cascades (145.614656ms)
+✔ slot image fallback and final-definition/controller resolution are independent from original combat definitions (0.484221ms)
+✔ malformed presentation metadata falls back without crashing combat rendering (0.131385ms)
+[12:34:23.427] INFO (207419): request completed
+    req: {
+      "id": 67,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+✔ cosmetic dependency failure or stalled read returns original defaults within a bounded match-start delay (16.966442ms)
+✔ RLS denies direct untrusted SQL clients; schema change is idempotent and original card catalog is untouched (12.59901ms)
+[12:34:23.459] WARN (207419): Cosmetics unavailable; using original artwork for this match
+    err: {
+      "type": "Error",
+      "message": "Cosmetic lookup timeout",
+      "stack":
+          Error: Cosmetic lookup timeout
+              at Timeout._onTimeout (file:///workspace/KO-CARD-GAME/artifacts/api-server/src/lib/cosmetics.ts:142:49)
+              at listOnTimeout (node:internal/timers:635:17)
+              at process.processTimers (node:internal/timers:571:7)
+    }
+[12:34:23.460] WARN (207419): Cosmetics unavailable; using original artwork for this match
+    err: {
+      "type": "Error",
+      "message": "isolated database outage",
+      "stack":
+          Error: isolated database outage
+              at file:///workspace/KO-CARD-GAME/lib/db/qa/cosmetics.test.ts:548:15
+              at loadMatchCosmetics (file:///workspace/KO-CARD-GAME/artifacts/api-server/src/lib/cosmetics.ts:140:13)
+              at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/lib/db/qa/cosmetics.test.ts:547:28)
+              at async Test.run (node:internal/test_runner/test:1389:7)
+              at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+    }
+[12:34:23.482] INFO (207419): request completed
+    req: {
+      "id": 68,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:23.493] INFO (207419): request completed
+    req: {
+      "id": 69,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 3
+[12:34:23.510] INFO (207419): request completed
+    req: {
+      "id": 70,
+      "method": "GET",
+      "url": "/api/packs/set-pack/details"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:23.529] INFO (207419): request completed
+    req: {
+      "id": 71,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 16
+[12:34:23.537] INFO (207419): request completed
+    req: {
+      "id": 72,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:23.562] INFO (207419): request completed
+    req: {
+      "id": 73,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open-bulk"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 23
+[12:34:23.579] INFO (207419): request completed
+    req: {
+      "id": 74,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open-bulk"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:23.590] INFO (207419): request completed
+    req: {
+      "id": 75,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:23.626] INFO (207419): request completed
+    req: {
+      "id": 76,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-b/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:23.640] INFO (207419): request completed
+    req: {
+      "id": 77,
+      "method": "GET",
+      "url": "/api/admin/packs/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:23.648] INFO (207419): request completed
+    req: {
+      "id": 78,
+      "method": "POST",
+      "url": "/api/admin/packs/set-pack/preview/forced"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:23.668] INFO (207419): request completed
+    req: {
+      "id": 79,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 15
+[12:34:23.690] INFO (207419): request completed
+    req: {
+      "id": 80,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open-bulk"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 20
+✔ champion skin token set: validated linkage, existing owner, actual single/bulk pack claims, equip/fallback/revoke (229.513019ms)
+[12:34:23.696] INFO (207419): request completed
+    req: {
+      "id": 81,
+      "method": "POST",
+      "url": "/api/packs/set-pack/open-bulk"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:23.728] INFO (207419): request completed
+    req: {
+      "id": 82,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:23.746] INFO (207419): request completed
+    req: {
+      "id": 83,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 16
+[12:34:23.767] INFO (207419): request completed
+    req: {
+      "id": 84,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:34:23.773] INFO (207419): request completed
+    req: {
+      "id": 85,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/admin/grants"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 4
+[12:34:23.783] INFO (207419): request completed
+    req: {
+      "id": 86,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:23.796] INFO (207419): request completed
+    req: {
+      "id": 87,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:23.809] INFO (207419): request completed
+    req: {
+      "id": 88,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+[12:34:23.820] INFO (207419): request completed
+    req: {
+      "id": 89,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:23.827] INFO (207419): request completed
+    req: {
+      "id": 90,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 5
+[12:34:23.837] INFO (207419): request completed
+    req: {
+      "id": 91,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:23.852] INFO (207419): request completed
+    req: {
+      "id": 92,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 11
+✔ all administrator accounts unlock current/new skins; users and non-skin items stay isolated (162.720387ms)
+[12:34:23.863] INFO (207419): request completed
+    req: {
+      "id": 93,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 8
+[12:34:23.871] INFO (207419): request completed
+    req: {
+      "id": 94,
+      "method": "POST",
+      "url": "/api/admin/notices"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 4
+[12:34:23.875] INFO (207419): request completed
+    req: {
+      "id": 95,
+      "method": "GET",
+      "url": "/api/notices"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:34:23.878] INFO (207419): request completed
+    req: {
+      "id": 96,
+      "method": "DELETE",
+      "url": "/api/admin/notices/a3b486ae-d5fe-4b40-8642-6bce611dfb79"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 2
+[12:34:23.880] INFO (207419): request completed
+    req: {
+      "id": 97,
+      "method": "DELETE",
+      "url": "/api/admin/notices/a3b486ae-d5fe-4b40-8642-6bce611dfb79"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 0
+[12:34:23.886] INFO (207419): request completed
+    req: {
+      "id": 98,
+      "method": "DELETE",
+      "url": "/api/admin/notices/a3b486ae-d5fe-4b40-8642-6bce611dfb79"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:34:23.887] INFO (207419): request completed
+    req: {
+      "id": 99,
+      "method": "GET",
+      "url": "/api/notices"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 1
+✔ administrator notice deletion removes public content and rejects user/anonymous requests (27.351406ms)
+[12:34:23.892] INFO (207419): request completed
+    req: {
+      "id": 100,
+      "method": "DELETE",
+      "url": "/api/admin/notices/a3b486ae-d5fe-4b40-8642-6bce611dfb79"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 3
+[12:34:23.903] INFO (207419): request completed
+    req: {
+      "id": 101,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:23.913] INFO (207419): request completed
+    req: {
+      "id": 102,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/delete-user/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:23.926] INFO (207419): request completed
+    req: {
+      "id": 103,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/be91c0e8-16e7-4c6d-99d2-1e9510835ce9"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 2
+[12:34:23.928] INFO (207419): request completed
+    req: {
+      "id": 104,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/be91c0e8-16e7-4c6d-99d2-1e9510835ce9"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 1
+[12:34:23.935] INFO (207419): request completed
+    req: {
+      "id": 105,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/be91c0e8-16e7-4c6d-99d2-1e9510835ce9"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 4
+[12:34:23.943] INFO (207419): request completed
+    req: {
+      "id": 106,
+      "method": "DELETE",
+      "url": "/api/admin/packs/delete-ref-pack"
+    }
+    res: {
+      "statusCode": 204
+    }
+    responseTime: 4
+[12:34:23.950] INFO (207419): request completed
+    req: {
+      "id": 107,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/be91c0e8-16e7-4c6d-99d2-1e9510835ce9"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:23.956] INFO (207419): request completed
+    req: {
+      "id": 108,
+      "method": "GET",
+      "url": "/api/storage/objects/uploads/cosmetics/1b5b4232-c655-4e4d-a777-8d9f2829003b.png"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:34:23.961] INFO (207419): request completed
+    req: {
+      "id": 109,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/be91c0e8-16e7-4c6d-99d2-1e9510835ce9"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 2
+[12:34:23.969] INFO (207419): request completed
+    req: {
+      "id": 110,
+      "method": "POST",
+      "url": "/api/admin/packs"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 5
+[12:34:23.992] INFO (207419): request completed
+    req: {
+      "id": 111,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:34:23.999] INFO (207419): request completed
+    req: {
+      "id": 112,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.009] INFO (207419): request completed
+    req: {
+      "id": 113,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 7
+[12:34:24.016] INFO (207419): request completed
+    req: {
+      "id": 114,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/8d1a3f2b-0e7a-4c82-ae86-a80f54d0b05c"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.025] INFO (207419): request completed
+    req: {
+      "id": 115,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 8
+[12:34:24.032] INFO (207419): request completed
+    req: {
+      "id": 116,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/19f57ebe-fc09-47a0-9df4-2e6d6b8ecb13"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.042] INFO (207419): request completed
+    req: {
+      "id": 117,
+      "method": "DELETE",
+      "url": "/api/admin/card-skins/delete-legacy-skin"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 6
+[12:34:24.046] INFO (207419): request completed
+    req: {
+      "id": 118,
+      "method": "DELETE",
+      "url": "/api/admin/packs/delete-legacy-pack"
+    }
+    res: {
+      "statusCode": 204
+    }
+    responseTime: 4
+✔ cosmetic deletion guards packs, clears ownership/equipment atomically and retains history/images (162.320446ms)
+[12:34:24.054] INFO (207419): request completed
+    req: {
+      "id": 119,
+      "method": "DELETE",
+      "url": "/api/admin/card-skins/delete-legacy-skin"
+    }
+    res: {
+      "statusCode": 204
+    }
+    responseTime: 7
+[12:34:24.060] INFO (207419): request completed
+    req: {
+      "id": 120,
+      "method": "DELETE",
+      "url": "/api/admin/shop-decks/delete-product"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 2
+[12:34:24.066] INFO (207419): request completed
+    req: {
+      "id": 121,
+      "method": "DELETE",
+      "url": "/api/admin/shop-decks/delete-product"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:34:24.070] INFO (207419): request completed
+    req: {
+      "id": 122,
+      "method": "DELETE",
+      "url": "/api/admin/shop-decks/delete-product"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 3
+[12:34:24.077] INFO (207419): request completed
+    req: {
+      "id": 123,
+      "method": "DELETE",
+      "url": "/api/admin/shop-decks/sold-product"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 4
+[12:34:24.088] INFO (207419): request completed
+    req: {
+      "id": 124,
+      "method": "POST",
+      "url": "/api/admin/quests/seasons"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.095] INFO (207419): request completed
+    req: {
+      "id": 125,
+      "method": "POST",
+      "url": "/api/admin/quests/seasons"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.098] INFO (207419): request completed
+    req: {
+      "id": 126,
+      "method": "DELETE",
+      "url": "/api/admin/quests/seasons/empty-quest-season"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 1
+[12:34:24.106] INFO (207419): request completed
+    req: {
+      "id": 127,
+      "method": "DELETE",
+      "url": "/api/admin/quests/seasons/empty-quest-season"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.114] INFO (207419): request completed
+    req: {
+      "id": 128,
+      "method": "DELETE",
+      "url": "/api/admin/quests/seasons/used-quest-season"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 6
+[12:34:24.123] INFO (207419): request completed
+    req: {
+      "id": 129,
+      "method": "DELETE",
+      "url": "/api/admin/quests/definitions/season-linked-quest"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+✔ admin-added deck products and quest seasons delete safely without erasing purchase/quest history (76.231175ms)
+[12:34:24.130] INFO (207419): request completed
+    req: {
+      "id": 130,
+      "method": "DELETE",
+      "url": "/api/admin/quests/seasons/used-quest-season"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 5
+[12:34:24.135] INFO (207419): request completed
+    req: {
+      "id": 131,
+      "method": "DELETE",
+      "url": "/api/admin/tower/starters/delete-tower-starters"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 1
+[12:34:24.144] INFO (207419): request completed
+    req: {
+      "id": 132,
+      "method": "DELETE",
+      "url": "/api/admin/tower/starters/delete-tower-starters"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.148] INFO (207419): request completed
+    req: {
+      "id": 133,
+      "method": "DELETE",
+      "url": "/api/admin/tower/starters/delete-tower-starters"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 3
+[12:34:24.152] INFO (207419): request completed
+    req: {
+      "id": 134,
+      "method": "DELETE",
+      "url": "/api/admin/tower/presets/delete-tower-presets"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 1
+[12:34:24.160] INFO (207419): request completed
+    req: {
+      "id": 135,
+      "method": "DELETE",
+      "url": "/api/admin/tower/presets/delete-tower-presets"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.164] INFO (207419): request completed
+    req: {
+      "id": 136,
+      "method": "DELETE",
+      "url": "/api/admin/tower/presets/delete-tower-presets"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 3
+[12:34:24.169] INFO (207419): request completed
+    req: {
+      "id": 137,
+      "method": "DELETE",
+      "url": "/api/admin/tower/relics/delete-tower-relics"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 1
+[12:34:24.175] INFO (207419): request completed
+    req: {
+      "id": 138,
+      "method": "DELETE",
+      "url": "/api/admin/tower/relics/delete-tower-relics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.180] INFO (207419): request completed
+    req: {
+      "id": 139,
+      "method": "DELETE",
+      "url": "/api/admin/tower/relics/delete-tower-relics"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 3
+[12:34:24.184] INFO (207419): request completed
+    req: {
+      "id": 140,
+      "method": "DELETE",
+      "url": "/api/admin/tower/characters/delete-tower-characters"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 2
+[12:34:24.201] INFO (207419): request completed
+    req: {
+      "id": 141,
+      "method": "DELETE",
+      "url": "/api/admin/tower/characters/delete-tower-characters"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.206] INFO (207419): request completed
+    req: {
+      "id": 142,
+      "method": "DELETE",
+      "url": "/api/admin/tower/characters/delete-tower-characters"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 3
+[12:34:24.210] INFO (207419): request completed
+    req: {
+      "id": 143,
+      "method": "DELETE",
+      "url": "/api/admin/tower/scenes/delete-tower-scenes"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 2
+[12:34:24.217] INFO (207419): request completed
+    req: {
+      "id": 144,
+      "method": "DELETE",
+      "url": "/api/admin/tower/scenes/delete-tower-scenes"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.224] INFO (207419): request completed
+    req: {
+      "id": 145,
+      "method": "DELETE",
+      "url": "/api/admin/tower/scenes/delete-tower-scenes"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 5
+[12:34:24.230] INFO (207419): request completed
+    req: {
+      "id": 146,
+      "method": "DELETE",
+      "url": "/api/admin/tower/metadata/CHAMPION/cosmetic-unit-0"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 4
+[12:34:24.235] INFO (207419): request completed
+    req: {
+      "id": 147,
+      "method": "DELETE",
+      "url": "/api/admin/tower/metadata/CARD/cosmetic-unit-0"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:34:24.246] INFO (207419): request completed
+    req: {
+      "id": 148,
+      "method": "DELETE",
+      "url": "/api/admin/tower/relics/referenced-relic"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 7
+[12:34:24.253] INFO (207419): request completed
+    req: {
+      "id": 149,
+      "method": "DELETE",
+      "url": "/api/admin/tower/presets/dependent-preset"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.261] INFO (207419): request completed
+    req: {
+      "id": 150,
+      "method": "DELETE",
+      "url": "/api/admin/tower/relics/referenced-relic"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.273] INFO (207419): request completed
+    req: {
+      "id": 151,
+      "method": "DELETE",
+      "url": "/api/admin/tower/seasons/delete-tower-season"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.282] INFO (207419): request completed
+    req: {
+      "id": 152,
+      "method": "DELETE",
+      "url": "/api/admin/tower/seasons/protected-tower-season"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 5
+✔ tower catalog deletion supports every editable resource and protects dependencies/published runs (152.789304ms)
+[12:34:24.292] INFO (207419): request completed
+    req: {
+      "id": 153,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.306] INFO (207419): request completed
+    req: {
+      "id": 154,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+[12:34:24.316] INFO (207419): request completed
+    req: {
+      "id": 155,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.325] INFO (207419): request completed
+    req: {
+      "id": 156,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 6
+[12:34:24.337] INFO (207419): request completed
+    req: {
+      "id": 157,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:24.349] INFO (207419): request completed
+    req: {
+      "id": 158,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:unified-old-pack-skin"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.357] INFO (207419): request completed
+    req: {
+      "id": 159,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.364] INFO (207419): request completed
+    req: {
+      "id": 160,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.372] INFO (207419): request completed
+    req: {
+      "id": 161,
+      "method": "POST",
+      "url": "/api/admin/card-skins/unified-old-pack-skin/status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.382] INFO (207419): request completed
+    req: {
+      "id": 162,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 5
+[12:34:24.390] INFO (207419): request completed
+    req: {
+      "id": 163,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:unified-old-pack-skin"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.407] INFO (207419): request completed
+    req: {
+      "id": 164,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.419] INFO (207419): request completed
+    req: {
+      "id": 165,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:unified-old-pack-skin"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:24.433] INFO (207419): request completed
+    req: {
+      "id": 166,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+[12:34:24.445] INFO (207419): request completed
+    req: {
+      "id": 167,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[12:34:24.455] INFO (207419): request completed
+    req: {
+      "id": 168,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.466] INFO (207419): request completed
+    req: {
+      "id": 169,
+      "method": "GET",
+      "url": "/api/admin/packs/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.473] INFO (207419): request completed
+    req: {
+      "id": 170,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/pack-skin:unified-old-pack-skin"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 4
+[12:34:24.483] INFO (207419): request completed
+    req: {
+      "id": 171,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/pack-skin:unified-old-pack-skin"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+✔ unified catalog preserves pack IDs/owners and supports legacy edit, grant, equip, revoke and guarded delete (209.888364ms)
+[12:34:24.493] INFO (207419): request completed
+    req: {
+      "id": 172,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.503] INFO (207419): request completed
+    req: {
+      "id": 173,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/pack-skin:6a8e79f3-26d1-409d-87fe-7e79b5dc6e8d"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.521] INFO (207419): request completed
+    req: {
+      "id": 174,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.530] INFO (207419): request completed
+    req: {
+      "id": 175,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.547] INFO (207419): request completed
+    req: {
+      "id": 176,
+      "method": "GET",
+      "url": "/api/admin/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.551] INFO (207419): request completed
+    req: {
+      "id": 177,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:24.555] INFO (207419): request completed
+    req: {
+      "id": 178,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:24.557] INFO (207419): request completed
+    req: {
+      "id": 179,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:24.560] INFO (207419): request completed
+    req: {
+      "id": 180,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ca91dc25-ebc6-4917-ad3f-dc5355afba03"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 1
+✔ skin display settings round-trip through modern/legacy catalog and owned loadouts, with strict bounds (78.247267ms)
+✔ image emote throttling has no per-turn quota and replaces the previous image per player (3.011394ms)
+[12:34:24.571] INFO (207419): request completed
+    req: {
+      "id": 181,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.579] INFO (207419): request completed
+    req: {
+      "id": 182,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 1
+[12:34:24.583] INFO (207419): request completed
+    req: {
+      "id": 183,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:24.586] INFO (207419): request completed
+    req: {
+      "id": 184,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 1
+[12:34:24.590] INFO (207419): request completed
+    req: {
+      "id": 185,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 2
+[12:34:24.599] INFO (207419): request completed
+    req: {
+      "id": 186,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 7
+[12:34:24.618] INFO (207419): request completed
+    req: {
+      "id": 187,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.633] INFO (207419): request completed
+    req: {
+      "id": 188,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.640] INFO (207419): request completed
+    req: {
+      "id": 189,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-b/grants"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 3
+[12:34:24.656] INFO (207419): request completed
+    req: {
+      "id": 190,
+      "method": "POST",
+      "url": "/api/packs/default-emote-pack/open"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.661] INFO (207419): request completed
+    req: {
+      "id": 191,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ce43b253-201b-4842-a032-96ab2c9dc2c9"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:34:24.678] INFO (207419): request completed
+    req: {
+      "id": 192,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 15
+[12:34:24.688] INFO (207419): request completed
+    req: {
+      "id": 193,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-b/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.697] INFO (207419): request completed
+    req: {
+      "id": 194,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.703] INFO (207419): request completed
+    req: {
+      "id": 195,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ce43b253-201b-4842-a032-96ab2c9dc2c9"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:34:24.712] INFO (207419): request completed
+    req: {
+      "id": 196,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.719] INFO (207419): request completed
+    req: {
+      "id": 197,
+      "method": "PUT",
+      "url": "/api/cosmetics/equipment"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 5
+[12:34:24.729] INFO (207419): request completed
+    req: {
+      "id": 198,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/ce43b253-201b-4842-a032-96ab2c9dc2c9"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+[12:34:24.738] INFO (207419): request completed
+    req: {
+      "id": 199,
+      "method": "GET",
+      "url": "/api/cosmetics"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+✔ default emotes: validated admin option, existing/new owners, persistence, equipment, toggles, and pack duplicates (170.885147ms)
+[12:34:24.746] INFO (207419): request completed
+    req: {
+      "id": 200,
+      "method": "DELETE",
+      "url": "/api/admin/cosmetics/items/ce43b253-201b-4842-a032-96ab2c9dc2c9"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[12:34:24.764] INFO (207419): request completed
+    req: {
+      "id": 201,
+      "method": "GET",
+      "url": "/api/decks/selected"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:24.772] INFO (207419): request completed
+    req: {
+      "id": 202,
+      "method": "GET",
+      "url": "/api/decks/selected"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.775] INFO (207419): request completed
+    req: {
+      "id": 203,
+      "method": "GET",
+      "url": "/api/decks/selected"
+    }
+    res: {
+      "statusCode": 401
+    }
+    responseTime: 1
+✔ selected deck endpoint isolates users and batch resolution remains five reads for many decks (35.668063ms)
+[12:34:24.779] INFO (207419): request completed
+    req: {
+      "id": 204,
+      "method": "GET",
+      "url": "/api/decks/selected"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[12:34:24.791] INFO (207419): request completed
+    req: {
+      "id": 205,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/items"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 7
+[12:34:24.800] INFO (207419): request completed
+    req: {
+      "id": 206,
+      "method": "POST",
+      "url": "/api/admin/cosmetics/users/player-a/grants"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+✔ unequipped owned image emotes broadcast by ID; unowned/disabled items and client artwork cannot bypass ownership (189.247395ms)
+✔ duplicate image emotes award normal prisms exactly once per claim and disclose policy (27.385497ms)
+✔ bulk pack opening is atomic and idempotent for isolated fixture inventory (35.822322ms)
+[12:34:24.969] INFO (207419): request completed
+    req: {
+      "id": 207,
+      "method": "PATCH",
+      "url": "/api/admin/cosmetics/items/c1757c47-90c8-43ab-af37-dfec65b4316b"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[12:34:24.986] INFO (207419): request completed
+    req: {
+      "id": 208,
+      "method": "POST",
+      "url": "/api/packs/duplicate-emote-pack/open"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:24.993] INFO (207419): request completed
+    req: {
+      "id": 209,
+      "method": "POST",
+      "url": "/api/packs/duplicate-emote-pack/open"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[12:34:24.998] INFO (207419): request completed
+    req: {
+      "id": 210,
+      "method": "GET",
+      "url": "/api/packs/duplicate-policy"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[12:34:25.042] INFO (207419): request completed
+    req: {
+      "id": 211,
+      "method": "POST",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 403
+    }
+    responseTime: 2
+[12:34:25.060] INFO (207419): request completed
+    req: {
+      "id": 212,
+      "method": "POST",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 17
+[12:34:25.069] INFO (207419): request completed
+    req: {
+      "id": 213,
+      "method": "GET",
+      "url": "/api/admin/ai-decks/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[12:34:25.083] INFO (207419): request completed
+    req: {
+      "id": 214,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 12
+[12:34:25.097] INFO (207419): request completed
+    req: {
+      "id": 215,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 12
+[12:34:25.110] INFO (207419): request completed
+    req: {
+      "id": 216,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 11
+[12:34:25.124] INFO (207419): request completed
+    req: {
+      "id": 217,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 422
+    }
+    responseTime: 11
+[12:34:25.154] INFO (207419): request completed
+    req: {
+      "id": 218,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 20
+[12:34:25.169] INFO (207419): request completed
+    req: {
+      "id": 219,
+      "method": "GET",
+      "url": "/api/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:34:25.186] INFO (207419): request completed
+    req: {
+      "id": 220,
+      "method": "POST",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3/duplicate"
+    }
+    res: {
+      "statusCode": 201
+    }
+    responseTime: 15
+[12:34:25.246] INFO (207419): request completed
+    req: {
+      "id": 221,
+      "method": "PATCH",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 18
+[12:34:25.265] INFO (207419): request completed
+    req: {
+      "id": 222,
+      "method": "GET",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 13
+[12:34:25.271] INFO (207419): request completed
+    req: {
+      "id": 223,
+      "method": "DELETE",
+      "url": "/api/admin/ai-decks/1b441208-0492-4287-9b2e-ef264994bae3"
+    }
+    res: {
+      "statusCode": 204
+    }
+    responseTime: 4
+[12:34:25.276] INFO (207419): request completed
+    req: {
+      "id": 224,
+      "method": "DELETE",
+      "url": "/api/admin/ai-decks/bf49feb1-3caa-4c04-84c6-942213dc2ac0"
+    }
+    res: {
+      "statusCode": 204
+    }
+    responseTime: 3
+[12:34:25.288] INFO (207419): request completed
+    req: {
+      "id": 225,
+      "method": "GET",
+      "url": "/api/ai-decks"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[12:34:25.297] INFO (207419): request completed
+    req: {
+      "id": 226,
+      "method": "GET",
+      "url": "/api/admin/ai-decks/options"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8
+✔ AI skins persist through real authorized deck APIs, duplicate and quick-AI freeze; never grant inventory (280.018185ms)
+[12:34:25.305] INFO (207419): request errored
+    req: {
+      "id": 227,
+      "method": "POST",
+      "url": "/api/admin/ai-decks"
+    }
+    res: {
+      "statusCode": 503
+    }
+    responseTime: 5
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (/workspace/KO-CARD-GAME/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/workspace/KO-CARD-GAME/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11990.170671

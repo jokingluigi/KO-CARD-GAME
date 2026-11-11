@@ -1,3 +1,4 @@
+import {requestChampionSave} from '@/lib/champion-save-client';
 import {FinisherPublicationDialog,type FinisherPublicationCard} from './finisher-publication-dialog';
 import {FinisherLinkEditor} from "./finisher-link-editor";
 import {ChampionPreparationEditor} from './champion-preparation-editor';
@@ -119,6 +120,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const formRef = useRef<Form>(empty);
   const pendingUploadsRef = useRef<Set<Promise<void>>>(new Set());
   const saveInFlightRef = useRef(false);
+  const creationIdRef = useRef(crypto.randomUUID());
   const [publicationCards,setPublicationCards]=useState<FinisherPublicationCard[]|null>(null);
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const basicPortraitInputRef = useRef<HTMLInputElement>(null);
@@ -251,11 +253,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       questCondition,
     };
     try {
-      const response = await fetch(editing ? `${adminApiBase}/champions/${editing.id}` : `${adminApiBase}/champions`, {
-        method: editing ? "PATCH" : "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editing ? { ...saveForm, version: editing.version, ...(publishFinisherCards?{publishFinisherCards}:{}) } : saveForm),
-      });
+      const response=await requestChampionSave({base:adminApiBase,id:editing?.id,creationId:creationIdRef.current,version:editing?.version,payload:editing?{...saveForm,version:editing.version,...(publishFinisherCards?{publishFinisherCards}:{})}:saveForm});
       if(response.status===422){
         const detail=await response.clone().json() as {code?:string;cards?:FinisherPublicationCard[]};
         if(detail.code==='FINISHER_PUBLICATION_REQUIRED'&&detail.cards?.length){setPublicationCards(detail.cards);return;}
@@ -265,12 +263,15 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       if (response.status === 409) throw new Error(`충돌: ${await classifiedMessage(response)}`);
       if (response.status >= 500) throw new Error("서버 오류로 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       if (!response.ok) throw new Error(await classifiedMessage(response));
+      const {champion:saved}=await response.json() as {champion:Champion};
+      setChampions(current=>[...current.filter(c=>c.id!==saved.id),saved].sort((a,b)=>a.name.localeCompare(b.name)));
+      setEditing(saved);
+      setIntroInteractions(current=>current.map(row=>({...row,...(row.championOneId===saved.id?{championOneReference:{...row.championOneReference,name:saved.name,status:saved.status,state:saved.status}}:{}),...(row.championTwoId===saved.id?{championTwoReference:{...row.championTwoReference,name:saved.name,status:saved.status,state:saved.status}}:{})})));
+      if(publishFinisherCards)setTokenCards(current=>current.map(c=>publishFinisherCards.some(p=>p.id===c.id)?{...c,status:'PUBLISHED'}:c));
       setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 미공개로 저장했습니다.");
       setOpen(false);
       setPublicationCards(null);
-      await loadTokenCards();
-      await load();
-      await loadIntroInteractions();
+
     } catch (reason) {
       setError(reason instanceof TypeError
         ? "네트워크 오류로 저장하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
@@ -325,6 +326,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     }
   }
    function editor(champion?: Champion) {
+       creationIdRef.current=crypto.randomUUID();
        setEditing(champion ?? null);  setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
        name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
        imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null,

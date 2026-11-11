@@ -1,7 +1,9 @@
+import {championSaveValuesMatch} from '../../../../lib/game-engine/src/champion-save-values';
+import {logger} from '../lib/logger';
 import { validFinisherChoices, validFinisherReward } from '@workspace/game-engine';
 import {removeHomeMenuImage} from "../lib/home-menu-media";
 import {verifyCatalogAssets} from "./cosmetics";
-import {parseBattleSprite} from "@workspace/cosmetics";
+import {parseBattleSprite,spriteFrames} from "@workspace/cosmetics";
 import {AssetCleanupGate} from "../lib/asset-cleanup-gate";
 import { availableCardTags } from "../lib/card-tag-catalog";
 import { validProgramConfig, validAbilityReplacementConfig, validCountdownCardSettings } from '@workspace/effect-registry';
@@ -1729,8 +1731,9 @@ router.get("/champions", async (request, response): Promise<void> => {
   response.json({ champions });
 });
 
-router.get("/champions/:id/test", async (request, response): Promise<void> => {
+router.get(["/champions/:id","/champions/:id/test"], async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
+  response.setHeader("Cache-Control","no-store");
   const id = firstParam(request.params.id);
   if (!id) {
     response.status(400).json({ message: "챔피언 ID가 올바르지 않습니다." });
@@ -1748,6 +1751,9 @@ router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
   if (!input) { response.status(400).json({ message: championInputError(request.body) }); return; }
+  const key=request.get('Idempotency-Key')?.toLowerCase();
+  if(key!==undefined&&!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)){response.status(400).json({message:'저장 요청 ID가 올바르지 않습니다.'});return;}
+  if(key){const [saved]=await db.select().from(championsTable).where(eq(championsTable.id,key)).limit(1);if(saved){if(championSaveValuesMatch(input as unknown as Record<string,unknown>,saved))response.json({champion:saved,replayed:true});else response.status(409).json({message:'이 생성 요청으로 이미 다른 내용이 저장되어 있습니다.'});return;}}
   const finisherError=await validateFinisherReferences(input.questCondition);
   if(finisherError){response.status(400).json({message:finisherError});return;}
   try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
@@ -1784,10 +1790,15 @@ router.post("/champions", async (request, response): Promise<void> => {
   const champion = await db.transaction(async transaction => {
     if (validAwakeningQuestConfig(input.questCondition?.awakening)) await ensureAwakeningCards(transaction);
     const [created] = await transaction.insert(championsTable).values({
-      id: randomUUID(), ...championValues, status: "DRAFT", version: 1,
-    }).returning();
-    return created;
+      id: key??randomUUID(), ...championValues, status: "DRAFT", version: 1,
+    }).onConflictDoNothing({target:championsTable.id}).returning();
+    if(created)return created;
+    if(!key)return null;
+    const [saved]=await transaction.select().from(championsTable).where(eq(championsTable.id,key!)).limit(1);
+    if(saved&&championSaveValuesMatch(championValues as unknown as Record<string,unknown>,saved))return saved;
+    return null;
   });
+  if(!champion){response.status(409).json({message:'이 생성 요청으로 이미 다른 내용이 저장되어 있습니다.'});return;}
   response.status(201).json({ champion });
 });
 
@@ -1827,7 +1838,6 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     }
     response.status(400).json({message:finisherError,field:'questCondition.finisher'});return;
   }
-  try {const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)});}catch{response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return;}
   expectedVersion ??= existing.version;
   const versionCheck = expectedVersion === null
     ? null
@@ -1841,6 +1851,12 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     });
     return;
   }
+  try {
+    const sprite=(input.presentationLines as Record<string,unknown>)?.BATTLE_SPRITE;
+    const previousSprite=parseBattleSprite(existing.presentationLines?.BATTLE_SPRITE);
+    if(sprite)await verifyCatalogAssets({__battle:JSON.stringify(sprite)},new Set(previousSprite?spriteFrames(previousSprite).map(frame=>frame.url):[]));
+  } catch { response.status(400).json({message:'검증된 스프라이트 업로드가 필요합니다.'});return; }
+
   if (
     input.imageAssetId &&
     input.imageAssetId !== existing.imageAssetId &&
@@ -1908,19 +1924,12 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     });
     return;
   }
-  if (
-    existing.questCompleteAudioAssetId &&
-    existing.questCompleteAudioAssetId !== input.questCompleteAudioAssetId
-  ) {
-    await removeAudioIfUnreferenced(existing.questCompleteAudioAssetId);
-  }
-  if (
-    existing.questCompletedPortraitAssetId &&
-    existing.questCompletedPortraitAssetId !== input.questCompletedPortraitAssetId
-  ) {
-    await removeImageIfUnreferenced(existing.questCompletedPortraitAssetId);
-  }
+  // The write has committed. Storage housekeeping cannot turn success into a 5xx/timeout.
   response.json({ champion });
+  void Promise.allSettled([
+    ...(existing.questCompleteAudioAssetId&&existing.questCompleteAudioAssetId!==input.questCompleteAudioAssetId?[()=>removeAudioIfUnreferenced(existing.questCompleteAudioAssetId!)]:[]),
+    ...(existing.questCompletedPortraitAssetId&&existing.questCompletedPortraitAssetId!==input.questCompletedPortraitAssetId?[()=>removeImageIfUnreferenced(existing.questCompletedPortraitAssetId!)]:[]),
+  ].map(task=>Promise.resolve().then(task))).then(results=>{for(const result of results)if(result.status==='rejected')logger.warn({err:result.reason,championId:id},'Champion saved; unused asset cleanup deferred');});
 });
 
 router.delete("/champions/:id", async (request, response): Promise<void> => {
