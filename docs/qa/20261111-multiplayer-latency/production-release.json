@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-11-11T23:10:05.061Z",
+  "apiRevision": "3c53cd1c19d8acce2d14a85da3bda521ff2f8749",
+  "frontRevision": "3db598af9f8622c2d1897ed83e8c8de0d626c407",
+  "apiOnlyRelease": true,
+  "observations": [
+    {
+      "role": "api",
+      "commit": "3c53cd1c19d8acce2d14a85da3bda521ff2f8749",
+      "deployId": "dep-dbqfaj5g1s2s73e5r7s0",
+      "status": "live"
+    },
+    {
+      "role": "front",
+      "commit": "3db598af9f8622c2d1897ed83e8c8de0d626c407",
+      "deployId": "dep-dbqeqgl6e07s73f0ffqg",
+      "status": "live"
+    },
+    {
+      "resource": "cards",
+      "records": 182
+    },
+    {
+      "resource": "champions",
+      "records": 11
+    },
+    {
+      "path": "/",
+      "entry": "/assets/index-D7kvUG7N.js",
+      "revision": "3db598af9f8622c2d1897ed83e8c8de0d626c407"
+    },
+    {
+      "path": "/admin/champions",
+      "entry": "/assets/index-D7kvUG7N.js",
+      "revision": "3db598af9f8622c2d1897ed83e8c8de0d626c407"
+    }
+  ],
+  "productionCombatActionsCreated": 0,
+  "productionMultiplayerLatencyMeasured": false
+}
