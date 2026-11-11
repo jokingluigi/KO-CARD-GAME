@@ -35,3 +35,9 @@ The initial browser fixture used local player IDs rather than canonical online s
 QA producer and tests: `artifacts/ko-game/qa/black-gold-board.tsx`, `artifacts/ko-game/src/game/qa/balance-content-20261111.test.ts`, `docs/qa/combat-card-skins-20261111-browser.mjs`.
 
 Deployment receipts are added after API-first, frontend-second release. Main is not merged.
+
+## Release verified
+
+Source `ce63a855366c4abb3e2a9c8d1f49729c3e075998` is live on API (`dep-dbq9hioae00c73achtg0`) and frontend (`dep-dbq9igdg1s2s7381gkf0`). The frontend deploy command initially failed its short public-revision check because cached routes still served the previous revision despite the new `/index.html` and bundle being present. Header inspection showed cached old HTML (`s-maxage=300`) and an old version document with cache HIT/age. Extended read-only checks waited for the actual version, root and admin routes; all finally served the new revision. No duplicate deploy or rollback was performed. This release did not change Render cache policies; delayed route propagation remains a deployment consideration.
+
+Final checks verified both live immutable revisions and pinned deployment configuration, actual root/admin entry revision, delivered battle/home/online modules with controller metadata, and the current public Rosie record passed through the shared mapper. This last mapping check reads live data but executes locally; it is not a production match test. See `production-verification.json`, `production-feature-checks.json` and `serving-propagation.log`. No main merge or manual Production DB edit.

@@ -1,0 +1,25 @@
+{
+  "checkedAtUTC": "2026-11-11T16:42:21.039Z",
+  "source": "ce63a855366c4abb3e2a9c8d1f49729c3e075998",
+  "actualEntry": "/assets/index-CGXijPQL.js",
+  "chunks": {
+    "match-result-overlay-": "match-result-overlay-BGERiveC.js",
+    "home-": "home-BCemZFru.js",
+    "online-match-": "online-match-DE-SLAZ5.js"
+  },
+  "skinControllerMetadataInLiveModules": true,
+  "currentRosieDescriptionPreserved": true,
+  "localSharedMapperOnLiveRecord": {
+    "type": "EVENT",
+    "event": "CARD_PLAYED",
+    "owner": "SELF",
+    "cardType": "WRESTLER",
+    "rarities": [
+      "LEGENDARY",
+      "CHAMPION"
+    ],
+    "required": 3
+  },
+  "productionDataWrites": 0,
+  "productionMatchCreated": false
+}

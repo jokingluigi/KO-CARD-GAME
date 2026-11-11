@@ -1,0 +1,45 @@
+{
+  "checkedAtUTC": "2026-11-11T16:43:06.451Z",
+  "commit": "ce63a855366c4abb3e2a9c8d1f49729c3e075998",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbq9hioae00c73achtg0",
+      "status": "live",
+      "commit": "ce63a855366c4abb3e2a9c8d1f49729c3e075998",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbq9igdg1s2s7381gkf0",
+      "status": "live",
+      "commit": "ce63a855366c4abb3e2a9c8d1f49729c3e075998",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "ce63a855366c4abb3e2a9c8d1f49729c3e075998"
+  },
+  "front": {
+    "revision": "ce63a855366c4abb3e2a9c8d1f49729c3e075998",
+    "builtAtUTC": "2026-11-11T16:35:59.438Z"
+  },
+  "rootEntryModule": "/assets/index-CGXijPQL.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-CGXijPQL.js",
+  "latestHelperWordingPreserved": true,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "combat-skins-joker-summon-rosie-mimic",
+  "tagLabelsEndpointAvailable": true,
+  "publicCatalogChecksSkippedForMaintenance": false,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
