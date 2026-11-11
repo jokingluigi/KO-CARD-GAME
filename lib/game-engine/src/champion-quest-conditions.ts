@@ -4,7 +4,7 @@ import { questEventRegistry } from './quest-conditions';
 import { matchTurnNumber } from './rules';
 
 export type ChampionQuestCondition =
-  | { type: 'EVENT'; event: string; owner: 'SELF' | 'ENEMY' | 'ALL'; required: number; cardType?: 'WRESTLER' | 'TECHNIQUE';sourceOwner?:'SELF'|'ENEMY';targetOwner?:'SELF'|'ENEMY';targetKind?:'PLAYER'|'CARD';reason?:string;rarity?:string;positiveOnly?:boolean;exactZero?:boolean;sourceActionTypes?:string[] }
+  | { type: 'EVENT'; event: string; owner: 'SELF' | 'ENEMY' | 'ALL'; required: number; cardType?: 'WRESTLER' | 'TECHNIQUE';sourceOwner?:'SELF'|'ENEMY';targetOwner?:'SELF'|'ENEMY';targetKind?:'PLAYER'|'CARD';reason?:string;rarity?:string;rarities?:string[];positiveOnly?:boolean;exactZero?:boolean;sourceActionTypes?:string[] }
   | {type:'ZONE_COUNT';zone:'GRAVEYARD'|'HAND'|'DECK'|'BOARD';owner:'SELF'|'ENEMY';required:number;tag?:string;cardType?:'WRESTLER'|'TECHNIQUE'}
   | { type: 'TURN'; turn: number }
   | { type: 'HEALTH'; owner: 'SELF' | 'ENEMY'; op: 'LTE' | 'LT' | 'GTE' | 'GT' | 'EQ'; value: number }
@@ -19,7 +19,7 @@ export function validChampionQuestCondition(input: unknown, depth = 0): input is
   if(n.type==='ZONE_COUNT')return keys(['type','zone','owner','required','tag','cardType'])&&['GRAVEYARD','HAND','DECK','BOARD'].includes(n.zone as string)&&['SELF','ENEMY'].includes(n.owner as string)&&integer(n.required,1,999)&&(n.tag===undefined||typeof n.tag==='string')&&(n.cardType===undefined||['WRESTLER','TECHNIQUE'].includes(n.cardType as string));
   if (n.type === 'TURN') return keys(['type', 'turn']) && integer(n.turn, 1, 999);
   if (n.type === 'HEALTH') return keys(['type', 'owner', 'op', 'value']) && ['SELF', 'ENEMY'].includes(n.owner as string) && ['LTE', 'LT', 'GTE', 'GT', 'EQ'].includes(n.op as string) && integer(n.value, 0, 999);
-  return n.type === 'EVENT' && keys(['type', 'event', 'owner', 'required', 'cardType','sourceOwner','targetOwner','targetKind','reason','rarity','positiveOnly','exactZero','sourceActionTypes']) && typeof n.event === 'string' && Object.hasOwn(questEventRegistry(), n.event) && !n.event.startsWith('CHAMPION_QUEST_') && ['SELF', 'ENEMY','ALL'].includes(n.owner as string) && integer(n.required, 1, 999) && (n.cardType === undefined || ['WRESTLER', 'TECHNIQUE'].includes(n.cardType as string)) && (n.sourceOwner===undefined||['SELF','ENEMY'].includes(n.sourceOwner as string))&&(n.targetOwner===undefined||['SELF','ENEMY'].includes(n.targetOwner as string))&&(n.targetKind===undefined||['PLAYER','CARD'].includes(n.targetKind as string))&&(n.reason===undefined||typeof n.reason==='string')&&(n.rarity===undefined||['NORMAL','EPIC','LEGENDARY','CHAMPION'].includes(n.rarity as string))&&(n.positiveOnly===undefined||typeof n.positiveOnly==='boolean')&&(n.exactZero===undefined||typeof n.exactZero==='boolean')&&(n.sourceActionTypes===undefined||(Array.isArray(n.sourceActionTypes)&&n.sourceActionTypes.every(x=>typeof x==='string')));
+  return n.type === 'EVENT' && keys(['type', 'event', 'owner', 'required', 'cardType','sourceOwner','targetOwner','targetKind','reason','rarity','rarities','positiveOnly','exactZero','sourceActionTypes']) && typeof n.event === 'string' && Object.hasOwn(questEventRegistry(), n.event) && !n.event.startsWith('CHAMPION_QUEST_') && ['SELF', 'ENEMY','ALL'].includes(n.owner as string) && integer(n.required, 1, 999) && (n.cardType === undefined || ['WRESTLER', 'TECHNIQUE'].includes(n.cardType as string)) && (n.sourceOwner===undefined||['SELF','ENEMY'].includes(n.sourceOwner as string))&&(n.targetOwner===undefined||['SELF','ENEMY'].includes(n.targetOwner as string))&&(n.targetKind===undefined||['PLAYER','CARD'].includes(n.targetKind as string))&&(n.reason===undefined||typeof n.reason==='string')&&(n.rarity===undefined||['NORMAL','EPIC','LEGENDARY','CHAMPION'].includes(n.rarity as string))&&(n.rarities===undefined||(Array.isArray(n.rarities)&&n.rarities.length>=1&&n.rarities.length<=4&&n.rarities.every(r=>['NORMAL','EPIC','LEGENDARY','CHAMPION'].includes(r as string))))&&(n.positiveOnly===undefined||typeof n.positiveOnly==='boolean')&&(n.exactZero===undefined||typeof n.exactZero==='boolean')&&(n.sourceActionTypes===undefined||(Array.isArray(n.sourceActionTypes)&&n.sourceActionTypes.every(x=>typeof x==='string')));
 }
 
 /** Event leaves remember accumulated counts; state leaves inspect the current state. */
@@ -48,7 +48,7 @@ export function evaluateChampionQuestCondition(condition: ChampionQuestCondition
       if(node.targetKind&&e.target?.type!==node.targetKind)return false;
       if(node.sourceOwner&&(node.sourceOwner==='SELF'?e.sourceContext?.sourcePlayerId!==playerId:!e.sourceContext?.sourcePlayerId||e.sourceContext.sourcePlayerId===playerId))return false;
       if(node.sourceActionTypes&&!node.sourceActionTypes.includes(e.sourceContext?.sourceActionType??''))return false;
-      if(node.rarity){const d=state.cardPool?.find(d=>d.id===e.cardDefinitionId);if(d?.rarity!==node.rarity)return false;}
+      if(node.rarity||node.rarities){const d=state.cardPool?.find(d=>d.id===e.cardDefinitionId)??state.minionACardPool?.find(d=>d.id===e.cardDefinitionId);if(node.rarity&&d?.rarity!==node.rarity)return false;if(node.rarities&&(!d?.rarity||!node.rarities.includes(d.rarity)))return false;}
       return true;
     }).length);
 

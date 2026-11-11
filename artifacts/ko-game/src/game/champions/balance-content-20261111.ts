@@ -168,7 +168,20 @@ export function reviewedNovember11Champion(
                       required: 1,
                     },
                   }
-                : o,
+                : clean(String(o.description)) ===
+                    clean("레전더리 혹은 챔피언 등급 카드를 3장 이상 필드에 내기")
+                  ? {
+                      ...o,
+                      condition: {
+                        type: "EVENT",
+                        event: "CARD_PLAYED",
+                        owner: "SELF",
+                        cardType: "WRESTLER",
+                        rarities: ["LEGENDARY", "CHAMPION"],
+                        required: 3,
+                      },
+                    }
+                  : o,
           ),
         },
       };

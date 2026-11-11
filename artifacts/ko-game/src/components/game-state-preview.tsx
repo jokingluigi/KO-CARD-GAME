@@ -623,6 +623,8 @@ export function GameStatePreview({
           const currentAttack = event.sourceSnapshot?.currentAttack ?? attacker.currentAttack;
           const damage = damageEvent?.amount ?? 0;
           onOpponentAttackPresentation({
+            attackerPlayerId: event.sourceSnapshot?.playerId ?? event.playerId,
+            targetPlayerId: event.targetSnapshot?.playerId ?? targetPlayerId,
             attacker,
             target,
             targetKind: targetId ? "CARD" : "CHAMPION",

@@ -423,6 +423,7 @@ export function reviewedNovember11Abilities(
         enter(
           op("SUMMON_RANDOM_ADJACENT", undefined, {
             tag: "디 어쏘리티",
+            excludeChampionRarity: true,
             keyword: "TAUNT",
           }),
         ),

@@ -77,6 +77,7 @@ type PendingPlay = {
 };
 
 type PendingAttack = {
+  attackerPlayerId: string;
   attacker: CardInstance;
   target: CardInstance | null;
   targetKind: "CARD" | "CHAMPION";
@@ -819,6 +820,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     const target = opponent.board.find((card) => card?.instanceId === targetCardInstanceId) ?? null;
     if (!attacker) return;
     pendingAttackRef.current = {
+      attackerPlayerId: me.id,
       attacker,
       target,
       targetKind: "CARD",
@@ -839,6 +841,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     const attacker = me.board.find((card) => card?.instanceId === selectedAttackerId);
     if (!attacker) return;
     pendingAttackRef.current = {
+      attackerPlayerId: me.id,
       attacker,
       target: null,
       targetKind: "CHAMPION",

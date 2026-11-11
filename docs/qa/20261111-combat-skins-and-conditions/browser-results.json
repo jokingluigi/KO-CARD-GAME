@@ -1,0 +1,167 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "self",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "opponent",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "lethal",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "champion",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "mode": "unskinned",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "mode": "self",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "mode": "opponent",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "mode": "lethal",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "mode": "champion",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "mode": "unskinned",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "self",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "opponent",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "lethal",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "champion",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "mode": "unskinned",
+    "bothOnlineClients": true,
+    "acceptedServerAttack": true,
+    "allAnimationFramesKeepSkin": true,
+    "skinCropPreserved": true,
+    "productionWrites": 0,
+    "errors": []
+  }
+]

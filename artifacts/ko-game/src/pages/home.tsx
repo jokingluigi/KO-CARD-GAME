@@ -1249,6 +1249,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     const animation: AttackAnimationState | null = animationAttacker && geometry
       ? {
           attacker:animationAttacker,
+          attackerPlayerId: gameState.players[0].id,
+          targetPlayerId: gameState.players[1].id,
           target: target ?? null,
           targetKind: "CARD",
           counterDamage:confirmedCounterDamage(result.state.events,attackEventIndex,selectedAttackerId),
@@ -1388,6 +1390,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     const animation: AttackAnimationState | null = animationAttacker && geometry
       ? {
           attacker:animationAttacker,
+          attackerPlayerId: gameState.players[0].id,
+          targetPlayerId: gameState.players[1].id,
           target: null,
           targetKind: "CHAMPION",
           geometry,

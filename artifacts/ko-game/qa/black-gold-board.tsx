@@ -107,6 +107,8 @@ function Scene() {
         ...q,
         {
           attacker: unit,
+          attackerPlayerId: state.players[0].id,
+          targetPlayerId: state.players[1].id,
           target,
           targetKind: id ? "CARD" : "CHAMPION",
           geometry,

@@ -155,6 +155,7 @@ function pool(state: GameState, source: CardInstance, c: BalanceEffectConfig) {
       (!c.tag || d.tags?.includes(String(c.tag))) &&
       (!c.cardType || d.cardType === c.cardType) &&
       (!c.rarity || d.rarity === c.rarity) &&
+      (!c.excludeChampionRarity || d.rarity !== "CHAMPION") &&
       (!Array.isArray(c.rarities) || c.rarities.includes(d.rarity)) &&
       (!c.excludeSource || d.id !== source.definitionId),
   );

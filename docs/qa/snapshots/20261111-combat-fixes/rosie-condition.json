@@ -1,0 +1,37 @@
+{
+  "id": "champion-minion-a",
+  "name": "로지양",
+  "version": 30,
+  "updatedAt": "2026-11-11T16:23:53.898Z",
+  "questCondition": {
+    "event": "CARD_PLAYED",
+    "progress": 1,
+    "required": 1,
+    "finisherChoices": [
+      {
+        "id": "option-1",
+        "name": "어셈블",
+        "condition": {
+          "type": "EVENT",
+          "event": "CARD_PLAYED",
+          "owner": "SELF",
+          "required": 5
+        },
+        "description": "카드 총 12회 생성",
+        "cardDefinitionId": "0785ff4f-ce7c-4ab0-83e7-197249767543"
+      },
+      {
+        "id": "option-2",
+        "name": "흉내내기",
+        "condition": {
+          "type": "EVENT",
+          "event": "CARD_PLAYED",
+          "owner": "SELF",
+          "required": 1
+        },
+        "description": "레전더리 혹은 챔피언 등급 카드를 3장 이상 필드에 내기",
+        "cardDefinitionId": "52528873-0704-4569-9bd8-2c4ff227ce51"
+      }
+    ]
+  }
+}

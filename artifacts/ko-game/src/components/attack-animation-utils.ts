@@ -16,6 +16,9 @@ export type AttackDamageImpactLevel =
   | "VERY_HEAVY";
 
 export type AttackAnimationState = {
+  /** Controllers at declaration time, retained even if either card leaves the board. */
+  attackerPlayerId?: string;
+  targetPlayerId?: string;
   attacker: CardInstance;
   target: CardInstance | null;
   targetKind: "CARD" | "CHAMPION";

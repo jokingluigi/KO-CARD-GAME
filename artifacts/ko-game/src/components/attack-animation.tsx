@@ -170,6 +170,8 @@ export function AttackAnimation({
       <div className="attack-animation__target" ref={targetRef}>
         {animation.targetKind === "CARD" && animation.target ? (
           <CardRenderer
+            cardId={animation.target.definitionId}
+            cosmeticOwnerId={(!animation.target.isToken || animation.target.isChampionToken) ? animation.targetPlayerId : undefined}
             name={getCardDefinition(animation.target.definitionId)?.name ?? "대상"}
             cardType={animation.target.cardType}
             cost={animation.target.currentCost}
@@ -193,6 +195,8 @@ export function AttackAnimation({
       <div className="attack-animation__attacker" ref={attackerRef}>
 
         <CardRenderer
+          cardId={animation.attacker.definitionId}
+          cosmeticOwnerId={(!animation.attacker.isToken || animation.attacker.isChampionToken) ? animation.attackerPlayerId : undefined}
           name={definition?.name ?? "공격 카드"}
           cardType={animation.attacker.cardType}
           cost={animation.attacker.currentCost}

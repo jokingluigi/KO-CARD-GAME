@@ -1156,3 +1156,58 @@ test('Project P spell stuns and silences existing wrestlers and summons exactly 
  let s=setup();put(s,'body');put(s,'body',0,1);s=play(s,'프로젝트 P');assert.ok(s.players[0].board[0]?.isSilenced);assert.ok(s.players[1].board[0]?.isSilenced);assert.ok(s.players[0].board[0]?.isStunned);assert.ok(s.players[1].board[0]?.isStunned);
  const token=s.players[0].board.find(c=>c?.definitionId===byName('프로젝트 P(폭주)').id);assert.ok(token);assert.equal(token.isSilenced,false);
 });
+
+test("Joking Luigi excludes CHAMPION rarity from adjacent summons without blocking ordinary tagged wrestlers", () => {
+  const normal = { ...body, id: "joker-eligible", name: "허용 선수", status: "PUBLISHED" as const, rarity: "EPIC" as const, tags: ["디 어쏘리티"] };
+  const champion = { ...normal, id: "joker-forbidden", name: "금지 챔피언", rarity: "CHAMPION" as const };
+  for (const candidates of [[champion], [normal, champion]]) {
+    const s = setup();
+    s.cardPool = [byName("조킹루이지"), ...candidates];
+    s.minionACardPool = s.cardPool;
+    const next = play(s, "조킹루이지", 1);
+    assert.equal(next.players[0].board[1]?.definitionId, byName("조킹루이지").id);
+    for (const slot of [0, 2]) {
+      const card = next.players[0].board[slot];
+      if (candidates.length === 1) assert.equal(card, null, "no eligible candidate means no summon");
+      else {
+        assert.equal(card?.definitionId, normal.id);
+        assert.equal(card?.currentAttack, normal.attack + 1);
+        assert.equal(card?.maxHealth, normal.health + 1);
+        assert.ok(card?.keywords.includes("TAUNT"));
+      }
+    }
+    assert.ok(!next.players[0].board.some(c => c?.definitionId === champion.id));
+  }
+});
+
+test("Rosie's current Mimic condition counts a mixed total of three directly played LEGENDARY/CHAMPION wrestlers", () => {
+  const latest = JSON.parse(readFileSync("docs/qa/snapshots/20261111-combat-fixes/rosie-condition.json", "utf8"));
+  const record = { ...championRecords.find((r: any) => r.id === latest.id), ...latest };
+  const champ = championRecordToDefinition(record);
+  const choice = champ.quest!.finisherChoices!.find(o => o.cardDefinitionId === "52528873-0704-4569-9bd8-2c4ff227ce51")!;
+  assert.deepEqual(choice.condition, { type: "EVENT", event: "CARD_PLAYED", owner: "SELF", cardType: "WRESTLER", rarities: ["LEGENDARY", "CHAMPION"], required: 3 });
+  assert.ok(validChampionQuestCondition(choice.condition));
+  assert.equal(validChampionQuestCondition({ ...choice.condition, rarities: [] }), false);
+  assert.equal(validChampionQuestCondition({ ...choice.condition, rarities: ["FINISHER"] }), false);
+  let s = setup();
+  s.players[0].champion = { ...s.players[0].champion!, ...champ, health:20, questCompleted:false, questProgress:0, questConditionCounts:{} };
+  const candidates = ["LEGENDARY", "LEGENDARY", "CHAMPION"].map((rarity,i) => ({ ...body, id:"rosie-play-"+i, name:"흉내내기 준비 선수 "+i, rarity, cost:1 }));
+  s.cardPool = [...s.cardPool!, ...candidates];
+  const events: any[] = [
+    { type: "CARD_GENERATED", playerId: "player-1", cardType:"WRESTLER", cardDefinitionId:candidates[2].id },
+    { type: "CARD_PLAYED", playerId: "player-2", cardType:"WRESTLER", cardDefinitionId:candidates[0].id },
+    { type: "CARD_PLAYED", playerId: "player-1", cardType:"TECHNIQUE", cardDefinitionId:candidates[0].id },
+    { type: "CARD_PLAYED", playerId: "player-1", cardType:"WRESTLER", cardDefinitionId:body.id },
+    { type: "ENTER_FIELD", playerId: "player-1", cardType:"WRESTLER", cardDefinitionId:candidates[0].id, reason:"SUMMON" },
+  ];
+  assert.equal(evaluateChampionQuestCondition(choice.condition!, s, "player-1", events).counts.root,0);
+  for (const [i,d] of candidates.entries()) {
+    const card = generateCardInstance(d as any,{instanceId:d.id});
+    s.players[0].hand.push(card);
+    const r = executeAction(s,{type:"PLAY_WRESTLER",playerId:"player-1",cardInstanceId:card.instanceId,boardSlot:i as 0|1|2});
+    assert.ok(r.success,r.message);s=finish(r.state);
+    assert.equal(Boolean(s.players[0].champion?.questCompleted),i===2);
+  }
+  assert.equal(s.players[0].champion?.selectedFinisherId,choice.id);
+  assert.equal(s.players[0].hand.filter(c=>c.definitionId===choice.cardDefinitionId).length,1);
+});
