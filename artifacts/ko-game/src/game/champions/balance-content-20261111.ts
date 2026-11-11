@@ -74,12 +74,11 @@ export function reviewedNovember11Champion(
           exactZero: true,
           required: 5,
         });
-      if (
-        clean(record.abilityText) ===
-        clean(
-          "자신이 선택한 모든 선수에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
-        )
-      )
+      if ([
+        "자신이 선택한 모든 선수에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
+        "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
+      ].some(text => clean(record.abilityText) === clean(text))) {
+        r = {...r, abilityText: "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다."};
         effects([
           {
             action: "BUFF",
@@ -88,13 +87,12 @@ export function reviewedNovember11Champion(
               owner: "ALL",
               cardType: "WRESTLER",
               selection: "PLAYER_CHOICE",
-              count: 8,
-              minTargets: 1,
-              maxTargets: 8,
+              count: 1,
             },
             values: { balance: { operation: "PANDORA_DAMAGE", amount: 1 } },
           },
         ]);
+      }
       break;
     case "0db142af-750e-4929-a464-5daf1bc75452":
       if (

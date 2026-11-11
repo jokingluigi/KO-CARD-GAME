@@ -873,7 +873,8 @@ export function applyBalanceEffect(
     }
     case "PANDORA_DAMAGE": {
       let n = state;
-      for (const id of ids ?? []) {
+      // Old saved multi-select frames must never damage multiple wrestlers.
+      for (const id of (ids ?? []).slice(0, 1)) {
         const victim = n.players
           .flatMap((p) => p.board)
           .find((d) => d?.instanceId === id);

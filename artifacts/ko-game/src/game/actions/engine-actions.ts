@@ -1,4 +1,5 @@
 import { deferFinisherChoiceResolution, selectPreparedFinisher } from '../champions/finisher-preparation';
+import {normalizePandoraTargeting} from '../champions/pandora-targeting';
 import { hasPendingProgram, hasPendingFinisherCast } from '../engine/program';
 import {resolveConfiguredTowerEffects} from '../tower/configured-effects';
 import { hasCommittedFusion } from '../engine/fusion';
@@ -59,6 +60,7 @@ function probe(state: GameState, action: GameAction): boolean {
 }
 
 export function getLegalActions(state: GameState, playerId: string): GameAction[] {
+  state = normalizePandoraTargeting(state);
   const cachedByPlayer = legalActionsCache.get(state);
   const cached = cachedByPlayer?.get(playerId);
   if (cached) return cached;
@@ -225,6 +227,7 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
 }
 
 export function executeAction(state: GameState, action: GameAction): ActionResult {
+  state = normalizePandoraTargeting(state);
   const result = deferFinisherChoiceResolution(()=>{
     const initial = executeActionInternal(state, action);
     const result = initial.success && initial.state.pendingComboAttack && !initial.state.targetingState?.active

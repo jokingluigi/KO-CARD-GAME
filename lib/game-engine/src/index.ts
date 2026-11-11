@@ -1,4 +1,5 @@
 export {hasPendingProgram,hasPendingFinisherCast} from '../../../artifacts/ko-game/src/game/engine/program';
+export {normalizePandoraTargeting} from '../../../artifacts/ko-game/src/game/champions/pandora-targeting';
 /**
  * Server-safe adapter for the existing KO rules engine.
  *

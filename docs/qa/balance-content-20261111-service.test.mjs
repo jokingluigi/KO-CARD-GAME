@@ -293,59 +293,26 @@ const act = async (
   return result;
 };
 
-test("actual catalog PvP Pandora selection survives persisted reconnect, hides opponent targets and resolves exactly once", async () => {
-  let r = await fixture("PANDORA");
-  assert.ok((await act(r, "ability", { type: "USE_CHAMPION_ABILITY" })).ok);
-  assert.ok(
-    (
-      await act(r, "pick1", {
-        type: "SELECT_EFFECT_TARGET",
-        targetId: "enemy-0",
-      })
-    ).ok,
-  );
-  const key = r.matchId;
-  service.cleanupMatchRuntime(key);
-  r = await service.getRuntime(key);
-  assert.deepEqual(r.state.targetingState.selectedTargetIds, ["enemy-0"]);
-  assert.equal(
-    service.snapshotMessage(r, "delivery-opponent").state.targetingState,
-    undefined,
-  );
-  assert.ok(
-    (
-      await act(r, "pick2", {
-        type: "SELECT_EFFECT_TARGET",
-        targetId: "enemy-1",
-      })
-    ).ok,
-  );
-  const version = r.version;
-  assert.ok(
-    (
-      await act(r, "confirm", {
-        type: "SELECT_EFFECT_TARGET",
-        targetId: "effect:confirm",
-      })
-    ).ok,
-  );
-  assert.equal(r.state.targetingState, undefined);
-  assert.equal(r.state.players[0].health, 14);
-  assert.equal(r.state.players[1].graveyard.length, 2);
-  assert.equal(r.state.players[0].champion.questConditionCounts.root, 2);
-  assert.ok(
-    (
-      await act(
-        r,
-        "confirm",
-        { type: "SELECT_EFFECT_TARGET", targetId: "effect:confirm" },
-        "tutorial-user",
-        version,
-      )
-    ).duplicate,
-  );
-  assert.equal(r.state.players[0].health, 14);
+test("actual PvP Pandora single selection survives reconnect and resolves once", async () => {
+  let r=await fixture("PANDORA");
+  assert.ok((await act(r,"ability",{type:"BEGIN_TARGETED_ACTION",action:{type:"USE_CHAMPION_ABILITY"}})).ok);
+  assert.equal(r.state.targetingState.maxTargets,1);
+  assert.equal(r.state.players[0].currentGold,4);
+  const key=r.matchId;service.cleanupMatchRuntime(key);r=await service.getRuntime(key);
+  assert.equal(r.state.targetingState.maxTargets,1);
+  assert.equal(service.snapshotMessage(r,"delivery-opponent").state.targetingState,undefined);
+  const version=r.version;
+  assert.ok((await act(r,"pick1",{type:"CONFIRM_PRECOMMIT_TARGET",targetId:"enemy-0"})).ok);
+  assert.equal(r.state.targetingState,undefined);
+  assert.equal(r.state.players[0].health,12);
+  assert.equal(r.state.players[1].graveyard.length,1);
+  assert.equal(r.state.players[1].board[1].currentHealth,1);
+  assert.equal(r.state.players[0].champion.questConditionCounts.root,1);
+  assert.ok((await act(r,"pick1",{type:"CONFIRM_PRECOMMIT_TARGET",targetId:"enemy-0"},"tutorial-user",version)).duplicate);
+  assert.equal(r.state.players[0].health,12);
+  assert.equal((await act(r,"extra",{type:"SELECT_EFFECT_TARGET",targetId:"enemy-1"})).ok,false);
 });
+
 test("actual catalog PvP Mimic candidates are private, persisted and mandatory; chosen finisher is synchronized once", async () => {
   let r = await fixture("DISCOVER");
   assert.ok(
@@ -437,47 +404,16 @@ for (const mode of ["PLAIN_SPELL", "PLAIN_CARD", "PIN_CARD"]) {
   });
 }
 
-test("Pandora cannot heal from another card's nested pinfall; both clients and persisted state agree", async () => {
-  let r = await fixture("PANDORA_REACTION");
-  assert.ok(
-    (await act(r, "nested-ability", { type: "USE_CHAMPION_ABILITY" })).ok,
-  );
-  assert.ok(
-    (
-      await act(r, "nested-pick", {
-        type: "SELECT_EFFECT_TARGET",
-        targetId: "enemy-0",
-      })
-    ).ok,
-  );
-  const version = r.version;
-  assert.ok(
-    (
-      await act(r, "nested-confirm", {
-        type: "SELECT_EFFECT_TARGET",
-        targetId: "effect:confirm",
-      })
-    ).ok,
-  );
-  const retired = r.state.events.find((e) => e.type === "CARD_RETIRED");
+test("Pandora cannot heal from another card's nested pinfall; both views persist", async () => {
+  let r=await fixture("PANDORA_REACTION");
+  assert.ok((await act(r,"ability",{type:"BEGIN_TARGETED_ACTION",action:{type:"USE_CHAMPION_ABILITY"}})).ok);
+  const version=r.version;
+  assert.ok((await act(r,"pick",{type:"CONFIRM_PRECOMMIT_TARGET",targetId:"enemy-0"})).ok);
+  const retired=r.state.events.find(e=>e.type==="CARD_RETIRED");
   assert.ok(retired?.exactZero);
-  assert.deepEqual(retired.source, { type: "CARD", cardInstanceId: "enemy-0" });
-  assert.equal(r.state.players[0].health, 10);
-  assert.ok(
-    (
-      await act(
-        r,
-        "nested-confirm",
-        { type: "SELECT_EFFECT_TARGET", targetId: "effect:confirm" },
-        "tutorial-user",
-        version,
-      )
-    ).duplicate,
-  );
-  assert.equal(r.state.players[0].health, 10);
-  const id = r.matchId;
-  service.cleanupMatchRuntime(id);
-  r = await service.getRuntime(id);
-  for (const user of ["tutorial-user", "delivery-opponent"])
-    assert.equal(service.snapshotMessage(r, user).state.players[0].health, 10);
+  assert.deepEqual(retired.source,{type:"CARD",cardInstanceId:"enemy-0"});
+  assert.equal(r.state.players[0].health,10);
+  assert.ok((await act(r,"pick",{type:"CONFIRM_PRECOMMIT_TARGET",targetId:"enemy-0"},"tutorial-user",version)).duplicate);
+  const id=r.matchId;service.cleanupMatchRuntime(id);r=await service.getRuntime(id);
+  for(const user of ["tutorial-user","delivery-opponent"])assert.equal(service.snapshotMessage(r,user).state.players[0].health,10);
 });

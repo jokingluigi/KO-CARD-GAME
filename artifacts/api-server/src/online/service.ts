@@ -30,6 +30,7 @@ import {
   createDeterministicRandom,
   createInitialGameState,
   normalizeHiddenZoneCards,
+  normalizePandoraTargeting,
   validateCardDefinitionReferences,
   getLegalActions,
   startGame,
@@ -160,7 +161,7 @@ function snapshotFromRecord(record: OnlineMatchRecord): OnlineMatchSnapshot {
 }
 
 function stateFromRecord(record: OnlineMatchRecord): GameState {
-  const state = normalizeHiddenZoneCards(record.serializedGameState as unknown as GameState);
+  const state = normalizePandoraTargeting(normalizeHiddenZoneCards(record.serializedGameState as unknown as GameState));
   validateCardDefinitionReferences(state);
   return state;
 }

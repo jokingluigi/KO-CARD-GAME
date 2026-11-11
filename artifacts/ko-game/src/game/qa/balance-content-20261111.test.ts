@@ -407,40 +407,23 @@ test("destroy-on-lethal does not activate pinfall or a pinfall preparation", () 
   assert.ok(s.events.some((e) => e.type === "CARD_DESTROYED"));
   assert.ok(!s.events.some((e) => e.type === "CARD_RETIRED"));
 });
-test("Pandora selects multiple wrestlers, waits for confirmation, heals exact retirements only and counts enemy pinfalls", () => {
-  let s = setup();
-  champion(s, "챔피언 판도라");
-  const ally = put(s, "body", 0, 0, { currentHealth: 1 }),
-    enemy = put(s, "body", 0, 1, { currentHealth: 1 }),
-    survivor = put(s, "body", 1, 1, { currentHealth: 2 });
-  let r = executeAction(s, {
-    type: "USE_CHAMPION_ABILITY",
-    playerId: "player-1",
-  });
-  assert.ok(r.success);
-  s = r.state;
-  for (const id of [ally.instanceId, enemy.instanceId, survivor.instanceId]) {
-    r = executeAction(s, {
-      type: "SELECT_EFFECT_TARGET",
-      playerId: "player-1",
-      targetId: id,
-    });
-    assert.ok(r.success);
-    s = r.state;
-  }
-  assert.equal(s.players[0].health, 15);
-  assert.equal(s.players[1].board[0]?.currentHealth, 1);
-  r = executeAction(JSON.parse(JSON.stringify(s)), {
-    type: "SELECT_EFFECT_TARGET",
-    playerId: "player-1",
-    targetId: "effect:confirm",
-  });
-  assert.ok(r.success);
-  s = finish(r.state);
-  assert.equal(s.players[0].health, 19);
-  assert.equal(s.players[1].board[1]?.currentHealth, 1);
-  assert.equal(s.players[0].champion?.questConditionCounts?.root, 1);
-  assert.equal(s.players[0].champion?.questCompleted, false);
+test("Pandora damages exactly one selected wrestler and heals only that ability pinfall", () => {
+  let s = setup(); champion(s, "챔피언 판도라");
+  const ally = put(s, "body", 0, 0, { currentHealth: 1 });
+  const enemy = put(s, "body", 0, 1, { currentHealth: 1 });
+  const survivor = put(s, "body", 1, 1, { currentHealth: 2 });
+  let r = executeAction(s, {type:"USE_CHAMPION_ABILITY",playerId:"player-1"});
+  assert.ok(r.success);s=r.state;
+  assert.equal(s.targetingState?.minTargets,1);assert.equal(s.targetingState?.maxTargets,1);
+  r=executeAction(s,{type:"SELECT_EFFECT_TARGET",playerId:"player-1",targetId:enemy.instanceId});
+  assert.ok(r.success);s=finish(r.state);
+  assert.equal(s.targetingState,undefined);
+  assert.equal(s.players[0].health,17);
+  assert.equal(s.players[0].board[0]?.currentHealth,1);
+  assert.equal(s.players[1].board[1]?.currentHealth,2);
+  assert.equal(s.players[0].champion?.questConditionCounts?.root,1);
+  const extra=executeAction(s,{type:"SELECT_EFFECT_TARGET",playerId:"player-1",targetId:survivor.instanceId});
+  assert.equal(extra.success,false);
 });
 test("Calavera uses the current graveyard undead count rather than old accumulated retirements", () => {
   const s = setup();
