@@ -1,0 +1,62 @@
+{
+  "checkedAtUTC": "2026-11-11T22:34:50.108Z",
+  "commit": "3db598af9f8622c2d1897ed83e8c8de0d626c407",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbqepld6e07s73f0df30",
+      "status": "live",
+      "commit": "3db598af9f8622c2d1897ed83e8c8de0d626c407"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbqeqgl6e07s73f0ffqg",
+      "status": "live",
+      "commit": "3db598af9f8622c2d1897ed83e8c8de0d626c407"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "3db598af9f8622c2d1897ed83e8c8de0d626c407"
+  },
+  "frontend": {
+    "revision": "3db598af9f8622c2d1897ed83e8c8de0d626c407",
+    "builtAtUTC": "2026-11-11T22:34:20.493Z"
+  },
+  "documents": [
+    {
+      "path": "/",
+      "entry": "/assets/index-D7kvUG7N.js",
+      "current": true,
+      "cacheControl": "no-cache, no-store, must-revalidate"
+    },
+    {
+      "path": "/admin/champions",
+      "entry": "/assets/index-D7kvUG7N.js",
+      "current": true,
+      "cacheControl": "public, max-age=0, s-maxage=300"
+    }
+  ],
+  "engineModule": "awakening-DpCWAHd0.js",
+  "eligibilitySnapshotInDeliveredEngine": true,
+  "observations": [
+    {
+      "at": "2026-11-11T22:34:38.582Z",
+      "version": "3db598af9f8622c2d1897ed83e8c8de0d626c407",
+      "root": false,
+      "admin": true
+    },
+    {
+      "at": "2026-11-11T22:34:49.483Z",
+      "version": "3db598af9f8622c2d1897ed83e8c8de0d626c407",
+      "root": true,
+      "admin": true
+    }
+  ],
+  "productionDataWrites": 0,
+  "productionMatchCreated": false,
+  "schemaChanged": false,
+  "mainMerged": false
+}

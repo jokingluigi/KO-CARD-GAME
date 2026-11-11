@@ -34,9 +34,9 @@
 test at artifacts/ko-game/src/game/engine/pinfall-sources.test.ts:364:1
 ✖ Pandora does not heal for a pinfall caused by a reacting card during her ability (1.799798ms)
   AssertionError [ERR_ASSERTION]: Pandora's own hit was 2→1, so the child card's 1→0 cannot heal her
-  
+
   17 !== 15
-  
+
       at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/artifacts/ko-game/src/game/engine/pinfall-sources.test.ts:382:12)
       at Test.runInAsyncScope (node:async_hooks:227:14)
       at Test.run (node:internal/test_runner/test:1382:25)

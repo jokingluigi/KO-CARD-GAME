@@ -112,7 +112,8 @@ const result = {
   mainMerged: false,
 };
 await writeFile(
-  "docs/qa/20261111-pinfall-sources/production-verification.json",
+  process.env.QA_RELEASE_RECEIPT ??
+    "docs/qa/20261111-pinfall-sources/production-verification.json",
   JSON.stringify(result, null, 2) + "\n",
 );
 console.log("VERIFIED " + commit);

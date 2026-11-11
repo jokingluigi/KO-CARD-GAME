@@ -16,3 +16,7 @@ No new production cards, stats changes, schema changes, Production DB writes or 
 Changed files: `artifacts/ko-game/src/game/engine/balance-effects.ts`, `artifacts/ko-game/src/game/engine/pinfall.ts`, `artifacts/ko-game/src/game/engine/pinfall-sources.test.ts`, and `docs/qa/balance-content-20261111-service.test.mjs`.
 
 Deployment receipts will be added after API-first/frontend-second release. Main is not merged.
+
+## Release verified
+
+Source `3db598af9f8622c2d1897ed83e8c8de0d626c407` is live on API (`dep-dbqepld6e07s73f0df30`) and frontend (`dep-dbqeqgl6e07s73f0ffqg`). Read-only verification confirmed pinned deployment configuration, both public revisions, actual root/admin entry revisions and the delivered shared engine. The root route initially showed the previous static entry; a subsequent propagation check passed. No Production DB mutation or production match was used for release verification. Main remains unmerged.
