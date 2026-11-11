@@ -26,3 +26,15 @@ test('maintenance shares only the verified user within the same request',async()
  let blocked=false;await deny(other,{setHeader(){},status(){return this},json(){blocked=true}} as never,()=>{});
  assert.equal(blocked,true);assert.equal(other.authUser,undefined);
 });
+
+test('maintenance keeps public card image reads available without opening writes or gameplay',async()=>{
+ const gate=createMaintenanceGate(async()=>({enabled:true,message:'maintenance'}),async()=>null);
+ for(const [method,path,allowed] of [
+  ['GET','/storage/objects/uploads/card-images/abc-123.png',true],
+  ['HEAD','/storage/objects/uploads/cosmetics/abc.webp',true],
+  ['PUT','/storage/objects/uploads/card-images/abc.png',false],
+  ['POST','/admin/cards/images/upload-url',false],
+  ['GET','/storage/objects/uploads/card-images/abc.txt',false],
+  ['GET','/cards',false],['GET','/online-matches',false],
+ ] as const){let next=false,status=0;await gate({method,path} as never,{setHeader(){},status(n:number){status=n;return this;},json(){}} as never,()=>{next=true;});assert.equal(next,allowed,method+' '+path);if(!allowed)assert.equal(status,503);}
+});

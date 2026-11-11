@@ -10,6 +10,8 @@ export async function readMaintenance(){
 export function maintenanceAllows(enabled:boolean,role?:string){return !enabled||role==='ADMIN';}
 export function createMaintenanceGate(read=readMaintenance,authenticate=getAuthenticatedUser){return async(req:Request,res:Response,next:NextFunction)=>{
  try{
+  const publicCardImage = (req.method === 'GET' || req.method === 'HEAD') && /^\/storage\/objects\/uploads\/(?:card-images|cosmetics)\/[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp)$/i.test(req.path);
+  if(publicCardImage)return next();
   if(['/healthz','/server-status','/auth/me','/auth/login','/auth/logout'].includes(req.path))return next();
   const settings=await read();if(!settings.enabled)return next();
   const user=await authenticate(req);
