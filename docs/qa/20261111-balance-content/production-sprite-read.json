@@ -1,0 +1,11 @@
+{
+  "checkedAtUTC": "2026-11-11T11:35:18.396Z",
+  "targetCount": 13,
+  "minionChoiceNames": [
+    "어셈블",
+    "흉내내기"
+  ],
+  "registeredMinionAwakeningPreserved": true,
+  "adminGetSucceeded": true,
+  "manualProductionWrites": 0
+}

@@ -1,0 +1,45 @@
+{
+  "checkedAtUTC": "2026-11-11T11:35:51.083Z",
+  "commit": "0925584771f394b6c9694255c57aefdcfb32f8a0",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbq54o8ae00c73dbmbj0",
+      "status": "live",
+      "commit": "0925584771f394b6c9694255c57aefdcfb32f8a0",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbq54qgae00c73dbmgm0",
+      "status": "live",
+      "commit": "0925584771f394b6c9694255c57aefdcfb32f8a0",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "0925584771f394b6c9694255c57aefdcfb32f8a0"
+  },
+  "front": {
+    "revision": "0925584771f394b6c9694255c57aefdcfb32f8a0",
+    "builtAtUTC": "2026-11-11T11:33:40.649Z"
+  },
+  "rootEntryModule": "/assets/index-Np-DpO9f.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-Np-DpO9f.js",
+  "latestHelperWordingPreserved": true,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "latest-balance-and-finisher-branch-presentation",
+  "tagLabelsEndpointAvailable": true,
+  "publicCatalogChecksSkippedForMaintenance": false,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
