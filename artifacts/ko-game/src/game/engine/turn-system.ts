@@ -35,8 +35,9 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
 
   const personalTurn = player.personalTurn + 1;
   const baseTurnGold = Math.min(personalTurn, 6);
-  const interceptors = player.nextTurnGoldBonus > 0 ? bonusGoldInterceptors(state, playerId) : [];
-  const paidBonus = interceptors.length ? 0 : player.nextTurnGoldBonus;
+  const requestedBonus=player.nextTurnGoldBonus+(player.champion?.finisherGoldBonus??0);
+  const interceptors = requestedBonus > 0 ? bonusGoldInterceptors(state, playerId) : [];
+  const paidBonus = interceptors.length ? 0 : requestedBonus;
   const currentGold = baseTurnGold + paidBonus;
   const turnStartedState: GameState = {
     ...state,

@@ -74,6 +74,7 @@ export interface GameEvent {
   target?: EventSubject;
   reason?: string;
   amount?: number;
+  exactZero?:boolean;
   excessDamage?: number;
   boardSlot?: 0 | 1 | 2 | 3;
   tags?: string[];

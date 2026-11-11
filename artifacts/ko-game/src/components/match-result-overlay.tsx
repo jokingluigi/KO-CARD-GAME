@@ -1,3 +1,4 @@
+import {questPortraitForSkin} from './quest-media';
 import {prefersReducedMotion} from "./presentation-config";
 import {ResultTools,type DeckRecord} from "./player-tools/result-tools";
 import {
@@ -148,13 +149,7 @@ export function MatchResultOverlay({
   const cosmetics = providedCosmetics ?? localCosmetics;
   const champion = player?.champion;
   const originalPortrait = questPortrait(champion);
-  const portrait = cosmeticImage(
-    cosmetics[player?.id ?? ""],
-    "CHAMPION_SKIN",
-    champion?.id ?? "",
-    champion?.questCompleted ? "awakened" : "portrait",
-    originalPortrait,
-  );
+  const portrait=questPortraitForSkin(champion,cosmetics[player?.id??'']);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement;

@@ -92,7 +92,7 @@ export function CinematicCue({cue,state,spriteManaged=false}:{cue:PresentationCu
  const source=state.players.flatMap(p=>[...p.board,...p.hand,...p.graveyard,...p.removedFromGame]).find(c=>c?.instanceId===cue.sourceCardInstanceId);
  const definition=source&&(state.cardPool?.find(d=>d.id===source.definitionId)??getCardDefinition(source.definitionId));
  const sourceOwner=source?state.players.find(p=>[...p.board,...p.hand,...p.graveyard,...p.removedFromGame].some(c=>c?.instanceId===source.instanceId)):undefined;
- const championArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),champion?.questCompleted?'awakened':'portrait');
+ const championArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),champion?.questCompleted?'awakened':'portrait',champion?.selectedFinisherId);
  const cardArt=useCosmeticImage(sourceOwner?.id,definition?.id,'CARD_SKIN',definition?.imageUrl);
  const kind=cue.kind==='EFFECT'&&cue.championId&&!spriteManaged?'ABILITY':cue.kind==='DAMAGE'&&!cue.combat&&!cue.selfDamage&&!(spriteManaged&&cue.playerId&&!cue.cardInstanceId)&&(cue.value??0)>=10?'FINISHER':null;
  useCinematicEvent(kind?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:'챔피언 고유 능력',art:kind==='FINISHER'?cardArt.src:championArt.src,artFallback:kind==='FINISHER'?definition?.imageUrl:questPortrait(champion),artDisplay:kind==='FINISHER'?cardArt.display:championArt.display,focus:{x:cue.left,y:cue.top}}:null);

@@ -108,6 +108,8 @@ export interface ChampionState {
   finisherEventCursor?: number;
   finisherEventIdentities?: string[];
   selectedFinisherId?: string;
+  abilityAfterEffects?:CardEffect[];
+  finisherGoldBonus?:number;
   abilityOverride?: ChampionAbility;
   abilityOverrideExpiresAtTurn?: number;
   awakening?: import('./awakening-types').AwakeningState;

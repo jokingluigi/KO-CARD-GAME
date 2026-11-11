@@ -33,7 +33,7 @@ export function vanishCard(state: GameState, instanceId: string): GameState {
 }
 export function queueHandFusion(state: GameState, rollback: GameState, playerId: string, source: CardInstance): GameState {
   const live = state.players.find(p => p.id === playerId)?.board.find(c => c?.instanceId === source.instanceId);
-  if (live && !getActiveCardKeywords(live).includes("FUSION")) return state;
+  if (!live || live.currentHealth<=0 || !getActiveCardKeywords(live).includes("FUSION")) return state;
   return resolvePendingEffects(appendEffectContinuation(state, {
     active: true, phase: 'POST_COMMIT', playerId, sourceInstanceId: source.instanceId, sourceCard: source,
     effects: [], effectIndex: 0, selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 1, maxTargets: 1,

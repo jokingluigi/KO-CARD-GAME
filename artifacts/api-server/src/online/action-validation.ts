@@ -6,7 +6,7 @@ export function directActionStartsTargeting(action: GameAction, candidateState: 
     action.type === "PLAY_TECHNIQUE" ||
     action.type === "USE_ACTIVE" ||
     action.type === "USE_CHAMPION_ABILITY"
-  ) && candidateState.targetingState?.active === true && !candidateState.targetingState.handAddition && !hasPendingProgram(candidateState);
+  ) && candidateState.targetingState?.active === true && !candidateState.targetingState.handAddition && !candidateState.targetingState.catalogChoice && !((candidateState.targetingState.minTargets>0 && candidateState.targetingState.maxTargets>candidateState.targetingState.minTargets)) && !hasPendingProgram(candidateState);
 }
 
 export function rejectedActionCode(

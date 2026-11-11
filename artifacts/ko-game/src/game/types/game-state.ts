@@ -128,6 +128,7 @@ export interface GameState {
   waitingForProgramPlayerId?: string;
   waitingForFinisherCastPlayerId?: string;
   targetingState?: {
+    catalogChoice?: {definitionIds:string[]};
     finisherChoice?: { optionIds: string[] };
     programPaid?: boolean;
     finisherAutoCast?: boolean;
@@ -166,6 +167,7 @@ export interface GameState {
     markActiveUsed?: boolean;
     /** Trigger context is carried in state so chained resolutions remain deterministic. */
     triggerContext?: {
+      removedTarget?:CardInstance;
       playedFromHand?: boolean;
       baseCost?: number;
       attackerInstanceId?: string;

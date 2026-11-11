@@ -141,6 +141,7 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  championDodgeGranted?:boolean;
   towerDeckIndex?: number;
   ignoreTauntToChampion?: boolean;
   questExclusive?: boolean;

@@ -6,7 +6,7 @@ import {
   CosmeticsTimeoutError,
   cosmeticsRequest,
 } from "@/lib/cosmetics-client";
-import { BattleSpriteEditor } from "./battle-sprite-editor";
+import { FinisherPresentationEditor } from "./finisher-presentation-editor";
 import { useAdminMutableDraft } from "./admin-editor-sections";
 import "./admin-battle-sprites.css";
 type Target = {
@@ -19,6 +19,7 @@ type Target = {
   imageUrl: string | null;
   config: BattleSprite | null;
   revision: string;
+  finisherChoices?:{id:string;name:string}[];
 };
 export function AdminBattleSprites() {
   const [, navigate] = useLocation();
@@ -307,7 +308,8 @@ export function AdminBattleSprites() {
             </span>
           </p>
           <fieldset disabled={saving} className="min-w-0">
-            <BattleSpriteEditor
+            <FinisherPresentationEditor
+              choices={selected.finisherChoices??[]}
               championName={selected.championName}
               fallbackImage={selected?.imageUrl}
               inheritedMotion={
@@ -321,7 +323,6 @@ export function AdminBattleSprites() {
               }
               key={selected.key}
               value={value}
-              workspace
               onBusyChange={setUploading}
               onChange={(next) => {
                 if (activeKey.current === selected.key) {

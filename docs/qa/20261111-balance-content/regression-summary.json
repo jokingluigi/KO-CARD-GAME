@@ -1,0 +1,48 @@
+{
+  "baselineRevision": "4feb4da",
+  "baselineTests": 3042,
+  "baselinePass": 3029,
+  "baselineFailures": [
+    "✖ AI completes 100 varied deterministic full matches through legal engine actions (29.668513ms)",
+    "✖ AI choice is stable when opponent hand contents change but hidden-zone size stays constant (3.588159ms)",
+    "✖ current armor combat/effect/silence: 룬스달라이트 군주 루나 (5.597269ms)",
+    "✖ current armor combat/effect/silence: 하늘을 떨구는 자(각성) (5.218765ms)",
+    "✖ Lord returns the chosen live-cost ally to deck and summons one lower-cost ordinary wrestler in exactly its slot (5.32949ms)",
+    "✖ latest authenticated records retain all administrator wording, numbers, visibility and keywords (9.131737ms)",
+    "✖ all 163 current card records preserve actual administrator text/stats and new keyword/armor settings (2.826616ms)",
+    "✖ 탈출 resets original stats/cost/status without retire and does not affect enemy (1.930652ms)",
+    "✖ 탈출 resets original stats/cost/status without retire and does not affect enemy (2.023691ms)",
+    "✖ artifacts/ko-game/src/game/qa/published-catalog-qa.test.ts (1499.19708ms)",
+    "✖ artifacts/ko-game/src/game/qa/published-champion-abilities-smoke.test.ts (1485.342892ms)",
+    "✖ artifacts/ko-game/src/game/qa/published-effects-qa2.test.ts (1558.060477ms)",
+    "✖ artifacts/ko-game/src/game/qa/targeted-card-fixes.test.ts (1298.839481ms)"
+  ],
+  "expandedRun": {
+    "tests": 3129,
+    "pass": 3115,
+    "fail": 14,
+    "failures": [
+      "✖ optional PRE_COMMIT cancel abandons the action and empty optional choices auto-skip (4.625803ms)",
+      "✖ AI completes 100 varied deterministic full matches through legal engine actions (42.68807ms)",
+      "✖ AI choice is stable when opponent hand contents change but hidden-zone size stays constant (6.206014ms)",
+      "✖ current armor combat/effect/silence: 룬스달라이트 군주 루나 (15.072559ms)",
+      "✖ current armor combat/effect/silence: 하늘을 떨구는 자(각성) (7.662341ms)",
+      "✖ Lord returns the chosen live-cost ally to deck and summons one lower-cost ordinary wrestler in exactly its slot (8.806944ms)",
+      "✖ latest authenticated records retain all administrator wording, numbers, visibility and keywords (9.346918ms)",
+      "✖ all 163 current card records preserve actual administrator text/stats and new keyword/armor settings (4.079239ms)",
+      "✖ 탈출 resets original stats/cost/status without retire and does not affect enemy (2.294333ms)",
+      "✖ 탈출 resets original stats/cost/status without retire and does not affect enemy (6.345392ms)",
+      "✖ artifacts/ko-game/src/game/qa/published-catalog-qa.test.ts (2428.86409ms)",
+      "✖ artifacts/ko-game/src/game/qa/published-champion-abilities-smoke.test.ts (2503.682011ms)",
+      "✖ artifacts/ko-game/src/game/qa/published-effects-qa2.test.ts (2284.703341ms)",
+      "✖ artifacts/ko-game/src/game/qa/targeted-card-fixes.test.ts (2082.049324ms)"
+    ]
+  },
+  "additionalFailureFixedAndRetested": "optional PRE_COMMIT cancellation; final targeted suite includes this test and passes",
+  "finalTargeted": {
+    "tests": 209,
+    "pass": 209,
+    "fail": 0
+  },
+  "notes": "Expanded regression was run against the earlier 193-card snapshot. After user steering, refreshed to 195, reran new-content, sprite/media, API, browser and current-catalog AI checks; did not claim all historical tests green."
+}

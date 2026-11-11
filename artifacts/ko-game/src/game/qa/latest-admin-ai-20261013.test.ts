@@ -43,7 +43,7 @@ const reportPath =
   process.env.KO_AI_QA_REPORT ??
   "qa-results/latest-admin-ai-100.md";
 const MATCH_COUNT = Number(process.env.KO_QA_AI_MATCH_COUNT ?? 100);
-const MAX_ACTIONS_PER_MATCH = 400;
+const MAX_ACTIONS_PER_MATCH = Number(process.env.KO_QA_AI_MAX_ACTIONS ?? 400);
 async function loadCatalog() {
   return {
     cards: rawCards.map(cardRecordToDefinition),
@@ -372,6 +372,7 @@ function runMatch(
     }
 
     assert.ok(state, `match ${match} did not create a state`);
+    if(state.status!=='FINISHED'&&process.env.KO_QA_ADMIN_FAILURE_STATE)writeFileSync(process.env.KO_QA_ADMIN_FAILURE_STATE,JSON.stringify({match,seed,lastTransition,state}),{mode:0o600});
     return {
       match,
       seed,

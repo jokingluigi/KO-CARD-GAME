@@ -1,4 +1,5 @@
 import {normalizeHelperHealing,helperHealingAbilities} from './helper-healing';
+import {reviewedNovember11Abilities} from './reviewed-admin-content-20261111';
 import {reviewedOctober30Abilities} from './reviewed-admin-content-20261030';
 import {reviewedOctober24Abilities} from './reviewed-admin-content-20261024';
 import { reviewedOctober19Abilities } from './reviewed-admin-content-20261019';
@@ -231,13 +232,14 @@ function normalizeAnywhereTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  const balanceAbilities=reviewedNovember11Abilities(card);
   const awakening = createAwakeningCards().find(definition => definition.id === card.id);
   if (awakening) {
     // Administrator-chosen names must not select another card's legacy rules.
     return { ...awakening, ...card, cardType: 'WRESTLER', rarity: 'CHAMPION',
       isToken: true, isChampionToken: true, questExclusive: true, awakeningStage: awakening.awakeningStage,
-      rulesText: card.text, keywords: [...card.keywords], abilities: reviewedLatestAdminAbilities(card) ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
-      awakeningLegacyPassives: card.text === awakening.rulesText,
+      rulesText: card.text, keywords: [...card.keywords], abilities: balanceAbilities ?? reviewedLatestAdminAbilities(card) ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
+      awakeningLegacyPassives: !balanceAbilities && card.text === awakening.rulesText,
       effectConfig: { ...awakening.effectConfig, ...card.effectConfig } };
   }
   card = normalizeHelperHealing(lunaSelfSilenceRecord(card));
@@ -259,7 +261,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
   const latestReviewed = helperHealingAbilities(card) ?? reviewedOctober30Abilities(card);
   const reviewedCurrent = reviewedOctober19Abilities(card) ?? reviewedLatestAdminAbilities(card) ?? reviewedCurrentAdminAbilities(card);
   const reviewedAdmin = reviewedAdminContentAbilities(card);
-  const implementation = latestReviewed || reviewedCurrent || reviewedAdmin ? null : newCardImplementation(card);
+  const implementation = balanceAbilities || latestReviewed || reviewedCurrent || reviewedAdmin ? null : newCardImplementation(card);
   if (card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62' && Array.isArray(card.effectConfig.effects)) {
     card = { ...card, effectConfig: { ...card.effectConfig, effects: (card.effectConfig.effects as Array<Record<string, unknown>>).map(effect =>
       effect.action === 'DESTROY' && effect.trigger === 'ENTER_FIELD' && effect.target && typeof effect.target === 'object'
@@ -330,10 +332,10 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       ...(card.effectConfig.questExclusive === true ? { questExclusive: true } : {}),
       ...(['TANK', 'HEALER', 'DEALER'].includes(String(card.effectConfig.awakeningStage)) ? { awakeningStage: card.effectConfig.awakeningStage as 'TANK' | 'HEALER' | 'DEALER' } : {}),
-      keywords: [...new Set([...(reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card)), ...(programAbilities ? ['PROGRAM' as const] : [])])],
+      keywords: [...new Set([...(reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card)), ...(programAbilities || balanceAbilities?.some(a=>a.effects.some(e=>e.type==='STRUCTURED'&&e.action==='PROGRAM')) ? ['PROGRAM' as const] : [])])],
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (programAbilities ?? latestReviewed ?? reviewedOctober24Abilities(card) ?? reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (balanceAbilities ?? programAbilities ?? latestReviewed ?? reviewedOctober24Abilities(card) ?? reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

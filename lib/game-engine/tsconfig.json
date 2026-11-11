@@ -57,7 +57,9 @@
     "../../artifacts/ko-game/src/game/types/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/silence-immunity.ts",
     "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261030.ts",
-    "../../artifacts/ko-game/src/game/cards/helper-healing.ts"
+    "../../artifacts/ko-game/src/game/cards/helper-healing.ts",
+    "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261111.ts",
+    "../../artifacts/ko-game/src/game/champions/balance-content-20261111.ts"
   ],
   "references": [
     {

@@ -251,10 +251,11 @@ export function useChampionAbility(
       ),
     paidState,
   );
-  const afterNonStructured = structuredEffects.length
+  const afterEffects=[...structuredEffects,...(player.champion.abilityAfterEffects??[])];
+  const afterNonStructured = afterEffects.length
     ? resolvePendingEffects({ ...resolved, targetingState: {
       active: true, playerId, sourceInstanceId: effectSource.instanceId, sourceCard: effectSource,
-      effects: structuredEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
+      effects: afterEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
       validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
       triggerContext: {
         sourceContext,

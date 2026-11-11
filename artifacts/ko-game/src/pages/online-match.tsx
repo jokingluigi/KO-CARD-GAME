@@ -1,3 +1,4 @@
+import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import { currentChampionAbility } from '@/game/champions/types';
 import {launchDeckEditor} from "@/lib/launch-deck";
 import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
@@ -515,7 +516,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       activeBgmKeyRef.current = null;
       return;
     }
-    const questMusic = selectQuestMusic(state);
+    const questMusic = selectQuestMusic(state,cosmetics);
     const bgm = state ? mediaCatalog.bgms.find((item) => item.id === state.bgmId) : undefined;
     const selected = questMusic ?? bgm;
     if (!selected) {
@@ -528,7 +529,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     activeBgmKeyRef.current = key;
     if (questMusic) audioManager.playQuestComplete(selected.assetUrl, selected.volume);
     else audioManager.playMatchBgm(selected.assetUrl, selected.volume);
-  }, [state?.status, mediaCatalog.bgms, state?.bgmId, state?.latestQuestCompletedChampionId, state?.players]);
+  }, [state?.status, mediaCatalog.bgms, state?.bgmId, state?.latestQuestCompletedChampionId, state?.players, cosmetics]);
 
   useEffect(() => {
     audioManager.setBgmVolume(bgmVolume);
@@ -768,7 +769,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     clearRejectedActionMessage();
     const currentState = stateRef.current;
     const targeting = currentState?.targetingState;
-    if (!targeting?.active || !targeting.validTargetIds.includes(targetId)) {
+    if (!targeting?.active || !acceptsEffectSelection(targeting,targetId)) {
       preserveRejectedActionMessageRef.current = true;
       setPlayError("대상 상태가 변경되었습니다. 최신 매치 상태를 불러옵니다.");
       if (!pendingActionInFlightRef.current) requestMatchResync();

@@ -37,6 +37,8 @@ export type CardEffect =
       action: RuntimeAction;
       target?: StructuredTarget;
        values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects" | "definition" | "listener"> & {
+         balance?: import("../engine/balance-effects").BalanceEffectConfig;
+         purpleRainEnemyTargets?: boolean;
          programResolutionKey?: string;
          /** Serializable card definition supplied by the runtime card pool. */
          definition?: CardDefinition;
@@ -110,6 +112,11 @@ export type CardAbility =
           sourceZones?: Array<'HAND' | 'BOARD'>;
           eventOwner?: 'SELF' | 'ENEMY';
           incomingDamageLimitPerTurn?: number;
+          maximumDamagePerHit?:number;
+          waiveUpgradeCost?:boolean;
+          invulnerableWhileOtherAllyTag?:string;
+          absorbDestroyedTargetStats?:boolean;
+          generatedCardTagBuff?:{tag:string;attack:number;health:number};
           retirementReplacementScope?: 'SOURCE_CAUSED_ENEMY';
           forbiddenKeywords?: CardKeyword[];
           cannotAttackChampionWhileEnemyBoardOccupied?: boolean;
@@ -129,6 +136,8 @@ export type CardAbility =
     };
 
 export type AbilityCondition =
+  | {type:'COMBAT_HIT'}
+  | {type:'REMOVED_TARGET_TAG';tag:string}
   | { type: 'BASE_COST_GTE'; amount: number }
   | { type: 'SOURCE_ON_LEFT_SIDE' }
   | { type: 'SOURCE_ON_RIGHT_SIDE' }

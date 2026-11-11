@@ -123,6 +123,15 @@ export type SpriteMotionSettings = {
   pivotY?: number;
 };
 export type BattleSprite = {
+  /** Presentation only, indexed by the stable preparation choice ID. */
+  finishers?: Record<
+    string,
+    {
+      sprite?: BattleSprite;
+      portrait?: SpriteFrame;
+      music?: { name: string; assetUrl: string; volume: number };
+    }
+  >;
   motion?: SpriteMotionSettings;
   emotes?: Partial<Record<(typeof SPRITE_EMOTES)[number], string | null>>;
   effects?: {
@@ -154,9 +163,9 @@ export function parseBattleSprite(
   depth = 0,
 ): BattleSprite | null {
   try {
-    if (depth > 1) return null;
+    if (depth > 2) return null;
     if (typeof value === "string") {
-      if (value.length > 24000) return null;
+      if (value.length > 524288) return null;
       value = JSON.parse(value);
     }
     if (!value || typeof value !== "object" || Array.isArray(value))
@@ -304,6 +313,65 @@ export function parseBattleSprite(
         origin: fx.origin ? { ...fx.origin } : undefined,
       };
     }
+    if (v.finishers !== undefined) {
+      if (
+        depth !== 0 ||
+        !v.finishers ||
+        typeof v.finishers !== "object" ||
+        Array.isArray(v.finishers) ||
+        Object.keys(v.finishers).length > 8
+      )
+        return null;
+      extra.finishers = {};
+      for (const [id, entry] of Object.entries(v.finishers)) {
+        if (
+          !/^[a-zA-Z0-9_-]{1,80}$/.test(id) ||
+          ["__proto__", "constructor", "prototype"].includes(id) ||
+          !entry ||
+          typeof entry !== "object" ||
+          Array.isArray(entry) ||
+          Object.keys(entry).some(
+            (k) => !["sprite", "portrait", "music"].includes(k),
+          )
+        )
+          return null;
+        const value: NonNullable<BattleSprite["finishers"]>[string] = {};
+        if (entry.sprite !== undefined) {
+          const child = parseBattleSprite(entry.sprite, depth + 1);
+          if (!child) return null;
+          value.sprite = child;
+        }
+        if (entry.portrait !== undefined) {
+          const profile = parseBattleSprite(
+            { version: 1, frames: { default: entry.portrait }, reactions: {} },
+            depth + 1,
+          );
+          if (!profile) return null;
+          value.portrait = profile.frames.default;
+        }
+        if (entry.music !== undefined) {
+          const m = entry.music;
+          if (
+            !m ||
+            typeof m.name !== "string" ||
+            m.name.length > 120 ||
+            typeof m.assetUrl !== "string" ||
+            m.assetUrl.length > 2048 ||
+            !/^(https:\/\/|\/api\/storage\/)/.test(m.assetUrl) ||
+            !Number.isFinite(m.volume) ||
+            m.volume < 0 ||
+            m.volume > 100
+          )
+            return null;
+          value.music = {
+            name: m.name,
+            assetUrl: m.assetUrl,
+            volume: m.volume,
+          };
+        }
+        extra.finishers[id] = value;
+      }
+    }
     if (v.awakening !== undefined) {
       if (!["KEEP", "REPLACE"].includes(v.awakening)) return null;
       extra.awakening = v.awakening;
@@ -400,17 +468,26 @@ export function reactSprite(
       now +
       (["VICTORY", "DEFEAT"].includes(event)
         ? Number.MAX_SAFE_INTEGER - now
-        : event === "AWAKEN" && config?.frames[config.reactions.AWAKEN ?? "awaken"]
+        : event === "AWAKEN" &&
+            config?.frames[config.reactions.AWAKEN ?? "awaken"]
           ? spriteAwakeningDelay(config)
-          : Math.max(minimumHoldMs, config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800)),
+          : Math.max(
+              minimumHoldMs,
+              config?.timing?.[event] ?? spriteDefaultTiming[event] ?? 800,
+            )),
   };
 }
 
 /** Artwork remains readable even with reduced motion; this never delays rules. */
-export function spriteAwakeningDelay(config?: BattleSprite | null, reduced = false) {
+export function spriteAwakeningDelay(
+  config?: BattleSprite | null,
+  reduced = false,
+) {
   return config?.frames[config.reactions.AWAKEN ?? "awaken"]
     ? Math.max(1000, Math.min(2000, config.timing?.AWAKEN ?? 1500))
-    : reduced ? 70 : 220;
+    : reduced
+      ? 70
+      : 220;
 }
 
 /** Shared by battle and editor. A replacement set never resolves into pre-awakening frames. */
@@ -429,13 +506,19 @@ export function selectSpriteFrame(
     input.awakened && config.awakening === "REPLACE"
       ? config.awakened!
       : config;
-  const state = input.outcome ?? (input.low ? "LOW" : "IDLE");
-  const awakenedDefault = input.awakened && set === config
-    ? config.frames[config.reactions.AWAKEN ?? "awaken"]
-    : undefined;
+  const state =
+    input.outcome ?? (input.low && !input.awakened ? "LOW" : "IDLE");
+  const awakenedDefault =
+    input.awakened && set === config
+      ? config.frames[config.reactions.AWAKEN ?? "awaken"]
+      : undefined;
   const defaultFrame = awakenedDefault ?? set.frames.default;
-  if (!input.outcome && input.reaction === "AWAKEN" && set === config &&
-      !config.disabled?.includes("AWAKEN")) {
+  if (
+    !input.outcome &&
+    input.reaction === "AWAKEN" &&
+    set === config &&
+    !config.disabled?.includes("AWAKEN")
+  ) {
     const transition = config.frames[config.reactions.AWAKEN ?? "awaken"];
     if (transition) return transition;
   }
@@ -471,10 +554,14 @@ export function selectSpriteFrame(
         : persistent;
   return key === "default" ? defaultFrame : (set.frames[key] ?? defaultFrame);
 }
-export function spriteFrames(config: BattleSprite) {
+export function spriteFrames(config: BattleSprite): SpriteFrame[] {
   return [
     ...Object.values(config.frames),
     ...Object.values(config.awakened?.frames ?? {}),
+    ...Object.values(config.finishers ?? {}).flatMap((entry) => [
+      ...(entry.portrait ? [entry.portrait] : []),
+      ...(entry.sprite ? spriteFrames(entry.sprite) : []),
+    ]),
   ];
 }
 

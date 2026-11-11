@@ -1,5 +1,6 @@
 import { UPGRADE_GOLD_COST } from "@workspace/effect-registry";
 import {validProgramValues} from '@workspace/effect-registry';
+import {applyBalanceEffect,upgradeGoldCost,exactZeroDamage,applyGeneratedTagAuras,reviewedUpgradeValues,balanceUpgradeEligible} from '../engine/balance-effects';
 import {hasPendingProgram,hasPendingFinisherCast} from '../engine/program';
 import { validAbilityReplacement } from '@workspace/effect-registry';
 import { addCardsToHand, resumeHandAddition, selectHandDiscard } from '../engine/hand-addition';
@@ -1719,6 +1720,7 @@ export function resolveStateBasedDeaths(
           : { type: 'SYSTEM' as const },
         target: { type: 'CARD' as const, cardInstanceId: card.instanceId },
         reason: 'RETIRE' as const,
+        exactZero:exactZeroDamage(preparedState,card),
         targetSnapshot: {
           playerId,
           cardInstanceId: card.instanceId,
@@ -1766,7 +1768,7 @@ export function resolvePendingEffects(state: GameState): GameState {
     return resolvePendingEffects(resumed);
   }
   // A script SELECT is already suspended; only selectEffectTarget may resume its program.
-  if (pending.scriptContinuation || pending.championRewardReplacement) return state;
+  if (pending.catalogChoice || pending.scriptContinuation || pending.championRewardReplacement) return state;
   // Keep this frame visible while automatic effects execute: a lethal/destroy
   // trigger can then install itself as a child continuation.
   let next: GameState = { ...state, targetingState: pending };
@@ -1782,12 +1784,12 @@ export function resolvePendingEffects(state: GameState): GameState {
         values?.programResolutionKey ??
         `program:${pending.playerId}:${source.instanceId}:${next.events.length - 1 - [...next.events].reverse().findIndex((e) => e.type === 'ENTER_FIELD' && e.cardInstanceId === source.instanceId)}:${index}`;
       const consumed = next.consumedNewCardEventKeys ?? [];
-      if (consumed.includes(key) || !validProgramValues(values))
+      if (consumed.includes(key) || !(validProgramValues(values)||reviewedUpgradeValues(values)))
         return resolvePendingEffects({
           ...next,
           targetingState: { ...pending, effectIndex: index + 1 },
         });
-      const effects: CardEffect[] = values.programEffects.map((child) => ({
+      const effects: CardEffect[] = values!.programEffects!.map((child) => ({
         type: 'STRUCTURED',
         ...child,
         target:
@@ -1798,7 +1800,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       const eligible = effects.every(
         (child) =>
           child.type !== 'STRUCTURED' ||
-          (child.action === 'SUMMON'
+          (child.values?.balance?balanceUpgradeEligible(next,pending.playerId,source,child.values.balance):child.action === 'SUMMON'
             ? canEnterTowerField(next, pending.playerId) &&
               Boolean(
                 resolveCardDefinition(
@@ -1821,7 +1823,8 @@ export function resolvePendingEffects(state: GameState): GameState {
       );
       const owner = next.players.find((p) => p.id === pending.playerId);
       const attempted = { ...next, consumedNewCardEventKeys: [...consumed, key] };
-      if (!eligible || !owner || owner.currentGold < UPGRADE_GOLD_COST)
+      const upgradeCost=upgradeGoldCost(next,pending.playerId);
+      if (!eligible || !owner || owner.currentGold < upgradeCost)
         return resolvePendingEffects({
           ...attempted,
           targetingState: { ...pending, effectIndex: index + 1 },
@@ -1830,7 +1833,7 @@ export function resolvePendingEffects(state: GameState): GameState {
         ...attempted,
         players: attempted.players.map((p) =>
           p.id === owner.id
-            ? { ...p, currentGold: p.currentGold - UPGRADE_GOLD_COST }
+            ? { ...p, currentGold: p.currentGold - upgradeCost }
             : p,
         ),
         events: [
@@ -1841,7 +1844,7 @@ export function resolvePendingEffects(state: GameState): GameState {
             source: { type: 'CARD', cardInstanceId: source.instanceId },
             target: { type: 'PLAYER', playerId: owner.id },
             reason: 'CARD_EFFECT_COST',
-            amount: -UPGRADE_GOLD_COST,
+            amount: -upgradeCost,
           },
           {
             type: 'PROGRAM_ACTIVATED',
@@ -1851,7 +1854,7 @@ export function resolvePendingEffects(state: GameState): GameState {
             source: { type: 'CARD', cardInstanceId: source.instanceId },
             target: { type: 'CARD', cardInstanceId: source.instanceId },
             reason: 'PROGRAM',
-            amount: UPGRADE_GOLD_COST,
+            amount: upgradeCost,
           },
         ],
         targetingState: {
@@ -1964,6 +1967,13 @@ function applyTagChange(state: GameState, playerId: string, source: CardInstance
 export function selectEffectTarget(state: GameState, targetId: string): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if(pending.catalogChoice){
+    const id=targetId.startsWith('catalog:')?targetId.slice(8):'';
+    if(!pending.validTargetIds.includes(targetId)||!pending.catalogChoice.definitionIds.includes(id))return state;
+    const definition=state.cardPool?.find(d=>d.id===id)??state.minionACardPool?.find(d=>d.id===id);if(!definition)return state;
+    const generated=generateCard(definition,{instanceId:`${pending.sourceInstanceId}:discover:${state.events.length}`,playerId:pending.playerId,source:{type:'CARD',cardInstanceId:pending.sourceInstanceId},reason:'GENERATE',isGenerated:true});
+    return resolvePendingEffects(addCardsToHand({...state,targetingState:pending.continuation,events:[...state.events,generated.event]},pending.playerId,[{card:generated.card}]));
+  }
   if (pending.handAddition) { const selected=selectHandDiscard(state,targetId); return selected===state ? state : resolvePendingEffects(selected); }
   if (pending.fusion?.stage === "CHOOSE") {
     if (!fusionTargets(state, pending.playerId, pending.sourceInstanceId).includes(targetId)) return state;
@@ -2008,9 +2018,14 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
   }
   const effect = pending.effects[pending.effectIndex];
   const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
-  if (!source || !effect || !pending.validTargetIds.includes(targetId) || pending.selectedTargetIds.includes(targetId)) return state;
-  const selected = [...pending.selectedTargetIds, targetId];
-  if (selected.length < pending.minTargets) return { ...state, targetingState: { ...pending, selectedTargetIds: selected } };
+  const variable=(pending.minTargets>0 && pending.maxTargets>pending.minTargets);
+  const confirming=variable&&targetId==='effect:confirm';
+  if(!source||!effect||(!confirming&&!pending.validTargetIds.includes(targetId)))return state;
+  if(variable&&!confirming){const selected=pending.selectedTargetIds.includes(targetId)?pending.selectedTargetIds.filter(id=>id!==targetId):[...pending.selectedTargetIds,targetId];if(selected.length>pending.maxTargets)return state;return {...state,targetingState:{...pending,selectedTargetIds:selected}};}
+  if(!confirming&&pending.selectedTargetIds.includes(targetId))return state;
+  const selected=confirming?pending.selectedTargetIds:[...pending.selectedTargetIds,targetId];
+  if (selected.length < pending.minTargets) return confirming?state:{ ...state, targetingState: { ...pending, selectedTargetIds: selected } };
+
   const parentAfter: NonNullable<GameState['targetingState']> = {
     ...pending, effectIndex: pending.effectIndex + 1, selectedTargetIds: [],
     lastTargetIds: selected, validTargetIds: [], minTargets: 0, maxTargets: 0,
@@ -2026,7 +2041,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
-  if (hasPendingProgram(state) || (hasPendingFinisherCast(state) && !pending.cancelable) || pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
+  if (pending.catalogChoice || (pending.minTargets>0 && pending.maxTargets>pending.minTargets) || hasPendingProgram(state) || (hasPendingFinisherCast(state) && !pending.cancelable) || pending.handAddition || pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
   if (hasCommittedFusion(pending) && !pending.cancelable) return state;
   if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
@@ -2131,7 +2146,8 @@ function applyEffectWithPresentation(
     const excess=applied.events.slice(start).filter(e=>e.type==='DAMAGE_DEALT' && e.source?.type==='CARD' && e.source.cardInstanceId===sourceCard.instanceId).reduce((n,e)=>n+(e.excessDamage??0),0);
     return excess>0 ? applyEffect(applied,playerId,sourceCard,{type:'DAMAGE_OPPONENT_CHAMPION',amount:excess},undefined,triggerContext):applied;
   }
-  return refreshPersistentFieldGrants(checkpointAwakening(state, applyEffectInternal(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext)));
+  const resolved=refreshPersistentFieldGrants(checkpointAwakening(state, applyEffectInternal(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext)));
+  return applyGeneratedTagAuras(resolved,state.events.length,(next,actor,child,ids,context)=>applyEffect(next,playerId,actor,child,ids,context));
 }
 
 function applyEffectInternal(
@@ -2146,6 +2162,10 @@ function applyEffectInternal(
     return applyScript(state, playerId, sourceCard, effect.script);
   }
   if (effect.type === 'STRUCTURED') {
+    if(effect.values?.balance){const resolved=applyBalanceEffect(state,playerId,sourceCard,effect,chosenTargetInstanceIds,triggerContext,
+      (s,actor,e,ids,context)=>applyEffect(s,playerId,actor,e,ids,context),
+      (s,owner,card,slot,cause)=>enterField(s,owner,card,slot,{type:'CARD',cardInstanceId:sourceCard.instanceId},undefined,cause),
+      (s,card,trigger)=>{const parent=s.targetingState;const child=resolveTriggeredAbilities({...s,targetingState:undefined},playerId,card,trigger);return child.targetingState?.active&&parent?appendEffectContinuation(child,parent):{...child,targetingState:child.targetingState??parent};});if(resolved)return resolved;}
     if(effect.action==='PROGRAM')return resolvePendingEffects({...state,targetingState:{active:true,playerId,sourceInstanceId:sourceCard.instanceId,sourceCard,effects:[effect],effectIndex:0,selectedTargetIds:[],lastTargetIds:[],validTargetIds:[],minTargets:0,maxTargets:0,mandatory:true,cancelable:false,continuation:state.targetingState}});
     if (effect.action === 'REPLACE_CHAMPION_ABILITY') {
       const config=effect.values?.abilityReplacement,owner=state.players.find(p=>p.id===playerId);
@@ -2175,6 +2195,11 @@ function applyEffectInternal(
           ...p, hand: p.hand.map(card => card.instanceId === drawnId
             ? { ...card, currentCost: Math.max(0, card.currentCost - amount) } : card),
         }) };
+      }
+      if(effect.values.purpleRainEnemyTargets){
+        const enemy=next.players.find(p=>p.id!==playerId);
+        if(targetId===enemy?.id){const candidates=enemy.hand;if(!candidates.length)return next;const selected=candidates[Math.floor(randomForEffect(next,sourceCard,effect)()*candidates.length)];return {...next,players:next.players.map(p=>p.id!==enemy.id?p:{...p,hand:p.hand.map(c=>c.instanceId!==selected.instanceId?c:{...c,currentCost:Math.max(c.currentCost,Math.min(6,c.currentCost+1))})})};}
+        if(enemy?.board.some(c=>c?.instanceId===targetId))return applyEffect(next,playerId,sourceCard,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'ENEMY',selection:'SAME_TARGET',count:1},values:{attack:-1}},chosenTargetInstanceIds,triggerContext);
       }
       return applyEffect(next, playerId, sourceCard, {
         type: 'STRUCTURED', action: 'BUFF',
@@ -2308,7 +2333,7 @@ function applyEffectInternal(
       const nextAwakeningStage=sourceCard.awakeningStage==='TANK'?'HEALER':sourceCard.awakeningStage==='HEALER'?'DEALER':undefined;
       const questOwner=state.players.find(p=>p.id===playerId);
       const questRewardSummon=sourceCard.tags?.includes('CHAMPION_QUEST_REWARD_SOURCE') && questOwner?.champion?.questCompleted && definition?.awakeningStage==='TANK';
-      if (definition?.questExclusive && !questRewardSummon && !(sourceCard.questExclusive && nextAwakeningStage && definition.awakeningStage===nextAwakeningStage)) return state;
+      if (definition?.questExclusive && !(sourceCard.cardType==='TECHNIQUE'&&sourceCard.isChampionToken) && !questRewardSummon && !(sourceCard.questExclusive && nextAwakeningStage && definition.awakeningStage===nextAwakeningStage)) return state;
       // These actions require a data-only definition; an absent/malformed
       // reference is a rejected effect, never an advertised silent no-op.
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
@@ -2418,7 +2443,7 @@ function applyEffectInternal(
         { ...state, players: state.players.map((candidate) => candidate.id === playerId ? { ...candidate, currentGold: 0 } : candidate), events: [...state.events, { type: 'GOLD_CHANGED', playerId, amount: -spend, reason: 'CARD_EFFECT_COST', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }] },
         playerId,
         sourceCard,
-        { type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, values: { attack: spend * 2, health: spend * 2 } },
+        { type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, values: { attack: spend * (effect.values?.attack ?? 2), health: spend * (effect.values?.health ?? 2) } },
         undefined,
         triggerContext,
       );
@@ -3337,7 +3362,7 @@ function applyEffectInternal(
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
               : player),
-            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
           };
           const damagedCard = damagedState.players.find((player) => player.id === targetOwner)?.board
             .find((card) => card?.instanceId === current.instanceId) ?? current;
@@ -3375,7 +3400,7 @@ function applyEffectInternal(
           // Make damage causality available before SELF_DAMAGED can summon and settle deaths.
           events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId,
             source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId },
-            reason: 'CARD_EFFECT', amount: effectiveDamage, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
+            reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
         };
         const selfDamaged = resolveTriggeredAbilities(
           lethalDamagedState,
@@ -3391,11 +3416,8 @@ function applyEffectInternal(
           .find((card) => card?.instanceId === current.instanceId);
         // Damage-trigger resolution may already settle lethal health and its leave effects.
         if (!liveCurrent) {
-          const exactZero = health === 0 ? resolveTriggeredAbilities(afterSelfDamaged, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
-            damagedTargetInstanceId: current.instanceId, healthBefore: preparedCurrent.currentHealth, healthAfter: health,
-          }) : afterSelfDamaged;
           return resolveRegisteredRuleListeners(
-            clearDamageMarker(exactZero), 'DAMAGE_TAKEN', targetOwner,
+            clearDamageMarker(afterSelfDamaged), 'DAMAGE_TAKEN', targetOwner,
             current.instanceId, current.cardType, preparedState.events.length,
           );
         }
@@ -3427,7 +3449,7 @@ function applyEffectInternal(
              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
-            { type: 'CARD_RETIRED', cardDefinitionId: current.definitionId, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
+            { type: 'CARD_RETIRED', cardDefinitionId: current.definitionId, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', exactZero:health===0&&effectiveDamage>0, sourceContext: attribution },
           ],
         };
         const removedWanted = protectedState.players.find(player => player.id === targetOwner)?.board.find(card => card?.instanceId === current.instanceId);
@@ -3436,11 +3458,7 @@ function applyEffectInternal(
           attack: current.currentAttack,
           health: Math.max(0, current.currentHealth),
         });
-        const exactZeroState = health === 0
-          ? resolveTriggeredAbilities(retiredWithAggregate, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
-            damagedTargetInstanceId: current.instanceId, healthBefore: current.currentHealth, healthAfter: health,
-          })
-          : retiredWithAggregate;
+        const exactZeroState = retiredWithAggregate;
         const selfRetired = resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'SELF_RETIRE', {
           leaveReason: 'RETIRE',
           sourceContext: attribution,
@@ -3903,6 +3921,7 @@ export function resolveTriggeredAbilities(
   card: CardInstance,
   trigger: 'GAME_START' | 'AFTER_MULLIGAN' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'HAND_WRESTLER_ADDED' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'SELF_RETURNED_TO_HAND' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
+    removedTarget?:CardInstance;
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
     chosenTargetInstanceIds?: string[];
@@ -3972,7 +3991,7 @@ export function resolveTriggeredAbilities(
   const activeAbilities = getActiveCardAbilities(card);
   const abilities = activeAbilities.filter((ability) => {
     if (ability.trigger !== trigger) return false;
-    if (trigger === 'CARD_ENTERED' && options.eventPlayerId) {
+    if ((trigger === 'CARD_ENTERED'||trigger==='CARD_RETIRED') && options.eventPlayerId) {
       const eventOwner = 'eventOwner' in ability ? ability.eventOwner ?? 'SELF' : 'SELF';
       if ((eventOwner === 'SELF') !== (options.eventPlayerId === playerId)) return false;
     }
@@ -3998,6 +4017,8 @@ export function resolveTriggeredAbilities(
       if (condition.type === 'SOURCE_IN_HAND' && !owner.hand.some((entry) => entry.instanceId === card.instanceId)) return false;
       if (condition.type === 'SOURCE_ON_LEFT_SIDE' && (card.boardSlot === null || card.boardSlot > 1)) return false;
       if (condition.type === 'SOURCE_ON_RIGHT_SIDE' && (card.boardSlot === null || card.boardSlot < 2)) return false;
+      if (condition.type === 'COMBAT_HIT' && !options.attackerInstanceId)return false;
+      if (condition.type === 'REMOVED_TARGET_TAG' && !options.removedTarget?.tags?.includes(condition.tag))return false;
       if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;
       if (condition.type === 'ATTACK_GAIN' && (options.attackDelta ?? 0) <= 0) return false;
       if (condition.type === 'PREVIOUS_OWN_TURN_ANY_HEALED' && !(state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.champion || state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.wrestler)) return false;
@@ -4070,7 +4091,7 @@ export function resolveTriggeredAbilities(
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
      effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? (trigger === 'FIRST_ATTACKED' && options.attackerInstanceId ? [options.attackerInstanceId] : []),
     validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
-      triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, fusionTargetInstanceId: options.fusionTargetInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, attackDelta: options.attackDelta, healthDelta: options.healthDelta, healthBefore: options.healthBefore, healthAfter: options.healthAfter, sourceContext: options.sourceContext },
+      triggerContext: { removedTarget:options.removedTarget, playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, fusionTargetInstanceId: options.fusionTargetInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, attackDelta: options.attackDelta, healthDelta: options.healthDelta, healthBefore: options.healthBefore, healthAfter: options.healthAfter, sourceContext: options.sourceContext },
      lastAggregatedStats: state.targetingState?.lastAggregatedStats,
   });
   if (!inlineBuffs) return resolved;
@@ -4142,7 +4163,15 @@ export function resolveCardRetiredListeners(
     const key=`causal-retire:${relicEventIndex}:${sourceId}`;
     if(killerOwner&&killer && !state.consumedNewCardEventKeys?.includes(key)){
       state={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),key]};
-      state=resolveTriggeredAbilities(state,killerOwner.id,killer,'SOURCE_RETIRED_TARGET',{sourceContext});
+      if(event.exactZero)state=resolveTriggeredAbilities(state,killerOwner.id,killer,'EXACT_ZERO_DAMAGE',{sourceContext,damagedTargetInstanceId:retiredCard.instanceId,removedTarget:retiredCard});
+      state=resolveTriggeredAbilities(state,killerOwner.id,killer,'SOURCE_RETIRED_TARGET',{sourceContext,removedTarget:retiredCard});
+    }
+  }
+  for(const p of state.players){
+    for(const candidate of p.board){
+      if(!candidate||!candidate.abilities.some(a=>a.trigger==='CARD_RETIRED'&&'sourceZones'in a&&a.sourceZones?.includes('BOARD')))continue;
+      if(state.events.slice(relicEventIndex+1).some(e=>e.type==='ENTER_FIELD'&&e.cardInstanceId===candidate.instanceId))continue;
+      state=resolveTriggeredAbilities(state,p.id,candidate,'CARD_RETIRED',{eventPlayerId:playerId,removedTarget:retiredCard,sourceContext});
     }
   }
   const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];
@@ -4192,6 +4221,12 @@ function resolveCardDestroyedListeners(
   );
   if (eventIndex < 0) return state;
   const event = state.events[eventIndex];
+  const sourceId=event.source?.type==='CARD'?event.source.cardInstanceId:undefined;
+  const killer=sourceId?sourceInState(state,sourceId):undefined;
+  const killerOwner=sourceId?state.players.find(p=>p.id!==playerId&&p.board.some(c=>c?.instanceId===sourceId)):undefined;
+  if(killer&&killerOwner&&getActiveCardAbilities(killer).some(a=>'absorbDestroyedTargetStats'in a&&a.absorbDestroyedTargetStats)){
+    state=applyEffect(state,killerOwner.id,killer,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:Math.floor(destroyedCard.currentAttack/2),health:Math.floor(destroyedCard.maxHealth/2)}});
+  }
   return resolveRegisteredRuleListeners(
     state,
     'SOURCE_CAUSED_TARGET_REMOVAL',

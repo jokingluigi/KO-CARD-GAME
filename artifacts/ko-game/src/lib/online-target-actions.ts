@@ -47,3 +47,7 @@ export function shouldResyncAfterActionRejection(
     rejectedVersion !== null && rejectedVersion !== currentVersion
   ) || ["STALE_VERSION", "INVALID_TARGET", "NO_VALID_TARGET", "TARGET_SELECTION_PENDING"].includes(code);
 }
+/** Confirmation is an action for an existing multi-picker, never a card identifier. */
+export function acceptsEffectSelection(targeting: {active:boolean;validTargetIds:string[];minTargets:number;maxTargets:number;selectedTargetIds:string[]}|undefined,targetId:string):boolean {
+ return Boolean(targeting?.active && (targeting.validTargetIds.includes(targetId) || targetId==='effect:confirm' && (targeting.minTargets>0 && targeting.maxTargets>targeting.minTargets) && targeting.selectedTargetIds.length>=targeting.minTargets));
+}

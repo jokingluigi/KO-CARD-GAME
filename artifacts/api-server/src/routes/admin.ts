@@ -11,6 +11,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import {
   cardsTable,
+  cosmeticItemsTable,
   cardFrameDefinitionsTable,
   championsTable,
   championIntroInteractionsTable,
@@ -2847,6 +2848,10 @@ router.delete("/game-media/:id", async (request, response): Promise<void> => {
   if(existing.mediaType==='HOME_MENU_LAYOUT'){response.status(400).json({message:'홈 메뉴 이미지 관리에서 등록 해제하세요.'});return;}
   if(existing.mediaType==='HOME_MENU_ART'){
     try{await removeHomeMenuImage(id);response.status(204).end();}catch(e){response.status(409).json({message:e instanceof Error?e.message:'이미지를 삭제하지 못했습니다.'});}return;
+  }
+  if(existing.mediaType==='BGM'){
+    const [champions,skins]=await Promise.all([db.select({lines:championsTable.presentationLines}).from(championsTable),db.select({assets:cosmeticItemsTable.imageAssets}).from(cosmeticItemsTable).where(eq(cosmeticItemsTable.type,'CHAMPION_SKIN'))]);
+    if([...champions.map(c=>c.lines?.BATTLE_SPRITE),...skins.map(s=>s.assets.__battle)].some(raw=>Object.values(parseBattleSprite(raw)?.finishers??{}).some(entry=>entry.music?.assetUrl===existing.assetUrl))){response.status(409).json({message:'피니셔 선택지에서 사용하는 음악입니다. 스프라이트 관리에서 연결을 해제한 후 삭제하세요.'});return;}
   }
   await db.delete(gameMediaTable).where(eq(gameMediaTable.id, id));
   const config = gameMediaConfig(existing.mediaType as (typeof GAME_MEDIA_TYPES)[number]);

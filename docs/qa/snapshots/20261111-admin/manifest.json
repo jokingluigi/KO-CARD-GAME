@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-11-11T11:11:16.662702+00:00",
+  "source": "authenticated administrator GET only",
+  "counts": {
+    "cards": 195,
+    "champions": 12
+  },
+  "manualProductionWrites": 0,
+  "files": {
+    "cards": {
+      "sha256": "e99ac8468080e4e098f799f03b748fc169c5cc26ff12ff7c03ea28d97ad1d86b",
+      "count": 195
+    },
+    "champions": {
+      "sha256": "0aec1a674a5afe62e2f011729d1fdad98b3d9fbbcd27ce50d82fef2d03976743",
+      "count": 12
+    }
+  },
+  "lastPresentationRefreshUTC": "2026-11-11T11:30:25.550609+00:00"
+}

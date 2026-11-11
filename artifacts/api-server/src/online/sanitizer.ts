@@ -124,7 +124,7 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     : undefined;
   return {
     ...publicState,
-    waitingForFinisherCastPlayerId: hasPendingFinisherCast(state) ? state.targetingState?.playerId : undefined,
+    waitingForFinisherCastPlayerId: hasPendingFinisherCast(state) || state.targetingState?.catalogChoice || state.targetingState && (state.targetingState.minTargets>0 && state.targetingState.maxTargets>state.targetingState.minTargets) ? state.targetingState?.playerId : undefined,
     waitingForFinisherPlayerId: state.targetingState?.finisherChoice ? state.targetingState.playerId : undefined,
     waitingForHandDiscardPlayerId: state.targetingState?.handAddition ? state.targetingState.playerId : undefined,
     waitingForProgramPlayerId: hasPendingProgram(state) ? state.targetingState?.playerId : undefined,

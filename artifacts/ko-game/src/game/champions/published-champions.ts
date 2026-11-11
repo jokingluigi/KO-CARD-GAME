@@ -1,3 +1,4 @@
+import {reviewedNovember11Champion} from './balance-content-20261111';
 import { validFinisherReward, validFinisherChoices } from './finisher-config';
 import {reviewedOctober24Champion} from './balance-patch-20261024';
 import { isAutomaticChampionStartConfig } from '../../../../../lib/game-engine/src/champion-game-start';
@@ -71,6 +72,7 @@ function ability(id: string, name: string, cost: number, description: string, co
 }
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
+  record=reviewedNovember11Champion(record);
   const configuredFinisher=record.hasQuest&&validFinisherReward(record.questCondition?.finisher)?record.questCondition.finisher:undefined;
   const configuredChoices = record.hasQuest && validFinisherChoices(record.questCondition?.finisherChoices) ? record.questCondition.finisherChoices : undefined;
   record = reviewedOctober24Champion(record);
@@ -192,7 +194,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
       rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'DAMAGE_DEALT', selfEffectDamage: true,
       requiredProgress: 8, reward: { type: 'UPGRADE_ABILITY' } };
   }
-  if (!definition.quest?.awakening && (record.questCondition?.event !== 'CARD_RETIRED' || !record.questCondition?.strictEventCount) && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
+  if (!validChampionQuestCondition(record.questCondition?.condition) && !definition.quest?.awakening && (record.questCondition?.event !== 'CARD_RETIRED' || !record.questCondition?.strictEventCount) && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
     const summon = (amount: number, upgraded: boolean): ChampionAbility => ({
       id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
       name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '좀비 소환',

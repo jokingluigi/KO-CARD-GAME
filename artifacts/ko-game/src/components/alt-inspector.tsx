@@ -1,5 +1,5 @@
 import {TagLabel} from './tag-label';
-import {FinisherProgress} from './finisher-progress';
+import {FinisherProgress,championPreparationProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
 import {cardSilenceProtection} from '../lib/card-protection-display';
 import {SilenceImmunityNotice} from './silence-immunity-notice';
@@ -587,7 +587,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
       <div className="font-display text-[clamp(1rem,1.3vw,1.125rem)] font-black text-white">
         {champion.questCompleted
           ? '완료됨'
-          : `${champion.questProgress} / ${quest.requiredProgress}`}
+          : `${championPreparationProgress(champion).current} / ${championPreparationProgress(champion).required}`}
       </div>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">피니셔 획득 / 현재 완료 효과</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>

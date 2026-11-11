@@ -470,7 +470,8 @@ function orderedActions(
       (a) =>
         a.type !== "EMOTE" &&
         a.type !== "SURRENDER" &&
-        a.type !== "CANCEL_EFFECT_TARGET",
+        a.type !== "CANCEL_EFFECT_TARGET" &&
+        !(a.type === "SELECT_EFFECT_TARGET" && state.targetingState?.maxTargets! > state.targetingState?.minTargets! && state.targetingState?.selectedTargetIds.includes(a.targetId)),
     )
     .map((action, index) => ({
       action,

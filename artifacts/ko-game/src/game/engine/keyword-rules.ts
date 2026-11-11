@@ -1,3 +1,4 @@
+import {fieldInvulnerable} from './balance-effects';
 import { healNewCardAware } from './new-card-rules';
 import type { CardInstance } from '../cards/types';
 import type { GameState } from '../types/game-state';
@@ -13,7 +14,9 @@ export function isEntryDefenseTargetProtected(state: GameState, card: CardInstan
 export function keywordDamage(card: CardInstance, amount: number, turn: number, source: 'COMBAT' | 'EFFECT' = 'COMBAT', state?:GameState): number {
  const keywords=getActiveCardKeywords(card);
  if(hasEntryDefense(card,turn))return 0;
- const damage=Math.max(0,amount-(source === 'COMBAT' && keywords.includes('ARMOR')?card.grantedText?.armor??card.armor??0:0));
+ if(state&&!card.isAbilityDisabled&&fieldInvulnerable(state,card))return 0;
+ const cap=getActiveCardAbilities(card).flatMap(a=>'maximumDamagePerHit'in a&&a.maximumDamagePerHit!==undefined?[a.maximumDamagePerHit]:[]);
+ const damage=Math.min(cap.length?Math.min(...cap):Infinity,Math.max(0,amount-(source === 'COMBAT' && keywords.includes('ARMOR')?card.grantedText?.armor??card.armor??0:0)));
  const limit=getActiveCardAbilities(card).flatMap(ability=>'incomingDamageLimitPerTurn' in ability && ability.incomingDamageLimitPerTurn!==undefined?[ability.incomingDamageLimitPerTurn]:[]);
  if(!state || !limit.length || card.isAbilityDisabled)return damage;
  const start=state.events.reduce((last,event,index)=>event.type==='TURN_STARTED'?index:last,-1);

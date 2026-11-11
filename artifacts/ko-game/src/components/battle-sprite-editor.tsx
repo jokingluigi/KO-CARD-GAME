@@ -34,6 +34,7 @@ export function BattleSpriteEditor({
   value,
   onChange: save,
   workspace = false,
+  awakeningOnly = false,
   onBusyChange,
   fallbackImage,
   inheritedMotion,
@@ -43,6 +44,7 @@ export function BattleSpriteEditor({
   fallbackImage?: string | null;
   inheritedMotion?: SpriteMotionSettings;
   workspace?: boolean;
+  awakeningOnly?:boolean;
   onBusyChange?: (busy: boolean) => void;
   value?: BattleSprite | null;
   onChange: (value: BattleSprite) => void;
@@ -91,7 +93,7 @@ export function BattleSpriteEditor({
   );
   const [showOrigin, setShowOrigin] = useState(false);
   const [frameViewport, setFrameViewport] = useState("MOBILE");
-  const [awake, setAwake] = useState(false),
+  const [awake, setAwake] = useState(awakeningOnly),
     [health, setHealth] = useState(10);
   const low = health >= 1 && health <= 5;
   const [reaction, setReaction] = useState<{
@@ -153,7 +155,7 @@ export function BattleSpriteEditor({
     [busy, setBusy] = useState(false),
     [uploadPhase,setUploadPhase]=useState("");
   const editableExpressions = Object.entries(SPRITE_EXPRESSIONS).filter(
-    ([key]) => editing === "NORMAL" || key !== "awaken",
+    ([key]) => (!awakeningOnly && editing === "NORMAL") || key !== "awaken",
   );
   const [uploadNote,setUploadNote]=useState("");
   const uploadRef=useRef<AbortController|null>(null);
@@ -631,6 +633,7 @@ export function BattleSpriteEditor({
       <div className="ko-sprite-editor-layout">
         {workspace && reactionPreview}
         <div className="ko-sprite-editor-controls space-y-3">
+          {!awakeningOnly && <>
           <label>
             편집 세트
             <select
@@ -663,6 +666,8 @@ export function BattleSpriteEditor({
               </option>
             </select>
           </label>
+          </>}
+          {awakeningOnly && <p className="text-amber-200">선택지 전용 각성 세트 · 기본 이미지를 등록하면 획득 후 이 세트로 전환합니다. 저체력이어도 각성 기본 표정을 유지합니다.</p>}
           <p className="text-xs text-neutral-400">
             기본(default)을 먼저 등록하세요. 표정이 없으면 같은 세트의 기본
             이미지로 표시됩니다. 내 위치는 원본 방향, 상대 위치는 좌우 반전으로
@@ -686,7 +691,7 @@ export function BattleSpriteEditor({
           <div
             className="grid grid-cols-2 gap-2 sm:grid-cols-5"
             role="group"
-            aria-label={editing === "NORMAL" ? "등록할 표정 11개" : "등록할 표정 10개"}
+            aria-label={!awakeningOnly && editing === "NORMAL" ? "등록할 표정 11개" : "등록할 표정 10개"}
           >
             {editableExpressions.map(([key, label]) => (
               <button

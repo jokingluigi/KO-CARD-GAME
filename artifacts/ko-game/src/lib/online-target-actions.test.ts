@@ -63,3 +63,8 @@ test("effect target action follows the authoritative targeting phase", () => {
     targetId: "legacy-target",
   });
 });
+test('multi-target confirmation is valid only after selecting the minimum; catalog candidates remain explicit',async()=>{
+ const {acceptsEffectSelection}=await import('./online-target-actions');
+ const frame={active:true,validTargetIds:['one','two'],minTargets:1,maxTargets:8,selectedTargetIds:[] as string[]};
+ assert.equal(acceptsEffectSelection(frame,'effect:confirm'),false);assert.equal(acceptsEffectSelection({...frame,selectedTargetIds:['one']},'effect:confirm'),true);assert.equal(acceptsEffectSelection({...frame,maxTargets:1,selectedTargetIds:['one']},'effect:confirm'),false);assert.equal(acceptsEffectSelection(frame,'catalog:forged'),false);
+});

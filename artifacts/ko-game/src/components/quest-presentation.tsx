@@ -41,7 +41,7 @@ function ActiveQuestPresentation({
   const owner = questOwner(state, cue.playerId, cue.championId);
   const champion = owner?.champion;
   const normalArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',champion?.imageUrl,'portrait');
-  const awakenedArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),'awakened');
+  const awakenedArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),'awakened',champion?.selectedFinisherId);
   const reward = champion?.quest?.reward;
   const tokenId = reward?.type === "DIRECT_DEPLOY_CHAMPION_TOKEN"
     ? reward.cardDefinitionId

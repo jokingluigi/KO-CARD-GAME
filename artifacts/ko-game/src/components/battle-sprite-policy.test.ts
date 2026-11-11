@@ -38,7 +38,7 @@ test('quest expression replaces KEEP idle, including missing reaction and low-st
  assert.match(select('IDLE'),/quest.png$/);
  assert.match(select('HIT'),/hurt.png$/);
  assert.match(select('HEAL'),/quest.png$/);
- assert.match(select('IDLE',true,true),/low.png$/);
+ assert.match(select('IDLE',true,true),/quest.png$/);
  assert.match(selectSpriteFrame({...config,frames:{default:config.frames.default,awaken:config.frames.awaken}},{awakened:true,low:true,reaction:'IDLE'})!.url,/quest.png$/);
 });
 test('REPLACE holds normal quest expression then only uses the replacement set',()=>{
@@ -62,4 +62,13 @@ test('optional quest artwork survives editor projection and is subordinate to ou
  assert.equal(projected.reactions.AWAKEN,'awaken');
  assert.equal(selectSpriteFrame(projected,{awakened:false,low:false,reaction:'AWAKEN',outcome:'DEFEAT'}),projected.frames.default);
  assert.equal(spriteAwakeningDelay({version:1,frames:{default:frame},reactions:{}}),220);
+});
+
+test('awakening keeps its normal awakened portrait even at low HP, then resumes the current set after reactions',()=>{
+ const base={...frame,url:'https://example.invalid/base.png'},awake={...frame,url:'https://example.invalid/awake.png'},low={...frame,url:'https://example.invalid/low.png'},hit={...frame,url:'https://example.invalid/hit.png'};
+ const keep={version:1 as const,frames:{default:base,low,awaken:awake,hurt:hit},reactions:{HIT:'hurt' as const},states:{LOW:'low' as const}};
+ assert.equal(selectSpriteFrame(keep,{awakened:true,low:true,reaction:'IDLE'})?.url,awake.url);
+ assert.equal(selectSpriteFrame(keep,{awakened:true,low:true,reaction:'HIT'})?.url,hit.url);
+ const replace={...keep,awakening:'REPLACE' as const,awakened:{version:1 as const,frames:{default:awake,low},reactions:{}}};
+ assert.equal(selectSpriteFrame(replace,{awakened:true,low:true,reaction:'IDLE'})?.url,awake.url);
 });

@@ -35,6 +35,7 @@ export function FinisherOptionsEditor({
           : "space-y-3 rounded border border-amber-700/60 p-3 md:col-span-2"
       }
     >
+      <p className="text-sm text-amber-200">선택지별 음악·각성 프로필·각성 스프라이트는 챔피언을 저장한 후 스프라이트 관리에서 해당 선택지를 골라 등록할 수 있습니다.</p>
       {!embedded && (
         <>
           <legend>피니셔 선택지</legend>

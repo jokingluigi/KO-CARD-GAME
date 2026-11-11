@@ -12,6 +12,7 @@ import {
   type CSSProperties,
 } from "react";
 import {
+  parseBattleSprite,skinKey,
   cosmeticImage,
   cosmeticImageSettings,
   type MatchCosmetics,
@@ -30,17 +31,19 @@ export function useCosmeticImage(
   type: "CARD_SKIN" | "CHAMPION_SKIN",
   original: string | null | undefined,
   context: keyof CosmeticAssets = "art",
+  finisherId?:string,
 ) {
   const loadouts = useContext(BattleCosmeticsContext);
+  const selected=ownerId&&id&&finisherId&&type==='CHAMPION_SKIN'&&context==='awakened'?parseBattleSprite(loadouts[ownerId]?.skins?.[skinKey(type,id)]?.imageAssets.__battle)?.finishers?.[finisherId]?.portrait:undefined;
   return {
     display:
       id && ownerId
         ? cosmeticImageSettings(loadouts[ownerId], type, id, context)
         : undefined,
-    src:
+    src:selected?.url??(
       id && ownerId
         ? cosmeticImage(loadouts[ownerId], type, id, context, original)
-        : original,
+        : original),
   };
 }
 export function CosmeticBack({ loadout }: { loadout?: CosmeticLoadout }) {

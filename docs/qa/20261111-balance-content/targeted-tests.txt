@@ -1,0 +1,496 @@
+✔ unwrapped card and ability actions cannot commit while they start targeting (0.886008ms)
+✔ only contextually invalid selections or an otherwise-valid attack target map to INVALID_TARGET (0.221699ms)
+✔ already-paid automatic upgrade and its nested choices are not pre-commit probes (0.127129ms)
+✔ default-only sprites, explicit side flipping and optional reaction mappings validate (5.320226ms)
+✔ important reactions cannot be overwritten by minor events and no backlog is queued (0.200358ms)
+✔ reaction completion returns to low state; replaced set cannot leak normal expressions (0.368829ms)
+✔ final damage bands ignore legacy self damage artwork override; disabled reactions and timing remain deterministic (0.164275ms)
+✔ quest expression replaces KEEP idle, including missing reaction and low-state fallback (0.377412ms)
+✔ REPLACE holds normal quest expression then only uses the replacement set (0.471902ms)
+✔ optional quest artwork survives editor projection and is subordinate to outcomes (0.839459ms)
+✔ awakening keeps its normal awakened portrait even at low HP, then resumes the current set after reactions (0.259096ms)
+✔ actual damage 0 selects exactly one expression, including self damage (2.744154ms)
+✔ actual damage 1 selects exactly one expression, including self damage (0.678369ms)
+✔ actual damage 4 selects exactly one expression, including self damage (0.399384ms)
+✔ actual damage 5 selects exactly one expression, including self damage (0.596257ms)
+✔ actual damage 9 selects exactly one expression, including self damage (0.412474ms)
+✔ max health/current health stat changes are not damage or healing (1.08194ms)
+✔ real healing is recorded once, overhealing zero does not react, simultaneous damage cannot hide healing (1.018756ms)
+✔ one real effect summoning multiple players has one stable reaction, independent effects have different ids (5.857281ms)
+✔ only own field legendary exit CARD_RETIRED surprises; duplicate result is ignored (2.825444ms)
+✔ only own field legendary exit CARD_DESTROYED surprises; duplicate result is ignored (1.975389ms)
+✔ only own field legendary exit CARD_VANISHED surprises; duplicate result is ignored (1.911104ms)
+✔ only own field legendary exit CARD_REMOVED surprises; duplicate result is ignored (1.523007ms)
+✔ real hidden-zone vanish, return and transform do not surprise (0.914741ms)
+✔ incomplete attack declarations are ignored; confirmed casts react and failed play does not (1.218022ms)
+✔ cancellable spell preview is revisited only after confirmed; cancellation and reconnect do not replay (0.640873ms)
+✔ ten combat slots plus optional awakening, fixed damage/HP thresholds, same-set default and healing return are deterministic (1.831706ms)
+✔ priorities, consecutive damage coalescing, result persistence and exact default durations (0.290262ms)
+✔ serialized effect unit deduplicates summons across target-choice suspension (16.316869ms)
+✔ real spell cast confirms attack expression; real precommit target cancel does not (5.787862ms)
+✔ editor normalization preserves uploaded artwork and explicit reuse without filling absent slots (0.943203ms)
+✔ all skin sets preserve automatic original-self and mirrored-opponent policy through projection and upload (0.459754ms)
+✔ real effect opponent damage 0 uses confirmed result (0.790536ms)
+✔ real effect opponent damage 1 uses confirmed result (0.584229ms)
+✔ real effect opponent damage 4 uses confirmed result (0.548546ms)
+✔ real effect opponent damage 5 uses confirmed result (0.47099ms)
+✔ real effect self damage 0 uses confirmed result (0.427006ms)
+✔ real effect self damage 1 uses confirmed result (0.382169ms)
+✔ real effect self damage 4 uses confirmed result (0.739651ms)
+✔ real effect self damage 5 uses confirmed result (0.310101ms)
+✔ real protected champion absorbs an attempted strong hit without a hurt expression (0.657509ms)
+✔ real retire/destroy/vanish outputs preserve separate events and only own legendary surprises (6.399924ms)
+✔ confirmed wrestler attack on WRESTLER commands only its owner's champion (1.773559ms)
+✔ confirmed wrestler attack on PLAYER commands only its owner's champion (0.529138ms)
+✔ failed wrestler attack and unchanged selection do not react; accepted attack is consumed once (0.505652ms)
+✔ opponent wrestler attack uses that opponent champion, not the viewer champion (0.467836ms)
+✔ opponent legendary real field entry surprises only the other champion (0.996553ms)
+✔ opponent champion token real field entry surprises only the other champion (0.415078ms)
+✔ opponent six cost real field entry surprises only the other champion (0.521136ms)
+✔ opponent above six cost real field entry surprises only the other champion (0.511561ms)
+✔ ordinary opponent summons and own threats do not cause surprise (0.786851ms)
+✔ opponent spell printed cost 5 requires successful use (0.55129ms)
+✔ opponent spell printed cost 6 requires successful use (0.34917ms)
+✔ opponent spell printed cost 8 requires successful use (0.57808ms)
+✔ opponent quest completion surprises once; progress, own quest and replay do not (0.395098ms)
+✔ same effect summons several opponent threats once across multiple updates (0.630809ms)
+✔ sprite scale supports 300 percent without changing card illustration limits (0.792279ms)
+✔ opponent cancellable high-cost spell does not surprise before commit or after cancellation (0.602536ms)
+✔ strong-card surprise stays readable for two seconds without delaying higher priorities (1.648102ms)
+✔ finite motion profiles end exactly at origin and separate the damage bands (1.658098ms)
+✔ effect settings and emote mappings validate without adding an artwork slot (0.460426ms)
+✔ emotes expire instead of becoming a victory outcome and never interrupt combat (0.25563ms)
+✔ turn/emote cues observe accepted events once and do not replay a reconnect snapshot (1.097864ms)
+✔ self damage source and attacker slot come from actual result attribution (3.563432ms)
+✔ legendary multi-summon upgrades one cue, and a bulk legendary exit surprises once (2.98423ms)
+✔ support, scripts and all-target damage do not invent single-target projectiles (0.256131ms)
+✔ emote mapping stays in the active skin set and explicit OFF preserves low state (0.200979ms)
+✔ gesture stages separate casting preparation, relief, and horizontal hit recovery (0.446865ms)
+✔ six presets inherit independently, remain bounded, and mechanically remove overshoot (1.082511ms)
+✔ centred mobile commanders exert vertically toward the field while hit direction stays authoritative (0.319366ms)
+✔ damage-driven torso recoil is monotonic and heavy hits double the previous base force (0.610769ms)
+✔ heavy-hit torso alternates horizontally and decays to rest without vertical travel (0.549217ms)
+✔ existing emote expressions get distinct gestures and all recover (0.271404ms)
+✔ default appearance is its own skin; explicit selection never inherits base sprites or thresholds (9.391193ms)
+✔ partial selected skin and awakened sets never borrow champion or other skin expressions (0.852469ms)
+✔ KEEP and no-sprite selected skins keep their own illustration even after awakening (0.207739ms)
+✔ frame failure order stays in selected set then selected illustration; target mismatch cannot select another champion skin (0.790065ms)
+✔ selected skin never borrows default champion art after all current-skin candidates fail (0.239596ms)
+✔ selected skin inherits only champion motion defaults while keeping its own images (3.977969ms)
+✔ quest default and its failure fallback stay within the selected skin (0.384642ms)
+✔ choice sets persist as JSON and preload their own frames and profile (2.347524ms)
+✔ low health does not replace awakened choice idle and absent reaction stays within that choice set (1.428004ms)
+✔ before awakening use the normal set; branch id alone does not awaken the champion (0.312034ms)
+✔ selected skin never borrows a different skin or default champion branch sprite (0.542206ms)
+✔ latest registered awakening artwork overrides low HP: 챔피언 미니언 A (2.015849ms)
+✔ latest registered awakening artwork overrides low HP: 챔피언 퍼플레인 (1.519911ms)
+✔ mirror match selects completed opponent rather than first identical champion (3.792714ms)
+✔ new completion without music preserves earlier awakened track; reconnect and defeat (0.454416ms)
+✔ published awakening portrait and music survive definition and runtime state creation (3.490223ms)
+✔ finisher branch music and profile survive reconnect and do not affect the other player (1.803994ms)
+✔ technique PRE_COMMIT probes a clone, cancel is canonical no-op, confirm commits once (11.463817ms)
+✔ optional PRE_COMMIT cancel abandons the action and empty optional choices auto-skip (3.520248ms)
+✔ Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commits once (6.230982ms)
+✔ Active ability PRE_COMMIT cancel leaves use flag unset and confirm consumes it once (2.13721ms)
+✔ ENTER_FIELD cancellation returns the card and refunds its complete play (1.973036ms)
+✔ zero-target ENTER_FIELD choice resolves as a no-op without opening cancel mode (1.641382ms)
+✔ mandatory and script cancellation clears only the authoritative continuation (0.606081ms)
+✔ latest card actual hand play: 고양이 (6.299133ms)
+✔ latest card actual hand play: 궁극의 언데드 (4.963225ms)
+✔ latest card actual hand play: 나토마토(에스페란사) (0.758639ms)
+✔ latest card actual hand play: 네브라, 어둠의 천사 (4.675847ms)
+✔ latest card actual hand play: 뇌진탕 펀치 (2.242967ms)
+✔ latest card actual hand play: 대폭주 (2.354614ms)
+✔ latest card actual hand play: 디 오리진 (0.762574ms)
+✔ latest card actual hand play: 떼껄룩(에스페란사) (1.708141ms)
+✔ latest card actual hand play: 라 토마티나 (1.520753ms)
+✔ latest card actual hand play: 라스트 서퍼 (1.931494ms)
+✔ latest card actual hand play: 레인보우 라이더 (1.141108ms)
+✔ latest card actual hand play: 로마니 마피아 신입 (0.532772ms)
+✔ latest card actual hand play: 로지 양 (2.475863ms)
+✔ latest card actual hand play: 루나(로마니 마피아) (0.760652ms)
+✔ latest card actual hand play: 리온 (0.560664ms)
+✔ latest card actual hand play: 리온(각성) (0.776155ms)
+✔ latest card actual hand play: 마지막 희망 (0.854912ms)
+✔ latest card actual hand play: 메카 사이드킥 (0.485152ms)
+✔ latest card actual hand play: 무지개 구슬마스터 (0.815183ms)
+✔ latest card actual hand play: 벨로나(로마니 마피아) (0.482739ms)
+✔ latest card actual hand play: 보디가드 호출 (0.780101ms)
+✔ latest card actual hand play: 블랙 마카롱(로마니 마피아) (0.659782ms)
+✔ latest card actual hand play: 세라핌 블로우 (0.774282ms)
+✔ latest card actual hand play: 세븐 스타 래리어트 (0.955231ms)
+✔ latest card actual hand play: 소버린 (0.62484ms)
+✔ latest card actual hand play: 스칼렛 파우더 (1.660381ms)
+✔ latest card actual hand play: 신입 사이드킥 (0.76623ms)
+✔ latest card actual hand play: 엘리트 호출 (1.052517ms)
+✔ latest card actual hand play: 오메가 좀비 (0.445833ms)
+✔ latest card actual hand play: 조킹루이지 (1.655363ms)
+✔ latest card actual hand play: 조킹루이지(로마니 마피아) (0.445002ms)
+✔ latest card actual hand play: 카르자엘, 파괴의 천사 (0.815003ms)
+✔ latest card actual hand play: 파괴의 강림 (0.956072ms)
+✔ latest card actual hand play: 파일럿 사이드킥 (0.892969ms)
+✔ latest card actual hand play: 판도라(폭주) (0.494316ms)
+✔ latest card actual hand play: 프로젝트 P (1.146626ms)
+✔ latest card actual hand play: 프로젝트 P(폭주) (0.623708ms)
+✔ latest card actual hand play: 플래티넘 구슬마스터 (0.730376ms)
+✔ latest card actual hand play: 하늘을 떨구는 자(각성) (0.521426ms)
+✔ latest card actual hand play: 하스이(로마니 마피아) (0.417772ms)
+✔ latest card actual hand play: 헬퍼 (0.648504ms)
+✔ latest card actual hand play: 황소할배 (0.428748ms)
+✔ latest card actual hand play: 흉내내기 (0.847431ms)
+✔ platinum spends only remaining gold, increases attack by two per gold and never health (0.54466ms)
+✔ bull damage cap is per hit and applies to effects without inventing armor (0.592933ms)
+✔ unlimited-deck origin adds attack only for every two wrestlers in graveyard (0.609046ms)
+✔ latest champion preparation is executable: 나토마토 (1.319463ms)
+✔ latest champion preparation is executable: 블랙마카롱 (0.328599ms)
+✔ latest champion preparation is executable: 챔피언 라 칼라베라 (0.204755ms)
+✔ latest champion preparation is executable: 챔피언 마왕 벨모르트 (0.265005ms)
+✔ latest champion preparation is executable: 챔피언 미니언 A (0.522107ms)
+✔ latest champion preparation is executable: 챔피언 판도라 (0.238385ms)
+✔ latest champion preparation is executable: 챔피언 퍼플레인 (0.149813ms)
+✔ latest champion preparation is executable: 챔피언 피 스타 세븐 (0.145237ms)
+✔ pinfall actual health 2 minus applied damage 2 => true (1.064344ms)
+✔ pinfall actual health 2 minus applied damage 3 => false (0.612661ms)
+✔ pinfall actual health 2 minus applied damage 0 => false (0.379695ms)
+✔ pinfall actual health 4 minus applied damage 4 => true (0.599182ms)
+✔ pinfall actual health 4 minus applied damage 5 => false (0.654314ms)
+✔ exact basic attack retires first and activates pinfall once (2.194095ms)
+✔ destroy-on-lethal does not activate pinfall or a pinfall preparation (0.593153ms)
+✔ Pandora selects multiple wrestlers, waits for confirmation, heals exact retirements only and counts enemy pinfalls (7.336466ms)
+✔ Calavera uses the current graveyard undead count rather than old accumulated retirements (1.067739ms)
+✔ Minion A finisher choices count generation rather than card play and champion rarity generates the alternative (1.095991ms)
+✔ P Star uses five successful abilities instead of stale seven (3.290846ms)
+✔ Natomato dodge is granted only once per wrestler while new wrestlers can receive it (1.684736ms)
+✔ Nebra grants +2/+2 and attack drain, rather than losing either clause (2.431308ms)
+✔ Sovereign revives with a cumulative -2/-2 and stops at zero maximum health (1.166185ms)
+✔ Omega grows on allied retirement and separately grows and creates a zombie on enemy kills (1.567833ms)
+✔ Cat buffs generated mafia in hand and summoned mafia once per entry (1.252313ms)
+✔ Mafia joker is damage-invulnerable only with another mafia ally and buffs the attacking ally before combat (1.32418ms)
+✔ Esperansa waives the upgrade payment but still executes the upgrade once (0.709215ms)
+✔ Rosie returns every existing hand card preserving stats then fills exactly to the existing hand cap (1.489817ms)
+✔ Mimic persists three distinct candidates, excludes itself, cannot cancel and grants only the selected finisher (8.745758ms)
+✔ Scarlet distributes exactly five attack points and paid upgrade distributes exactly five damage (2.172944ms)
+✔ Rainbow Rider summons an actual deck instance, runs its entry, upgrades that instance and returns at a lower cost (1.879697ms)
+✔ Rainbow Rider does not pay an upgrade when no eligible deck summon exists (0.683768ms)
+✔ bodyguard finisher preserves ability uses, adds a persistent bonus and summons after later ability use (9.543842ms)
+✔ elite finisher fills only empty slots and upgrades mercenary ability without resetting usage (2.999774ms)
+✔ last surfer retires and heals the current health, then Purple Rain can affect enemy champion and hand cost (9.625643ms)
+✔ Purple Rain preparation excludes allied wrestler damage and opponent/combat damage (0.950935ms)
+✔ concussion punch only grants the free epic on real retirement and persists subsequent ability generation (8.275654ms)
+✔ frenzy destroys one target and summons Pandora with half of the target current stats added to base (1.180456ms)
+✔ last hope directly summons the new tank and ordinary retirement continues healer and dealer stages (2.17777ms)
+✔ Rainbow Master counts distinct other definitions only and grants threshold keywords (1.124714ms)
+✔ Tomatina paid upgrade damages the other enemies and champion once, never hits the original target twice (1.166045ms)
+✔ zero-card or opponent generation does not complete the champion-rarity Minion A option (39.18074ms)
+✔ sorcerer destruction preparation counts both players and excludes retirement (0.976873ms)
+✔ a fusion material killed by an entry listener remains retired; its successful play cannot roll back into hand (1.242959ms)
+✔ every one of the 195 administrator records preserves its authored stats, text, tags and publication status (19.815357ms)
+✔ latest champion actual ability: 나토마토 (1.417219ms)
+✔ latest champion actual ability: 블랙마카롱 (0.876544ms)
+✔ latest champion actual ability: 챔피언 라 칼라베라 (0.863706ms)
+✔ latest champion actual ability: 챔피언 루나 (5.881342ms)
+✔ latest champion actual ability: 챔피언 마왕 벨모르트 (6.606441ms)
+✔ latest champion actual ability: 챔피언 미니언 A (2.114617ms)
+✔ latest champion actual ability: 챔피언 여울 (0.659251ms)
+✔ latest champion actual ability: 챔피언 예거 (1.052156ms)
+✔ latest champion actual ability: 챔피언 크루세이더즈 (1.454294ms)
+✔ latest champion actual ability: 챔피언 판도라 (0.912348ms)
+✔ latest champion actual ability: 챔피언 퍼플레인 (1.340034ms)
+✔ latest champion actual ability: 챔피언 피 스타 세븐 (0.976523ms)
+✔ Project P spell stuns and silences existing wrestlers and summons exactly the rampage wrestler; champion tokens retain silence immunity (1.55906ms)
+✔ Champion ability uses the direct action when no player choice is needed (1.735693ms)
+✔ the selected current ability effects determine targeted Champion action (0.166828ms)
+✔ stale target and version rejections request an authoritative resync (0.119438ms)
+✔ effect target action follows the authoritative targeting phase (0.130815ms)
+✔ multi-target confirmation is valid only after selecting the minimum; catalog candidates remain explicit (0.766971ms)
+[11:30:35.555] INFO (200554): request completed
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 60
+REJECT cancel INVALID_ACTION 현재 상태에서 허용되지 않는 action입니다.
+✔ actual catalog PvP Pandora selection survives persisted reconnect, hides opponent targets and resolves exactly once (4768.384236ms)
+✔ actual catalog PvP Mimic candidates are private, persisted and mandatory; chosen finisher is synchronized once (128.744952ms)
+[11:30:35.829] INFO (200561): request completed
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 58
+[11:30:35.861] INFO (200561): request completed
+    req: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/admin/battle-sprites"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 20
+[11:30:35.877] INFO (200561): request completed
+    req: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/admin/battle-sprites/default/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 12
+[11:30:35.885] INFO (200561): request completed
+    req: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/admin/battle-sprites"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 7
+[11:30:35.904] INFO (200561): request completed
+    req: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/admin/battle-sprites/default/reward-champion"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 15
+[11:30:35.914] INFO (200561): request completed
+    req: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/admin/battle-sprites/default/reward-champion"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 6
+[11:30:35.925] INFO (200561): request completed
+    req: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/admin/battle-sprites/default/reward-champion"
+    }
+    res: {
+      "statusCode": 400
+    }
+    responseTime: 8
+[11:30:35.943] INFO (200561): request completed
+    req: {
+      "id": 8,
+      "method": "DELETE",
+      "url": "/api/admin/game-media/branch-music"
+    }
+    res: {
+      "statusCode": 409
+    }
+    responseTime: 10
+✔ branch images, music, size and labels save/reenter through authenticated admin routes, including conflict rejection and media references (4853.897288ms)
+[11:30:35.957] INFO (200561): request completed
+    req: {
+      "id": 9,
+      "method": "PATCH",
+      "url": "/api/admin/battle-sprites/default/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10
+[11:30:36.810] INFO (200561): request completed
+    req: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[11:30:36.816] INFO (200561): auth/me REQUEST_RECEIVED
+    authStage: "REQUEST_RECEIVED"
+    durationMs: 0
+[11:30:36.816] INFO (200561): auth/me AUTH_MIDDLEWARE_ENTER
+    authStage: "AUTH_MIDDLEWARE_ENTER"
+    durationMs: 0
+[11:30:36.816] INFO (200561): auth/me SESSION_VERIFY_START
+    authStage: "SESSION_VERIFY_START"
+    durationMs: 0
+[11:30:36.819] INFO (200561): auth/me SESSION_VERIFY_END
+    authStage: "SESSION_VERIFY_END"
+    durationMs: 3
+[11:30:36.819] INFO (200561): auth/me USER_LOOKUP_START
+    authStage: "USER_LOOKUP_START"
+    durationMs: 0
+[11:30:36.819] INFO (200561): auth/me USER_LOOKUP_END
+    authStage: "USER_LOOKUP_END"
+    durationMs: 0
+[11:30:36.819] INFO (200561): auth/me AUTH_MIDDLEWARE_EXIT
+    authStage: "AUTH_MIDDLEWARE_EXIT"
+    durationMs: 3
+[11:30:36.819] INFO (200561): auth/me RESPONSE_SENT
+    authStage: "RESPONSE_SENT"
+    durationMs: 3
+[11:30:36.819] INFO (200561): request completed
+    req: {
+      "id": 11,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[11:30:37.015] INFO (200561): request completed
+    req: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[11:30:37.307] INFO (200561): request completed
+    req: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[11:30:37.360] INFO (200561): request completed
+    req: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+[11:30:37.636] INFO (200561): request completed
+    req: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/admin/battle-sprites"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 6
+[11:30:38.082] INFO (200561): request completed
+    req: {
+      "id": 16,
+      "method": "PATCH",
+      "url": "/api/admin/battle-sprites/default/reward-champion"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 9
+[11:30:38.310] INFO (200561): request completed
+    req: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 1
+[11:30:38.311] INFO (200561): auth/me REQUEST_RECEIVED
+    authStage: "REQUEST_RECEIVED"
+    durationMs: 0
+[11:30:38.311] INFO (200561): auth/me AUTH_MIDDLEWARE_ENTER
+    authStage: "AUTH_MIDDLEWARE_ENTER"
+    durationMs: 0
+[11:30:38.311] INFO (200561): auth/me SESSION_VERIFY_START
+    authStage: "SESSION_VERIFY_START"
+    durationMs: 0
+[11:30:38.313] INFO (200561): auth/me SESSION_VERIFY_END
+    authStage: "SESSION_VERIFY_END"
+    durationMs: 2
+[11:30:38.313] INFO (200561): auth/me USER_LOOKUP_START
+    authStage: "USER_LOOKUP_START"
+    durationMs: 0
+[11:30:38.313] INFO (200561): auth/me USER_LOOKUP_END
+    authStage: "USER_LOOKUP_END"
+    durationMs: 0
+[11:30:38.313] INFO (200561): auth/me AUTH_MIDDLEWARE_EXIT
+    authStage: "AUTH_MIDDLEWARE_EXIT"
+    durationMs: 2
+[11:30:38.313] INFO (200561): auth/me RESPONSE_SENT
+    authStage: "RESPONSE_SENT"
+    durationMs: 2
+[11:30:38.313] INFO (200561): request completed
+    req: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[11:30:38.446] INFO (200561): request completed
+    req: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2
+[11:30:38.744] INFO (200561): request completed
+    req: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/admin/session"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 4
+[11:30:38.785] INFO (200561): request completed
+    req: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/admin/server-maintenance"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3
+[11:30:39.076] INFO (200561): request completed
+    req: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/admin/battle-sprites"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 5
+✔ mobile administrator selects a branch, edits its scale, saves and re-enters using the real API (3758.133495ms)
+ℹ tests 209
+ℹ suites 0
+ℹ pass 209
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14633.275735

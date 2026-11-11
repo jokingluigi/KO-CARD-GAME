@@ -1,3 +1,4 @@
+import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import {createAIDecisionClient} from "@/lib/ai-decision-client";
 import {useTutorialAutoReward} from "@/components/tutorial/tutorial-rewards";
 import {fetchTutorialCatalog} from '@/components/tutorial/tutorial-client';
@@ -880,7 +881,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       audioManager.stopBattleAudio();
       return;
     }
-    const completedMusic = questMusic(gameState);
+    const completedMusic = questMusic(gameState,aiCosmetics);
     if (completedMusic) {
       audioManager.playQuestComplete(completedMusic.assetUrl, completedMusic.volume);
     } else {
@@ -891,7 +892,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         audioManager.stopBgm();
       }
     }
-  }, [gameState.status, gameState.bgmId, gameState.latestQuestCompletedChampionId, gameState.players, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady]);
+  }, [gameState.status, gameState.bgmId, gameState.latestQuestCompletedChampionId, gameState.players, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady, aiCosmetics]);
 
   useEffect(() => {
     audioManager.setBgmVolume(bgmVolume);
@@ -1275,7 +1276,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   function handleEffectTarget(targetId: string) {
     if(!allowPractice({type:'SELECT_EFFECT_TARGET',playerId:gameState.players[0].id,targetId}))return;
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS') return;
-    if (!gameState.targetingState?.active || !gameState.targetingState.validTargetIds.includes(targetId)) {
+    if (!acceptsEffectSelection(gameState.targetingState,targetId)) {
       setPlayError('선택할 수 없는 대상입니다.');
       return;
     }

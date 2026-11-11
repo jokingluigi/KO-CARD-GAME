@@ -46,3 +46,11 @@ test('published awakening portrait and music survive definition and runtime stat
     assert.equal(questPortrait(champion),record.imageUrl);
   }
 });
+
+test('finisher branch music and profile survive reconnect and do not affect the other player',()=>{
+ const s=mirror(),c=s.players[0].champion!;c.questCompleted=true;c.selectedFinisherId='option-2';
+ const f=(name:string)=>({url:'https://example.invalid/'+name+'.png',self:{scale:1,x:50,y:35,flip:false,crop:false},opponent:{scale:1,x:50,y:35,flip:true,crop:false}});
+ c.presentationLines={BATTLE_SPRITE:{version:1,frames:{default:f('base')},reactions:{},finishers:{'option-1':{music:{name:'A',assetUrl:'https://example.invalid/a.mp3',volume:30},portrait:f('a')},'option-2':{music:{name:'B',assetUrl:'https://example.invalid/b.mp3',volume:60},portrait:f('b')}}}};
+ s.players[1].champion!.questCompleted=false;s.events.push({type:'CHAMPION_QUEST_COMPLETED',playerId:s.players[0].id});
+ const restored=JSON.parse(JSON.stringify(s));assert.deepEqual(questMusic(restored),{assetUrl:'https://example.invalid/b.mp3',volume:60});assert.equal(questPortrait(restored.players[0].champion),'https://example.invalid/b.png');assert.equal(questPortrait(restored.players[1].champion),'/normal.png');
+});

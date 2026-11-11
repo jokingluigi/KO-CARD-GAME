@@ -21,6 +21,7 @@ import {
   cardsTable,
   cardSkinDefinitionsTable,
   championsTable,
+  gameMediaTable,
   packDefinitionsTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -246,6 +247,11 @@ export async function verifyCatalogAssets(
   assets: Record<string, string>,
   known = new Set<string>(),
 ) {
+  const config=parseBattleSprite(assets.__battle);
+  for(const entry of Object.values(config?.finishers??{}))if(entry.music){
+    const [media]=await db.select({id:gameMediaTable.id}).from(gameMediaTable).where(and(eq(gameMediaTable.mediaType,'BGM'),eq(gameMediaTable.assetUrl,entry.music.assetUrl))).limit(1);
+    if(!media)throw new CosmeticError(400,'선택지 음악은 관리자에서 업로드한 음악을 사용하세요.');
+  }
   for (const url of new Set(
     Object.entries(assets)
       .filter(([key]) => key !== "__display" && key !== "__defaultGrant")

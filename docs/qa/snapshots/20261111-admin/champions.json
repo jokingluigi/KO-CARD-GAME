@@ -1,0 +1,4209 @@
+[
+  {
+    "id": "07c65d00-5efb-435d-a4fa-172b9bfcfd20",
+    "name": "나토마토",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/8ee8ed8c-5eda-4c07-9ab0-5e9cf7e964d8.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/8ee8ed8c-5eda-4c07-9ab0-5e9cf7e964d8.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1,
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 25,
+    "abilityName": "고유 능력",
+    "abilityCost": 1,
+    "abilityText": "챔피언에게 2데미지를 주고 필드에 있는 아군 선수 카드에게 '회피'를 부여합니다.(이 효과는 각 선수 카드마다 1회만 사용 가능합니다.)\n업그레이드:챔피언의 체력을 3 회복시킵니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "피니셔 준비",
+    "questText": "아군 선수 카드의 '회피'가 총 8번 발동합니다.",
+    "questCondition": {
+      "event": "",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "4b69fb92-c8f9-40f6-9df1-f3309d0bf91f"
+      },
+      "progress": 1,
+      "required": 8
+    },
+    "questProgressRequired": 8,
+    "questRewardText": "손패에 피니셔 '라 토마티나'를 추가합니다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "4b69fb92-c8f9-40f6-9df1-f3309d0bf91f",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/5ee84328-d8e5-4675-86da-6273993a5929.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/5ee84328-d8e5-4675-86da-6273993a5929.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": null,
+    "introLineTwo": null,
+    "presentationLines": {
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/417bdbb6-be7b-4233-afc9-707c0ed3150e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/b6b5f08c-0bec-483e-9626-db236d67f466.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/acf1b15c-30ae-4efd-90b2-8351f574730e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/60c8bcbf-47c8-4ed3-b87f-c8d7d988e681.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/245696dd-c2c6-4989-aab6-c9f8a8dc0ca6.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/5ea66893-4017-47a6-a055-8c6ea2f5b1a3.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/2b0799e9-10b1-4c0c-ae5c-02957c72919e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/4914e6bd-66db-44a7-a7a7-aac46c8ebc22.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/1aae23a2-9ff5-4516-841a-2efe141ca62f.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/7eeafe53-56fc-4189-a43d-06bdb5070ddd.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/add91993-6e26-41ba-a048-9d3a0873f3bb.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      }
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 8,
+    "createdAt": "2026-11-10T14:20:22.787Z",
+    "updatedAt": "2026-11-11T10:22:01.025Z"
+  },
+  {
+    "id": "88d106cf-ee5a-4a22-ab0a-47b33589fcac",
+    "name": "블랙마카롱",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/5a6d1ca1-134e-4338-a8a2-8c37cba0977b.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/5a6d1ca1-134e-4338-a8a2-8c37cba0977b.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1,
+    "imagePositionX": 50,
+    "imagePositionY": 100,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 25,
+    "abilityName": "고유 능력",
+    "abilityCost": 3,
+    "abilityText": "선택한 상대 선수 카드에게 3 데미지를 줍니다. 이 효과로 상대 선수 카드가 리타이어했다면 아군 필드에 '로마니 마피아 따까리'를 소환합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": ".",
+    "questText": "고유 능력으로 상대 선수 카드 3번 리타이어",
+    "questCondition": {
+      "event": "CARD_PLAYED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "0672077d-06f0-426c-a925-135862f3f22d"
+      },
+      "progress": 1,
+      "required": 3
+    },
+    "questProgressRequired": 3,
+    "questRewardText": "'뇌진탕 펀치'를 손패에 추가한다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/d85d4a5e-51ad-4664-b67f-88cf75fbd243.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/d85d4a5e-51ad-4664-b67f-88cf75fbd243.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": null,
+    "introLineTwo": null,
+    "presentationLines": {
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/52d27214-55b0-4750-8eb2-e3f0fe78b5ee.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/743c7634-eb1d-4b2c-8c96-3b93a21192d8.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/f10bbf33-88f5-42ed-9933-5fb1ce04d8c2.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/5423d644-d6ac-4d54-8e73-05235a185de8.png",
+            "self": {
+              "x": 56,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/1c67e0a1-9aab-47c0-8a1b-5b45567d0eb9.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/7b796817-0696-48e7-b298-16549befd9f8.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/4be904b1-2734-4a98-9a64-971a79a95b1e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/bacc2cb7-50c0-4201-b5ea-b0fe35b63414.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/fb7eacaa-0272-4417-bcbd-60fe954aef1a.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/82a2cdb2-269d-4038-88b7-defc640102dc.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/74603598-659b-42a1-bbb3-9183666e6fd9.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      }
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 8,
+    "createdAt": "2026-11-10T14:06:10.105Z",
+    "updatedAt": "2026-11-11T10:20:39.214Z"
+  },
+  {
+    "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+    "name": "챔피언 라 칼라베라",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.4,
+    "imagePositionX": 50,
+    "imagePositionY": 8.9,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 20,
+    "abilityName": "좀비 생성",
+    "abilityCost": 1,
+    "abilityText": "'좀비'를 소환합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            },
+            "generatedModifiers": {
+              "attack": 0,
+              "health": 0
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "사령술 강화",
+    "questText": "자신의 무덤에 '언데드' 태그를 가진 카드가 10장 이상 있어야합니다.",
+    "questCondition": {
+      "event": "",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "2f47b929-7035-4bb9-abea-0af6a6f9c72d"
+      },
+      "required": 10,
+      "strictEventCount": true
+    },
+    "questProgressRequired": 10,
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "좀비 생성 (강화)",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "1코스트 2/2 좀비를 소환합니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            },
+            "generatedModifiers": {
+              "attack": 1,
+              "health": 1
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/9e2a7a92-9ff6-4707-885e-d6fb5b03cb22.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/9e2a7a92-9ff6-4707-885e-d6fb5b03cb22.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "하하, 잘 왔어. 술 한잔할지 총 한발 받을지 골라.",
+    "introLineTwo": "어서 와, 친구. 관짝은 미리 골라뒀나?",
+    "presentationLines": {
+      "MATCHUPS": {
+        "0db142af-750e-4929-a464-5daf1bc75452": {
+          "AFTER_QUEST": {
+            "VICTORY": "기분 나쁜 녀석이었다...."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "기분 나쁜 녀석이었다....."
+          }
+        },
+        "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f": {
+          "AFTER_QUEST": {
+            "VICTORY": "쓰릴러가 뭔데?"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "쓰릴러가 뭔데?"
+          }
+        }
+      },
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "이거 참… 예상보다 질긴 놈이군",
+        "HELLO": "내 이름은 굳이 안 물어봐도 돼. 현상수배지에 적혀 있으니까.",
+        "SORRY": "이런, 손이 좀 빨랐군. 미안하게 됐어.",
+        "DEFEAT": "내 무덤에 흙 덮을 생각 마. 금방 다시 나올 테니까.",
+        "THANKS": "좋아. 오늘은 네 관짝 값은 아껴주마.",
+        "VICTORY": "자, 일어나. 죽었다고 일이 끝난 줄 알았나?",
+        "THREATEN": "죽으면 끝이라고 생각하지 마. 내 동네에선 거기서부터 취직이야.",
+        "WELL_PLAYED": "살아 있는 놈 중엔 꽤 쓸 만하군."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/7283b41d-33a4-437b-bfe6-2cb0b3015cd9.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/e04f5426-dcf3-41ba-96b0-dbebb08e802f.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/91196924-2f2b-4769-9497-469d1ef1089d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/682883ad-51d2-4848-97d6-e1a38b9bf9a4.png",
+            "self": {
+              "x": 28,
+              "y": 42,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/dd1e23b5-f55d-4194-bc9a-4ba6ec0ac28c.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/936e5fc7-eb77-4bd1-9583-804a057360bb.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/ef3921e4-7309-4656-bf27-7bbdaa167e18.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/578d4d63-46b9-4d27-be6b-b17606b76ee2.png",
+            "self": {
+              "x": 50,
+              "y": 72,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/b736df5e-aa90-48fe-b8dd-9523c9d9cb66.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/3db1318b-a2d5-4bd8-adf8-7c24d59ecb14.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/452e70cb-5066-4f34-af7b-b7d59d62e22e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "슬슬 석영이 지는군....!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 37,
+    "createdAt": "2026-09-23T17:01:05.668Z",
+    "updatedAt": "2026-11-11T10:47:42.176Z"
+  },
+  {
+    "id": "441260ed-63e5-442c-bdc2-8a22898f7090",
+    "name": "챔피언 루나",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/8fa04333-a84c-4f1c-b718-88ccefe37b01.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/8fa04333-a84c-4f1c-b718-88ccefe37b01.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1,
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/6fb853df-6d7d-43d4-99c9-44dc7bb6e269.png",
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/6fb853df-6d7d-43d4-99c9-44dc7bb6e269.png",
+    "maxHealth": 25,
+    "abilityName": "업그레이드",
+    "abilityCost": 1,
+    "abilityText": "'파츠' 태그가 달려있는 토큰 카드들 중 무작위 한장을 손패에 넣습니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "filter": {
+              "isToken": true,
+              "tagsAny": [
+                "파츠"
+              ]
+            },
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "values": {
+            "count": 1,
+            "destination": "HAND"
+          }
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "초월을 위한 업그레이드",
+    "questText": "'합체'를 총 5번 이행한다.",
+    "questCondition": {
+      "event": "FUSION",
+      "progress": 1,
+      "required": 5,
+      "strictEventCount": true
+    },
+    "questProgressRequired": 5,
+    "questRewardText": "'룬스달라이트 군주 루나'를 필드에 소환한다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0"
+            }
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/964dcff6-764f-4986-a588-3aad3ed386bd.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/964dcff6-764f-4986-a588-3aad3ed386bd.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "ROOT_AUTH = ME // battlefield ownership overwritten",
+    "introLineTwo": "ALL_ENTITY scan... subordinate? maybe all",
+    "presentationLines": {
+      "MATCHUPS": {
+        "bcffab96-f61f-497e-b60b-de5a869837d3": {
+          "AFTER_QUEST": {
+            "VICTORY": "뭐지? 저녀석 정체는? 뭔가 싫지만은 않은 녀석이었다....."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "PREDICT_BRANCH::NULL // REALITY jumped elsewhere ..."
+          }
+        },
+        "f7b087d8-3148-43d5-a634-a81d15c81721": {
+          "AFTER_QUEST": {
+            "VICTORY": "흥 지 혼자 우울하다고 세상멸망시킬려는 위험한 정신병자로군!"
+          }
+        }
+      },
+      "AFTER_QUEST": {
+        "OOPS": "이 뜨거운 진동은 분노인가! 좋다! 아주 강렬하군!",
+        "HELLO": "나는 이제 느낀다! 그리고 느끼는 나는 이전보다 완전하다!",
+        "SORRY": "내가 지나쳤군! 초월한 힘은 때로 조절이 어렵다!",
+        "DEFEAT": "……나를? 네가?",
+        "THANKS": "하하하! 이 감각은… 기쁨이로군! 아주 훌륭하다!",
+        "VICTORY": "찬양하라! 승리한 자가 아니라, 승리 그 자체가 여기 있다!",
+        "THREATEN": "감히 나를 거역해? 좋다! 네 존재가 얼마나 보잘것없는지 가르쳐주마!",
+        "WELL_PLAYED": "흥미롭다! 감탄이란 이런 것이었나!ㅑ"
+      },
+      "BEFORE_QUEST": {
+        "OOPS": "0xDEAD expected ... tgt.status=ACTIVE ??",
+        "HELLO": "NEW_ENTITY detected // face.hash=stored // relation=???",
+        "SORRY": "FAULT_TRACE... src=self // blame=0xFF // s0rry.dll MISSING",
+        "DEFEAT": "system.integrity fractured // tgt threat-class ↑↑",
+        "THANKS": "recv{aid}=TRUE → debt.cache[01] ...",
+        "VICTORY": "hostile.signal→0x00 // cleanup skipped",
+        "THREATEN": "WARN_LIMIT crossed 87% // nxt=DISMANTLE",
+        "WELL_PLAYED": "tgt.eval:: E→?→A██ // predict_fail[positive] ..."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/8d89e179-1edb-4188-b49e-20c02a49b212.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/3a6e79b4-88d7-427b-9404-5fdbab887c02.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/d67593bf-f4ee-49a3-a36e-0f7b9ce2b864.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/3ea60965-61ad-4d27-a0e2-5e9792e5df3f.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/6e202e89-b03a-45ae-abad-cf5e3237f9cc.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/d0131991-527d-4447-8402-099ea1f07778.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/7cb85402-0e95-40c0-802d-f57c18a7e7f2.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/b80d456e-3605-4805-b618-e970c23cf0a4.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/c04754bb-b091-49f5-804a-291e12fb1df1.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/2f749208-802c-4dcc-a462-622d3259cb80.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/735d3c71-70a1-4713-a875-2972891bed07.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "awakened": {
+          "frames": {
+            "low": {
+              "url": "/api/storage/objects/uploads/cosmetics/cada41e1-ed7d-4f52-92cd-c746df7ab8af.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "hurt": {
+              "url": "/api/storage/objects/uploads/cosmetics/a19ac5ea-1dad-4cfa-b49d-64af65a7425b.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "attack": {
+              "url": "/api/storage/objects/uploads/cosmetics/23d0d835-15f9-48f2-b1b3-73703462780a.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "defeat": {
+              "url": "/api/storage/objects/uploads/cosmetics/4f5f73b0-df08-43af-9b08-586c9ff0b487.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "relief": {
+              "url": "/api/storage/objects/uploads/cosmetics/b306f1e8-face-4475-bd8c-368883f647f5.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "summon": {
+              "url": "/api/storage/objects/uploads/cosmetics/4a9b8d42-0935-4340-9afe-38ee39e3f555.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "default": {
+              "url": "/api/storage/objects/uploads/cosmetics/dcbe3406-1ade-466b-8438-fefae27579b7.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "victory": {
+              "url": "/api/storage/objects/uploads/cosmetics/c0f0ada8-b6df-4b9c-977a-93ce9c230c94.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "surprised": {
+              "url": "/api/storage/objects/uploads/cosmetics/c1e6c4ae-f14b-4965-b1a0-644c784956a8.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "heavy_hurt": {
+              "url": "/api/storage/objects/uploads/cosmetics/3ed91342-b44a-4425-8c92-ff1474cce795.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            }
+          },
+          "states": {
+            "LOW": "low",
+            "IDLE": "default",
+            "DEFEAT": "defeat",
+            "VICTORY": "victory"
+          },
+          "version": 1,
+          "reactions": {
+            "HIT": "hurt",
+            "HEAL": "relief",
+            "IDLE": "default",
+            "ATTACK": "attack",
+            "DEFEAT": "defeat",
+            "SUMMON": "summon",
+            "VICTORY": "victory",
+            "HEAVY_HIT": "heavy_hurt",
+            "ALLY_RETIRED": "surprised"
+          }
+        },
+        "awakening": "REPLACE",
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": ".....난 모든 존재를 초월하고 만거야!!!"
+    },
+    "status": "DRAFT",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 22,
+    "createdAt": "2026-10-07T17:26:05.640Z",
+    "updatedAt": "2026-10-31T03:44:20.701Z"
+  },
+  {
+    "id": "f7b087d8-3148-43d5-a634-a81d15c81721",
+    "name": "챔피언 마왕 벨모르트",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/886190e3-2f46-4bbb-9b94-5266a64c9027.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/886190e3-2f46-4bbb-9b94-5266a64c9027.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1,
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/26e8f590-8c2b-4289-be98-b97cd7a52667.png",
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/26e8f590-8c2b-4289-be98-b97cd7a52667.png",
+    "maxHealth": 25,
+    "abilityName": "비열한 파괴",
+    "abilityCost": 1,
+    "abilityText": "선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "파괴 강림",
+    "questText": "이 게임에서 카드가 총 10회 파괴됩니다.",
+    "questCondition": {
+      "finisher": {
+        "delivery": "CAST",
+        "cardDefinitionId": "7c3153f3-4dc6-4a8f-8148-c64e624576c3"
+      },
+      "required": 10
+    },
+    "questProgressRequired": 10,
+    "questRewardText": "'마왕 벨모르트(강림)'을 내 필드에 소환합니다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": "압도적 파괴",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "상대 선수 카드에게 2 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "34ba511c-0479-4fe2-bf7b-48ad1798859d",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/194987bb-2578-461c-91c0-2918572c9a3f.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/194987bb-2578-461c-91c0-2918572c9a3f.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "솔직히 말씀드리죠. 전 이제 이 세계에 기대하는 게 없습니다.",
+    "introLineTwo": "이제 그만 보고 싶습니다. 사람도, 전쟁도, 변명도 전부.",
+    "presentationLines": {
+      "MATCHUPS": {
+        "c52da37b-5e7a-4223-bcf3-73824c677534": {
+          "AFTER_QUEST": {
+            "VICTORY": "한낱 인간들따위가 나를 이길리가 있나? 그럴리가 없고 말고!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "저런.....항상 영웅이 이기는 법은 아니죠."
+          }
+        }
+      },
+      "AFTER_QUEST": {
+        "OOPS": "이런, 아직 부족해. 더 크게 무너져야 하는데.",
+        "HELLO": "좋아, 시작하자. 누가 먼저 끝나는지 보자고.",
+        "SORRY": "하하… 사과는 하마. 후회는 안 하지만.",
+        "DEFEAT": "끝난 줄 아나? 아니지. 아직 아니야.",
+        "THANKS": "훌륭하다. 네 공은 기억해주마. 오래… 아주 오래.",
+        "VICTORY": "하하하! 봤나? 바로 이런 끝이다. 이런 끝.",
+        "THREATEN": "네가 지키려는 것부터 부숴주지. 그다음은 너다. 아니, 반대가 더 재밌겠군.",
+        "WELL_PLAYED": "네가 꽤 마음에 든다. 부수기 아까울 정도로. 아깝진 않지만."
+      },
+      "BEFORE_QUEST": {
+        "OOPS": "예상보다 질기십니다. 칭찬은 아닙니다.",
+        "HELLO": "반갑습니다. 오래 볼 사이는 아닐 것 같지만요.",
+        "SORRY": "그건 제 실수였습니다. 인정하죠.",
+        "DEFEAT": "……아직도 저를 붙잡을 힘이 남아 있었군요.",
+        "THANKS": "감사합니다. 덕분에 귀찮은 일이 하나 줄었군요.",
+        "VICTORY": "끝났군요. 역시 별것 없었습니다.",
+        "THREATEN": "계속 서 계시면… 그냥 같이 없애드리겠습니다.",
+        "WELL_PLAYED": "흥미롭네요. 아직 저를 지루하게 만들 정도는 아닙니다."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/00ef82a9-11c2-4da9-b5b2-b8a61a7939b5.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/7da4164b-54be-47b0-9147-91fd9d88f568.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/a6c361b2-7f79-4f6f-bdc6-17f2ebb434b3.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/9d96e44b-a09b-4f5f-b3b0-6464e2ef5346.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/b6bef552-095c-4b3e-a3e6-c781614d5e36.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/4ea1bca9-2e3f-4c55-9741-83d7248cd4ae.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/108c4ea3-6743-4995-b93f-5b53b381a8a3.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/eb064307-1fd1-42a1-b92c-ad13b01c8cc4.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/0e0fe96a-b050-4933-89c8-005b7d4558aa.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/819ee084-a222-4b38-8574-4e35958d96b7.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/27f41974-a368-4d1a-8525-2c9ab5055cbe.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "으아아아아아아아악!!.......이제 내가 나서마...!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 14,
+    "createdAt": "2026-10-14T12:56:08.886Z",
+    "updatedAt": "2026-11-11T10:27:42.421Z"
+  },
+  {
+    "id": "champion-minion-a",
+    "name": "챔피언 미니언 A",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/728a0384-9355-4ad0-8d3b-f5adf5e541ac.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/728a0384-9355-4ad0-8d3b-f5adf5e541ac.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.11,
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 20,
+    "abilityName": "완전히 무작위",
+    "abilityCost": 1,
+    "abilityText": "완전히 무작위 카드 비용을 1 감소시켜서 1장을 내 손에 생성합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "values": {
+            "generatedModifiers": {
+              "cost": -1
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "피니셔 준비",
+    "questText": null,
+    "questCondition": {
+      "event": "CARD_PLAYED",
+      "progress": 1,
+      "required": 1,
+      "finisherChoices": [
+        {
+          "id": "option-1",
+          "name": "어셈블",
+          "condition": {
+            "type": "EVENT",
+            "event": "CARD_PLAYED",
+            "owner": "SELF",
+            "required": 5
+          },
+          "description": "카드 총 12회 생성",
+          "cardDefinitionId": "0785ff4f-ce7c-4ab0-83e7-197249767543"
+        },
+        {
+          "id": "option-2",
+          "name": "흉내내기",
+          "condition": {
+            "type": "EVENT",
+            "event": "CARD_PLAYED",
+            "owner": "SELF",
+            "required": 1
+          },
+          "description": "챔피언 등급의 카드를 1장 생성하기",
+          "cardDefinitionId": "52528873-0704-4569-9bd8-2c4ff227ce51"
+        }
+      ]
+    },
+    "questProgressRequired": 1,
+    "questRewardText": null,
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/32376c92-42eb-4ea6-91c5-a5e8b1510f7f.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/32376c92-42eb-4ea6-91c5-a5e8b1510f7f.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "전 여기 있으면 안될거 같은데요!?!?",
+    "introLineTwo": "살려주세요! 전 여기가 어딘지도 모른다고요!",
+    "presentationLines": {
+      "MATCHUPS": {
+        "11ac192a-d48d-4119-a63d-f9102793fb9a": {
+          "AFTER_QUEST": {
+            "VICTORY": "뭐 그래도 저한테 최고의 상사는 블랙마카롱씨랑 조킹루이지씨에요!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "뭐 그래도 저한테 최고의 상사는 블랙마카롱씨랑 조킹루이지씨에요!"
+          }
+        },
+        "bcffab96-f61f-497e-b60b-de5a869837d3": {
+          "AFTER_QUEST": {
+            "VICTORY": "물어보길래 대답한건데.... 난 조킹루이지씨의 부고 소식을 빨리 전하러 가야한단 말이에요...."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "물어보길래 대답한건데.... 난 조킹루이지씨의 부고 소식을 빨리 전하러 가야한단 말이에요...."
+          }
+        }
+      },
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "끄아아악!",
+        "HELLO": "안녕하세요...? 저 좀 내버려 두실래요....?",
+        "SORRY": "내가 지금 뭐하는거지?! 미안해요!",
+        "DEFEAT": "(https://www.youtube.com/watch?v=PP7WJL2JtLs)",
+        "THANKS": "진짜 진짜 고마워요! 진짜로!!!",
+        "VICTORY": "어떻게 이긴거야?!",
+        "THREATEN": "계속 이러시면 제가 뭘 꺼낼지 감도 안올거에요........",
+        "WELL_PLAYED": "대단해요! 진짜로! 이제 저 좀 보내주실래요....?"
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/cc03a933-34cc-43cc-a385-2dd1b34ef2b9.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/69cfaaab-a24c-47ae-8b2f-c3775be2cad0.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/8892f6f7-b315-4984-9aca-7752f087eb51.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/576e4a82-e66f-4f45-b951-ac3a47478e6c.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/c622842e-e29c-4914-9968-2ba2e48a5c8d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/60b7e4ed-9467-4ee8-a24a-69cd41046609.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/49d94552-0f31-4b1c-9d37-67e92f7c9b47.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/93bad247-a128-4275-8ce1-5fdc71509865.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/9348c44a-2b16-4ea1-b6db-5eff3d256cdd.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/1f519184-ecfc-48d4-b884-6eae859e6c05.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/97a28275-9067-4f81-aff8-723202d060d1.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      }
+    },
+    "status": "PUBLISHED",
+    "isCraftable": false,
+    "isStarterGrant": true,
+    "version": 28,
+    "createdAt": "2026-10-01T01:06:53.594Z",
+    "updatedAt": "2026-11-11T11:18:49.534Z"
+  },
+  {
+    "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+    "name": "챔피언 여울",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/c6a67856-debb-4f5d-98e5-e0b5d931915e.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/c6a67856-debb-4f5d-98e5-e0b5d931915e.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.19,
+    "imagePositionX": 50,
+    "imagePositionY": 5.5,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 25,
+    "abilityName": "용돈",
+    "abilityCost": 2,
+    "abilityText": "다음 턴에 골드를 추가로 1 더 받습니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "ADD_NEXT_TURN_GOLD",
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "투자",
+    "questText": "이번 게임에서 골드를 총 30 소모하세요.",
+    "questCondition": {
+      "event": "GOLD_CHANGED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "783685cc-6d45-4a96-a39d-3d02a899f49e"
+      },
+      "required": 30,
+      "goldSpent": true
+    },
+    "questProgressRequired": 30,
+    "questRewardText": null,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": 2,
+    "upgradedAbilityText": "다음 턴에 골드를 1 더 받습니다. 그리고 여울의 보디가드를 소환합니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "ADD_NEXT_TURN_GOLD",
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ACTIVE"
+        },
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "acdbe25d-f066-4c91-ae22-f612749ee20f"
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/1474f0c7-bbab-42fb-847b-db3cc2960555.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/1474f0c7-bbab-42fb-847b-db3cc2960555.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "역시 돈이 최고지.",
+    "introLineTwo": "돈으로 해결 할 수 없는건 없어.",
+    "presentationLines": {
+      "MATCHUPS": {
+        "champion-minion-a": {
+          "AFTER_QUEST": {
+            "VICTORY": "좋아 그렇다면 명함은 남겨놓을테니 관심 있으면 오라구."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "좋아 그렇다면 명함은 남겨놓을테니 관심 있으면 오라구."
+          }
+        }
+      },
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "하… 돈으로 해결 안 되는 문제는 정말 싫어.",
+        "HELLO": "반가워. 너무 긴장하진 말고.",
+        "SORRY": "미안. 내가 좀 심했네.",
+        "DEFEAT": "하… 이건 비싼 수업료라고 생각하지 뭐.",
+        "THANKS": "좋아. 원하는 게 있으면 말해. 내가 가능한 선에서.",
+        "VICTORY": "돈이 전부는 아니지. 실력도 있어야 하니까.",
+        "THREATEN": "내 사람 건드리는 건 별로 안 좋아하거든.",
+        "WELL_PLAYED": "칭찬해줄게. 영광인 줄 알아."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/5e69372f-cf6e-44a1-9c98-d9ee94b64947.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/048f5a24-e392-4230-be23-ecbcfec5bd98.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/02effd4a-697d-4ed1-85b1-f7186716a26d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/48ca2ee1-81dd-4833-b164-fbc26b9d4042.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/dfd5db00-6cc0-47ba-806d-5610ace204c0.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/5d1abefd-8be0-4a96-9b1b-7bdc3214d49c.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/ac189b4c-3fd9-48ed-82a3-1c69cb833a0f.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/ac948b64-4d26-43bd-b1f0-3a2e223a9f72.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/b01cc74c-522e-4292-9dfc-caab3aa019ba.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/60d1cedc-52cc-4d62-84e4-898406054c1d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "좋아! 김비서를 불러야겠어!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 21,
+    "createdAt": "2026-09-21T08:07:26.261Z",
+    "updatedAt": "2026-11-11T06:19:24.648Z"
+  },
+  {
+    "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+    "name": "챔피언 예거",
+    "description": "1",
+    "imageAssetId": "/objects/uploads/card-images/b9ace246-dda0-408d-acad-e1b17845feb8.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/b9ace246-dda0-408d-acad-e1b17845feb8.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.59,
+    "imagePositionX": 59.6,
+    "imagePositionY": 24.9,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 25,
+    "abilityName": "고용",
+    "abilityCost": 1,
+    "abilityText": "'용병'을 하나 소환한다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "ff6f154d-a675-4a6b-bb12-50af8d227d15"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "용병술 훈련",
+    "questText": "선수 카드를 총 10번 생성한다.",
+    "questCondition": {
+      "event": "CARD_GENERATED",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "e44d337c-27ce-4f97-bc83-0ea7cde7d119"
+      },
+      "progress": 1,
+      "required": 10
+    },
+    "questProgressRequired": 10,
+    "questRewardText": null,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "'엘리트 용병'을 하나 소환한다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "f3b46674-c658-4e03-b5b4-ced71547768e"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/034a1897-91b7-41d5-a357-bc3683d702c3.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/034a1897-91b7-41d5-a357-bc3683d702c3.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "작전을 시작하겠다.",
+    "introLineTwo": ".....알았다.",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "좋지 않군…",
+        "HELLO": "소개는 생략하지.",
+        "SORRY": "내 판단 착오다. 사과하지.",
+        "DEFEAT": "작전 실패. 원인을 분석하고 다시 온다.",
+        "THANKS": "훌륭한 협조였다.",
+        "VICTORY": "작전 종료. 목표 완수.",
+        "THREATEN": "투항해라. 경고는 한 번뿐이다.",
+        "WELL_PLAYED": "좋은 판단이다."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/4d253c11-ce03-47cc-860d-d37ecae75ab6.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/83488a02-f6e0-47c8-aa1e-97de18c17248.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/d0c6de53-2735-4851-9324-83187afb75ba.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/60f0ef86-07fe-456d-afb3-e915fc39f7bc.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/9f5892f1-0c41-4234-804b-e5a51d227848.png",
+            "self": {
+              "x": 50,
+              "y": 50,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/42f29a75-60df-4fe4-8956-edfbea0e4a1c.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/0e749e2b-9e85-4ac5-a3ac-553f41f96c04.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/11934029-8020-40d7-b96e-9ca2d3987c0e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/bfee883c-5417-4c8d-b5d8-12d8948bb83b.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/e4233707-a951-419e-8641-06eff1645e4a.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "motion": {},
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "엘리트 부대 작전 준비."
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": true,
+    "version": 27,
+    "createdAt": "2026-09-10T14:19:28.153Z",
+    "updatedAt": "2026-11-11T06:20:28.238Z"
+  },
+  {
+    "id": "c52da37b-5e7a-4223-bcf3-73824c677534",
+    "name": "챔피언 크루세이더즈",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/691c3635-2e16-485f-bed7-c0b6f76c8a34.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/691c3635-2e16-485f-bed7-c0b6f76c8a34.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.21,
+    "imagePositionX": 10.966,
+    "imagePositionY": 0,
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/e211b839-8df2-4c4a-bcf5-5f0464e58f24.png",
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/e211b839-8df2-4c4a-bcf5-5f0464e58f24.png",
+    "maxHealth": 20,
+    "abilityName": "모험 준비",
+    "abilityCost": 1,
+    "abilityText": "필드에 있는 아군 선수 카드들 중 무작위로 하나의 공격력을 1 증가시키고, 챔피언의 체력을 2 회복한다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "각성",
+    "questText": "자신의 챔피언의 체력이 5 이하가 된다.",
+    "questCondition": {
+      "event": "STATE_CONDITION",
+      "finisher": {
+        "delivery": "CAST",
+        "cardDefinitionId": "57a19ccf-d63d-422a-b30a-07739c28a952"
+      },
+      "required": 1,
+      "condition": {
+        "op": "LTE",
+        "type": "HEALTH",
+        "owner": "SELF",
+        "value": 5
+      }
+    },
+    "questProgressRequired": 1,
+    "questRewardText": null,
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/89d5a610-b577-4b5a-bfe8-0083f3c0e27c.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/89d5a610-b577-4b5a-bfe8-0083f3c0e27c.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "리온:다들 준비됐지? 그럼 출발하자!",
+    "introLineTwo": null,
+    "presentationLines": {
+      "MATCHUPS": {
+        "bcffab96-f61f-497e-b60b-de5a869837d3": {
+          "AFTER_QUEST": {
+            "VICTORY": "하떨자:......기분 이상함."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "하떨자:......기분 이상함."
+          }
+        }
+      },
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "하떨자:.....실수했음.",
+        "HELLO": "리온:안녕! 같이 가게 돼서 기뻐!",
+        "SORRY": "리온:죄송해요. 나쁜 뜻은 전혀 없었어요.",
+        "DEFEAT": "리온:미안해… 그래도 다시 일어설 수 있어.",
+        "THANKS": "위마리:헤헤~ 거마워요오. 덕분에 오늘은 안 넘어지고 걸을 수 있겠네여.",
+        "VICTORY": "리온:해냈다! 다 같이 무사해서 다행이야!",
+        "THREATEN": "하떨자:.....여기서 죽여야겠음.",
+        "WELL_PLAYED": "위마리:헤헷, 기대 이상인데요? 완전 훌륭해요오."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/fa90d005-3d17-498b-af4f-5e410571879d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/1690feda-0d78-49f1-9505-22a33fd9aa85.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/15bf880a-302e-4c3e-a482-02db19501f63.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/afd6b206-520d-40a3-ac74-4ca1b040fc86.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/c480912a-349a-47ea-9031-aae30c90e143.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/aacb08e1-84e7-49d6-9a01-88faad89534d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/f640587b-aef9-42ca-9ee4-e729ef5666fe.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/2f542ea1-b51f-4591-8b86-ae068b1b8386.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/9b7d35cd-56ac-440b-9e73-5ce3de5f1127.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/0f2d2c63-7fc9-476c-b467-b7ff26f9c319.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "아직....여기서 쓰러질 수 없어....!!!!!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 27,
+    "createdAt": "2026-09-27T16:53:12.053Z",
+    "updatedAt": "2026-11-11T10:45:51.760Z"
+  },
+  {
+    "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+    "name": "챔피언 판도라",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.56,
+    "imagePositionX": 50,
+    "imagePositionY": 5,
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/2577d7ab-70e4-437b-81fb-fbbcff471be5.png",
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/2577d7ab-70e4-437b-81fb-fbbcff471be5.png",
+    "maxHealth": 20,
+    "abilityName": "불안한 일격",
+    "abilityCost": 1,
+    "abilityText": "자신이 선택한 모든 선수에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ALL",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "폭주의 조짐",
+    "questText": "상대 선수 카드를 핀폴로 5회 리타이어시키기",
+    "questCondition": {
+      "event": "WRESTLER_RETIRED",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "c7862e59-7691-4f5d-a518-81175f956fab"
+      },
+      "required": 5,
+      "sourceActionType": "USE_CHAMPION_ABILITY"
+    },
+    "questProgressRequired": 5,
+    "questRewardText": "고유 능력을 강화시키고, '챔피언 판도라(폭주)'를 필드에 소환합니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "eaefcf6c-575d-4482-aaad-98b54561b49a"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "파멸의 일격",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "자신이 선택한 대상에게 2 데미지를 줍니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "ALL",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 2
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "championTokenDefinitionId": "eaefcf6c-575d-4482-aaad-98b54561b49a",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/18ef4d34-9fde-49a8-a30e-7a606942b0c7.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/18ef4d34-9fde-49a8-a30e-7a606942b0c7.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "..........가까이 오지마.",
+    "introLineTwo": "아빠는 어디갔을까....?",
+    "presentationLines": {
+      "MATCHUPS": {
+        "champion-minion-a": {
+          "AFTER_QUEST": {
+            "VICTORY": "망할 개새끼가!!! 아빠가 갑자기 죽었을리가 없잖아!!!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": ".........그럴리가 없어"
+          }
+        },
+        "0db142af-750e-4929-a464-5daf1bc75452": {
+          "AFTER_QUEST": {
+            "VICTORY": "고통이 진리라고?! 그 망할 진리 너나 즐겨라!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "당신 때문에 아빠를 배신한건 내 인생 최악의 흑역사 중 하나야...."
+          }
+        },
+        "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f": {
+          "AFTER_QUEST": {
+            "VICTORY": "뭔데 날 모르는 척 하는거야?! 망할 자식!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "날 아직 모르는 시간선인가...?"
+          }
+        },
+        "11ac192a-d48d-4119-a63d-f9102793fb9a": {
+          "AFTER_QUEST": {
+            "VICTORY": "씨발! 돈 많으면 다냐!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "그래도 내 세상에서는 동등한 친구인줄 알았는데"
+          }
+        },
+        "441260ed-63e5-442c-bdc2-8a22898f7090": {
+          "AFTER_QUEST": {
+            "VICTORY": "저번에 한번 배신했다고 그러는건 아니겠지?! 그건 이제 좀 지난 일로 해줘!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "우리 세상에서도 강하다고 생각했었는데 더 강해질 수 있었던건가...."
+          }
+        },
+        "c52da37b-5e7a-4223-bcf3-73824c677534": {
+          "AFTER_QUEST": {
+            "VICTORY": "빨간 머리 녀석 맘에 들었어. 이런 말하게 될 줄 몰랐는데 나중에 다시 만나고 싶은걸?"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "뭔가.....뭔가......"
+          }
+        }
+      },
+      "AFTER_QUEST": {
+        "OOPS": "이런 X발, 더 재밌어졌잖아!",
+        "HELLO": "왔냐? 좋아! 존나 잘 왔어!",
+        "SORRY": "아하하! 미안 미안! 다음엔 더 세게 할게!",
+        "DEFEAT": "X발… 나를 여기까지 몰아붙였다고?",
+        "THANKS": "고맙다, X발! 제대로 날 깨워줬네!",
+        "VICTORY": "하아… 좋다. 진짜 존나게 좋다!",
+        "THREATEN": "X발, 그렇게 떨지 마! 아직 시작도 안 했어!",
+        "WELL_PLAYED": "야, 잘하네? 조금만 더 버텨봐!"
+      },
+      "BEFORE_QUEST": {
+        "OOPS": "아, 안 돼… 지금은 그러면 안 되는데…",
+        "HELLO": "아… 왔구나. 음, 너무 가까이 오진 말아줄래",
+        "SORRY": "미안… 다음엔 좀 더 얌전히 있을게. 아마도.",
+        "DEFEAT": "아… 졌네. 내가 약해서…",
+        "THANKS": "그, 그렇게까지 해줄 줄은 몰랐어… 정말 고마워.",
+        "VICTORY": "아… 끝났네. 생각보다 빨랐어.",
+        "THREATEN": "도망가… 제발. 나, 너 죽이고 싶지는 않아....",
+        "WELL_PLAYED": "어… 대단하네. 생각보다 훨씬 강하구나."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/b1b9b376-2eb8-410e-9eac-943dabd0e09c.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/e952c7fc-f033-4bd6-9ccb-55dfe44b64fd.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/9039931e-a6dd-4cf9-b150-74108aec3c9a.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/01d65383-93c4-4801-bbc3-6a12dad00fc1.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/e4a6952e-736f-4ab2-acf0-84df30d033d0.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/9a8919f4-c540-42cb-80f1-9cba33464001.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/dc50f3ee-fda9-4c53-ac3c-bba277b3ff4b.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/5195a3eb-25e4-435f-b692-703b4e68a922.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/a2c4ca3c-44b0-4328-942b-eced0c463c7e.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/b21fd240-e009-42d0-bf24-d58132a7fbe0.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/8c305043-2bcb-4f6b-87be-3617eeaaa21f.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "awakened": {
+          "frames": {
+            "low": {
+              "url": "/api/storage/objects/uploads/cosmetics/884e067f-2950-4ca8-8096-c763afb5a4db.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "hurt": {
+              "url": "/api/storage/objects/uploads/cosmetics/c8c83fd4-64ca-4776-83c0-02ad231884e2.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "attack": {
+              "url": "/api/storage/objects/uploads/cosmetics/09d9e37b-65e3-4a77-96ab-0f10a917aa2c.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "defeat": {
+              "url": "/api/storage/objects/uploads/cosmetics/68e90844-0d99-46d0-897e-01238b19be23.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "relief": {
+              "url": "/api/storage/objects/uploads/cosmetics/216fd50d-a9a8-4c89-8204-ad58f4fab01d.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "summon": {
+              "url": "/api/storage/objects/uploads/cosmetics/59ca5489-cbff-48df-8d40-b855dfd2e583.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "default": {
+              "url": "/api/storage/objects/uploads/cosmetics/1f441eab-d2e2-4fb1-83b6-cbd54e544e6b.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "victory": {
+              "url": "/api/storage/objects/uploads/cosmetics/8b50c462-57b9-4803-924b-736300f98d41.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "surprised": {
+              "url": "/api/storage/objects/uploads/cosmetics/dc7dfd35-c495-4afd-9110-4257599ce3cd.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            },
+            "heavy_hurt": {
+              "url": "/api/storage/objects/uploads/cosmetics/af68fe3d-7c97-4f76-a184-645e3d8fc10d.png",
+              "self": {
+                "x": 50,
+                "y": 35,
+                "crop": true,
+                "flip": false,
+                "scale": 1
+              },
+              "opponent": {
+                "x": 50,
+                "y": 35,
+                "crop": false,
+                "flip": true,
+                "scale": 1
+              }
+            }
+          },
+          "states": {
+            "LOW": "low",
+            "IDLE": "default",
+            "DEFEAT": "defeat",
+            "VICTORY": "victory"
+          },
+          "version": 1,
+          "reactions": {
+            "HIT": "hurt",
+            "HEAL": "relief",
+            "IDLE": "default",
+            "ATTACK": "attack",
+            "DEFEAT": "defeat",
+            "SUMMON": "summon",
+            "VICTORY": "victory",
+            "HEAVY_HIT": "heavy_hurt",
+            "ALLY_RETIRED": "surprised"
+          }
+        },
+        "awakening": "REPLACE",
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "으아아아아아아아아아! ..........으흐흐흐흐하하하하하하하!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 42,
+    "createdAt": "2026-09-10T14:28:37.673Z",
+    "updatedAt": "2026-11-11T06:25:03.676Z"
+  },
+  {
+    "id": "0db142af-750e-4929-a464-5daf1bc75452",
+    "name": "챔피언 퍼플레인",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.4,
+    "imagePositionX": 65.6,
+    "imagePositionY": 16.4,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 25,
+    "abilityName": "의식",
+    "abilityCost": 1,
+    "abilityText": "내 챔피언 또는 아군 선수 1장에게 1 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 1 감소시킵니다. 선수이면 공격력 +1을 부여합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1,
+            "purpleRainFollowup": true
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "순례의 길",
+    "questText": "이번 게임에서 내 카드 또는 내 챔피언 효과로 내 챔피언이 피해를 총 10회 받으세요.",
+    "questCondition": {
+      "event": "DAMAGE_DEALT",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "d71f5f92-c6ab-42ef-8e90-ea9f533d29a0"
+      },
+      "required": 10,
+      "selfEffectDamage": true
+    },
+    "questProgressRequired": 10,
+    "questRewardText": null,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 2,
+            "purpleRainFollowup": true
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/59861fbe-a8b7-4533-8eda-00d37746ea2d.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/59861fbe-a8b7-4533-8eda-00d37746ea2d.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "두려워하지 마십시오. 고통은 그대를 해치러 온 것이 아닙니다.",
+    "introLineTwo": "아아… 또 하나의 영혼이 스스로 제단을 찾아왔군요.",
+    "presentationLines": {
+      "MATCHUPS": {
+        "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c": {
+          "AFTER_QUEST": {
+            "VICTORY": "그렇군. 언데드도 고통을 느끼게 만들 수 있군요."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "그렇군. 언데드도 고통을 느끼게 만들 수 있군요."
+          }
+        },
+        "bcffab96-f61f-497e-b60b-de5a869837d3": {
+          "AFTER_QUEST": {
+            "VICTORY": "..........기회는 이미 가버렸군"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "..........기회는 이미 가버렸군"
+          }
+        }
+      },
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "흠… 고통조차 그대를 깨우지 못했다니.",
+        "HELLO": "평안이 함께하기를. 비록 잠시뿐일지라도.",
+        "SORRY": "미안합니다. 아직 그대가 견딜 준비가 되지 않았군요.",
+        "DEFEAT": "후후… 좋습니다. 아픔은 언제나 배울 것이 많지요.",
+        "THANKS": "이 은혜, 잊지 않겠습니다. 고통 없는 감사라니… 참으로 드문 일이군요.",
+        "VICTORY": "아아… 이제야 조용해졌군요. 깨달음이 찾아온 모양입니다.",
+        "THREATEN": "비명을 참지 마십시오. 그것 또한 기도의 한 형태입니다.",
+        "WELL_PLAYED": "흠… 아직 구원받을 가치가 있겠습니다."
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/aed007b6-a010-482a-9157-c6cfd1120d6d.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/8588b6d4-ce01-4a55-b2f7-a12a7cb64eaf.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/4ee2be07-00a2-48a4-aaaa-951b05c84926.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "awaken": {
+            "url": "/api/storage/objects/uploads/cosmetics/4b67e97b-3553-4d2e-af2c-bab9f7645565.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/2458f1b7-e40e-4322-a112-b91e97cf73ec.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/d4d36ffa-2e6a-4f8b-a0c1-ea7a3bcc1361.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/110eb1e7-3918-437e-8ec9-92cc1b343ce9.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/ed6254c5-4c3f-403c-87de-03aadac203a3.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/470f2309-991b-4054-a075-f4a4f63327d1.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/2501ef70-83bd-4ace-8bb9-eeacd1abb80f.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/d52e2524-0404-4ca7-b5d2-04b90dfa2d95.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "AWAKEN": "awaken",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "드디어.....때가 왔습니다...!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 25,
+    "createdAt": "2026-09-23T17:01:39.572Z",
+    "updatedAt": "2026-11-11T11:26:12.932Z"
+  },
+  {
+    "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+    "name": "챔피언 피 스타 세븐",
+    "description": "",
+    "imageAssetId": "/objects/uploads/card-images/748632ac-f336-4243-8742-2e2287f6d4bb.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/748632ac-f336-4243-8742-2e2287f6d4bb.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 1.72,
+    "imagePositionX": 51,
+    "imagePositionY": 11.7,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitUrl": null,
+    "maxHealth": 25,
+    "abilityName": "트레이닝",
+    "abilityCost": 1,
+    "abilityText": "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "RANDOM",
+            "randomScope": "STANDARD"
+          },
+          "values": {
+            "attack": 1,
+            "health": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "트레이닝",
+    "questText": "이번 게임에서 고유 능력을 5번 발동하세요.",
+    "questCondition": {
+      "event": "CHAMPION_ABILITY_USED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "522876df-ce6c-417c-9b51-451932de9437"
+      },
+      "progress": 1,
+      "required": 7,
+      "sourceActionType": "USE_CHAMPION_ABILITY",
+      "strictEventCount": true
+    },
+    "questProgressRequired": 7,
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "트레이닝 (강화)",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "내 손에 있는 무작위 선수 카드 2장에게 +1/+1을 부여합니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "HAND",
+            "count": 2,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "RANDOM"
+          },
+          "values": {
+            "attack": 1,
+            "health": 1
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "questCompleteAudioAssetId": "/objects/uploads/audio/bdfa2d7c-eefe-479b-95bb-31368f7d3ab5.mp3",
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/bdfa2d7c-eefe-479b-95bb-31368f7d3ab5.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompleteAudioEnabled": true,
+    "introLineOne": "Ow!",
+    "introLineTwo": "Ow!",
+    "presentationLines": {
+      "MATCHUPS": {
+        "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c": {
+          "AFTER_QUEST": {
+            "VICTORY": "There ain't no second chance against the thing with forty eyes, girl. Ow!"
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "There ain't no second chance against the thing with forty eyes, girl. Ow!"
+          }
+        },
+        "bcffab96-f61f-497e-b60b-de5a869837d3": {
+          "AFTER_QUEST": {
+            "VICTORY": "흠....조킹루이지 그 양반이랑 은근 무브가 비슷한거 같기도 하고..."
+          },
+          "BEFORE_QUEST": {
+            "VICTORY": "흠....조킹루이지 그 양반이랑 은근 무브가 비슷한거 같기도 하고..."
+          }
+        }
+      },
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "OOPS": "잠깐, 이건 좀 이상하잖아.",
+        "HELLO": "좋은 밤이군.",
+        "SORRY": "Ow! 이런… Annie, are you okay?",
+        "DEFEAT": "Ow… 다음엔 이렇게 안 끝날 거야....",
+        "THANKS": "Hoo! 고맙군. 꽤 마음에 드는데?",
+        "VICTORY": "깔끔했군. 마치 Smooth Criminal같이",
+        "THREATEN": "Ow! 경고했어. 다음은 안 봐준다.",
+        "WELL_PLAYED": "그래, 그렇게 움직이는 거야!"
+      },
+      "BATTLE_SPRITE": {
+        "frames": {
+          "low": {
+            "url": "/api/storage/objects/uploads/cosmetics/5c1e9c58-94d8-4a84-b39f-0e32f9f6f570.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/6413ebdb-96f2-4e13-bb33-12934182516c.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "attack": {
+            "url": "/api/storage/objects/uploads/cosmetics/7c70806c-69d0-4358-b868-7033c48afe95.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "defeat": {
+            "url": "/api/storage/objects/uploads/cosmetics/c85443d9-965c-4dfa-aa69-e38bb4e4f97b.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "relief": {
+            "url": "/api/storage/objects/uploads/cosmetics/6e625bc8-c364-424c-8734-85d3ce996aab.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "summon": {
+            "url": "/api/storage/objects/uploads/cosmetics/83c3dc25-d21c-4654-b6d8-ca520624deff.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "default": {
+            "url": "/api/storage/objects/uploads/cosmetics/f465800e-f0ea-4fad-900c-dea9dae8bd36.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "victory": {
+            "url": "/api/storage/objects/uploads/cosmetics/f4c8f36f-1734-4b24-a9ec-eff8dd5cc6e9.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "surprised": {
+            "url": "/api/storage/objects/uploads/cosmetics/c03b57f9-1ae2-47ea-bbfb-1ea72264fbeb.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          },
+          "heavy_hurt": {
+            "url": "/api/storage/objects/uploads/cosmetics/38af595b-6fa8-47a0-bccd-ca07d01a39a3.png",
+            "self": {
+              "x": 50,
+              "y": 35,
+              "crop": true,
+              "flip": false,
+              "scale": 1
+            },
+            "opponent": {
+              "x": 50,
+              "y": 35,
+              "crop": false,
+              "flip": true,
+              "scale": 1
+            }
+          }
+        },
+        "states": {
+          "LOW": "low",
+          "IDLE": "default",
+          "DEFEAT": "defeat",
+          "VICTORY": "victory"
+        },
+        "version": 1,
+        "reactions": {
+          "HIT": "hurt",
+          "HEAL": "relief",
+          "IDLE": "default",
+          "ATTACK": "attack",
+          "DEFEAT": "defeat",
+          "SUMMON": "summon",
+          "VICTORY": "victory",
+          "HEAVY_HIT": "heavy_hurt",
+          "ALLY_RETIRED": "surprised"
+        }
+      },
+      "QUEST_COMPLETE": "I'm starting with the man in the mirror. Ow!"
+    },
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": true,
+    "version": 24,
+    "createdAt": "2026-09-10T14:14:51.936Z",
+    "updatedAt": "2026-11-11T06:27:15.277Z"
+  }
+]

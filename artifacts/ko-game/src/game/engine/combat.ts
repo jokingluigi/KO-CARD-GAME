@@ -635,7 +635,7 @@ function attackInternal(
           cardInstanceId: defender.instanceId,
         },
         reason: 'COMBAT',
-          amount: defenderDodges || preventedAttackerDamage ? 0 : attackerDamage,
+          amount: defenderDodges || preventedAttackerDamage ? 0 : attackerDamage, before:defenderPreparedCard.currentHealth,after:defenderDodges||preventedAttackerDamage?defenderPreparedCard.currentHealth:defenderPreparedCard.currentHealth-attackerDamage,
         sourceContext: attackerAttribution,
       },
       {
@@ -645,7 +645,7 @@ function attackInternal(
         source: { type: 'CARD', cardInstanceId: defender.instanceId },
         target: { type: 'CARD', cardInstanceId: attackerInstanceId },
         reason: 'COMBAT',
-          amount: attackerDodges || preventedDefenderDamage ? 0 : defenderDamage,
+          amount: attackerDodges || preventedDefenderDamage ? 0 : defenderDamage, before:attackerPrepared.currentHealth,after:attackerDodges||preventedDefenderDamage?attackerPrepared.currentHealth:attackerPrepared.currentHealth-defenderDamage,
         sourceContext: defenderAttribution,
       },
     ],
@@ -680,12 +680,7 @@ function attackInternal(
     'FIRST_ATTACKED',
     { attackerInstanceId, sourceContext: reactionAttribution(target.playerId, defenderPreparedCard) },
   );
-  const exactZeroResolved = defenderDodges || preventedAttackerDamage || defenderPreparedCard.currentHealth - attackerDamage !== 0
-    ? firstAttackedResolved
-    : resolveTriggeredAbilities(firstAttackedResolved, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
-      damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
-      sourceContext: reactionAttribution(attackingPlayerId, attacker),
-    });
+  const exactZeroResolved = firstAttackedResolved;
   const attackerAfterDamage = findBoardCard(exactZeroResolved, attackingPlayerId, attackerInstanceId)?.card;
   const attackSurvivedResolved = attackerAfterDamage && attackerAfterDamage.currentHealth > 0
     ? resolveTriggeredAbilities(exactZeroResolved, attackingPlayerId, attackerAfterDamage, 'ATTACK_SURVIVED', {

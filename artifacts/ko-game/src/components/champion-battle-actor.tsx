@@ -59,6 +59,7 @@ export function ChampionBattleActor({
   const appearance = championSpriteSkin({
     championId: player.champion?.id ?? "",
     loadout,
+    finisherId:player.champion?.selectedFinisherId,
     base: player.champion?.presentationLines?.BATTLE_SPRITE,
     normal: player.champion?.imageUrl ?? original,
     awakenedPortrait: player.champion?.questCompletedPortraitEnabled
@@ -284,7 +285,7 @@ export function ChampionBattleActor({
   useEffect(() => {
     const images: HTMLImageElement[] = [];
     for (const config of [appearance.config])
-      for (const f of config ? spriteFrames(config) : []) {
+      for (const f of [...(config ? spriteFrames({...config,finishers:undefined}) : []),...(appearance.portraitFrame?[appearance.portraitFrame]:[])]) {
         const image = new Image();
         image.src = f.url;
         images.push(image);

@@ -40,7 +40,7 @@ function beginTargetedAction(state: GameState, action: Extract<GameAction, { typ
   const probe = immediateAction(probeState, action.playerId, action.action);
   if (!probe.success) return actionFailure(state, probe.errorCode, probe.message);
   const pending = probe.state.targetingState;
-  if (!pending?.active || pending.handAddition || hasPendingProgram(probe.state)) return probe;
+  if (!pending?.active || pending.handAddition || pending.catalogChoice || (pending.minTargets>0 && pending.maxTargets>pending.minTargets) || hasPendingProgram(probe.state)) return probe;
   if (pending.validTargetIds.length === 0) {
     return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
   }
@@ -70,7 +70,8 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
         ? { type: 'CONFIRM_PRECOMMIT_TARGET' as const, playerId, targetId }
         : { type: 'SELECT_EFFECT_TARGET' as const, playerId, targetId },
     );
-    if (!hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState.cancelable) && !state.targetingState.finisherChoice && !state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
+    if((state.targetingState.minTargets>0 && state.targetingState.maxTargets>state.targetingState.minTargets)&&state.targetingState.selectedTargetIds.length>=state.targetingState.minTargets)actions.push({type:'SELECT_EFFECT_TARGET',playerId,targetId:'effect:confirm'});
+    if (!state.targetingState.catalogChoice && !((state.targetingState.minTargets>0 && state.targetingState.maxTargets>state.targetingState.minTargets)) && !hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState.cancelable) && !state.targetingState.finisherChoice && !state.targetingState.handAddition && !state.targetingState.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState.cancelable)) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
     if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
     else legalActionsCache.set(state, new Map([[playerId, actions]]));
     return actions;
@@ -138,6 +139,7 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
   if(state.status==='FINISHED')return actionFailure(state,'GAME_NOT_IN_PROGRESS','종료된 대전에서는 행동할 수 없습니다.');
   if (state.openingMulligan && !(state.targetingState?.active && action.type==='SELECT_EFFECT_TARGET') && action.type !== 'MULLIGAN' && action.type !== 'EMOTE' && action.type !== 'SURRENDER')
     return actionFailure(state, 'NOT_YOUR_TURN', '두 플레이어가 시작 손패 교체를 마칠 때까지 기다려 주세요.');
+  if(state.targetingState?.catalogChoice&&!['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type))return actionFailure(state,'TARGET_SELECTION_PENDING','가져올 카드 한 장을 선택하세요.');
   if (state.targetingState?.handAddition && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','손패에서 버릴 카드 1장을 선택하세요.');
   if (hasPendingProgram(state) && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','업그레이드 효과의 대상을 선택하세요.');
   if (state.targetingState?.finisherChoice && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','사용할 피니셔를 하나 선택하세요.');
