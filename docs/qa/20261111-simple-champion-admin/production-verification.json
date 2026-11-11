@@ -1,0 +1,45 @@
+{
+  "checkedAtUTC": "2026-11-11T06:21:22.675Z",
+  "commit": "efac41725ac57cb172f056805c331b843da91316",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbq0hqqjnfac73ene61g",
+      "status": "live",
+      "commit": "efac41725ac57cb172f056805c331b843da91316",
+      "branch": "production",
+      "autoDeploy": "no"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbq0huek1f9s73d88i80",
+      "status": "live",
+      "commit": "efac41725ac57cb172f056805c331b843da91316",
+      "branch": "production",
+      "autoDeploy": "no"
+    }
+  ],
+  "api": {
+    "status": "ok",
+    "revision": "efac41725ac57cb172f056805c331b843da91316"
+  },
+  "front": {
+    "revision": "efac41725ac57cb172f056805c331b843da91316",
+    "builtAtUTC": "2026-11-11T06:20:18.339Z"
+  },
+  "rootEntryModule": "/assets/index-BLrYdHLG.js",
+  "rootCacheControl": "no-cache, no-store, must-revalidate",
+  "actualEntryContainsRevision": true,
+  "adminRouteEntryContainsRevision": true,
+  "adminRouteEntryModule": "/assets/index-BLrYdHLG.js",
+  "previousHelperPatchRetained": null,
+  "manualProductionDataWrites": 0,
+  "schemaChangedByThisRelease": false,
+  "scope": "simple-champion-admin",
+  "tagLabelsEndpointAvailable": null,
+  "publicCatalogChecksSkippedForMaintenance": true,
+  "productionMatchCreated": false,
+  "mainMerged": false
+}
