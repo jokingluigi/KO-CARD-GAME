@@ -32,3 +32,7 @@ No claim that all lag is eliminated, or that this Chromium run measures 60 FPS o
 Old clients keep the compatible full-state protocol until refreshed. An existing saved target preview can be cancelled/reopened normally; local new previews disappear on reconnect without spending resources. Account progress may appear briefly after a battle ACK; read/claim endpoints drain the durable outbox first. Repeated worker errors remain in the outbox and surface in admin metrics rather than silently dropping progress.
 
 Administrator metrics page rendered through the real authenticated isolated API at 390×844 and 1440×900 (`performance-browser.json`). The mobile clip was extracted from the actual online-page recording; placeholder cards are deliberate QA fixtures.
+
+## Production receipt
+
+API and frontend both live at `9090a6dcde70e5e9a307336a85968a0afbdabbf9`; verified 2026-11-12 00:55 UTC. Public health/version and actual JS entry revisions match at `/`, `/admin/champions`, `/online/match/release-check`. Authenticated admin performance route responds 200 with pending/retry outbox counts zero; anonymous access is 401. Public champion records both show text and numeric requirement eight. Verification created no production battle and does not establish live multiplayer FPS/latency. Main was not merged. Later documentation-only commits are not deployed.

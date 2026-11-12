@@ -1,0 +1,65 @@
+{
+  "checkedAt": "2026-11-12T00:55:27.019Z",
+  "expected": {
+    "api": "9090a6dcde70e5e9a307336a85968a0afbdabbf9",
+    "front": "9090a6dcde70e5e9a307336a85968a0afbdabbf9"
+  },
+  "observations": [
+    {
+      "role": "api",
+      "commit": "9090a6dcde70e5e9a307336a85968a0afbdabbf9",
+      "deployId": "dep-dbqgrcdbedkc73dimndg",
+      "status": "live"
+    },
+    {
+      "role": "front",
+      "commit": "9090a6dcde70e5e9a307336a85968a0afbdabbf9",
+      "deployId": "dep-dbqgseijnfac738lh2mg",
+      "status": "live"
+    },
+    {
+      "champion": "판도라",
+      "version": 47,
+      "abilityText": "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다."
+    },
+    {
+      "champion": "판도라",
+      "questText": "상대 선수 카드를 핀폴로 8회 리타이어시키기",
+      "required": 8
+    },
+    {
+      "champion": "라 칼라베라",
+      "questText": "자신의 무덤에 '언데드' 태그를 가진 카드가 8장 이상 있어야합니다.",
+      "required": 8
+    },
+    {
+      "adminPerformance": true,
+      "revision": "9090a6dcde70e5e9a307336a85968a0afbdabbf9",
+      "progressQueue": {
+        "pending": 0,
+        "retries": 0,
+        "oldest_seconds": 0
+      },
+      "anonymousStatus": 401
+    }
+  ],
+  "serving": {
+    "paths": [
+      {
+        "path": "/",
+        "entry": "/assets/index-C7Y5x7Rp.js"
+      },
+      {
+        "path": "/admin/champions",
+        "entry": "/assets/index-C7Y5x7Rp.js"
+      },
+      {
+        "path": "/online/match/release-check",
+        "entry": "/assets/index-C7Y5x7Rp.js"
+      }
+    ],
+    "onlineChunk": "assets/online-match-CGXJjDdd.js"
+  },
+  "productionCombatActionsCreated": 0,
+  "productionMultiplayerFrameRateMeasured": false
+}
