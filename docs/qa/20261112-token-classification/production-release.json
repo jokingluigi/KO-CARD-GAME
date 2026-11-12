@@ -1,0 +1,50 @@
+{
+  "checkedAt": "2026-11-12T14:33:54.117Z",
+  "revision": "0ef0335832ac21523af69dc8b48fd10e1152b7fe",
+  "checks": [
+    {
+      "role": "api",
+      "revision": "0ef0335832ac21523af69dc8b48fd10e1152b7fe",
+      "deployId": "dep-dbqsqv2fngtc738ipbig"
+    },
+    {
+      "role": "front",
+      "revision": "0ef0335832ac21523af69dc8b48fd10e1152b7fe",
+      "deployId": "dep-dbqss1bm8hqs73epdfn0"
+    },
+    {
+      "path": "/api/collection",
+      "visibleCards": 152,
+      "gradeAndFlagTokensExcluded": true
+    },
+    {
+      "path": "/api/decks/options",
+      "visibleCards": 152,
+      "gradeAndFlagTokensExcluded": true
+    },
+    {
+      "name": "늑대인간 판도라",
+      "rarity": "TOKEN",
+      "isToken": true,
+      "version": 20
+    },
+    {
+      "name": "소버린",
+      "version": 2,
+      "effectUnchanged": true
+    },
+    {
+      "path": "/",
+      "entry": "/assets/index-BG9ClZ21.js",
+      "revisionMatches": true
+    },
+    {
+      "path": "/online/match/token-release-0ef0335832ac",
+      "entry": "/assets/index-BG9ClZ21.js",
+      "revisionMatches": true
+    }
+  ],
+  "productionCombatActionsCreated": 0,
+  "productionWritesByVerification": 0,
+  "physicalDeviceTesting": false
+}

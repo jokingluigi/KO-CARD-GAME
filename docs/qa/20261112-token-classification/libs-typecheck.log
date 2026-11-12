@@ -1,0 +1,4 @@
+
+> workspace@0.0.0 typecheck:libs /workspace/KO-CARD-GAME
+> tsc --build
+
