@@ -1,0 +1,13 @@
+# Missing champion finishing hit — 2026-11-12
+
+The authoritative online service sends `MATCH_ENDED` (instead of `ACTION_ACCEPTED`) when an accepted attack finishes the match. The frontend started the local confirmed attack flight only for `ACTION_ACCEPTED`, so the attacker's final contact, impact/shake, finishing slash and hit sound were skipped. Existing AI/local attack handling already marked finishing blows.
+
+The online/draft view now also calls the existing confirmed attack presentation for `MATCH_ENDED`, using previous state, the actual accepted attack event and pending geometry. No battle rule, damage, reward, server acknowledgement or animation duration changed. Finished snapshots/resync do not start old attacks, and clearing the pending attack prevents duplicate terminal messages from replaying it.
+
+The browser harness previously substituted `messageForViewer()` for every accepted action, inadvertently exercising a different terminal path. It now calls the real `broadcastExecution()` and therefore receives actual terminal message types. The new lethal scenarios run the actual online page, authoritative service and disposable SQL database for both players. Each page is fully mounted before attacking (a page still loading intentionally restores final state without replay).
+
+Verification: frontend typecheck/production build pass; 23 focused combat-animation, KO-dialogue, draft-client, protocol and outbox tests pass. Browser results are stored separately after execution. No production battle was created by QA. Temporary cards use placeholder art; mobile emulation is not a physical-device or production-FPS measurement. Account-reward HTTP responses in the shared UI harness are mocked, so this run does not validate payouts.
+
+Run: `KO_LETHAL_ONLY=1 FINISHER_QA_OUTPUT=/tmp/ko-lethal-browser node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/balance-content-20261111-browser.mjs`
+
+Final browser run passes at 390×844, 844×390 and 1440×900: direct lethal attack has finishing flight in both views; direct attack and spell lethal each shatter the defeated portrait once before the result overlay; surrender does not shatter a healthy portrait; reconnect does not replay finished attacks/shatters. JavaScript page errors: zero. The fixture's reward HTTP mock is not a payout verification. The client runtime reports an intentional mock reward error in this recording; this is separate from the combat assertions.

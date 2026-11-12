@@ -358,6 +358,9 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           pendingActionIdRef.current = null;
           pendingActionInFlightRef.current = false;
           setPendingAction(false);
+          // A lethal action is acknowledged as MATCH_ENDED rather than
+          // ACTION_ACCEPTED. It still owns its confirmed contact/KO flight.
+          if (message.type === "MATCH_ENDED") prepareOwnAttackAnimation(previous, projected);
         }
         if(recoveringActionRef.current){recoveringActionRef.current=false;setNotice("서버 상태를 다시 확인했어요. 표시된 전투 상태에서 계속하세요.");if(noticeTimerRef.current!==null)window.clearTimeout(noticeTimerRef.current);noticeTimerRef.current=window.setTimeout(()=>{setNotice(null);noticeTimerRef.current=null;},5000);}
         stateRef.current = projected;

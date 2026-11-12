@@ -1,0 +1,212 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "realMatchEndedMessage": true,
+    "checks": [
+      {
+        "kind": "attack",
+        "bothViews": [
+          {
+            "finisher": true,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          },
+          {
+            "finisher": true,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      },
+      {
+        "kind": "spell",
+        "bothViews": [
+          {
+            "finisher": false,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          },
+          {
+            "finisher": false,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      },
+      {
+        "kind": "surrender",
+        "bothViews": [
+          {
+            "finisher": false,
+            "shatter": false,
+            "resultBeforeShatter": true,
+            "result": true,
+            "shatterRuns": 0
+          },
+          {
+            "finisher": false,
+            "shatter": false,
+            "resultBeforeShatter": true,
+            "result": true,
+            "shatterRuns": 0
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "realMatchEndedMessage": true,
+    "checks": [
+      {
+        "kind": "attack",
+        "bothViews": [
+          {
+            "finisher": true,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          },
+          {
+            "finisher": true,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      },
+      {
+        "kind": "spell",
+        "bothViews": [
+          {
+            "finisher": false,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          },
+          {
+            "finisher": false,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      },
+      {
+        "kind": "surrender",
+        "bothViews": [
+          {
+            "finisher": false,
+            "shatter": false,
+            "resultBeforeShatter": true,
+            "result": true,
+            "shatterRuns": 0
+          },
+          {
+            "finisher": false,
+            "shatter": false,
+            "resultBeforeShatter": true,
+            "result": true,
+            "shatterRuns": 0
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "actualOnlinePages": true,
+    "authoritativeServiceAndIsolatedDB": true,
+    "realMatchEndedMessage": true,
+    "checks": [
+      {
+        "kind": "attack",
+        "bothViews": [
+          {
+            "finisher": true,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          },
+          {
+            "finisher": true,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      },
+      {
+        "kind": "spell",
+        "bothViews": [
+          {
+            "finisher": false,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          },
+          {
+            "finisher": false,
+            "shatter": true,
+            "resultBeforeShatter": false,
+            "result": true,
+            "shatterRuns": 1
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      },
+      {
+        "kind": "surrender",
+        "bothViews": [
+          {
+            "finisher": false,
+            "shatter": false,
+            "resultBeforeShatter": true,
+            "result": true,
+            "shatterRuns": 0
+          },
+          {
+            "finisher": false,
+            "shatter": false,
+            "resultBeforeShatter": true,
+            "result": true,
+            "shatterRuns": 0
+          }
+        ],
+        "reconnectDoesNotReplay": true
+      }
+    ],
+    "errors": []
+  }
+]

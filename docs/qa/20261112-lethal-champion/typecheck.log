@@ -1,0 +1,4 @@
+
+> @workspace/ko-game@0.0.0 typecheck /workspace/KO-CARD-GAME/artifacts/ko-game
+> tsc -p tsconfig.json --noEmit
+

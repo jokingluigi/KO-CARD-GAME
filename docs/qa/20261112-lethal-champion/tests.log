@@ -1,0 +1,82 @@
+✔ 공격 충돌 단계는 실제 current attack을 네 구간으로 나눈다 (0.967981ms)
+✔ 같은 피해라도 공격력이 강하면 더 크게 흔들리고 방어된 타격은 흔들리지 않는다 (0.18209ms)
+✔ 8 이상 공격은 매우 강한 타격의 오디오 피치를 사용한다 (0.957074ms)
+✔ screen shake 단계는 실제 피해량을 여섯 구간으로 나눈다 (0.251154ms)
+✔ counter feedback uses only confirmed defender damage before the next attack (0.320867ms)
+✔ KO lines follow actual winner/loser IDs, quest state and existing matchup override (2.245561ms)
+✔ no invented KO dialogue for missing lines, nonlethal surrender, unresolved or invalid results (0.354818ms)
+✔ selection retries an opponent-only version change with the same request identifier (45.679547ms)
+✔ expired or advanced own selection never retries an old click (1.574503ms)
+✔ draft transport preserves animations, recovers connection and retains finished snapshot (13.958509ms)
+✔ draft action is sent during slow polling and stale poll cannot replace accepted version (1.031355ms)
+✔ finished snapshot or finished action stops background polling before unmount (16.698486ms)
+✔ repeated failures back off, explicit reconnect bypasses delay and restores normal snapshots (5.314348ms)
+✔ same-version heartbeat updates connection status without resetting battle; reconnect requests full state (2.163079ms)
+✔ catalog negotiation reuses definitions and applies additions, edits, removals and resync (6173.581055ms)
+[13:54:24.944] [32mINFO[39m (337885): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 62
+✔ slow sender keeps all acknowledgements/events and valid catalog base while coalescing obsolete states (41.419938ms)
+✔ maintenance shared read coalesces concurrent callers, expires, invalidates, and never caches failure (0.784458ms)
+✔ Pandora preparation completes at eight actual opposing pinfalls, never at five or seven (6.247335ms)
+✔ atomic Pandora targeting uses one state version, one gold and one target; invalid target commits nothing (114.018597ms)
+✔ durable progression survives runtime reload, uses captured configuration and flushes before reward reads (162.601083ms)
+[13:54:25.281] [32mINFO[39m (337885): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/daily-quests"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 30
+[13:54:25.497] [32mINFO[39m (337885): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/admin/multiplayer-performance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+✔ actual WebSocket clients negotiate compact catalogs, atomically target and report client timing (224.594612ms)
+[13:54:25.515] [32mINFO[39m (337885): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/admin/multiplayer-performance"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 0
+[13:54:25.519] [32mINFO[39m (337885): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/admin/multiplayer-performance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+CATALOG_TRANSFER {"fullBytes":283825,"updateBytes":24030,"reductionPercent":92}
+✔ admin metrics are protected and show observed stages plus durable queue (10.464651ms)
+✔ full published catalog stays immutable across cloned actions and reorder patches preserve order (13.331446ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10787.739609

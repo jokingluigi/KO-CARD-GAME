@@ -329,8 +329,7 @@ try {
                 connection,
               );
               if (execution.ok)
-                for (const c of runtime.connections)
-                  c.send(service.messageForViewer(execution, c.userId));
+                service.broadcastExecution(execution);
               else
                 connection.send(
                   service.rejectionMessage(execution),
@@ -348,6 +347,17 @@ try {
     };
     let own = await makePage("tutorial-user");
     const opponent = await makePage("finisher-opponent");
+    if (process.env.KO_LETHAL_ONLY === "1") {
+      const { lethalScenarios } = await import("./multiplayer-lethal-20261112.mjs");
+      const checks = await lethalScenarios({f,service,runtime,own,opponent,out,width,baseCard:body,setRuntime:r=>runtime=r});
+      assert.deepEqual(errors, []);
+      results.push({width,height,...checks,errors});
+      const video = width === 390 ? own.video() : null;
+      await context.close();
+      if(video)await copyFile(await video.path(),out+"/mobile.webm");
+      service.cleanupMatchRuntime(id);
+      continue;
+    }
     await own.waitForFunction(
       () =>
         document
