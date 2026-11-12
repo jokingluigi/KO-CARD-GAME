@@ -1,5 +1,5 @@
 import { readPlatform, validatePlatform, questDiagnostic, cardRarity, QUEST_OBJECTIVES, type QuestMode } from "./quest-platform";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql, getTableColumns, type Table } from "drizzle-orm";
 import { randomUUID, createHash } from "node:crypto";
 import {
   dailyQuestAssignmentsTable,
@@ -31,17 +31,21 @@ export const DAILY_QUEST_STATUSES = ["ASSIGNED", "IN_PROGRESS", "COMPLETED", "CL
 type QuestConfigRecord = { schemaVersion?: string; condition?: unknown };
 
 /** Request/transaction scoped only: never retain admin settings across actions. */
-type QuestProcessingContext = {
- settings: Awaited<ReturnType<typeof questSettings>>;
+export type QuestProcessingContext = {
+ observedAt?:Date;
+ settings: {dailyCount:number;timezone:string};
  definitions: DailyQuestDefinitionRecord[];
  seasons: (typeof questSeasonsTable.$inferSelect)[];
 };
 export async function loadQuestProcessingContext(executor: RewardExecutor): Promise<QuestProcessingContext> {
- const settings = await questSettings(executor);
- const definitions = await executor.select().from(dailyQuestDefinitionsTable)
-  .orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id));
- const seasons = await executor.select().from(questSeasonsTable);
- return {settings, definitions, seasons};
+ const result=await (executor as RewardExecutor & Pick<typeof db,'execute'>).execute(sql`SELECT
+  (SELECT to_jsonb(s) FROM quest_platform_settings s WHERE id='default') AS settings,
+  COALESCE((SELECT jsonb_agg(d ORDER BY created_at,id) FROM daily_quest_definitions d),'[]'::jsonb) AS definitions,
+  COALESCE((SELECT jsonb_agg(s) FROM quest_seasons s),'[]'::jsonb) AS seasons`);
+ const row=result.rows[0] as Record<string,any>;
+ const map=(table:Table,value:Record<string,any>)=>Object.fromEntries(Object.entries(getTableColumns(table)).map(([key,column])=>[key,column.dataType==='date'&&value[column.name]!=null?new Date(value[column.name]):value[column.name]]));
+ return {observedAt:new Date(),settings:row.settings?map(questPlatformSettingsTable,row.settings) as QuestProcessingContext['settings']:{dailyCount:3,timezone:'Asia/Seoul'},
+  definitions:row.definitions.map((d:any)=>map(dailyQuestDefinitionsTable,d)),seasons:row.seasons.map((s:any)=>map(questSeasonsTable,s))};
 }
 
 function eventCardMetadata(state: GameState, event: GameEvent) {
@@ -118,7 +122,7 @@ export async function ensureDailyQuestAssignments(
   const definitions = context?.definitions.filter(definition=>definition.enabled) ?? await executor.select().from(dailyQuestDefinitionsTable)
     .where(eq(dailyQuestDefinitionsTable.enabled, true))
     .orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id));
-  const selected = selectDailyQuestDefinitions(definitions.filter(definition => { const p = readPlatform(definition); return p.questType === "DAILY" && !p.deletedAt && !p.archived && (!p.activationAt || Date.parse(p.activationAt) <= Date.now()) && !existing.some(assignment => assignment.definitionId === definition.id); }), userId, assignmentDate, availableSlots.length).slice(0, availableSlots.length);
+  const selected = selectDailyQuestDefinitions(definitions.filter(definition => { const p = readPlatform(definition); return p.questType === "DAILY" && !p.deletedAt && !p.archived && (!p.activationAt || Date.parse(p.activationAt) <= (context?.observedAt?.getTime()??Date.now())) && !existing.some(assignment => assignment.definitionId === definition.id); }), userId, assignmentDate, availableSlots.length).slice(0, availableSlots.length);
   if (selected.length > 0) {
     await executor.insert(dailyQuestAssignmentsTable)
       .values(selected.map((definition, slot) => {
@@ -157,12 +161,13 @@ export async function processMatchEventsForDailyQuests(
  userId: string, playerId: string, matchId: string, state: GameState, eventStart: number,
  executor: RewardExecutor, assignmentDate?: string, mode: QuestMode = "AI",
  context?: QuestProcessingContext,
+ eventOffset=0,
 ): Promise<void> {
  const transactional = executor as RewardExecutor & {execute?: typeof db.execute};
  if (transactional.execute) await transactional.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"quest:"+userId}))`);
  const settings = context?.settings ?? await questSettings(executor);
  const date = assignmentDate ?? dailyDate(new Date(), settings.timezone);
- const assignments = [...await ensureDailyQuestAssignments(userId,date,executor,context), ...await ensureSeasonQuestAssignments(userId,executor,new Date(),context)];
+ const assignments = [...await ensureDailyQuestAssignments(userId,date,executor,context), ...await ensureSeasonQuestAssignments(userId,executor,context?.observedAt??new Date(),context)];
  const definitions = context?.definitions ?? await executor.select().from(dailyQuestDefinitionsTable);
  const outcome = state.status === "FINISHED" ? (state.winnerId === playerId ? "WIN" : "LOSS") : null;
  for (const assignment of assignments) {
@@ -172,7 +177,7 @@ export async function processMatchEventsForDailyQuests(
   if (!definition?.enabled || readPlatform(definition).archived || ["CLAIMED","COMPLETED"].includes(assignment.status)) continue;
   // Result-filtered events are evaluated only at settlement, including all earlier events.
   const first = readPlatform(assignment).result !== "ANY" ? 0 : eventStart;
-  const events = state.events.slice(first).map((event,offset)=>({event,key:"EVENT:"+(first+offset)}));
+  const events = state.events.slice(first).map((event,offset)=>({event,key:"EVENT:"+(eventOffset+first+offset)}));
   if (state.status === "FINISHED" && assignment.schemaVersion !== QUEST_CONDITION_SCHEMA_VERSION) events.push({event:{type:"TURN_ENDED",playerId,reason:"QUEST_MATCH_FINISHED"},key:"FINISHED"});
   const progressEvents: (typeof dailyQuestProgressEventsTable.$inferInsert)[] = [];
   for (const {event,key} of events) {

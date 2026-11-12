@@ -1,4 +1,6 @@
 import {hasPendingProgram,hasPendingFinisherCast,hasPendingHandAddition} from '@workspace/game-engine';
+import {cloneBattleState} from '@workspace/game-engine/online-catalog';
+import {recordPerformance} from './performance';
 import {ownedImageEmote} from '../lib/owned-image-emote';
 import {withFrozenLaunchDeck,type FrozenLaunchDeck} from "../lib/frozen-launch-deck";
 import {CosmeticEmoteChannel} from '../lib/cosmetic-emotes';
@@ -42,7 +44,7 @@ import {
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { isTestAccountUser } from "../lib/test-account";
-import { loadQuestProcessingContext, processMatchEventsForDailyQuests } from "../lib/daily-quest-service";
+import {enqueueQuestProgress} from '../lib/quest-progress-outbox';
 import { grantReward, isFinishedMatchRewardEligible } from "../lib/reward-service";
 import { logger } from "../lib/logger";
 import { runOnlineBackgroundTask } from "./background-task";
@@ -78,6 +80,7 @@ export type OnlineMatchSnapshot = {
 };
 
 export interface OnlineMatchConnection {
+  catalogProtocol?:1;
   readonly userId: string;
   send(message: OnlineServerMessage): void;
 }
@@ -228,25 +231,7 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
 
     // Target previews/cancellations with no new events cannot advance a quest.
     if (eventStart !== undefined && (finished || eventStart < runtime.state.events.length)) {
-      const questContext = await loadQuestProcessingContext(tx);
-      await processMatchEventsForDailyQuests(
-        runtime.snapshot.player1UserId,
-        "PLAYER_ONE",
-        runtime.matchId,
-        runtime.state,
-        eventStart,
-        tx,
-        undefined, "PVP", questContext,
-      );
-      await processMatchEventsForDailyQuests(
-        runtime.snapshot.player2UserId,
-        "PLAYER_TWO",
-        runtime.matchId,
-        runtime.state,
-        eventStart,
-        tx,
-        undefined, "PVP", questContext,
-      );
+      await enqueueQuestProgress(tx,runtime.matchId,runtime.snapshot.player1UserId,runtime.snapshot.player2UserId,runtime.state,eventStart);
     }
     return true;
   });
@@ -1288,7 +1273,7 @@ export async function applyMatchAction(
     }
     const validationStartedAt = performance.now();
     const legalActions = action.type === "SURRENDER" || action.type === "EMOTE" ? [action] : getLegalActions(runtime.state, playerId);
-    const actionToValidate: GameAction = action.type === "BEGIN_TARGETED_ACTION"
+    const actionToValidate: GameAction = action.type === "BEGIN_TARGETED_ACTION" || action.type==='COMMIT_TARGETED_ACTION'
       ? { ...action.action, playerId }
       : action;
     const legal = legalActions.some((candidate) => action.type === "MULLIGAN"
@@ -1307,7 +1292,7 @@ export async function applyMatchAction(
     }
 
     const executionStartedAt = performance.now();
-    const candidateState = structuredClone(runtime.state);
+    const candidateState = cloneBattleState(runtime.state);
     const result = executeAction(candidateState, action);
     if (!result.success) {
       return { ok: false, runtime, requestId, code: result.errorCode, message: result.message };
@@ -1329,7 +1314,7 @@ export async function applyMatchAction(
     runtime.requestIds.set(requestId, {
       userId,
       version: transition.version,
-      state: structuredClone(runtime.state),
+      state: cloneBattleState(runtime.state),
       eventStart,
     });
     while (runtime.requestIds.size > MAX_REQUEST_CACHE) {
@@ -1338,6 +1323,12 @@ export async function applyMatchAction(
       runtime.requestIds.delete(oldest);
     }
     const completedAt = performance.now();
+    recordPerformance('actionMs',completedAt-receivedAt);
+    recordPerformance('queueMs',lockAcquiredAt-receivedAt);
+    recordPerformance('validationMs',executionStartedAt-validationStartedAt);
+    recordPerformance('engineMs',persistenceStartedAt-executionStartedAt);
+    recordPerformance('persistenceMs',persistedAt-persistenceStartedAt);
+    recordPerformance('cacheMs',completedAt-persistedAt);
     if (completedAt-receivedAt >= 250) logger.warn({
       event: "online-action-slow", matchId, requestId, actionType: action.type,
       version: transition.version,

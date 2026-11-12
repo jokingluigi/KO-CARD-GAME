@@ -1,4 +1,7 @@
 import type { CardInstance } from "@/game";
+export function isFinisherSpell(card:{cardType?:string;isChampionToken?:boolean},definition?:{cardType?:string;isChampionToken?:boolean}) {
+  return (card.cardType??definition?.cardType)==='TECHNIQUE'&&(card.isChampionToken===true||definition?.isChampionToken===true);
+}
 
 export type CardAnimationRect = {
   left: number;

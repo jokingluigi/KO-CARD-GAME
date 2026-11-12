@@ -1216,10 +1216,11 @@ function referenceStatValue(
   reference: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['reference'],
   stat: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['referenceStat'],
 ): number {
-  if (reference === 'LAST_TARGET' && state.targetingState?.lastAggregatedStats) {
+  const captured = state.targetingState?.lastAggregatedStats ?? state.lastAggregatedStats;
+  if (reference === 'LAST_TARGET' && captured) {
     return stat === 'CURRENT_HEALTH'
-      ? state.targetingState.lastAggregatedStats.health
-      : state.targetingState.lastAggregatedStats.attack;
+      ? captured.health
+      : captured.attack;
   }
   const referencedId = reference === 'SOURCE' ? source.instanceId : reference === 'LAST_ATTACKER' ? context?.attackerInstanceId : undefined;
   if (!referencedId) return 0;
@@ -1593,11 +1594,11 @@ function beginResolution(state: GameState, frame: NonNullable<GameState['targeti
     targetingState: {
       ...frame,
       presentationResolutionId: frame.presentationResolutionId ?? presentationResolutionId(state,frame.playerId),
-      // The parent has just executed the effect that caused this trigger.
-      // Resume at the following effect after the child resolves, preventing
-      // summon/enter chains from replaying the parent effect.
+      // Both target selection and the automatic-effect loop advance the parent
+      // before invoking applyEffect. Advancing again here skips the next effect
+      // when a retirement/revival trigger temporarily takes over the chain.
       continuation: state.targetingState?.active
-        ? { ...state.targetingState, effectIndex: state.targetingState.effectIndex + 1 }
+        ? state.targetingState
         : frame.continuation,
     },
   });

@@ -10,6 +10,8 @@ export function toServerAction(
   const action: OnlineActionPayload = payload;
 
   switch (action.type) {
+    case 'COMMIT_TARGETED_ACTION':
+      return {type:action.type,playerId,action:action.action,targetId:action.targetId};
     case "MULLIGAN":
       return { type: action.type, playerId, cardInstanceIds: action.cardInstanceIds };
     case "PLAY_WRESTLER":

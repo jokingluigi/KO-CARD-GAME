@@ -1,5 +1,6 @@
 /** Two real online pages; intercepted WebSocket transport invokes the real online service and isolated DB. */
 import assert from "node:assert/strict";
+import {CatalogEncoder} from "../../lib/game-engine/src/online-catalog.ts";
 import { execFileSync } from "node:child_process";
 import { mkdir, writeFile, copyFile, readFile } from "node:fs/promises";
 import { startTutorialFixture } from "./tutorial-rewards-fixture.mjs";
@@ -303,15 +304,17 @@ try {
         r.fulfill({ json: { ticket: "isolated-test" } }),
       );
       await p.routeWebSocket("**/api/online-matches/ws**", (ws) => {
+        const encoder=new CatalogEncoder();
         const connection = {
-          userId: user,
-          send: (m) => ws.send(JSON.stringify(m)),
+          userId: user, catalogProtocol: undefined,
+          send: (m) => ws.send(JSON.stringify(connection.catalogProtocol===1?encoder.encode(m):m)),
         };
         connections.push(connection);
         ws.onMessage(async (raw) => {
           try {
             const m = JSON.parse(String(raw));
             if (m.type === "SUBSCRIBE" || m.type === "RESYNC") {
+              if(m.type==="SUBSCRIBE")connection.catalogProtocol=m.catalogProtocol;
               service.attachConnection(runtime, connection);
               connection.send(service.snapshotMessage(runtime, user));
             }
@@ -330,12 +333,7 @@ try {
                   c.send(service.messageForViewer(execution, c.userId));
               else
                 connection.send(
-                  service.rejectionMessage(
-                    runtime,
-                    m.requestId,
-                    execution.code,
-                    execution.message,
-                  ),
+                  service.rejectionMessage(execution),
                 );
             }
           } catch (e) {
@@ -377,12 +375,15 @@ try {
     await own.locator(".ko-champion-ability").click();
     const dialog = own.getByRole("dialog");
     await own.waitForFunction(() => document.querySelector('.ko-game-stage')?.getAttribute('data-effect-targeting')==='true');
-    assert.equal(runtime.state.targetingState.maxTargets,1);
-    assert.equal(runtime.state.targetingState.selectedTargetIds.length,0);
+    assert.equal(runtime.state.targetingState,undefined);
+    const goldBeforePreview=runtime.state.players[0].currentGold;
     await own.screenshot({path:`${out}/single-target-${width}.png`});
     await own.reload();
+    await own.locator(".ko-champion-ability").waitFor();
+    assert.equal(runtime.state.players[0].currentGold,goldBeforePreview);
+    await own.locator(".ko-champion-ability").click();
     await own.waitForFunction(() => document.querySelector('.ko-game-stage')?.getAttribute('data-effect-targeting')==='true');
-    assert.equal(runtime.state.targetingState.maxTargets,1);
+    assert.equal(runtime.state.targetingState,undefined);
     await own.locator('.ko-opponent-board-row [data-card-instance-id="enemy-0"]').click({position:{x:25,y:60}});
     await own.waitForFunction(() => document.querySelector('.ko-game-stage')?.getAttribute('data-effect-targeting')==='false');
     assert.equal(runtime.state.players[0].health,12);
@@ -441,7 +442,7 @@ try {
       actualOnlinePages: true,
       authoritativeServiceAndIsolatedDB: true,
       singleTargetPandora: true,
-      persistedSelectionAfterReload: true,
+      localPreviewReloadCancelsWithoutSpending: true,
       catalogDiscovery: true,
       readableChoiceWithoutBoardMask: true,
       opponentWait: true,

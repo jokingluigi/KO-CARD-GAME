@@ -1,0 +1,30 @@
+[
+  {
+    "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+    "name": "라 칼라베라",
+    "before": {
+      "version": 39,
+      "questText": "자신의 무덤에 '언데드' 태그를 가진 카드가 10장 이상 있어야합니다.",
+      "questProgressRequired": 10
+    },
+    "after": {
+      "questText": "자신의 무덤에 '언데드' 태그를 가진 카드가 8장 이상 있어야합니다.",
+      "questProgressRequired": 8
+    },
+    "status": 200
+  },
+  {
+    "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+    "name": "판도라",
+    "before": {
+      "version": 46,
+      "questText": "상대 선수 카드를 핀폴로 8회 리타이어시키기",
+      "questProgressRequired": 5
+    },
+    "after": {
+      "questText": "상대 선수 카드를 핀폴로 8회 리타이어시키기",
+      "questProgressRequired": 8
+    },
+    "status": 200
+  }
+]

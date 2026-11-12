@@ -49,7 +49,10 @@ export async function motionScenarios({
       },
     ],
   };
-  state.cardPool = [...state.cardPool, unit, spell];
+  const readSpell={...spell,id:'motion-read-spell',name:'주문 읽기 검증',cost:0,rulesText:'주문 카드를 읽는 시간을 확인합니다.',abilities:[{trigger:'ACTIVE',effects:[]}]};
+  const finisherSpell={...readSpell,id:'motion-finisher',name:'피니셔 연출 검증',isToken:true,isChampionToken:true,rarity:'CHAMPION'};
+  const legend={...unit,id:'motion-legend',name:'퇴장 대사 검증',rarity:'LEGENDARY',health:2,retireLine:'퇴장도 출현과 같은 자리에서 표시합니다.'};
+  state.cardPool = [...state.cardPool, unit, spell,readSpell,legend,finisherSpell];
   state.events = [];
   state.activePlayerId = "PLAYER_ONE";
   state.status = "IN_PROGRESS";
@@ -75,12 +78,14 @@ export async function motionScenarios({
       isGenerated: true,
     },
     generateCardInstance(spell, { instanceId: "motion-cast" }),
+    generateCardInstance(readSpell,{instanceId:'motion-read-cast'}),
+    generateCardInstance(finisherSpell,{instanceId:'motion-finisher-cast'}),
   ];
   state.players[1].hand = [
     generateCardInstance(spell, { instanceId: "motion-opponent-cast" }),
   ];
   state.players[1].board[0] = {
-    ...generateCardInstance(unit, { instanceId: "motion-enemy" }),
+    ...generateCardInstance(legend, { instanceId: "motion-enemy" }),
     boardSlot: 0,
     enteredThisTurn: false,
   };
@@ -139,6 +144,22 @@ export async function motionScenarios({
   );
   const oneCopy = await own.evaluate(() => window.motionProbe.ownCopyPeak);
   assert.equal(oneCopy, 1);
+  await own.locator('.ko-player-hand [data-card-definition="motion-read-spell"]').click({position:{x:25,y:60}});
+  await own.getByRole('button',{name:'사용',exact:true}).click();
+  await own.waitForFunction(()=>document.querySelector('[data-play-instance="motion-read-cast"][data-spell-reading="true"]'));
+  await own.evaluate(()=>{window.spellReadStarted=performance.now();});
+  await own.waitForTimeout(300);
+  assert.equal(await own.locator('[data-play-instance="motion-read-cast"]').count(),1);
+  await own.locator('.ko-turn-end:not([disabled])').waitFor();
+  assert.equal(await own.locator('[data-play-instance="motion-read-cast"]').count(),1,'readable spell must not hold next input');
+  await own.screenshot({path:`${out}/spell-reading-${width}.png`});
+  await own.waitForFunction(()=>!document.querySelector('[data-play-instance="motion-read-cast"]'));
+  assert.ok(await own.evaluate(()=>performance.now()-window.spellReadStarted)>1400,'spell remains visible for approximately 2 seconds total');
+  await own.locator('.ko-player-hand [data-card-definition="motion-finisher"]').click({position:{x:25,y:60}});
+  await own.getByRole('button',{name:'사용',exact:true}).click();
+  await Promise.all([own,opponent].map(page=>page.locator('[data-cinematic-kind="FINISHER_CARD"] .ko-cinematic__finisher-sigil').waitFor()));
+  await own.screenshot({path:`${out}/finisher-spell-${width}.png`});
+  await own.waitForFunction(()=>!document.querySelector('[data-play-instance="motion-finisher-cast"]'));
   await own.locator(".ko-turn-end:not([disabled])").waitFor();
   await own
     .locator('.ko-player-hand [data-card-definition="motion-spell"]')
@@ -210,10 +231,14 @@ export async function motionScenarios({
     .locator('.ko-opponent-board-row [data-card-instance-id="motion-enemy"]')
     .click({ position: { x: 25, y: 60 } });
   await own.waitForFunction(() => document.querySelector(".attack-animation"));
-  await own.screenshot({ path: `${out}/attack-motion-${width}.png` });
+  await Promise.all([own,opponent].map(async page=>{
+    const dialogue=page.locator('.ko-legendary-spotlight[data-wrestler-speaker="motion-enemy"]');
+    await dialogue.waitFor();assert.match(await dialogue.innerText(),/리타이어/);
+  }));
+  await own.screenshot({path:`${out}/legendary-retire-${width}.png`});
   await own.waitForFunction(() => !document.querySelector(".attack-animation"));
   await own.locator(".ko-turn-end:not([disabled])").waitFor();
-  assert.equal(runtime.state.players[1].board[0].currentHealth, 8);
+  assert.ok(runtime.state.players[1].graveyard.some(c=>c.instanceId==='motion-enemy'));
   const timerBefore = await own
     .getByTestId("text-online-turn-timer")
     .innerText();
@@ -238,6 +263,10 @@ export async function motionScenarios({
     actualAttackDamage: 2,
     resyncClearsOldFlights: true,
     clockAdvances: true,
+    spellReadTimeWithoutInputLock:true,
+    spellReadMs:2000,
+    finisherSpecialBothViews:true,
+    legendaryRetireUsesEntranceSpotlightBothViews:true,
     frameGapP95Ms: Math.round(gaps[Math.floor(gaps.length * 0.95)] ?? 0),
     frameGapsOver50ms: gaps.filter((n) => n > 50).length,
     note: "Local Chromium instrumentation, screenshots and service fixture overhead; not Korean mobile FPS or Internet latency",

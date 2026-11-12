@@ -1,4 +1,5 @@
 import { startUsageStatisticsWorker } from './lib/usage-statistics-store';
+import {startQuestProgressWorker} from './lib/quest-progress-outbox';
 import {startDraftWorker} from './lib/draft-service';
 import { createServer } from "node:http";
 import app from "./app";
@@ -29,6 +30,7 @@ async function start(): Promise<void> {
   await ensureProductionAdmin();
   startDraftWorker();
   startUsageStatisticsWorker();
+  startQuestProgressWorker();
 
   const server = createServer(app);
   attachOnlineMatchWebSocket(server);

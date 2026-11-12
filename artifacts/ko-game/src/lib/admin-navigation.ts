@@ -12,6 +12,7 @@ export const ADMIN_GROUPS = [
   { id: "system", label: "시스템 설정", icon: "Settings" },
 ] as const;
 export const ADMIN_PAGES = [
+  {id:'multiplayer-performance',group:'statistics',path:'/admin/multiplayer-performance',label:'멀티플레이 성능',description:'전투 지연·프레임·메모리·송신 대기를 확인합니다.',keywords:'렉 지연 딜레이 성능 p95'},
   {
     id: "dashboard",
     group: "home",

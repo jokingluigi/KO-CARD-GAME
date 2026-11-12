@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import {flushQuestProgress} from '../lib/quest-progress-outbox';
 import { getAuthenticatedUser } from "../lib/auth";
 import {
   availableAccountRewards,
@@ -13,6 +14,7 @@ router.use(async (req, res, next) => {
       return;
     }
     req.authUser = user;
+    await flushQuestProgress(user.id);
     res.setHeader("Cache-Control", "no-store");
     next();
   } catch (e) {

@@ -8,8 +8,9 @@ export { isOnlineActionPayload };
 export type { OnlineActionPayload };
 
 export type OnlineClientMessage =
+  | {type:'PERFORMANCE_SAMPLE';matchId:string;samples:Array<{kind:'actionAckMs'|'frameGapMs'|'stateApplyMs';value:number}>}
   | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot?:number;itemId?:string}
-  | { type: "SUBSCRIBE"; matchId: string }
+  | { type: "SUBSCRIBE"; matchId: string; catalogProtocol?:1 }
   | { type: "UNSUBSCRIBE"; matchId: string }
   | {
       type: "MATCH_ACTION";

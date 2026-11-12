@@ -1,0 +1,11 @@
+✔ wolf absorbs pre-retirement ATK/HP despite 소버린 nested retirement effect, after serialized turn-start choice (13.192009ms)
+✔ wolf absorbs pre-retirement ATK/HP despite 레이븐 nested retirement effect, after serialized turn-start choice (2.627389ms)
+✔ Calavera graveyard Undead requirement and text both eight; seven is incomplete; old unfinished restored, completed preserved (8.05103ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1309.261017

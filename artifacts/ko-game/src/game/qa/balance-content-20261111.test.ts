@@ -428,7 +428,7 @@ test("Pandora damages exactly one selected wrestler and heals only that ability 
 test("Calavera uses the current graveyard undead count rather than old accumulated retirements", () => {
   const s = setup();
   champion(s, "챔피언 라 칼라베라");
-  s.players[0].graveyard = Array.from({ length: 9 }, (_, i) =>
+  s.players[0].graveyard = Array.from({ length: 7 }, (_, i) =>
     generateCardInstance(body, { instanceId: "u-" + i }),
   );
   let n = processChampionQuestEvents(s, s);
@@ -443,7 +443,7 @@ test("Calavera uses the current graveyard undead count rather than old accumulat
             ...p,
             graveyard: [
               ...p.graveyard,
-              generateCardInstance(body, { instanceId: "u-10" }),
+              generateCardInstance(body, { instanceId: "u-8" }),
             ],
           },
     ),

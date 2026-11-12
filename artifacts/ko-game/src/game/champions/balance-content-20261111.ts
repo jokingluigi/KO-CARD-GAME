@@ -24,15 +24,19 @@ export function reviewedNovember11Champion(
   switch (record.id) {
     case "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c":
       if (
-        is("자신의 무덤에 '언데드' 태그를 가진 카드가 10장 이상 있어야합니다.")
-      )
+        is("자신의 무덤에 '언데드' 태그를 가진 카드가 10장 이상 있어야합니다.") ||
+        is("자신의 무덤에 '언데드' 태그를 가진 카드가 8장 이상 있어야합니다.")
+      ) {
+        r={...r,questText:"자신의 무덤에 '언데드' 태그를 가진 카드가 8장 이상 있어야합니다."};
         condition({
           type: "ZONE_COUNT",
           zone: "GRAVEYARD",
           owner: "SELF",
           tag: "언데드",
-          required: 10,
+          required: 8,
         });
+        r={...r,questProgressRequired:8,questCondition:{...r.questCondition,required:8}};
+      }
       break;
     case "f7b087d8-3148-43d5-a634-a81d15c81721":
       if (is("이 게임에서 카드가 총 10회 파괴됩니다."))
@@ -64,7 +68,8 @@ export function reviewedNovember11Champion(
         ]);
       break;
     case "bcffab96-f61f-497e-b60b-de5a869837d3":
-      if (is("상대 선수 카드를 핀폴로 5회 리타이어시키기"))
+      if (is("상대 선수 카드를 핀폴로 5회 리타이어시키기") || is("상대 선수 카드를 핀폴로 8회 리타이어시키기")) {
+        r={...r,questText:"상대 선수 카드를 핀폴로 8회 리타이어시키기"};
         condition({
           type: "EVENT",
           event: "CARD_RETIRED",
@@ -72,8 +77,10 @@ export function reviewedNovember11Champion(
           sourceOwner: "SELF",
           cardType: "WRESTLER",
           exactZero: true,
-          required: 5,
+          required: 8,
         });
+        r={...r,questProgressRequired:8,questCondition:{...r.questCondition,required:8}};
+      }
       if ([
         "자신이 선택한 모든 선수에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
         "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",

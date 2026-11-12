@@ -182,7 +182,7 @@ export function LegendaryDialogueSpotlight({
         <span className="ko-legendary-spotlight__rarity">
           LEGENDARY{" "}
           <span>
-            / {speech.playerId === selfId ? "내 선수" : "상대 선수"} 등장
+            / {speech.playerId === selfId ? "내 선수" : "상대 선수"} {speech.phase==='CARD_RETIRED'?'리타이어':speech.phase==='CARD_DESTROYED'?'파괴':'등장'}
           </span>
         </span>
         <strong className="ko-legendary-spotlight__name">

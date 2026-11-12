@@ -1,6 +1,8 @@
 import {sendImageEmote} from './service';
+import {BattleSocketSender} from './socket-sender';
+import {recordPerformance} from './performance';
 import {sitePresence} from './site-presence';
-import {readMaintenance,maintenanceAllows} from '../lib/maintenance';
+import {readMaintenance,maintenanceAllows,socketMaintenance} from '../lib/maintenance';
 import type { IncomingMessage, Server as HttpServer } from "node:http";
 import type { Duplex } from "node:stream";
 import { randomUUID } from "node:crypto";
@@ -43,6 +45,7 @@ import {
 } from "./background-task";
 
 const ONLINE_WS_PATH = "/api/online-matches/ws";
+const performanceReports=new WeakMap<OnlineMatchConnection,number>();
 
 function send(socket: WebSocket, message: OnlineServerMessage): void {
   if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
@@ -132,15 +135,18 @@ async function authenticateUpgrade(request: IncomingMessage): Promise<PublicUser
 }
 
 function handleConnection(socket: WebSocket, user: PublicUser): void {
+  const sender=new BattleSocketSender(socket,()=>connection.catalogProtocol===1);
   const removePresence = sitePresence.add(user.id, {send: online => send(socket, {type:'SITE_PRESENCE',otherUsersOnline:online})});
   let subscribedRuntime: OnlineMatchRuntime | null = null;
   const connection = {
     userId: user.id,
     nickname: user.nickname,
-    send: (message) => send(socket, message),
+    catalogProtocol: undefined as 1|undefined,
+    send: (message) => sender.send(message),
   } satisfies OnlineMatchConnection & { nickname: string };
 
   const detach = () => {
+    sender.dispose();
     removePresence();
     if (subscribedRuntime) {
       const runtime = subscribedRuntime;
@@ -163,7 +169,7 @@ function handleConnection(socket: WebSocket, user: PublicUser): void {
     runWebSocketBackgroundTask(
       "message",
       async () => {
-        if (!maintenanceAllows((await readMaintenance()).enabled,user.role)) {send(socket,{type:"ERROR",code:"MATCH_UNAVAILABLE",message:"서버 점검 중입니다."});socket.close(1013,"서버 점검");return;}
+        if (!maintenanceAllows((await socketMaintenance.get()).enabled,user.role)) {send(socket,{type:"ERROR",code:"MATCH_UNAVAILABLE",message:"서버 점검 중입니다."});socket.close(1013,"서버 점검");return;}
         return handleMessage(raw.toString(), socket, connection, () => subscribedRuntime, (runtime) => {
         subscribedRuntime = runtime;
       });},
@@ -232,6 +238,7 @@ async function handleMessage(
   }
 
   if (message.type === "SUBSCRIBE") {
+    connection.catalogProtocol=message.catalogProtocol===1?1:undefined;
     const runtime = await getRuntime(message.matchId);
     if (!runtime || !matchSeat(runtime, connection.userId)) {
       send(socket, { type: "ERROR", code: "FORBIDDEN", message: "참가 중인 매치만 구독할 수 있습니다." });
@@ -247,7 +254,7 @@ async function handleMessage(
     }
     setSubscription(runtime);
     attachConnection(runtime, connection);
-    send(socket, snapshotMessage(runtime, connection.userId));
+    connection.send(snapshotMessage(runtime, connection.userId));
     return;
   }
 
@@ -269,7 +276,7 @@ async function handleMessage(
     attachConnection(runtime, connection);
     const snapshot = snapshotMessage(runtime, connection.userId);
     if (snapshot.type !== "MATCH_SNAPSHOT") return;
-    send(socket, { ...snapshot, type: "RESYNC_REQUIRED" });
+    connection.send({ ...snapshot, type: "RESYNC_REQUIRED" });
     return;
   }
 
@@ -292,6 +299,11 @@ async function handleMessage(
     return;
   }
 
+  if(message.type==='PERFORMANCE_SAMPLE'){
+    const now=Date.now();if(now-(performanceReports.get(connection)??0)<1000)return;performanceReports.set(connection,now);
+    if(isPrimaryConnection(runtime,connection))for(const sample of message.samples)recordPerformance('client.'+sample.kind,sample.value);
+    return;
+  }
   if(message.type === "IMAGE_EMOTE"){
     if(isPrimaryConnection(runtime,connection)){try{await sendImageEmote(runtime,connection.userId,message.requestId,message.itemId??message.slot!);}catch{send(socket,{type:'ERROR',code:'IMAGE_EMOTE_UNAVAILABLE',message:'이모티콘 보유 정보를 확인하지 못했습니다.'});}}
     return;

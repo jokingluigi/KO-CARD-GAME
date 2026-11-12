@@ -3,6 +3,7 @@ import { CHAMPION_EMOTES, type ChampionEmote } from "../../../artifacts/ko-game/
 import type { BoardSlot } from "../../../artifacts/ko-game/src/game/engine/board-position";
 
 export type OnlineActionPayload =
+  | {type:'COMMIT_TARGETED_ACTION';targetId:string;action:{type:'PLAY_TECHNIQUE';cardInstanceId:string}|{type:'USE_ACTIVE';cardInstanceId:string}|{type:'USE_CHAMPION_ABILITY'}}
   | { type: "PLAY_WRESTLER"; cardInstanceId: string; boardSlot: BoardSlot }
   | { type: "PLAY_TECHNIQUE"; cardInstanceId: string }
   | { type: "USE_ACTIVE"; cardInstanceId: string }
@@ -61,6 +62,8 @@ export function isOnlineActionPayload(value: unknown): value is OnlineActionPayl
   if (!isRecord(value) || typeof value.type !== "string") return false;
 
   switch (value.type) {
+    case 'COMMIT_TARGETED_ACTION':
+      return hasExactKeys(value,['type','action','targetId'])&&isNonEmptyString(value.targetId)&&isNestedTargetedAction(value.action);
     case "EMOTE":
       return hasExactKeys(value, ["type", "emote"]) && CHAMPION_EMOTES.includes(value.emote as ChampionEmote);
     case "MULLIGAN":

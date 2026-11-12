@@ -1,0 +1,20 @@
+[00:33:16.709] [32mINFO[39m (275179): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 60
+MULTIPLAYER_LATENCY {"baseline":false,"sqlDelayMs":10,"actions":[{"sqlQueries":3,"elapsedMs":61.1,"bytes":275544},{"sqlQueries":3,"elapsedMs":51.1,"bytes":276476},{"sqlQueries":3,"elapsedMs":49.9,"bytes":277072},{"sqlQueries":3,"elapsedMs":49.8,"bytes":277987},{"sqlQueries":3,"elapsedMs":49.5,"bytes":278578},{"sqlQueries":3,"elapsedMs":49.2,"bytes":279493}],"batchQueries":12,"webSocket":{"rawBytes":275525,"wireBytes":53653,"legacyClient":true,"bothViews":true}}
+✔ PvP SQL cost, atomic persistence, replay, reconnect and batched quest credit (4686.387792ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6503.005685

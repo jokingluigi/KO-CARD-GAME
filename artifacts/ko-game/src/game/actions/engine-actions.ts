@@ -146,6 +146,14 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
   if (hasPendingProgram(state) && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','업그레이드 효과의 대상을 선택하세요.');
   if (state.targetingState?.finisherChoice && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type)) return actionFailure(state,'TARGET_SELECTION_PENDING','사용할 피니셔를 하나 선택하세요.');
   if (hasPendingFinisherCast(state) && !['SELECT_EFFECT_TARGET','SURRENDER','EMOTE'].includes(action.type) && !(action.type==='CANCEL_EFFECT_TARGET' && state.targetingState?.cancelable)) return actionFailure(state,'TARGET_SELECTION_PENDING','피니셔 효과의 대상을 선택하세요.');
+  if(action.type==='COMMIT_TARGETED_ACTION'){
+    if(state.targetingState?.active)return actionFailure(state,'TARGET_SELECTION_PENDING','현재 대상 선택을 먼저 완료하세요.');
+    const preview=beginTargetedAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:action.playerId,action:action.action});
+    if(!preview.success)return preview;
+    const pending=preview.state.targetingState;
+    if(pending?.phase!=='PRE_COMMIT'||pending.minTargets!==1||pending.maxTargets!==1||!pending.validTargetIds.includes(action.targetId))return actionFailure(state,'NO_VALID_TARGET','이 대상은 사용할 수 없습니다.');
+    return executeActionInternal(preview.state,{type:'CONFIRM_PRECOMMIT_TARGET',playerId:action.playerId,targetId:action.targetId});
+  }
   if (action.type === 'BEGIN_TARGETED_ACTION') return beginTargetedAction(state, action);
   switch (action.type) {
     case 'PLAY_WRESTLER':

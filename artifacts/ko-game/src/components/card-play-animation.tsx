@@ -9,6 +9,7 @@ import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
+import {isFinisherSpell} from './card-play-animation-utils';
 import { techniqueRevealRect, techniqueStageGeometry, wrestlerPlayRect, summonShadowFrames } from "./card-play-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { audioManager } from '../audio/audio-manager';
@@ -20,9 +21,9 @@ export const TECHNIQUE_REVEAL_HOLD_MS = 160;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
 
 function animationDuration(animation: CardPlayAnimationState) {
+  if (animation.kind === "TECHNIQUE") return TECHNIQUE_REVEAL_TOTAL_MS;
   const reducedMotion = prefersReducedMotion();
   if (reducedMotion) return 180;
-  if (animation.kind === "TECHNIQUE") return TECHNIQUE_REVEAL_TOTAL_MS;
   if (getCardDefinition(animation.card.definitionId)?.rarity === 'LEGENDARY') return 940;
   if (animation.impactLevel === "VERY_HEAVY") return PRESENTATION_CONFIG.veryHeavyLandingMs;
   if (animation.impactLevel === "HEAVY") return PRESENTATION_CONFIG.heavyLandingMs;
@@ -34,12 +35,14 @@ export function CardPlayAnimation({
   animation,
   onComplete,
   onLand,
+  onReadable,
   viewerPlayerId,
   hapticsEnabled=true,
 }: {
   animation: CardPlayAnimationState;
   onComplete: () => void;
   onLand?: (instanceId:string) => void;
+  onReadable?:()=>void;
   viewerPlayerId?: string;
   hapticsEnabled?: boolean;
 }) {
@@ -59,7 +62,10 @@ export function CardPlayAnimation({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const onLandRef=useRef(onLand);onLandRef.current=onLand;
+  const readableRef=useRef(onReadable);readableRef.current=onReadable;
+  const [reading,setReading]=useState(false);
   const definition = getCardDefinition(animation.card.definitionId);
+  const finisherSpell=animation.kind==='TECHNIQUE'&&isFinisherSpell(animation.card,definition);
   const cosmeticArtwork=useCosmeticImage((!animation.card.isToken||animation.card.isChampionToken)?animation.playerId:undefined,animation.card.definitionId,'CARD_SKIN',definition?.imageUrl);
 
   // Capture viewport geometry once per play; camera recoil must not restart the flight.
@@ -76,7 +82,7 @@ export function CardPlayAnimation({
   const profile=summonImpact(impactCost,animation.card.isChampionToken?'CHAMPION':definition?.rarity);
   const timing=summonTimeline(impactCost,profile.rarity,reduced);
   const duration=animation.kind==='WRESTLER'?timing.duration:animationDuration(animation);
-  useCinematicEvent(animation.kind==='TECHNIQUE'&&animation.card.currentCost<4?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:animation.kind==='TECHNIQUE'?'BIG_SPELL':profile.rarity==='CHAMPION'?'CHAMPION':profile.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name??'KO',art:cosmeticArtwork.src,artFallback:definition?.imageUrl,artDisplay:cosmeticArtwork.display,strength:impactCost,duration:profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'?Math.max(200,timing.landing-50):undefined});
+  useCinematicEvent(animation.kind==='TECHNIQUE'&&animation.card.currentCost<4&&!finisherSpell?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:finisherSpell?'FINISHER_CARD':animation.kind==='TECHNIQUE'?'BIG_SPELL':profile.rarity==='CHAMPION'?'CHAMPION':profile.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name??'KO',subtitle:finisherSpell?'피니셔 발동':undefined,art:cosmeticArtwork.src,artFallback:definition?.imageUrl,artDisplay:cosmeticArtwork.display,strength:finisherSpell?6:impactCost,duration:finisherSpell?1400:profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'?Math.max(200,timing.landing-50):undefined});
 
   const targetScale = animation.kind === "TECHNIQUE"
     ? reveal.scale
@@ -108,6 +114,7 @@ export function CardPlayAnimation({
 
   useEffect(() => {
     completedRef.current=false;landedRef.current=false;setLanded(false);
+    if(finisherSpell)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-champion.wav',72,9);
     let frame=0;let motion:Animation|undefined;const origin=performance.now();
     const finish=()=>{
       if(completedRef.current)return;completedRef.current=true;onCompleteRef.current();
@@ -137,18 +144,21 @@ export function CardPlayAnimation({
       frame=requestAnimationFrame(tick);
       if(motion)motion.onfinish=()=>{land();finish();};
     }
-    const spellImpact=animation.kind==='TECHNIQUE'&&hasBoardWideImpact(definition?.abilities)?window.setTimeout(()=>screenRef.current.request({id:'spell-impact:'+occurrenceId,profile:summonImpact(Math.max(5,impactCost)),x:innerWidth/2,y:innerHeight*.45,radial:true,nearby:true}),Math.round(duration*.28)):null;
-    const fallback=window.setTimeout(finish,duration+120);
+    const spellImpact=animation.kind==='TECHNIQUE'&&(finisherSpell||hasBoardWideImpact(definition?.abilities))?window.setTimeout(()=>screenRef.current.request({id:'spell-impact:'+occurrenceId,profile:finisherSpell?summonImpact(6,'CHAMPION'):summonImpact(Math.max(5,impactCost)),x:innerWidth/2,y:innerHeight*.45,radial:true,nearby:true}),Math.min(360,Math.round(duration*.28))):null;
+    setReading(false);
+    const readTimer=animation.kind==='TECHNIQUE'?window.setTimeout(()=>{setReading(true);readableRef.current?.();},Math.min(360,duration)):null;
+    const fallback=window.setTimeout(finish,animation.kind==='TECHNIQUE'?duration:duration+120);
     const resized=()=>{if(animation.kind==='WRESTLER')finish();};
     const hidden=()=>{if(document.hidden)finish();};
     window.addEventListener('resize',resized);document.addEventListener('visibilitychange',hidden);
-    return()=>{clearTimeout(fallback);if(spellImpact!==null)clearTimeout(spellImpact);cancelAnimationFrame(frame);shadow?.cancel();if(motion){motion.onfinish=null;motion.cancel();}window.removeEventListener('resize',resized);document.removeEventListener('visibilitychange',hidden);};
+    return()=>{clearTimeout(fallback);if(readTimer!==null)clearTimeout(readTimer);if(spellImpact!==null)clearTimeout(spellImpact);cancelAnimationFrame(frame);shadow?.cancel();if(motion){motion.onfinish=null;motion.cancel();}window.removeEventListener('resize',resized);document.removeEventListener('visibilitychange',hidden);};
   },[animation.card.instanceId,occurrenceId,animation.kind,duration,targetLeft,targetTop,targetScale]);
 
 
   function complete(event: React.AnimationEvent<HTMLDivElement>) {
+    if(animation.kind==='TECHNIQUE')return;
     if (event.target !== event.currentTarget ||
-        ![animation.kind === "TECHNIQUE" ? "ko-card-play-technique" : "ko-card-play-wrestler",'ko-cinematic-card-reduced'].includes(event.animationName)) return;
+        !['ko-card-play-wrestler','ko-cinematic-card-reduced'].includes(event.animationName)) return;
     if (completedRef.current) return;
     completedRef.current = true;
     onCompleteRef.current();
@@ -162,6 +172,8 @@ export function CardPlayAnimation({
   return (
     <div
       data-play-instance={animation.card.instanceId}
+      data-spell-reading={reading}
+      data-finisher-spell={finisherSpell}
       data-play-landed={landed ? "true" : "false"}
       aria-hidden={animation.kind === "WRESTLER"}
       className={`card-play-animation ${animation.kind==='WRESTLER'?'ko-summon-motion':''} ${animation.kind==='WRESTLER'&&(animation.card.currentCost>=6||definition?.rarity==='CHAMPION'||definition?.rarity==='LEGENDARY')?'ko-summon-heavy':''} ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}

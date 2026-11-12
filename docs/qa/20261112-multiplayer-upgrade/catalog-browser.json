@@ -1,0 +1,50 @@
+[
+  {
+    "path": "collection",
+    "width": 390,
+    "visible": true,
+    "combinedFilterCount": 2,
+    "persisted": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "path": "decks",
+    "width": 390,
+    "visible": true,
+    "combinedFilterCount": 2,
+    "persisted": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "path": "collection",
+    "width": 844,
+    "visible": true,
+    "combinedFilterCount": 2,
+    "persisted": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "path": "decks",
+    "width": 844,
+    "visible": true,
+    "combinedFilterCount": 2,
+    "persisted": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "path": "collection",
+    "width": 1440,
+    "visible": true,
+    "combinedFilterCount": 2,
+    "persisted": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "path": "decks",
+    "width": 1440,
+    "visible": true,
+    "combinedFilterCount": 2,
+    "persisted": true,
+    "noHorizontalOverflow": true
+  }
+]

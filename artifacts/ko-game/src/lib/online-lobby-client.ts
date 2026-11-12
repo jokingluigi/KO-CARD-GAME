@@ -1,4 +1,5 @@
 import type {MatchCosmetics,ImageEmoteEvent} from '@workspace/cosmetics';
+import {CatalogDecoder,type CatalogWire} from '@workspace/game-engine/online-catalog';
 import type {MatchRecap} from '@workspace/game-engine';
 import type { OnlineActionPayload } from "./online-match-protocol";
 import {
@@ -26,6 +27,8 @@ export type OnlineLobbyMessage =
   | { type: "LOBBY_ERROR" | "ERROR"; code: string; message: string };
 
 type MatchPayload = {
+ acknowledgedRequests?:Array<{requestId:string;version:number}>;
+ catalogWire?:CatalogWire;
  cosmetics?:MatchCosmetics;
  cosmeticEmotes?:ImageEmoteEvent[];
   matchId: string; version: number; state: unknown; events: unknown[];
@@ -54,6 +57,7 @@ export type OnlineMatchMessage =
 export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage | {type:'SITE_PRESENCE';otherUsersOnline:boolean};
 
 export type OnlineLobbyClientMessage =
+ | {type:'PERFORMANCE_SAMPLE';matchId:string;samples:Array<{kind:'actionAckMs'|'frameGapMs'|'stateApplyMs';value:number}>}
  | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot?:number;itemId?:string}
   | { type: "JOIN_QUICK_QUEUE"; deckId: string }
   | { type: "LEAVE_QUICK_QUEUE" }
@@ -62,7 +66,7 @@ export type OnlineLobbyClientMessage =
   | { type: "LEAVE_PRIVATE_ROOM"; roomId: string }
   | { type: "CLOSE_PRIVATE_ROOM"; roomId: string }
   | { type: "SET_ROOM_READY"; roomId: string; ready: boolean }
-  | { type: "SUBSCRIBE" | "UNSUBSCRIBE" | "RESYNC"; matchId: string }
+  | { type: "SUBSCRIBE" | "UNSUBSCRIBE" | "RESYNC"; matchId: string; catalogProtocol?:1 }
   | { type: "MATCH_ACTION"; matchId: string; requestId: string; expectedVersion: number; action: OnlineActionPayload };
 
 export type OnlineLobbyConnectionState = "idle" | "connecting" | "open" | "closed" | "error";
@@ -117,6 +121,10 @@ function websocketUrl(ticket?: string): string {
 
 class OnlineLobbyClient {
   private socket: WebSocket | null = null;
+  private actionTimes=new Map<string,number>();
+  private performanceSamples:Array<{kind:'actionAckMs'|'frameGapMs'|'stateApplyMs';value:number}>=[];
+  sample(kind:'actionAckMs'|'frameGapMs'|'stateApplyMs',value:number){if(Number.isFinite(value)&&value>=0&&value<=60000){this.performanceSamples.push({kind,value});if(this.performanceSamples.length>100)this.performanceSamples.shift();}}
+  flushPerformance(matchId:string){if(this.socket?.readyState===WebSocket.OPEN&&this.performanceSamples.length){const samples=this.performanceSamples.splice(0,50);this.send({type:'PERFORMANCE_SAMPLE',matchId,samples});}}
   private connectionState: OnlineLobbyConnectionState = "idle";
   private readonly listeners = new Set<OnlineLobbyListener>();
   private readonly connectionListeners = new Set<OnlineLobbyConnectionListener>();
@@ -233,10 +241,18 @@ class OnlineLobbyClient {
       this.offlineNoticeSent = false;
       this.setConnectionState("open");
     });
+    const catalogDecoder=new CatalogDecoder();
     socket.addEventListener("message", (event) => {
       if (this.socket !== socket || generation !== this.socketGeneration) return;
       try {
-        const message = JSON.parse(String(event.data)) as OnlineServerMessage;
+        const parsed = JSON.parse(String(event.data)) as OnlineServerMessage;
+        const message = catalogDecoder.decode(parsed);
+        if(!message){if('matchId' in parsed)this.send({type:'RESYNC',matchId:parsed.matchId});return;}
+        if(message.type==='ACTION_ACCEPTED'){
+          for(const ack of [{requestId:message.requestId,version:message.version},...message.acknowledgedRequests??[]]){
+            const sent=this.actionTimes.get(ack.requestId);if(sent!==undefined){this.sample('actionAckMs',performance.now()-sent);this.actionTimes.delete(ack.requestId);}
+          }
+        }
         if (message && typeof message.type === "string") {
           if (message.type === 'SITE_PRESENCE') {
             if (typeof message.otherUsersOnline === 'boolean') this.updatePresence(message.otherUsersOnline);
@@ -301,7 +317,8 @@ class OnlineLobbyClient {
       }
       return false;
     }
-    this.socket.send(JSON.stringify(message)); return true;
+    if(message.type==='MATCH_ACTION'){this.actionTimes.set(message.requestId,performance.now());if(this.actionTimes.size>64)this.actionTimes.delete(this.actionTimes.keys().next().value!);}
+    this.socket.send(JSON.stringify(message.type==='SUBSCRIBE'?{...message,catalogProtocol:1}:message)); return true;
   }
   private setConnectionState(state: OnlineLobbyConnectionState) {
     if (state !== 'open') this.updatePresence(null);

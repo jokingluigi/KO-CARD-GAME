@@ -34,6 +34,7 @@ const AdminServerMaintenance = lazy(() =>
   })),
 );
 const AdminUsageStatistics = lazy(() => import('@/components/admin-usage-statistics').then(m=>({default:m.AdminUsageStatistics})));
+const AdminMultiplayerPerformance=lazy(()=>import('@/components/admin-multiplayer-performance'));
 const AdminQuestManager = lazy(() =>
   import("@/components/admin-quest-manager").then((m) => ({
     default: m.AdminQuestManager,
@@ -229,7 +230,7 @@ export default function Admin() {
             <AdminDashboard go={go} />
           ) : page?.id === "users" ? (
             <AdminUserDirectory go={go} />
-          ) : page?.id === "system" ? (
+          ) : page?.id === 'multiplayer-performance' ? <AdminMultiplayerPerformance/> : page?.id === "system" ? (
             <AdminServerMaintenance />
           ) : page?.id === "test" ? (
             <section className="admin-test-launch">

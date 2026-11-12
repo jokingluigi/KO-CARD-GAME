@@ -2,12 +2,14 @@ import {db} from '@workspace/db';
 import {sql} from 'drizzle-orm';
 import type {Request,Response,NextFunction} from 'express';
 import {getAuthenticatedUser} from './auth';
+import {shortLivedRead} from './short-lived-read';
 export const MAINTENANCE_MESSAGE='서버 점검 중입니다. 점검이 끝나면 다시 접속해 주세요.';
 export async function readMaintenance(){
  const result=await db.execute(sql`SELECT maintenance_enabled, maintenance_message FROM ko_server_settings WHERE id='server'`);
  const row=result.rows[0];return {enabled:row?.maintenance_enabled===true,message:String(row?.maintenance_message??MAINTENANCE_MESSAGE)};
 }
 export function maintenanceAllows(enabled:boolean,role?:string){return !enabled||role==='ADMIN';}
+export const socketMaintenance=shortLivedRead(readMaintenance,1000);
 export function createMaintenanceGate(read=readMaintenance,authenticate=getAuthenticatedUser){return async(req:Request,res:Response,next:NextFunction)=>{
  try{
   const publicCardImage = (req.method === 'GET' || req.method === 'HEAD') && /^\/storage\/objects\/uploads\/(?:card-images|cosmetics)\/[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp)$/i.test(req.path);

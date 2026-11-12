@@ -1,13 +1,13 @@
 import type { CosmeticDisplaySettings } from "@workspace/cosmetics";
-export type CinematicKind = 'ATTACK' | 'SUMMON' | 'ABILITY' | 'BIG_SPELL' | 'LEGENDARY' | 'CHAMPION' | 'AWAKENING' | 'BOSS' | 'HIDDEN_BOSS' | 'FINISHER' | 'RESULT';
+export type CinematicKind = 'ATTACK' | 'SUMMON' | 'ABILITY' | 'BIG_SPELL' | 'LEGENDARY' | 'CHAMPION' | 'AWAKENING' | 'BOSS' | 'HIDDEN_BOSS' | 'FINISHER_CARD' | 'FINISHER' | 'RESULT';
 export type CinematicRequest = {id:string;kind:CinematicKind;title:string;subtitle?:string;art?:string|null;artFallback?:string|null;artDisplay?:CosmeticDisplaySettings;strength?:number;focus?:{x:number;y:number};duration?:number;questCompletion?:boolean};
 export type CinematicEvent = CinematicRequest & {createdAt:number;duration:number};
-export const CINEMATIC_PRIORITY:Record<CinematicKind,number>={SUMMON:1,ATTACK:2,ABILITY:3,BIG_SPELL:4,LEGENDARY:5,CHAMPION:6,AWAKENING:7,BOSS:8,HIDDEN_BOSS:8,FINISHER:9,RESULT:10};
+export const CINEMATIC_PRIORITY:Record<CinematicKind,number>={SUMMON:1,ATTACK:2,ABILITY:3,BIG_SPELL:4,LEGENDARY:5,CHAMPION:6,AWAKENING:7,BOSS:8,HIDDEN_BOSS:8,FINISHER_CARD:8.5,FINISHER:9,RESULT:10};
 export const CINEMATIC_TIMING={quick:320,action:560,panel:650,reveal:760,awakening:1100,boss:1500,result:650};
 export type CinematicState={active:CinematicEvent|null;pending:CinematicEvent[];seen:string[]};
 export const emptyCinematicState=():CinematicState=>({active:null,pending:[],seen:[]});
 export function cameraLevel(e:CinematicRequest):0|1|2|3|4{
- if(['FINISHER','BOSS','HIDDEN_BOSS'].includes(e.kind))return 4;
+ if(['FINISHER_CARD','FINISHER','BOSS','HIDDEN_BOSS'].includes(e.kind))return 4;
  if(['AWAKENING','LEGENDARY','CHAMPION','BIG_SPELL'].includes(e.kind))return 3;
  if(e.kind==='ABILITY'||(e.strength??0)>=6)return 2;
  return 1;
@@ -22,7 +22,7 @@ export function offerCinematic(s:CinematicState,e:CinematicEvent):CinematicState
  const seen=[...s.seen,e.id].slice(-96);
  if(!s.active)return {active:e,pending:[],seen};
  const priority=CINEMATIC_PRIORITY[e.kind],current=CINEMATIC_PRIORITY[s.active.kind];
- if(priority>=9&&priority>current)return {active:e,pending:s.pending.filter(p=>CINEMATIC_PRIORITY[p.kind]>=5),seen};
+ if(priority>=8.5&&priority>current)return {active:e,pending:s.pending.filter(p=>CINEMATIC_PRIORITY[p.kind]>=5),seen};
  // A stale attack must not replay after an awakening or boss cut-in.
  if(priority<3&&current>=3)return {...s,seen};
  const pending=[...s.pending.filter(p=>e.createdAt-p.createdAt<1800),e]

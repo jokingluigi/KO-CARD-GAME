@@ -4,7 +4,7 @@ export const PRESENTATION_CONFIG = {
   lightLandingMs: 260,
   heavyLandingMs: 360,
   veryHeavyLandingMs: 400,
-  techniqueRevealMs: 400,
+  techniqueRevealMs: 2000,
   attackWindupMs: 110,
   attackLungeMs: 260,
   attackHitStopMs: {

@@ -4,6 +4,7 @@ import {launchDeckEditor} from "@/lib/launch-deck";
 import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
 import {useDeadlineReached} from "@/lib/use-deadline-reached";
 import {BattleTurnClock} from "@/components/battle-turn-clock";
+import {executeAction as previewBattleAction} from '@workspace/game-engine';
 import {preloadExternalVfx} from "@/components/battle-vfx";
 import {watchActionAcknowledgement} from "@/lib/action-recovery";
 import {confirmedCounterDamage} from "@/components/attack-animation-utils";
@@ -128,6 +129,11 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [state, setState] = useState<GameState | null>(null);
   const [presentationEpoch, setPresentationEpoch] = useState(0);
+  const [pendingCardId,setPendingCardId]=useState<string|null>(null);
+  type LocalTarget={action:Extract<OnlineActionPayload,{type:'BEGIN_TARGETED_ACTION'}>['action'];frame:NonNullable<GameState['targetingState']>};
+  const [localTarget,setLocalTarget]=useState<LocalTarget|null>(null);
+  const localTargetRef=useRef(localTarget);localTargetRef.current=localTarget;
+  const receivedStateRef=useRef<{version:number;at:number}|null>(null);
   const [recap, setRecap] = useState<MatchRecap | null>(null);
   const [version, setVersion] = useState<number | null>(null);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
@@ -183,6 +189,15 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const noticeTimerRef = useRef<number | null>(null);
   const noticeTokenRef = useRef(0);
   const activeBgmKeyRef = useRef<string | null>(null);
+  useEffect(()=>{
+    if(!matchId||!('sample' in client))return;
+    let frame=0,last=0,count=0;
+    const tick=(at:number)=>{if(!document.hidden&&last&&++count%30===0)client.sample('frameGapMs',at-last);last=document.hidden?0:at;frame=requestAnimationFrame(tick);};
+    frame=requestAnimationFrame(tick);
+    const timer=setInterval(()=>client.flushPerformance(matchId),5000);
+    return()=>{cancelAnimationFrame(frame);clearInterval(timer);};
+  },[client,matchId]);
+  useEffect(()=>{const sample=receivedStateRef.current;if(!('sample' in client)||!sample||sample.version!==version)return;const frame=requestAnimationFrame(()=>{if(!document.hidden)client.sample('stateApplyMs',performance.now()-sample.at);});return()=>cancelAnimationFrame(frame);},[version,client]);
 
   useEffect(() => {
     // Prepare the fixed hit textures before an actual attack needs them.
@@ -258,8 +273,10 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         message.type === "MATCH_ENDED" ||
         message.type === "RESYNC_REQUIRED"
       ) {
+        receivedStateRef.current={version:message.version,at:performance.now()};
+        localTargetRef.current=null;setLocalTarget(null);
         if(!acceptsSnapshotVersion(versionRef.current,message.version)){
-          if(message.type==="ACTION_ACCEPTED"&&pendingActionIdRef.current===message.requestId){
+          if(message.type==="ACTION_ACCEPTED"&&(pendingActionIdRef.current===message.requestId||message.acknowledgedRequests?.some(ack=>ack.requestId===pendingActionIdRef.current&&ack.version<=message.version))){
             pendingActionIdRef.current=null;pendingActionInFlightRef.current=false;setPendingAction(false);
             pendingAttackRef.current=null;pendingPlayRef.current=null;
           }
@@ -319,8 +336,10 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         if (message.type === "MATCH_SNAPSHOT") {
           console.info("[KO online match]", { event: "snapshot-accepted", matchId, seat: nextSeat, version: message.version, ...client.diagnostics });
         }
+        const previousCatalog=matchCardsRef.current;
         matchCardsRef.current = projected;
-        setRuntimeCardDefinitions(mergeOnlineCardCatalog(accountCardsRef.current, projected));
+        if(previousCatalog?.cardPool!==projected.cardPool||previousCatalog?.minionACardPool!==projected.minionACardPool)
+          setRuntimeCardDefinitions(mergeOnlineCardCatalog(accountCardsRef.current, projected));
         setHasAuthoritativeSnapshot(true);
         const previous = stateRef.current;
         if(message.type==="MATCH_SNAPSHOT"||message.type==="RESYNC_REQUIRED"){
@@ -329,7 +348,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           processedAudioEventsRef.current.clear();
         }
         if (message.type === "ACTION_ACCEPTED") {
-          if (pendingActionIdRef.current === message.requestId) {
+          if (pendingActionIdRef.current === message.requestId || message.acknowledgedRequests?.some(ack=>ack.requestId===pendingActionIdRef.current&&ack.version<=message.version)) {
             pendingActionIdRef.current = null;
             pendingActionInFlightRef.current = false;
             setPendingAction(false);
@@ -395,6 +414,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         return;
       }
       if (message.type === "ACTION_REJECTED" || message.type === "LOBBY_ERROR" || message.type === "ERROR") {
+        localTargetRef.current=null;setLocalTarget(null);
         if (
           message.type === "ERROR" &&
           ["FORBIDDEN", "NOT_SUBSCRIBED", "MATCH_UNAVAILABLE"].includes(message.code)
@@ -730,6 +750,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     pendingActionIdRef.current = requestId;
     pendingActionInFlightRef.current = true;
     setPendingAction(true);
+    const cardAction='cardInstanceId'in action?action:'action'in action?action.action:null;
+    setPendingCardId(cardAction&&'cardInstanceId'in cardAction&&stateRef.current?.players.find(p=>p.id===me?.id)?.hand.some(c=>c.instanceId===cardAction.cardInstanceId)?cardAction.cardInstanceId:null);
     const sent = client.send({
       type: "MATCH_ACTION",
       matchId,
@@ -774,6 +796,12 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
 
   function handleEffectTarget(targetId: string) {
     clearRejectedActionMessage();
+    const local=localTargetRef.current;
+    if(local){
+      if(!local.frame.validTargetIds.includes(targetId))return;
+      if(sendAction({type:'COMMIT_TARGETED_ACTION',action:local.action,targetId})){localTargetRef.current=null;setLocalTarget(null);}
+      return;
+    }
     const currentState = stateRef.current;
     const targeting = currentState?.targetingState;
     if (!targeting?.active || !acceptsEffectSelection(targeting,targetId)) {
@@ -798,7 +826,24 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       requestMatchResync();
       return;
     }
-    sendAction(action);
+    if(action.type==='BEGIN_TARGETED_ACTION')beginTargeted(action.action);else sendAction(action);
+  }
+
+  function beginTargeted(action:Extract<OnlineActionPayload,{type:'BEGIN_TARGETED_ACTION'}>['action']){
+    const current=stateRef.current,player=current?.players.find(p=>p.id===me?.id);
+    if(canAct&&current&&player&&!current.targetingState){
+      const source='cardInstanceId'in action?player.hand.find(c=>c.instanceId===action.cardInstanceId)??player.board.find(c=>c?.instanceId===action.cardInstanceId):null;
+      const first=action.type==='USE_CHAMPION_ABILITY'?currentChampionAbility(player.champion)?.effects[0]:source?.abilities.find(a=>a.trigger==='ACTIVE')?.effects[0];
+      if(first?.type==='STRUCTURED'&&first.target?.selection==='PLAYER_CHOICE'&&['BOARD','PLAYER','CHARACTER'].includes(first.target.zone??'')&&(first.target.minTargets??first.target.count)===1&&(first.target.maxTargets??first.target.count)===1){
+        try{
+          const preview=previewBattleAction(structuredClone(current),{type:'BEGIN_TARGETED_ACTION',playerId:player.id,action});
+          if(preview.success&&preview.state.targetingState?.phase==='PRE_COMMIT'&&preview.state.targetingState.minTargets===1&&preview.state.targetingState.maxTargets===1){
+            const next={action,frame:preview.state.targetingState};localTargetRef.current=next;setLocalTarget(next);setSelectedCardId(null);setSelectedAttackerId(null);return;
+          }
+        }catch{/* Authoritative two-phase selection remains available. */}
+      }
+    }
+    sendAction({type:'BEGIN_TARGETED_ACTION',action});
   }
 
   function rememberPlay(card: CardInstance, geometry?: CardPlayGeometry) {
@@ -817,7 +862,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   }
 
   function handleUseTechnique(cardInstanceId: string) {
-    if (!sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "PLAY_TECHNIQUE", cardInstanceId } })) return;
+    beginTargeted({type:'PLAY_TECHNIQUE',cardInstanceId});
   }
 
   function handleAttackWrestler(targetCardInstanceId: string, geometry?: AttackAnimationState["geometry"]) {
@@ -1022,13 +1067,14 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       )}
       <GameStatePreview cosmetics={cosmetics} imageEmotes={imageEmotes} onImageEmote={isConnected?(slot)=>{if(matchId)client.send({type:"IMAGE_EMOTE",matchId,requestId:crypto.randomUUID(),...(typeof slot==='string'?{itemId:slot}:{slot})});}:undefined}
         key={`${matchId}:${presentationEpoch}`}
-        state={state}
+        state={localTarget?{...state,targetingState:localTarget.frame}:state}
         selectedCardId={selectedCardId}
         selectedAttackerId={selectedAttackerId}
         mediaCatalog={mediaCatalog}
         interactionStatus={pendingAction ? "행동 결과를 서버에서 확인 중이에요." : !isConnected ? "연결을 복구하고 있어요." : presentationBusy ? "전투 연출 중이에요. 잠시 후 다음 행동을 할 수 있어요." : null}
         playError={playError}
         turnSecondsRemaining={TURN_TIME_LIMIT_SECONDS}
+        pendingCardInstanceId={pendingAction?pendingCardId:null}
         turnDeadlineAt={turnDeadlineAt}
         serverOffset={serverOffset}
         onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
@@ -1097,9 +1143,9 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           });
           pendingPlayRef.current = null;
         }}
-        onUseActive={(cardInstanceId) => sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "USE_ACTIVE", cardInstanceId } })}
+        onUseActive={(cardInstanceId) => beginTargeted({type:'USE_ACTIVE',cardInstanceId})}
         onUseChampionAbility={handleUseChampionAbility}
-        onCancelEffectTargeting={() => sendAction({ type: "CANCEL_EFFECT_TARGET" })}
+        onCancelEffectTargeting={() => {if(localTargetRef.current){localTargetRef.current=null;setLocalTarget(null);}else sendAction({ type: "CANCEL_EFFECT_TARGET" });}}
         onEffectTarget={handleEffectTarget}
         onPresentationBusyChange={(busy) => {
           presentationBusyRef.current = busy;

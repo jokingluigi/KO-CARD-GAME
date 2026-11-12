@@ -801,7 +801,7 @@ export async function mutateDraft(
             "현재 행동할 수 있는 턴이 아닙니다.",
           );
         const comparable =
-          action.type === "BEGIN_TARGETED_ACTION"
+          (action.type === "BEGIN_TARGETED_ACTION" || action.type === "COMMIT_TARGETED_ACTION")
             ? { ...action.action, playerId: action.playerId }
             : action;
         if (

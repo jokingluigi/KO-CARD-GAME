@@ -1,4 +1,5 @@
 import {loadAiMatchIntro} from "../lib/ai-match-intro";
+import {flushQuestProgress} from '../lib/quest-progress-outbox';
 import type {GameState} from "@workspace/game-engine";
 import {dailyCompletionBonus,claimDailyCompletionBonus} from "../lib/daily-completion-bonus";
 import {saveAIQuestStart,storedAIQuestMatch} from '../lib/ai-quest-match-storage';
@@ -26,6 +27,7 @@ router.use(async (request, response, next) => {
       return;
     }
     request.authUser = user;
+    await flushQuestProgress(user.id);
     next();
   } catch (error) {
     next(error);

@@ -31,7 +31,7 @@ export function WrestlerDialogue({
   onComplete: () => void;
 }) {
   const spotlight =
-    definition?.rarity === "LEGENDARY" && speech.phase === "ENTER_FIELD";
+    definition?.rarity === "LEGENDARY";
   if (spotlight && definition)
     return (
       <LegendaryDialogueSpotlight

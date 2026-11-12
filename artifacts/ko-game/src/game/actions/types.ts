@@ -4,6 +4,7 @@ import type { AttackTarget } from '../engine/combat';
 import type { ChampionEmote } from '../champions/types';
 
 export type GameAction =
+  | {type:'COMMIT_TARGETED_ACTION';playerId:string;targetId:string;action:{type:'PLAY_TECHNIQUE';cardInstanceId:string}|{type:'USE_ACTIVE';cardInstanceId:string}|{type:'USE_CHAMPION_ABILITY'}}
   | { type: 'PLAY_WRESTLER'; playerId: string; cardInstanceId: string; boardSlot: BoardSlot }
   | { type: 'PLAY_TECHNIQUE'; playerId: string; cardInstanceId: string }
   | { type: 'USE_ACTIVE'; playerId: string; cardInstanceId: string }

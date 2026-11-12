@@ -76,6 +76,7 @@ export function CinematicScene({event}:{event:CinematicEvent}){
  const style={'--cinematic-duration':event.duration+'ms','--cinematic-x':(event.focus?.x??innerWidth/2)+'px','--cinematic-y':(event.focus?.y??innerHeight/2)+'px'} as CSSProperties;
  return <div aria-hidden="true" data-cinematic-kind={event.kind} data-camera-level={level} className={`ko-cinematic ko-cinematic--${event.kind.toLowerCase()} ${major?'ko-cinematic--major':''}`} style={style}>
  <div className="ko-cinematic__environment"/><div className="ko-cinematic__ink"/>
+ {event.kind==='FINISHER_CARD'&&<div className="ko-cinematic__finisher-sigil"><i/><i/><b>FINISHER</b></div>}
  {level>=2&&<div className="ko-cinematic__speed"/>}
  {major&&<div className="ko-cinematic__panel"><div className="ko-cinematic__emblem">KO</div>
  {event.art&&<CardArtwork src={event.art} fallbackSrc={event.artFallback} displayOverride={event.artDisplay} imagePositionY={100} alt="" className="ko-cinematic__art"/>}

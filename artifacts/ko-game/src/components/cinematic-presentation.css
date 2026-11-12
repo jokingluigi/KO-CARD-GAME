@@ -21,6 +21,17 @@
 .ko-cinematic__interference{position:absolute;inset:0;background:linear-gradient(174deg,transparent 47%,#9f292844 49%,#000 50%,transparent 52%);animation:ko-ink-panel var(--cinematic-duration) both}
 .ko-cinematic--finisher .ko-cinematic__environment{background:#050608aa}
 .ko-cinematic--finisher .ko-cinematic__panel{top:34%;height:25dvh}
+.ko-cinematic--finisher_card{--cinematic-accent:#f5ce77}
+.ko-cinematic--finisher_card .ko-cinematic__environment{background:radial-gradient(ellipse at center,#751b3d55,#08050be0);animation:ko-cinema-fade var(--cinematic-duration) both}
+.ko-cinematic--finisher_card .ko-cinematic__panel{top:29%;height:min(38dvh,340px);border-block:3px double #f5ce77;background:linear-gradient(110deg,#190811,#411326 65%,#09070d);animation:ko-finisher-cut var(--cinematic-duration) both}
+.ko-cinematic--finisher_card .ko-cinematic__art{animation:ko-legendary-reveal var(--cinematic-duration) both}
+.ko-cinematic--finisher_card .ko-cinematic__copy span{color:#ffe6a1;letter-spacing:.3em}
+.ko-cinematic__finisher-sigil{position:absolute;left:50%;top:47%;width:min(80vw,520px);aspect-ratio:1;animation:ko-finisher-seal var(--cinematic-duration) both}
+.ko-cinematic__finisher-sigil i{position:absolute;inset:0;border:3px double #f5ce7799;transform:rotate(45deg);box-shadow:0 0 18px #b82d4544,inset 0 0 18px #b82d4544}
+.ko-cinematic__finisher-sigil i+i{inset:7%;transform:rotate(15deg);border-width:1px}
+.ko-cinematic__finisher-sigil b{position:absolute;left:0;right:0;bottom:-12%;text-align:center;color:#f5ce77;font:900 clamp(20px,6vw,44px)/1 sans-serif;letter-spacing:.18em;text-shadow:0 2px 8px #000}
+@keyframes ko-finisher-cut{0%,5%{transform:translateX(-105%);opacity:0}19%,77%{transform:translateX(0);opacity:1}100%{transform:translateX(12%);opacity:0}}
+@keyframes ko-finisher-seal{0%{transform:translate(-50%,-50%) scale(.65) rotate(-12deg);opacity:0}24%,70%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:.8}100%{transform:translate(-50%,-50%) scale(1.12) rotate(5deg);opacity:0}}
 @keyframes ko-cinema-fade{0%,100%{opacity:0}15%,70%{opacity:1}}
 @keyframes ko-comic-in{0%{transform:translateX(-110%)}17%,65%{transform:translateX(0)}100%{transform:translateX(110%)}}
 @keyframes ko-character-in{0%{transform:translateX(12%) scale(1.08);opacity:0}20%,70%{transform:translateX(0) scale(1);opacity:1}100%{transform:translateX(-4%);opacity:0}}
@@ -35,6 +46,7 @@
 @media(hover:hover) and (pointer:fine){.ko-game-stage .ko-card-depth:hover{translate:0 -2px;transition:translate 160ms ease-out}}
 @media(max-width:480px){.ko-cinematic__panel{top:32%;height:28dvh}.ko-cinematic__art{right:-5%;width:85%;height:115%}.ko-cinematic__copy{left:8%;bottom:12%;max-width:78%}.ko-cinematic__copy strong{font-size:clamp(18px,6vw,28px)}}
 @media(prefers-reduced-motion:reduce){
+ .ko-cinematic__finisher-sigil{display:none}
  .ko-cinematic__speed,.ko-cinematic__ink,.ko-cinematic__interference,.ko-cinematic__spell-seal{display:none}
  .ko-cinematic__panel,.ko-cinematic__art{animation:ko-cinema-fade var(--cinematic-duration) both!important;transform:none!important;filter:none!important}
  .ko-cinematic__environment{background:#0003!important}

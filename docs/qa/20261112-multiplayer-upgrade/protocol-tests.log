@@ -1,0 +1,68 @@
+✔ catalog negotiation reuses definitions and applies additions, edits, removals and resync (9562.956475ms)
+[00:48:34.318] [32mINFO[39m (279450): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 202
+✔ slow sender keeps all acknowledgements/events and valid catalog base while coalescing obsolete states (44.185197ms)
+✔ maintenance shared read coalesces concurrent callers, expires, invalidates, and never caches failure (0.84027ms)
+✔ Pandora preparation completes at eight actual opposing pinfalls, never at five or seven (19.468799ms)
+✔ atomic Pandora targeting uses one state version, one gold and one target; invalid target commits nothing (369.325509ms)
+✔ durable progression survives runtime reload, uses captured configuration and flushes before reward reads (546.54043ms)
+✔ actual WebSocket clients negotiate compact catalogs, atomically target and report client timing (760.838592ms)
+CATALOG_TRANSFER {"fullBytes":283825,"updateBytes":24030,"reductionPercent":92}
+✔ admin metrics are protected and show observed stages plus durable queue (71.66789ms)
+✔ full published catalog stays immutable across cloned actions and reorder patches preserve order (43.57642ms)
+[00:48:35.368] [32mINFO[39m (279450): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/daily-quests"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 122
+[00:48:36.116] [32mINFO[39m (279450): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/admin/multiplayer-performance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 33
+[00:48:36.170] [32mINFO[39m (279450): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/admin/multiplayer-performance"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[00:48:36.221] [32mINFO[39m (279450): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/admin/multiplayer-performance"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 41
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18446.365339

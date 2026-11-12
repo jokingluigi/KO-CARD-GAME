@@ -12,6 +12,8 @@ function isNonEmptyString(value: unknown, maxLength = 256): value is string {
 export function isOnlineClientMessage(value: unknown): value is OnlineClientMessage {
   if (!isRecord(value) || typeof value.type !== "string") return false;
   switch (value.type) {
+    case 'PERFORMANCE_SAMPLE':
+      return isNonEmptyString(value.matchId)&&Array.isArray(value.samples)&&value.samples.length<=50&&value.samples.every(s=>isRecord(s)&&['actionAckMs','frameGapMs','stateApplyMs'].includes(String(s.kind))&&typeof s.value==='number'&&Number.isFinite(s.value)&&s.value>=0&&s.value<=60000);
     case "JOIN_QUICK_QUEUE":
     case "CREATE_PRIVATE_ROOM":
       return isNonEmptyString(value.deckId);
@@ -48,6 +50,7 @@ export type OnlineClientMessageClassification =
 
 function isKnownClientMessageType(type: string): boolean {
   switch (type) {
+    case 'PERFORMANCE_SAMPLE':
     case "JOIN_QUICK_QUEUE":
     case "LEAVE_QUICK_QUEUE":
     case "CREATE_PRIVATE_ROOM":

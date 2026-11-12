@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./rules": "./src/rules.ts",
-    "./online-action": "./src/online-action.ts"
+    "./online-action": "./src/online-action.ts",
+    "./online-catalog": "./src/online-catalog.ts"
   },
   "dependencies": {
     "@workspace/effect-registry": "workspace:*"

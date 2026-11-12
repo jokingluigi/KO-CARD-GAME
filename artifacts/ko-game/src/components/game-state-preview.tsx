@@ -128,6 +128,7 @@ interface GameStatePreviewProps {
   selectedAttackerId: string | null;
   playError: string | null;
   turnSecondsRemaining: number;
+  pendingCardInstanceId?:string|null;
   turnDeadlineAt?: number | null;
   serverOffset?: number;
   showTurnTimer?: boolean;
@@ -189,6 +190,7 @@ export function GameStatePreview({
   selectedAttackerId,
   playError,
   turnSecondsRemaining,
+  pendingCardInstanceId,
   turnDeadlineAt,
   serverOffset = 0,
   showTurnTimer = true,
@@ -352,7 +354,11 @@ export function GameStatePreview({
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const spellDropTargetRef=React.useRef<{cardId:string;targetId:string;gameId:string;turn:number;createdAt:number}|null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
-  const activeGeneratedPlays = React.useMemo(() => generatedPlayBatch(generatedPlayAnimations), [generatedPlayAnimations]);
+  const [readableSpells,setReadableSpells]=React.useState<Set<CardPlayAnimationState>>(()=>new Set());
+  const activeGeneratedPlays = React.useMemo(() => [...generatedPlayAnimations.filter(a=>readableSpells.has(a)),...generatedPlayBatch(generatedPlayAnimations.filter(a=>!readableSpells.has(a)))], [generatedPlayAnimations,readableSpells]);
+  const playBlocksInput=!!playAnimation&&!readableSpells.has(playAnimation);
+  const generatedBlocksInput=generatedPlayAnimations.some(a=>!readableSpells.has(a));
+  React.useEffect(()=>setReadableSpells(current=>{const valid=new Set([...generatedPlayAnimations,...playAnimation?[playAnimation]:[]]);const next=new Set([...current].filter(a=>valid.has(a)));return next.size===current.size?current:next;}),[playAnimation,generatedPlayAnimations]);
   const opponentAttackPresentationRef = React.useRef(onOpponentAttackPresentation);
   opponentAttackPresentationRef.current = onOpponentAttackPresentation;
   const selfPlayPresentationRef = React.useRef(onSelfPlayPresentation);
@@ -443,9 +449,9 @@ export function GameStatePreview({
 
   React.useEffect(() => {
     onPresentationBusyChange(Boolean(
-      playAnimation ||
+      playBlocksInput ||
       attackAnimation ||
-      generatedPlayAnimations.length ||
+      generatedBlocksInput ||
       cardLeaveAnimations.length ||
       presentationBlocksActions(activePresentationCues) ||
       pendingEffectFinisher ||
@@ -454,7 +460,8 @@ export function GameStatePreview({
   }, [
     attackAnimation,
     cardLeaveAnimations.length,
-    generatedPlayAnimations.length,
+    generatedBlocksInput,
+    playBlocksInput,
     onPresentationBusyChange,
     playAnimation,
     activePresentationCues,
@@ -961,7 +968,7 @@ export function GameStatePreview({
 
   const visibleWrestlerSpeech=wrestlerSpeech[0]?.ready && !koSpeechActive && state.status!=='FINISHED' && !playError && !attackHint && !effectTargeting && !selectedCardId && !selectedAttackerId && !confirmEndTurn && !introActive && !settingsOpen && !historyOpen && !emoteOpen && !openGraveyardPlayerId ? wrestlerSpeech[0] : null;
   const headSpeech=wrestlerSpeech[0];
-  const speechDuration=headSpeech?.phase==='ENTER_FIELD' && getCardDefinition(headSpeech.definitionId)?.rarity==='LEGENDARY' ? legendaryDialogueDuration(headSpeech.text) : 2600;
+  const speechDuration=headSpeech && getCardDefinition(headSpeech.definitionId)?.rarity==='LEGENDARY' ? legendaryDialogueDuration(headSpeech.text) : 2600;
   React.useEffect(()=>{
     if(!headSpeech?.ready)return;
     const id=headSpeech.id, deadline=Date.now()+speechDuration;
@@ -973,7 +980,7 @@ export function GameStatePreview({
     window.addEventListener('pageshow',resume);
     return()=>{window.clearTimeout(timer);document.removeEventListener('visibilitychange',resume);window.removeEventListener('pageshow',resume);};
   },[state.gameId,headSpeech?.id,headSpeech?.ready,speechDuration]);
-  const legendarySpotlight=visibleWrestlerSpeech?.phase==="ENTER_FIELD" && getCardDefinition(visibleWrestlerSpeech.definitionId)?.rarity==="LEGENDARY";
+  const legendarySpotlight=!!visibleWrestlerSpeech && getCardDefinition(visibleWrestlerSpeech.definitionId)?.rarity==="LEGENDARY";
   const wrestlerDialogue=visibleWrestlerSpeech ? <WrestlerDialogue key={visibleWrestlerSpeech.id} speech={visibleWrestlerSpeech} definition={getCardDefinition(visibleWrestlerSpeech.definitionId)} cosmetics={cosmetics} selfId={me.id} onComplete={()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==visibleWrestlerSpeech.id))} /> : null;
   // Warm only the two equipped awakening images; do not fetch the full catalog.
   React.useEffect(() => {
@@ -1814,6 +1821,7 @@ export function GameStatePreview({
                        me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
                      return (
                         <HandCard cosmeticOwnerId={me.id}
+                          pending={pendingCardInstanceId===card.instanceId}
                           key={`hand-${card.instanceId}`}
                           card={payableCost === card.currentCost ? card : { ...card, currentCost: payableCost }}
                           isSelected={isSelected}
@@ -1840,6 +1848,7 @@ export function GameStatePreview({
           animation={playAnimation.playerId?playAnimation:{...playAnimation,playerId:me.id}}
           hapticsEnabled={hapticsEnabled}
           onLand={markSpeechLanding}
+          onReadable={()=>{if(playAnimation)setReadableSpells(current=>new Set([...current,playAnimation]));}}
           onComplete={onPlayAnimationComplete}
           viewerPlayerId={me.id}
         />
@@ -1851,12 +1860,14 @@ export function GameStatePreview({
           hapticsEnabled={hapticsEnabled}
           viewerPlayerId={me.id}
           onLand={markSpeechLanding}
+          onReadable={()=>setReadableSpells(current=>new Set([...current,animation]))}
           onComplete={() => {
             setGeneratedPlayAnimations((current) => current.filter(entry => entry !== animation));
+            setReadableSpells(current=>{if(!current.has(animation))return current;const next=new Set(current);next.delete(animation);return next;});
           }}
         />
       ))}
-      {(!attackAnimation || attackImpactTriggered) && !playAnimation && !generatedPlayAnimations.length && cardLeaveAnimations.map((animation) => (
+      {(!attackAnimation || attackImpactTriggered) && !playBlocksInput && !generatedBlocksInput && cardLeaveAnimations.map((animation) => (
         <CardLeaveAnimation
           key={animation.id}
           animation={animation}
@@ -1903,8 +1914,8 @@ export function GameStatePreview({
         !introActive &&
         !state.openingMulligan &&
         !canMulligan(state, me.id) &&
-        !playAnimation &&
-        !generatedPlayAnimations.length &&
+        !playBlocksInput &&
+        !generatedBlocksInput &&
         (!attackAnimation || attackImpactTriggered) && (
         cue.kind === "QUEST_COMPLETE"
           ? <QuestPresentation key={cue.id} cue={cue} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={() => handlePresentationQueueComplete(cue.id)} />
@@ -1916,6 +1927,7 @@ export function GameStatePreview({
 }
 
 function HandCard({
+  pending=false,
   cosmeticOwnerId,
   card,
   isSelected,
@@ -1929,6 +1941,7 @@ function HandCard({
   useAction,
   cardRef,
 }: {
+  pending?:boolean;
   cosmeticOwnerId?:string;
   card: CardInstance;
   isSelected: boolean;
@@ -1967,7 +1980,8 @@ function HandCard({
 
   return (
     <Inspectable content={<CardInspectContent cosmeticOwnerId={cosmeticOwnerId} card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
-    <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
+    <div data-pending-play={pending} className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
+      {pending&&<span role="status" className="absolute inset-x-0 top-1/2 z-50 rounded bg-black/85 p-1 text-center text-[10px] text-amber-200">사용 확인 중…</span>}
       <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
       name={def?.name ?? '알 수 없는 카드'}
       cardType={card.cardType}

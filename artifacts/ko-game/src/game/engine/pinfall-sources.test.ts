@@ -152,6 +152,7 @@ function chooseAbility(s: GameState, ids: string[]) {
     assert.ok(r.success, r.message);
     s = r.state;
   }
+  if (!s.targetingState?.active) return s;
   r = executeAction(s, {
     type: "SELECT_EFFECT_TARGET",
     playerId: "player-1",
@@ -247,10 +248,13 @@ test("Pandora ability exact retirements heal and only enemy retirements advance 
   const s = setup(),
     ally = put(s, 0, 0, { currentHealth: 1 }),
     enemy = put(s, 1, 0, { currentHealth: 1 });
-  const n = chooseAbility(s, [ally.instanceId, enemy.instanceId]);
-  assert.deepEqual(flags(n), [true, true]);
-  assert.equal(n.players[0].health, 19);
-  assert.equal(progress(n), 1);
+  for (const [target,expected] of [[ally,0],[enemy,1]] as const) {
+    const n = chooseAbility(structuredClone(s), [target.instanceId]);
+    assert.deepEqual(flags(n), [true]);
+    assert.equal(n.players[0].health, 17);
+    assert.equal(progress(n), expected);
+    assert.ok(n.players[expected===0?1:0].board[0], 'the other card remains untouched');
+  }
 });
 test("another champion ability cannot qualify even with the same damage operation", () => {
   const s = setup();

@@ -17,6 +17,18 @@ export function singleTargetPandoraAbility(ability: ChampionAbility): ChampionAb
 /** An unfinished legacy multi-select is reopened as a single choice, never
  * auto-applied to all saved selections. Payment/use counters are untouched. */
 export function normalizePandoraTargeting(state: GameState): GameState {
+  let changed=false;
+  const players=state.players.map(player=>{
+    const champion=player.champion,quest=champion?.quest,condition=quest?.condition;
+    if(champion?.id==='5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c'&&!champion.questCompleted&&quest&&condition?.type==='ZONE_COUNT'&&condition.zone==='GRAVEYARD'&&condition.owner==='SELF'&&condition.tag==='언데드'&&condition.required===10){
+      changed=true;
+      return {...player,champion:{...champion,quest:{...quest,description:quest.description.replace('10장','8장'),requiredProgress:8,condition:{...condition,required:8}}}};
+    }
+    if(champion?.id!=='bcffab96-f61f-497e-b60b-de5a869837d3'||champion.questCompleted||!quest||condition?.type!=='EVENT'||condition.event!=='CARD_RETIRED'||!condition.exactZero||condition.required!==5)return player;
+    changed=true;
+    return {...player,champion:{...champion,quest:{...quest,description:quest.description.replace('5회','8회'),requiredProgress:8,condition:{...condition,required:8}}}};
+  });
+  if(changed)state={...state,players};
   const pending=state.targetingState;
   if (!pending || !pending.effects[pending.effectIndex] || !isPandoraDamage(pending.effects[pending.effectIndex])) return state;
   if (pending.minTargets===1 && pending.maxTargets===1 && !pending.selectedTargetIds.length) return state;
