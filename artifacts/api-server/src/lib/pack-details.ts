@@ -2,7 +2,7 @@ import {validPackRates} from "@workspace/cosmetics";
 import {packEmotePool} from "./pack-emote-pool";
 import { championSkinArtwork } from "@workspace/cosmetics";
 import { championSkinPool } from "./champion-skin-pool";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import {
   cardsTable,
   cardSkinDefinitionsTable,
@@ -43,6 +43,7 @@ export async function getPackDetails(
         eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.rarity, "NORMAL"),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       : [],
@@ -52,6 +53,7 @@ export async function getPackDetails(
         eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.rarity, "EPIC"),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       : [],
@@ -61,6 +63,7 @@ export async function getPackDetails(
         eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.rarity, "LEGENDARY"),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       : [],
@@ -81,6 +84,7 @@ export async function getPackDetails(
           eq(cardSkinDefinitionsTable.status, "PUBLISHED"),
           eq(cardsTable.status, "PUBLISHED"),
           eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
           eq(cardsTable.isChampionToken, false),
         ))
       : [],

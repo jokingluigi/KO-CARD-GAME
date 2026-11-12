@@ -1,0 +1,15 @@
+✔ current Sovereign cumulative max-HP penalty on combat; snapshot round-trip; no revival at zero max HP (11.388106ms)
+✔ current Sovereign cumulative max-HP penalty on effect; snapshot round-trip; no revival at zero max HP (2.201857ms)
+✔ current Sovereign cumulative max-HP penalty on retire; snapshot round-trip; no revival at zero max HP (1.427434ms)
+✔ simultaneous ordinary kill applies both revival penalty and its printed kill reward (2.220103ms)
+✔ simultaneous Demon kill applies both revival penalty and its printed kill reward (1.109521ms)
+✔ buffed eight max HP becomes six without a kill reward (1.049141ms)
+✔ buffed eight max HP is eight after Demon kill reward offsets revival -2 (1.16281ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1265.18387

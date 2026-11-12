@@ -1,3 +1,4 @@
+import {isTokenCard} from "@/game/cards/types";
 import '@/components/catalog-browsing.css';
 import { RelatedCards } from "@/components/player-tools/related-cards";
 import { CardRulesText } from "@/components/card-rules-text";
@@ -139,7 +140,7 @@ export default function CollectionPage() {
   const [search, setSearch] = useBrowsingState("collection:search","",v=>typeof v==='string'&&v.length<300);
   const [cardType, setCardType] = useBrowsingState<CardTypeFilter>("collection:cardType","ALL",v=>typeof v==='string'&&["ALL","WRESTLER","TECHNIQUE"].includes(v));
   const [catalogFilters, setCatalogFilters] = useBrowsingState("collection:filters",EMPTY_CATALOG_FILTERS,validCatalogView);
-  const catalogCards = useMemo(() => [...new Map([...(collection?.craftableCards ?? []), ...(collection?.cards ?? [])].map(card => [card.id, card])).values()], [collection]);
+  const catalogCards = useMemo(() => [...new Map([...(collection?.craftableCards ?? []), ...(collection?.cards ?? [])].filter(card=>!isTokenCard(card)).map(card => [card.id, card])).values()], [collection]);
   const [sort, setSort] = useBrowsingState<CardSort>("collection:sort","COST",v=>typeof v==='string'&&["COST","NAME","RARITY"].includes(v));
   const [favorites, setFavorites] = useState<string[]>(() => {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }

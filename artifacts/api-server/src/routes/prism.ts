@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql, ne } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { maxCardCopies } from "@workspace/game-engine/rules";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -84,6 +84,7 @@ async function getCraftableCard(cardDefinitionId: string, executor: QueryExecuto
     eq(cardsTable.status, "PUBLISHED"),
     inArray(cardsTable.rarity, ["NORMAL", "EPIC", "LEGENDARY"]),
     eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
     eq(cardsTable.isChampionToken, false),
   )).limit(1);
   return card ?? null;

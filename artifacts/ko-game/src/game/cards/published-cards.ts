@@ -328,7 +328,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
        entranceAudioEnabled: card.entranceAudioEnabled,
        summonLine: card.summonLine ?? null,
        retireLine: card.retireLine ?? null, destroyLine: card.destroyLine ?? null,
-      isToken: card.isToken,
+      isToken: card.isToken || card.rarity === 'TOKEN',
       isChampionToken: card.isChampionToken,
       ...(card.effectConfig.questExclusive === true ? { questExclusive: true } : {}),
       ...(['TANK', 'HEALER', 'DEALER'].includes(String(card.effectConfig.awakeningStage)) ? { awakeningStage: card.effectConfig.awakeningStage as 'TANK' | 'HEALER' | 'DEALER' } : {}),

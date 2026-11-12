@@ -1,0 +1,366 @@
+✔ 시작 덱 카드는 생성 카드가 아니다 (3.391858ms)
+✔ 생성 카드는 isGenerated가 true이고 CARD_GENERATED 이벤트를 만든다 (1.773529ms)
+✔ 존재하지 않는 덱 CardDefinition은 다른 카드로 조용히 대체하지 않는다 (1.910403ms)
+✔ 일반 토큰과 챔피언 토큰을 따로 관리한다 (0.251915ms)
+✔ 일반 인스턴스 생성은 기본적으로 기존 카드 인스턴스로 남는다 (0.250964ms)
+✔ 기본 비용 0인 generated/token 카드는 0G를 유지한다 (0.262651ms)
+✔ generatedModifiers.cost가 0이면 generated 카드도 0G가 된다 (0.252315ms)
+✔ 음수 비용 보정은 0G 아래로 내려가지 않는다 (0.845629ms)
+✔ 표준 무작위 카드 생성 후보에서는 일반 토큰과 챔피언 토큰을 제외한다 (1.942911ms)
+✔ 완전히 무작위 카드 생성 후보에서는 토큰과 챔피언 토큰을 허용한다 (0.30933ms)
+✔ 무작위 생성 Pool은 카드 타입 필터와 randomScope를 함께 적용한다 (0.422609ms)
+✔ 무작위 생성 Pool은 최소 코스트 필터를 적용한다 (0.256502ms)
+✔ 무작위 생성 Pool은 CardDefinition 태그 필터를 적용하고 토큰 태그를 유지한다 (0.531651ms)
+✔ STANDARD filters publication and both token kinds; FULL includes all valid categories (2.152653ms)
+✔ FULL GENERATE includes every exclusive awakening token without completing a quest (7.879494ms)
+✔ FULL SUMMON includes every exclusive awakening token without completing a quest (2.297169ms)
+✔ ordinary champions receive the full effect catalog without adding hidden cards to initial decks (0.471572ms)
+✔ STANDARD generation by an ordinary card uses the correct catalog after serialization (19.777731ms)
+✔ STANDARD board target validation and execution use the same candidates, including legacy instances (3.174634ms)
+✔ STANDARD SCRIPT SELECT respects publication before sort/take, then applies the selected effect (1.576526ms)
+✔ FULL generation by an ordinary card uses the correct catalog after serialization (1.010574ms)
+✔ FULL board target validation and execution use the same candidates, including legacy instances (1.013048ms)
+✔ FULL SCRIPT SELECT respects publication before sort/take, then applies the selected effect (0.563688ms)
+✔ STANDARD random text donor eligibility: draft (0.75276ms)
+✔ FULL random text donor eligibility: draft (0.672521ms)
+✔ STANDARD random text donor eligibility: disabled (0.280167ms)
+✔ FULL random text donor eligibility: disabled (0.357051ms)
+✔ STANDARD random text donor eligibility: token (0.318664ms)
+✔ FULL random text donor eligibility: token (1.025826ms)
+✔ STANDARD random text donor eligibility: champion-token (0.298754ms)
+✔ FULL random text donor eligibility: champion-token (0.419704ms)
+✔ FULL random summon and adjacent summon include an unpublished champion token (0.987009ms)
+✔ FULL still honors explicit card type, cost, tag and champion exclusion filters (4.741766ms)
+✔ SCRIPT text grants preserve FULL when applying a previously selected recipient (0.69894ms)
+✔ complete validated catalog contains published, draft, disabled and both token kinds (17.588513ms)
+[14:22:59.755] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 123
+✔ label migration is repeatable and preserves existing tag memberships (4332.524142ms)
+[14:22:59.817] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/admin/tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 31
+[14:22:59.843] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[14:22:59.857] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/admin/tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[14:22:59.873] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 11
+[14:22:59.885] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/admin/tags/missing"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 8
+[14:22:59.891] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 4
+✔ rename persists display name and all original effect keys; collisions and missing tags reject safely (84.111924ms)
+[14:22:59.896] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[14:22:59.927] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[14:22:59.943] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[14:22:59.958] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+✔ bulk attach/detach is idempotent and only changes selected wrestlers, preserving other tags and versions (62.334222ms)
+[14:22:59.965] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/admin/tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[14:22:59.977] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 7
+[14:22:59.988] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 7
+[14:22:59.996] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 4
+[14:23:00.003] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "POST",
+      "url": "/api/admin/tags"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 5
+[14:23:00.007] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+✔ invalid mixed bulk list fails atomically, duplicate names and unauthorized writes are rejected (45.16136ms)
+[14:23:00.011] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 2
+[14:23:00.023] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[14:23:00.030] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "PATCH",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[14:23:00.037] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/admin/tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[14:23:00.052] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "DELETE",
+      "url": "/api/admin/tags/%EA%B8%B0%EC%A1%B4%20%ED%83%9C%EA%B7%B8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+✔ renaming and membership updates serialize without losing links; renamed deletion keeps other tags (48.298254ms)
+[14:23:00.059] [32mINFO[39m (342479): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/admin/tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[14:23:00.681] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 61
+✔ actual grade-only wolf is a token and STANDARD excludes stale false-checkbox snapshots, FULL includes it (4609.758685ms)
+✔ actual Guild Receptionist ENTER_FIELD never creates grade-only wolf across seeded serialized battles (94.711152ms)
+✔ existing token on field remains a valid ordinary random effect target (1.064564ms)
+[14:23:00.825] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/collection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[14:23:00.840] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/decks/options"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[14:23:00.857] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/decks"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[14:23:00.869] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/decks"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 8
+[14:23:00.882] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/decks/legacy-token-deck/select"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 10
+✔ real collection and deck options hide owned grade-only token; old deck invalid; forged save and selection rejected (102.930834ms)
+[14:23:00.897] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/decks"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 12
+✔ admin save normalizes TOKEN-grade checkbox and AI decks reject old grade-only token (15.867392ms)
+[14:23:00.913] [32mINFO[39m (342573): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PATCH",
+      "url": "/api/admin/cards/b6b6247d-4e98-4cfb-8fa6-5479afec48f3"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+✔ wolf absorbs pre-retirement ATK/HP despite 소버린 nested retirement effect, after serialized turn-start choice (32.808716ms)
+✔ wolf absorbs pre-retirement ATK/HP despite 레이븐 nested retirement effect, after serialized turn-start choice (2.666728ms)
+✔ Calavera graveyard Undead requirement and text both eight; seven is incomplete; old unfinished restored, completed preserved (21.281621ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10500.711356

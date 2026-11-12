@@ -1,3 +1,4 @@
+import {isTokenCard} from "@/game/cards/types";
 import '@/components/catalog-browsing.css';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -445,12 +446,12 @@ export default function Decks() {
     if (missingIds.length > 0) reasons.push(validationReason("CARD", "CARD_DEFINITION_MISSING", `확인할 수 없는 카드 참조 ${missingIds.length}개가 있습니다.`, missingIds));
     const tokenIds = unique(cardIds.filter((id) => {
       const card = cardById.get(id);
-      return Boolean(card?.isToken || card?.isChampionToken);
+      return Boolean(card && isTokenCard(card));
     }));
     if (tokenIds.length > 0) reasons.push(validationReason("CARD", "TOKEN_CARD_NOT_ALLOWED", "Token 카드는 덱에 직접 편성할 수 없습니다.", tokenIds));
     const unavailableIds = unique(cardIds.filter((id) => {
       const card = cardById.get(id);
-      return Boolean(card && (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) && !card.isToken && !card.isChampionToken);
+      return Boolean(card && (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) && !isTokenCard(card));
     }));
     if (unavailableIds.length > 0) reasons.push(validationReason("CARD", "CARD_NOT_PLAYABLE", "공개된 일반 카드만 출전 덱에 사용할 수 있습니다.", unavailableIds));
     counts.forEach((count, id) => {
@@ -487,7 +488,7 @@ export default function Decks() {
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
-      if ((card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken) return false;
+      if ((card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || isTokenCard(card)) return false;
       if (!matchesCatalogFilters(card, catalogFilters)) return false;
       if (filter !== "ALL" && card.cardType !== filter) return false;
       if (favoritesOnly && !favorites.includes(card.id)) return false;
@@ -531,8 +532,7 @@ export default function Decks() {
   const isCraftable = Boolean(
     craftTarget &&
     craftCollection?.craftableCards.some((card) => card.id === craftTarget.id) &&
-    !craftTarget.isToken &&
-    !craftTarget.isChampionToken,
+    !isTokenCard(craftTarget),
   );
 
   function createDraft() {
@@ -557,7 +557,7 @@ export default function Decks() {
     if (mutationLock.current) return;
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
-    if (cardIds.length >= DECK_SIZE || (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken || reason || ownershipReason) {
+    if (cardIds.length >= DECK_SIZE || (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || isTokenCard(card) || reason || ownershipReason) {
       if (cardIds.length >= DECK_SIZE) setErrorMessage(`덱은 정확히 ${DECK_SIZE}장까지 구성할 수 있습니다.`);
       else if (reason) setErrorMessage(reason);
       else if (ownershipReason) setErrorMessage(ownershipReason);

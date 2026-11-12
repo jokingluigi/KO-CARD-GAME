@@ -1,9 +1,10 @@
+import {isTokenCard} from "@workspace/game-engine";
 import {packCategory,validPackRates} from "@workspace/cosmetics";
 import {packEmotePool} from "../lib/pack-emote-pool";
 import { ensureAdminSkins } from "../lib/admin-skin-access";
 import { championSkinPool } from "../lib/champion-skin-pool";
 import { randomInt } from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql, ne } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
@@ -66,6 +67,7 @@ router.get("/", async (request, response): Promise<void> => {
         eq(userCardCollectionsTable.userId, user.id),
         inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
@@ -80,6 +82,7 @@ router.get("/", async (request, response): Promise<void> => {
         eq(cardsTable.status, "PUBLISHED"),
         inArray(cardsTable.rarity, [...PRISM_RARITIES]),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
@@ -89,6 +92,7 @@ router.get("/", async (request, response): Promise<void> => {
       .where(and(
         admin ? inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]) : eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
@@ -99,7 +103,7 @@ router.get("/", async (request, response): Promise<void> => {
   ]);
   const testAccount = isTestAccountUser(user);
   const visibleCardRows = admin || testAccount
-    ? publishedTestCards.filter(card => admin ? !card.isToken && !card.isChampionToken : isEligibleTestCard(card)).map((card) => ({
+    ? publishedTestCards.filter(card => admin ? !isTokenCard(card) : isEligibleTestCard(card)).map((card) => ({
       quantity: TEST_ACCOUNT_UNLIMITED_QUANTITY,
       obtainedAt: null,
       card,
@@ -151,6 +155,7 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
       eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "NORMAL"),
       eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
       eq(cardsTable.isChampionToken, false),
     )) : [],
     pack.epicCardPool.length ? executor.select().from(cardsTable).where(and(
@@ -158,6 +163,7 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
       eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "EPIC"),
       eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
       eq(cardsTable.isChampionToken, false),
     )) : [],
     pack.legendaryCardPool.length ? executor.select().from(cardsTable).where(and(
@@ -165,6 +171,7 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
       eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "LEGENDARY"),
       eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
       eq(cardsTable.isChampionToken, false),
     )) : [],
     pack.championPool.length ? executor.select().from(championsTable).where(and(
@@ -181,6 +188,7 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
         eq(cardSkinDefinitionsTable.status, "PUBLISHED"),
         eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       )) : [],
     championSkinPool(pack.skinPool, executor),

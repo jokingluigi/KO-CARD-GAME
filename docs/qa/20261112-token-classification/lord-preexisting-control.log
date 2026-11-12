@@ -1,0 +1,30 @@
+✖ Lord returns the chosen live-cost ally to deck and summons one lower-cost ordinary wrestler in exactly its slot (17.082884ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1171.458609
+
+✖ failing tests:
+
+test at artifacts/ko-game/src/game/qa/latest-admin-revisions-20261014.test.ts:604:1
+✖ Lord returns the chosen live-cost ally to deck and summons one lower-cost ordinary wrestler in exactly its slot (17.082884ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(n.players[0].deck.some(c => c.instanceId === 'ally' && c.currentCost === 3))
+  
+      at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/artifacts/ko-game/src/game/qa/latest-admin-revisions-20261014.test.ts:614:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

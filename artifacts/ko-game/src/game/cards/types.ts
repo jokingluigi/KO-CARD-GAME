@@ -5,6 +5,11 @@ export type CardDefinitionId = string;
 export type CardInstanceId = string;
 export type CardRarity = 'NORMAL' | 'EPIC' | 'LEGENDARY' | 'CHAMPION' | 'TOKEN';
 
+/** Legacy TOKEN-grade records may predate the separate token checkbox. */
+export function isTokenCard(card: {rarity?: unknown; isToken?: boolean; isChampionToken?: boolean}): boolean {
+  return card.rarity === 'TOKEN' || card.isToken === true || card.isChampionToken === true;
+}
+
 export const CARD_RARITY_LABELS: Record<CardRarity, string> = {
   NORMAL: '일반',
   EPIC: '에픽',

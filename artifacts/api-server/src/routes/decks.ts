@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql, ne } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
@@ -13,7 +13,7 @@ import {
   type ChampionRecord,
   type DeckRecord,
 } from "@workspace/db";
-import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
+import { isTokenCard, DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
 import { deleteOwnedDeck } from "../lib/deck-delete-service";
 import { getVisibleDeckOptionCards } from "./deck-options";
@@ -164,7 +164,7 @@ function resolveDeckRows(deck:DeckRecord,testAccount:boolean,admin:boolean,champ
   const ownedCardIds = new Set(ownedCardRows.map((row) => row.id));
   const ownedCardQuantities = new Map(ownedCardRows.map((row) => [row.id, row.quantity]));
   if (testAccount) {
-    cards.filter(card => admin ? !card.isToken && !card.isChampionToken : isEligibleTestCard(card)).forEach((card) => {
+    cards.filter(card => admin ? !isTokenCard(card) : isEligibleTestCard(card)).forEach((card) => {
       ownedCardIds.add(card.id);
       ownedCardQuantities.set(card.id, TEST_ACCOUNT_UNLIMITED_QUANTITY);
     });
@@ -221,7 +221,7 @@ function resolveDeckRows(deck:DeckRecord,testAccount:boolean,admin:boolean,champ
       cardDefinitionIds: missingCardDefinitionIds,
     });
   }
-  const tokenIds = cards.filter((card) => card.isToken || card.isChampionToken).map((card) => card.id);
+  const tokenIds = cards.filter((card) => isTokenCard(card)).map((card) => card.id);
   if (tokenIds.length > 0) {
     validationReasons.push({
       scope: "CARD",
@@ -352,8 +352,7 @@ export async function validateReferences(payload: DeckPayload, userId: string, t
     cards.length !== uniqueCardIds.length ||
     cards.some((card) =>
       (card.status !== "PUBLISHED" && card.status !== "DRAFT") ||
-      card.isToken ||
-      card.isChampionToken ||
+      isTokenCard(card) ||
       !VALID_CARD_TYPES.has(card.cardType)
     )
   ) {
@@ -423,6 +422,7 @@ router.get("/options", async (request, response): Promise<void> => {
       .where(and(
         inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]),
         eq(cardsTable.isToken, false),
+        ne(cardsTable.rarity, "TOKEN"),
         eq(cardsTable.isChampionToken, false),
       ))
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),

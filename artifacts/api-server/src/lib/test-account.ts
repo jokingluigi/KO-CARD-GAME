@@ -1,3 +1,4 @@
+import {isTokenCard} from "@workspace/game-engine";
 export const TEST_USER_EMAIL = "ko-test-user@localhost.test";
 export const TEST_ADMIN_EMAIL = "ko-test-admin@localhost.test";
 // Currency balances and ledger snapshots use PostgreSQL's 32-bit integer type.
@@ -32,8 +33,9 @@ export function isTestAccountUser(user: TestAccountIdentity | null | undefined):
 
 export function isEligibleTestCard(card: {
   status: string;
+  rarity?: string;
   isToken: boolean;
   isChampionToken: boolean;
 }): boolean {
-  return card.status === "PUBLISHED" && !card.isToken && !card.isChampionToken;
+  return card.status === "PUBLISHED" && !isTokenCard(card);
 }

@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-11-12T14:18:16.307Z",
+  "id": "b6b6247d-4e98-4cfb-8fa6-5479afec48f3",
+  "name": "늑대인간 판도라",
+  "before": {
+    "version": 19,
+    "rarity": "TOKEN",
+    "isToken": false
+  },
+  "after": {
+    "version": 20,
+    "rarity": "TOKEN",
+    "isToken": true
+  },
+  "allOtherFieldsUnchanged": true
+}

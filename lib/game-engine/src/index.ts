@@ -69,7 +69,7 @@ export {
   type PublishedCardRecord,
 } from "../../../artifacts/ko-game/src/game/cards/published-cards";
 export { generateCardInstance, canonicalCardCatalog } from "../../../artifacts/ko-game/src/game/cards/generation";
-export { normalizeCardRarityForType, allowedCardRarities } from "../../../artifacts/ko-game/src/game/cards/types";
+export { normalizeCardRarityForType, allowedCardRarities, isTokenCard } from "../../../artifacts/ko-game/src/game/cards/types";
 export { enterField } from "../../../artifacts/ko-game/src/game/engine/enter-field";
 export type {
   ChampionDefinition,

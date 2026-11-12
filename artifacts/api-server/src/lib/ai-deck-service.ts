@@ -1,3 +1,4 @@
+import {isTokenCard} from "@workspace/game-engine";
 import {readAIDeckCosmetics} from "./ai-deck-cosmetics";
 import type {CosmeticLoadout} from "@workspace/cosmetics";
 import { and, asc, eq, inArray } from "drizzle-orm";
@@ -134,8 +135,7 @@ export async function validateAIDeckReferences(
   }
   if (cards.some((card) =>
     !allowedStatuses.includes(card.status as typeof allowedStatuses[number]) ||
-    card.isToken ||
-    card.isChampionToken ||
+    isTokenCard(card) ||
     !["WRESTLER", "TECHNIQUE"].includes(card.cardType)
   )) {
     invalidReasons.push(`${context === "AI_DECK" ? "PUBLISHED 또는 DRAFT" : "PUBLISHED"} 일반 카드만 덱에 넣을 수 있습니다.`);

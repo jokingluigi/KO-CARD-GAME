@@ -1,4 +1,5 @@
 import {championTokenSilenceImmune} from './silence-immunity';
+import {isTokenCard} from './types';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { configuredCountdownTurns } from '@workspace/effect-registry';
 import type {
@@ -48,12 +49,12 @@ export interface RandomCardPoolOptions {
 }
 
 export function isEligibleForRandomPool(
-  card: Pick<CardDefinition, 'isToken' | 'isChampionToken' | 'status' | 'questExclusive'>,
+  card: Pick<CardDefinition, 'rarity' | 'isToken' | 'isChampionToken' | 'status' | 'questExclusive'>,
   randomScope: RandomScope = 'STANDARD',
 ): boolean {
   // Legacy built-in definitions have no publication metadata and are public.
   // Owner-confirmed FULL includes awakening-exclusive champion tokens too.
-  return randomScope === 'FULL' || ((card.status ?? 'PUBLISHED') === 'PUBLISHED' && !card.isToken && !card.isChampionToken);
+  return randomScope === 'FULL' || ((card.status ?? 'PUBLISHED') === 'PUBLISHED' && !isTokenCard(card));
 }
 
 export function generateCardInstance(

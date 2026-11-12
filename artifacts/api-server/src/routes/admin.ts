@@ -795,7 +795,7 @@ export function parseCardInput(value: unknown): CardInput | null {
     text,
     keywords: [...new Set(input.keywords)] as CardInput["keywords"],
     tags,
-    isToken: input.isToken,
+    isToken: input.isToken || rarity === "TOKEN",
     isChampionToken: input.isChampionToken,
     isStarterGrant,
     effectId,

@@ -1,0 +1,44 @@
+[
+  {
+    "width": 390,
+    "path": "collection",
+    "staleFalseTokenCheckboxHidden": true,
+    "ownedTokenHidden": true,
+    "normalCardVisible": true
+  },
+  {
+    "width": 390,
+    "path": "decks",
+    "staleFalseTokenCheckboxHidden": true,
+    "ownedTokenHidden": true,
+    "normalCardVisible": true
+  },
+  {
+    "width": 844,
+    "path": "collection",
+    "staleFalseTokenCheckboxHidden": true,
+    "ownedTokenHidden": true,
+    "normalCardVisible": true
+  },
+  {
+    "width": 844,
+    "path": "decks",
+    "staleFalseTokenCheckboxHidden": true,
+    "ownedTokenHidden": true,
+    "normalCardVisible": true
+  },
+  {
+    "width": 1440,
+    "path": "collection",
+    "staleFalseTokenCheckboxHidden": true,
+    "ownedTokenHidden": true,
+    "normalCardVisible": true
+  },
+  {
+    "width": 1440,
+    "path": "decks",
+    "staleFalseTokenCheckboxHidden": true,
+    "ownedTokenHidden": true,
+    "normalCardVisible": true
+  }
+]
