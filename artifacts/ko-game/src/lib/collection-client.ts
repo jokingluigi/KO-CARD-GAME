@@ -11,6 +11,7 @@ export type CollectionCard = {
   rarity: string;
   cardType: string;
   text: string;
+  lore?: string;
   tags?: string[];
   attack: number;
   health: number;

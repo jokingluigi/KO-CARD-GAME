@@ -1,3 +1,4 @@
+import {CardIntroduction} from "./card-introduction";
 import {TagLabel} from './tag-label';
 import {FinisherProgress,championPreparationProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
@@ -474,6 +475,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           <CardRulesText text={rulesText}/>
         </p>
       </div></InspectorSection>
+      <CardIntroduction lore={definition?.lore}/>
       {card.isGenerated && card.lineage && (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 px-3 py-2 text-xs text-neutral-300">
           <strong className="text-amber-300">생성 출처 · </strong>

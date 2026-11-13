@@ -35,6 +35,7 @@ function toCardDetailRecord(card: BrowseableCardDefinition): CardDetailRecord {
     attack: card.attack,
     health: card.health,
     text: card.rulesText,
+    lore: card.lore,
     rarity: card.rarity ?? "NORMAL",
     tags: card.tags ?? [],
     imageUrl: card.imageUrl ?? null,

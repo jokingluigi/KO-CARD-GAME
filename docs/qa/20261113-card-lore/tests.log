@@ -1,0 +1,257 @@
+✔ additive idempotent migration gives existing cards an empty introduction (5587.998015ms)
+[02:42:02.939] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 84
+[02:42:02.961] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 8
+[02:42:02.971] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:42:02.983] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "PATCH",
+      "url": "/api/admin/cards/2b024d2f-6962-412a-84eb-273c749e2e73"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:42:02.992] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/admin/cards/2b024d2f-6962-412a-84eb-273c749e2e73"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+✔ admin creates, reloads, updates and clears lore; older clients preserve saved introduction (52.633348ms)
+[02:42:03.002] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/admin/cards/2b024d2f-6962-412a-84eb-273c749e2e73"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:42:03.008] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 3
+[02:42:03.014] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 3
+[02:42:03.020] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 3
+✔ lore validation rejects non-text and oversize; exact limit accepted (25.821431ms)
+[02:42:03.027] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 4
+[02:42:03.036] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "PATCH",
+      "url": "/api/admin/cards/reward-unit"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:42:03.043] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[02:42:03.064] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/collection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[02:42:03.073] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/decks/options"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+✔ public/collection/deck options deliver saved lore while engine effects stay unchanged (52.31966ms)
+[02:42:03.079] [32mINFO[39m (396896): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+✔ current Sovereign cumulative max-HP penalty on combat; snapshot round-trip; no revival at zero max HP (22.382715ms)
+✔ current Sovereign cumulative max-HP penalty on effect; snapshot round-trip; no revival at zero max HP (2.689913ms)
+✔ current Sovereign cumulative max-HP penalty on retire; snapshot round-trip; no revival at zero max HP (1.622094ms)
+✔ simultaneous ordinary kill applies both revival penalty and its printed kill reward (2.322195ms)
+✔ simultaneous Demon kill applies both revival penalty and its printed kill reward (0.99445ms)
+✔ buffed eight max HP becomes six without a kill reward (0.945877ms)
+✔ buffed eight max HP is eight after Demon kill reward offsets revival -2 (1.222138ms)
+[02:42:02.862] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 98
+✔ actual grade-only wolf is a token and STANDARD excludes stale false-checkbox snapshots, FULL includes it (5978.87954ms)
+✔ actual Guild Receptionist ENTER_FIELD never creates grade-only wolf across seeded serialized battles (107.228934ms)
+✔ existing token on field remains a valid ordinary random effect target (0.919158ms)
+[02:42:03.008] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/collection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[02:42:03.022] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/decks/options"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:42:03.033] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/decks"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[02:42:03.042] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/decks"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 6
+[02:42:03.053] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/decks/legacy-token-deck/select"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 8
+✔ real collection and deck options hide owned grade-only token; old deck invalid; forged save and selection rejected (88.386978ms)
+[02:42:03.069] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/decks"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 12
+✔ admin save normalizes TOKEN-grade checkbox and AI decks reject old grade-only token (15.783766ms)
+[02:42:03.085] [32mINFO[39m (396903): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PATCH",
+      "url": "/api/admin/cards/b6b6247d-4e98-4cfb-8fa6-5479afec48f3"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+✔ wolf absorbs pre-retirement ATK/HP despite 소버린 nested retirement effect, after serialized turn-start choice (15.453724ms)
+✔ wolf absorbs pre-retirement ATK/HP despite 레이븐 nested retirement effect, after serialized turn-start choice (2.089569ms)
+✔ Calavera graveyard Undead requirement and text both eight; seven is incomplete; old unfinished restored, completed preserved (3.846984ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10913.882824

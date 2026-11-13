@@ -36,6 +36,7 @@ export function HandOverflowDialog({
       attack: c.currentAttack,
       health: c.currentHealth,
       text: d?.rulesText ?? "",
+      lore: d?.lore,
       rarity: d?.rarity ?? "NORMAL",
       imageUrl: d?.imageUrl ?? null,
       imageDisplayMode: d?.imageDisplayMode ?? "CONTAIN",

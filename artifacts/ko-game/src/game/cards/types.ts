@@ -117,6 +117,7 @@ export interface CardDefinition {
   attack: number;
   health: number;
   rulesText: string;
+  lore?: string;
   rarity?: CardRarity;
   imageAssetId?: string | null;
   imageUrl?: string | null;

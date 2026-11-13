@@ -138,6 +138,7 @@ type CardInput = {
   attack: number;
   health: number;
   text: string;
+  lore?: string;
   keywords: (typeof CARD_KEYWORDS)[number][];
   tags: string[];
   isToken: boolean;
@@ -747,6 +748,7 @@ export function parseCardInput(value: unknown): CardInput | null {
     candidate <= 999;
 
   if (
+    (input.lore !== undefined && (typeof input.lore !== "string" || input.lore.length > 5000)) ||
     !name ||
     name.length > 120 ||
     !CARD_TYPES.includes(input.cardType as (typeof CARD_TYPES)[number]) ||
@@ -793,6 +795,7 @@ export function parseCardInput(value: unknown): CardInput | null {
     attack: input.attack as number,
     health: input.health as number,
     text,
+    ...(typeof input.lore === "string" ? {lore:input.lore.trim()} : {}),
     keywords: [...new Set(input.keywords)] as CardInput["keywords"],
     tags,
     isToken: input.isToken || rarity === "TOKEN",

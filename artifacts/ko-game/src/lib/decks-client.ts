@@ -10,6 +10,7 @@ export type DeckCard = {
   attack: number;
   health: number;
   text: string;
+  lore?: string;
   tags?: string[];
   rarity: "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION" | string;
   imageUrl: string | null;

@@ -1,3 +1,4 @@
+import {CardIntroduction} from "./card-introduction";
 import {CardRulesText} from "./card-rules-text";
 import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {useTagLabels} from '@/lib/tag-labels';
@@ -63,6 +64,7 @@ type CardRecord = {
   attack: number;
   health: number;
   text: string;
+  lore?: string;
   keywords: CardKeyword[];
   tags?: string[];
   isToken: boolean;
@@ -96,6 +98,7 @@ type CardFormValues = {
   attack: number;
   health: number;
   text: string;
+  lore: string;
   keywords: CardKeyword[];
   tags: string[];
   isToken: boolean;
@@ -114,6 +117,7 @@ const EMPTY_CARD: CardFormValues = {
   attack: 0,
   health: 1,
   text: "",
+  lore: "",
   keywords: [],
   tags: [],
   isToken: false,
@@ -332,6 +336,7 @@ export function AdminCardManager({
       attack: card.attack,
       health: card.health,
       text: card.text,
+      lore: card.lore ?? "",
       keywords: card.keywords,
       tags: Array.isArray(card.tags) ? card.tags : [],
       isToken: card.isToken,
@@ -758,6 +763,7 @@ export function AdminCardManager({
 <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} aria-invalid={Boolean(form.formState.errors[field])} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
+<label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 소개 · 로어 (선택)</span><textarea {...form.register("lore", {maxLength:{value:5000,message:"카드 소개는 5,000자까지 입력할 수 있습니다."}})} aria-label="카드 소개" rows={5} maxLength={5000} placeholder="캐릭터의 배경, 세계관, 짧은 이야기 등을 적어주세요." data-testid="input-card-lore" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary"/><p className="text-xs leading-5 text-neutral-500">카드 상세 화면에 표시됩니다. 전투 효과와 판정에는 영향을 주지 않습니다. {(preview.lore??'').length.toLocaleString()}/5,000자</p></label>
 <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
 <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
 <label className="flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm"><input type="checkbox" {...form.register("isStarterGrant")} /> 신규 계정 Starter 카드</label></>,
@@ -961,6 +967,7 @@ export function AdminCardManager({
                   imageDisplaySettings={imageDisplaySettings}
                   onImagePositionChange={(position) => setImageDisplaySettings((current) => ({ ...current, ...position }))}
                />
+               <CardIntroduction lore={preview.lore}/>
                {imageUploadError&&<div role="alert" className="mt-3 rounded border border-red-800 p-3 text-sm text-red-200"><p>{imageUploadError} 선택한 이미지의 로컬 미리보기는 유지됩니다.</p><button type="button" className="mt-2 min-h-11 rounded border px-3" disabled={isUploadingImage} onClick={()=>{if(selectedImageFile.current)void uploadImage(selectedImageFile.current);}}>이미지 다시 업로드</button></div>}
                <section className="mt-4 rounded border border-neutral-700 p-3" aria-label="효과 설명 전체"><h5 className="mb-2 text-xs text-amber-200">효과 설명 전체</h5><p className="whitespace-pre-wrap break-words text-sm leading-7 text-neutral-100"><CardRulesText text={preview.text||"효과 없음"}/></p></section>
                <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-600">미리보기 전용 카드입니다.<br />게임 액션은 실행되지 않습니다.</p>
@@ -990,6 +997,7 @@ function AdminCardPreview({
   attack: number;
   health: number;
   text: string;
+  lore?: string;
   imageUrl: string | null;
   rarity?: CardRarity;
   imageDisplaySettings: ImageDisplaySettings;

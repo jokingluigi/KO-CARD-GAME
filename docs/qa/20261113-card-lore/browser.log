@@ -1,0 +1,1187 @@
+[02:41:43.407] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 115
+[02:41:44.574] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:44.587] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:44.587] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:44.587] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:44.594] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 7
+[02:41:44.594] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:44.594] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:44.594] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 7
+[02:41:44.595] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 8
+[02:41:44.595] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[02:41:44.623] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:44.879] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[02:41:44.893] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[02:41:44.920] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[02:41:44.931] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:45.211] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 13
+[02:41:45.246] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[02:41:45.266] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:41:45.283] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:41:45.938] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:45.949] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:45.954] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:45.954] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:45.957] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 3
+[02:41:45.957] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:45.957] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:45.957] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 8
+[02:41:45.959] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 10
+[02:41:45.959] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[02:41:45.971] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:46.160] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:46.174] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[02:41:46.404] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[02:41:46.407] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:46.449] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "POST",
+      "url": "/api/admin/cards/d21044c1-33fe-4156-b7e5-96cf8c7f2c2f/status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[02:41:46.656] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:46.659] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:46.659] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:46.659] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:46.662] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 3
+[02:41:46.662] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:46.662] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:46.662] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 3
+[02:41:46.662] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 3
+[02:41:46.662] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:46.928] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/main-content"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[02:41:46.933] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:47.431] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/collection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[02:41:47.486] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:47.487] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[02:41:47.515] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[02:41:47.977] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[02:41:47.981] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:47.990] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 31,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:47.998] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 32,
+      "method": "GET",
+      "url": "/api/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[02:41:48.013] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 33,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[02:41:49.080] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 34,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:49.083] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:49.083] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:49.083] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:49.084] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 1
+[02:41:49.084] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:49.084] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:49.085] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[02:41:49.085] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 2
+[02:41:49.085] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 35,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:49.117] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 36,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:49.327] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 37,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[02:41:49.336] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 38,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:49.344] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 39,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:49.385] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 40,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:41:49.612] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 41,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 7
+[02:41:49.631] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 42,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:41:49.641] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 43,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:41:49.647] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 44,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:50.262] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 45,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:50.264] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:50.264] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:50.264] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:50.265] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 1
+[02:41:50.265] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:50.265] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:50.265] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 1
+[02:41:50.265] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 1
+[02:41:50.265] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 46,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:50.283] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 47,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:50.484] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 48,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[02:41:50.500] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 49,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:50.663] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 50,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[02:41:50.666] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 51,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:50.698] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 52,
+      "method": "POST",
+      "url": "/api/admin/cards/5fe37251-6388-4e03-b117-77de381cb899/status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[02:41:50.780] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 53,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:50.785] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:50.785] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:50.785] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:50.787] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 2
+[02:41:50.787] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:50.787] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:50.787] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 2
+[02:41:50.788] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 3
+[02:41:50.788] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 54,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:50.963] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 55,
+      "method": "GET",
+      "url": "/api/main-content"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[02:41:50.967] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 56,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1
+[02:41:51.275] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 57,
+      "method": "GET",
+      "url": "/api/collection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[02:41:51.342] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 59,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:51.343] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 58,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[02:41:51.356] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 60,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:41:52.055] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 61,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:41:52.063] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 62,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[02:41:52.079] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 63,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:41:52.085] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 64,
+      "method": "GET",
+      "url": "/api/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[02:41:52.095] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 65,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[02:41:53.927] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 66,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+[02:41:53.928] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:53.928] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:53.929] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:53.933] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 4
+[02:41:53.933] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:53.933] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:53.933] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 5
+[02:41:53.934] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 6
+[02:41:53.934] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 67,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[02:41:54.031] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 68,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:41:54.238] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 69,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[02:41:54.318] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 70,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 45
+[02:41:54.779] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 71,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 48
+[02:41:54.811] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 72,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 30
+[02:41:55.335] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 73,
+      "method": "POST",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 22
+[02:41:55.357] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 74,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[02:41:55.396] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 75,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 28
+[02:41:55.439] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 76,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[02:41:56.848] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 77,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4
+[02:41:56.852] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:56.852] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:56.853] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:56.856] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 3
+[02:41:56.858] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:56.860] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 2
+[02:41:56.860] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 8
+[02:41:56.860] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 8
+[02:41:56.860] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 78,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:41:56.949] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 79,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[02:41:57.110] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 80,
+      "method": "GET",
+      "url": "/api/admin/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[02:41:57.147] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 81,
+      "method": "GET",
+      "url": "/api/admin/draft/card-selection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[02:41:57.792] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 82,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[02:41:57.810] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 83,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3
+[02:41:57.850] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 84,
+      "method": "POST",
+      "url": "/api/admin/cards/a025794f-d1a1-48a1-b0fc-f2467b6bc13e/status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[02:41:57.964] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 85,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:57.983] [32mINFO[39m (396619): [36mauth/me REQUEST_RECEIVED[39m
+    [35mauthStage[39m: "REQUEST_RECEIVED"
+    [35mdurationMs[39m: 0
+[02:41:57.983] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_ENTER[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_ENTER"
+    [35mdurationMs[39m: 0
+[02:41:57.983] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_START[39m
+    [35mauthStage[39m: "SESSION_VERIFY_START"
+    [35mdurationMs[39m: 0
+[02:41:57.991] [32mINFO[39m (396619): [36mauth/me SESSION_VERIFY_END[39m
+    [35mauthStage[39m: "SESSION_VERIFY_END"
+    [35mdurationMs[39m: 8
+[02:41:57.991] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_START[39m
+    [35mauthStage[39m: "USER_LOOKUP_START"
+    [35mdurationMs[39m: 0
+[02:41:57.991] [32mINFO[39m (396619): [36mauth/me USER_LOOKUP_END[39m
+    [35mauthStage[39m: "USER_LOOKUP_END"
+    [35mdurationMs[39m: 0
+[02:41:57.991] [32mINFO[39m (396619): [36mauth/me AUTH_MIDDLEWARE_EXIT[39m
+    [35mauthStage[39m: "AUTH_MIDDLEWARE_EXIT"
+    [35mdurationMs[39m: 8
+[02:41:57.991] [32mINFO[39m (396619): [36mauth/me RESPONSE_SENT[39m
+    [35mauthStage[39m: "RESPONSE_SENT"
+    [35mdurationMs[39m: 8
+[02:41:57.991] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 86,
+      "method": "GET",
+      "url": "/api/auth/me"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[02:41:58.264] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 87,
+      "method": "GET",
+      "url": "/api/main-content"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[02:41:58.277] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 88,
+      "method": "GET",
+      "url": "/api/server-status"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2
+[02:41:58.874] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 89,
+      "method": "GET",
+      "url": "/api/collection"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 55
+[02:41:59.038] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 91,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[02:41:59.044] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 90,
+      "method": "GET",
+      "url": "/api/card-tags"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[02:41:59.158] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 92,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 29
+[02:41:59.948] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 93,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 33
+[02:41:59.956] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 94,
+      "method": "GET",
+      "url": "/api/card-frames"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[02:42:00.009] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 95,
+      "method": "GET",
+      "url": "/api/cards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 42
+[02:42:00.059] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 96,
+      "method": "GET",
+      "url": "/api/champions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 31
+[02:42:00.114] [32mINFO[39m (396619): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 97,
+      "method": "POST",
+      "url": "/api/player-journal/sync"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 39
+[{"width":390,"height":844,"adminSaveAndReload":true,"publicCollectionDetail":true,"literalTextNoScriptExecution":true,"effectsUntouched":true,"noHorizontalOverflow":true},{"width":844,"height":390,"adminSaveAndReload":true,"publicCollectionDetail":true,"literalTextNoScriptExecution":true,"effectsUntouched":true,"noHorizontalOverflow":true},{"width":1440,"height":900,"adminSaveAndReload":true,"publicCollectionDetail":true,"literalTextNoScriptExecution":true,"effectsUntouched":true,"noHorizontalOverflow":true}]

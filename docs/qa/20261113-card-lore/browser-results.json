@@ -1,0 +1,29 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "adminSaveAndReload": true,
+    "publicCollectionDetail": true,
+    "literalTextNoScriptExecution": true,
+    "effectsUntouched": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "adminSaveAndReload": true,
+    "publicCollectionDetail": true,
+    "literalTextNoScriptExecution": true,
+    "effectsUntouched": true,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "adminSaveAndReload": true,
+    "publicCollectionDetail": true,
+    "literalTextNoScriptExecution": true,
+    "effectsUntouched": true,
+    "noHorizontalOverflow": true
+  }
+]

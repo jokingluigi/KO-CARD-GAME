@@ -1,3 +1,4 @@
+import {CardIntroduction} from "./card-introduction";
 import {useTagLabels,tagLabel} from '@/lib/tag-labels';
 import {cardSilenceProtection} from '../lib/card-protection-display';
 import {getCardDefinition} from '../game/cards/test-cards';
@@ -32,6 +33,7 @@ export type CardDetailRecord = {
   attack: number;
   health: number;
   text: string;
+  lore?: string;
   rarity: string;
   tags?: string[];
   imageUrl: string | null;
@@ -159,6 +161,7 @@ export function CardDetailDialog({
                     <CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} />
                   </p>
                 </div>
+                <CardIntroduction lore={card.lore}/>
                 {children}
               </div>
             </div>

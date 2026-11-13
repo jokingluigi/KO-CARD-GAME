@@ -72,6 +72,7 @@ export function PublicCards({
                       attack: d.attack,
                       health: d.health,
                       text: d.rulesText,
+      lore: d.lore,
                       rarity: d.rarity ?? "NORMAL",
                       imageUrl: d.imageUrl ?? null,
                       imageDisplayMode: d.imageDisplayMode ?? "CONTAIN",

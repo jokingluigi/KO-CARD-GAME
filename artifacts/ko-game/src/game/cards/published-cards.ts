@@ -31,6 +31,7 @@ export type PublishedCardRecord = {
   attack: number;
   health: number;
   text: string;
+  lore?: string;
   keywords: CardDefinition["keywords"];
   tags?: string[];
   isToken: boolean;
@@ -238,7 +239,8 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     // Administrator-chosen names must not select another card's legacy rules.
     return { ...awakening, ...card, cardType: 'WRESTLER', rarity: 'CHAMPION',
       isToken: true, isChampionToken: true, questExclusive: true, awakeningStage: awakening.awakeningStage,
-      rulesText: card.text, keywords: [...card.keywords], abilities: balanceAbilities ?? reviewedLatestAdminAbilities(card) ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
+      rulesText: card.text,
+      lore: card.lore ?? "", keywords: [...card.keywords], abilities: balanceAbilities ?? reviewedLatestAdminAbilities(card) ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
       awakeningLegacyPassives: !balanceAbilities && card.text === awakening.rulesText,
       effectConfig: { ...awakening.effectConfig, ...card.effectConfig } };
   }
@@ -316,6 +318,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       attack: card.attack,
       health: card.health,
       rulesText: card.text,
+      lore: card.lore ?? "",
       imageAssetId: card.imageAssetId,
       imageUrl: card.imageUrl,
        imageDisplayMode: card.imageDisplayMode,

@@ -57,6 +57,7 @@ function CardMiniature({
               name: definition.name ?? "카드",
               cardType: definition.cardType ?? "WRESTLER",
               text: definition.rulesText,
+      lore: definition.lore,
               cost: definition.cost,
               attack: definition.attack,
               health: definition.health,
