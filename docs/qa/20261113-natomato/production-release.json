@@ -1,0 +1,93 @@
+{
+  "checkedAt": "2026-11-13T12:27:18.308Z",
+  "commit": "cd976dd145d002d0c7143b2982e47f797c8c32de",
+  "services": [
+    {
+      "role": "api",
+      "id": "srv-daml9kqd0e5s73fsnjs0",
+      "deployId": "dep-dbrg01lg1s2s738cq880",
+      "status": "live",
+      "commit": "cd976dd145d002d0c7143b2982e47f797c8c32de"
+    },
+    {
+      "role": "front",
+      "id": "srv-damlm4gu01pc73ao3mb0",
+      "deployId": "dep-dbrg105g1s2s738ct2ug",
+      "status": "live",
+      "commit": "cd976dd145d002d0c7143b2982e47f797c8c32de"
+    }
+  ],
+  "observations": [
+    {
+      "time": "2026-11-13T12:22:45.449Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "67",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:23:15.701Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "98",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:23:45.977Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "128",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:24:16.273Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "158",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:24:46.507Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "188",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:25:16.812Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "219",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:25:47.075Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "249",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:26:17.290Z",
+      "version": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "versionAge": "279",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:26:47.902Z",
+      "version": "cd976dd145d002d0c7143b2982e47f797c8c32de",
+      "versionAge": null,
+      "entry": "/assets/index-S6AuJvc-.js",
+      "entryCurrent": false
+    },
+    {
+      "time": "2026-11-13T12:27:18.308Z",
+      "version": "cd976dd145d002d0c7143b2982e47f797c8c32de",
+      "versionAge": "30",
+      "entry": "/assets/index-CR0BCl6S.js",
+      "entryCurrent": true
+    }
+  ],
+  "verified": true
+}

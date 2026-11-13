@@ -1,0 +1,8 @@
+{
+  "checkedAt": "2026-11-13T12:20:23.649Z",
+  "status": 200,
+  "health": {
+    "status": "ok",
+    "revision": "cd976dd145d002d0c7143b2982e47f797c8c32de"
+  }
+}

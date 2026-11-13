@@ -1,0 +1,2 @@
+{"role":"api","deployId":"dep-dbrg01lg1s2s738cq880","commit":"cd976dd145d002d0c7143b2982e47f797c8c32de","previousLiveCommit":"941b65a59847337333e36024fdb79a08b06e69d3","status":"build_in_progress"}
+{"role":"api","deployId":"dep-dbrg01lg1s2s738cq880","commit":"cd976dd145d002d0c7143b2982e47f797c8c32de","status":"live","publicRevisionVerified":true}
