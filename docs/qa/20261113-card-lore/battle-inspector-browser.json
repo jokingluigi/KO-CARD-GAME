@@ -1,0 +1,20 @@
+[
+  {
+    "width": 390,
+    "height": 844,
+    "realBattleInspector": true,
+    "introductionVisible": true
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "realBattleInspector": true,
+    "introductionVisible": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "realBattleInspector": true,
+    "introductionVisible": true
+  }
+]

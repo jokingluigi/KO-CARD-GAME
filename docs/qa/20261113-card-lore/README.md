@@ -9,3 +9,9 @@ Validation: 19 focused SQL/API/engine regression tests pass, including a real mi
 Browser: actual administrator card component with real authenticated HTTP and disposable SQL; 390×844, 844×390, 1440×900. Create, live preview, save, reload/reopen, publish (isolated only), collection detail, literal markup without script execution, unchanged effects and no horizontal overflow verified. Screenshots use an intentionally blank-art QA card and temporary test prose. Physical devices and production battle frame rate were not measured. Battle inspector wiring is implemented; separate browser evidence, if executed, is recorded separately.
 
 Production deployment and version verification are recorded after completion. No main merge; no manual production content changes. Schema addition uses the existing authorized startup migration path.
+
+Additional battle browser verification passes at 390×844, 844×390 and 1440×900: the actual shared battle board's card information button opens the inspector and displays the current catalog's saved introduction. See `battle-inspector-browser.json`. No combat or screenshot-only duplicate renderer was substituted for the inspector.
+
+## Production receipt
+
+API and frontend live revision: `941b65a59847337333e36024fdb79a08b06e69d3`. Public cards and authenticated admin/collection/deck-option responses all expose string lore fields; actual root and fresh battle entry scripts match the approved revision. No production card content was written. The frontend release helper initially rejected stale `/version.json`; Cloudflare served the previous value until the observed cache age reached 300 seconds, then returned the correct new revision. Independent final verification passed afterward; no rollback or repeat deployment was used. No main merge. Later documentation-only commits are not deployed.

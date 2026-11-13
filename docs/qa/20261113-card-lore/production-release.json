@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-11-13T02:52:04.695Z",
+  "revision": "941b65a59847337333e36024fdb79a08b06e69d3",
+  "checks": [
+    {
+      "role": "api",
+      "revision": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "deployId": "dep-dbr7ik3tqb8s73do655g"
+    },
+    {
+      "role": "front",
+      "revision": "941b65a59847337333e36024fdb79a08b06e69d3",
+      "deployId": "dep-dbr7jigu01pc73ae9680"
+    },
+    {
+      "publicCards": 182,
+      "loreFieldPresentOnAll": true
+    },
+    {
+      "path": "/api/admin/cards",
+      "cards": 195,
+      "loreFieldPresentOnAll": true
+    },
+    {
+      "path": "/api/collection",
+      "cards": 152,
+      "loreFieldPresentOnAll": true
+    },
+    {
+      "path": "/api/decks/options",
+      "cards": 152,
+      "loreFieldPresentOnAll": true
+    },
+    {
+      "path": "/",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "revisionMatches": true
+    },
+    {
+      "path": "/online/match/lore-release-941b65a59847",
+      "entry": "/assets/index-S6AuJvc-.js",
+      "revisionMatches": true
+    }
+  ],
+  "productionCardContentWrites": 0,
+  "productionCombatActions": 0
+}

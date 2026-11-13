@@ -1,0 +1,4 @@
+
+> @workspace/api-server@0.0.0 typecheck /workspace/KO-CARD-GAME/artifacts/api-server
+> tsc -p tsconfig.json --noEmit
+
