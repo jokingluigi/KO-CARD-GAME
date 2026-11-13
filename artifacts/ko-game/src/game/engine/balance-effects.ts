@@ -911,8 +911,8 @@ export function applyBalanceEffect(
     case "GRANT_DODGE_ONCE": {
       let n = state;
       const eligible = owner.board.filter((d): d is CardInstance =>
-        Boolean(d && !d.championDodgeGranted),
-      );
+        Boolean(d && !d.championDodgeGranted && ids?.includes(d.instanceId)),
+      ).slice(0,1);
       for (const card of eligible) {
         n = chosen(n, "ADD_KEYWORD", { keyword: "DODGE" }, card.instanceId);
         n = {

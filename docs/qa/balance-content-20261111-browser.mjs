@@ -347,6 +347,12 @@ try {
     };
     let own = await makePage("tutorial-user");
     const opponent = await makePage("finisher-opponent");
+    if (process.env.KO_NATOMATO_ONLY === "1") {
+      const {natomatoScenarios}=await import("./natomato-browser-scenarios-20261113.mjs");
+      const checks=await natomatoScenarios({f,service,runtime,own,opponent,out,width,baseCard:body,setRuntime:r=>runtime=r});
+      assert.deepEqual(errors,[]);results.push({width,height,...checks,errors});
+      await context.close();service.cleanupMatchRuntime(id);continue;
+    }
     if (process.env.KO_LETHAL_ONLY === "1") {
       const { lethalScenarios } = await import("./multiplayer-lethal-20261112.mjs");
       const checks = await lethalScenarios({f,service,runtime,own,opponent,out,width,baseCard:body,setRuntime:r=>runtime=r});

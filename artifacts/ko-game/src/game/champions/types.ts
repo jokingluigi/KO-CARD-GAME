@@ -2,6 +2,7 @@ import type { ChampionQuestCondition } from '../../../../../lib/game-engine/src/
 import type { GameEventType } from '../events/types';
 import type { CardEffect } from '../effects/types';
 import {singleTargetPandoraAbility} from './pandora-targeting';
+import {singleTargetNatomatoAbility} from './natomato-targeting';
 import type { ImageDisplayMode } from '../cards/types';
 
 export type ChampionTrackedEvent = GameEventType | 'WRESTLER_RETIRED';
@@ -178,5 +179,5 @@ export function championVoiceLine(
 /** Per-match replacement wins over legacy preparation-completion upgrades. */
 export function currentChampionAbility(champion: ChampionState | null | undefined): ChampionAbility | null {
  const ability = champion ? champion.abilityOverride ?? (champion.questCompleted && !champion.quest?.finisherChoices?.length && !champion.quest?.finisher && champion.upgradedAbility ? champion.upgradedAbility : champion.ability) : null;
- return ability ? singleTargetPandoraAbility(ability) : null;
+ return ability ? singleTargetNatomatoAbility(singleTargetPandoraAbility(ability)) : null;
 }

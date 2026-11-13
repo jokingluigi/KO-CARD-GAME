@@ -97,6 +97,7 @@ export function getValidTargets(
     const filteredCards = cards.filter((card) => {
       if (effect.values?.targetDefinitionIds && !effect.values.targetDefinitionIds.includes(card.definitionId)) return false;
       if (effect.values?.targetAttackBelowSource && card.currentAttack >= sourceCard.currentAttack) return false;
+      if (effect.values?.balance?.operation === 'GRANT_DODGE_ONCE' && card.championDodgeGranted) return false;
       if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
       if (!effect.values?.resolvedAutomaticTarget && target.selection === 'PLAYER_CHOICE' && isEntryDefenseTargetProtected(state, card)) return false;
       if (!effect.values?.resolvedAutomaticTarget && effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
@@ -2807,6 +2808,7 @@ function applyEffectInternal(
     const eligibleCandidates = candidates.filter((card) => {
       if (effect.values?.targetDefinitionIds && !effect.values.targetDefinitionIds.includes(card.definitionId)) return false;
       if (effect.values?.targetAttackBelowSource && card.currentAttack >= sourceCard.currentAttack) return false;
+      if (effect.values?.balance?.operation === 'GRANT_DODGE_ONCE' && card.championDodgeGranted) return false;
       if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
       if (!effect.values?.resolvedAutomaticTarget && target.selection === 'PLAYER_CHOICE' && isEntryDefenseTargetProtected(state, card)) return false;
       if (!effect.values?.resolvedAutomaticTarget && effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;

@@ -39,7 +39,8 @@ export function evaluateChampionQuestCondition(condition: ChampionQuestCondition
     }
     if (node.type !== 'EVENT') return false;
     counts[path] = Math.min(node.required,(counts[path]??0)+events.filter(e=>{
-      if(e.type!==node.event||node.cardType&&e.cardType!==node.cardType||node.reason&&e.reason!==node.reason||node.positiveOnly&&!(Number(e.amount)>0)||node.exactZero&&!e.exactZero)return false;
+      // Dodge preserves its damage cause (COMBAT/CARD_EFFECT); the explicit tag records the consumed dodge.
+      if(e.type!==node.event||node.cardType&&e.cardType!==node.cardType||node.reason&&e.reason!==node.reason&&!(node.reason==='DODGE'&&e.tags?.includes('DODGE'))||node.positiveOnly&&!(Number(e.amount)>0)||node.exactZero&&!e.exactZero)return false;
       const targetId=e.target?.type==='CARD'?e.target.cardInstanceId:e.cardInstanceId;
       const targetPlayer=e.target?.type==='PLAYER'?e.target.playerId:e.targetSnapshot?.playerId??state.players.find(p=>[...p.board,...p.hand,...p.deck,...p.graveyard,...p.removedFromGame].some(c=>c?.instanceId===targetId))?.id;
       const eventOwner=node.targetOwner?targetPlayer:e.playerId;

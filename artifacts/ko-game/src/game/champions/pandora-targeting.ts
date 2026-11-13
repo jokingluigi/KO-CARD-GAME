@@ -1,6 +1,7 @@
 import type { GameState } from "../types/game-state";
 import type { CardEffect } from "../effects/types";
 import type { ChampionAbility, ChampionEffect } from "./types";
+import {normalizeNatomatoTargeting} from './natomato-targeting';
 
 function isPandoraDamage(effect: CardEffect | ChampionEffect) {
   return effect.type === "STRUCTURED" && effect.values?.balance?.operation === "PANDORA_DAMAGE";
@@ -17,6 +18,7 @@ export function singleTargetPandoraAbility(ability: ChampionAbility): ChampionAb
 /** An unfinished legacy multi-select is reopened as a single choice, never
  * auto-applied to all saved selections. Payment/use counters are untouched. */
 export function normalizePandoraTargeting(state: GameState): GameState {
+  state=normalizeNatomatoTargeting(state);
   let changed=false;
   const players=state.players.map(player=>{
     const champion=player.champion,quest=champion?.quest,condition=quest?.condition;

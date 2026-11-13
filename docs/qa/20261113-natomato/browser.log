@@ -1,0 +1,11 @@
+[12:16:57.910] [32mINFO[39m (440965): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 74
+[{"width":390,"height":844,"checks":["real ability UI selects one ally","both online clients mounted","once-only grant and cost survive restore","eight server-confirmed dodges complete preparation","duplicate request idempotent","full-hand discard then one finisher","completed state survives reconnect"],"abilityVersion":2,"errors":[]},{"width":844,"height":390,"checks":["real ability UI selects one ally","both online clients mounted","once-only grant and cost survive restore","eight server-confirmed dodges complete preparation","duplicate request idempotent","full-hand discard then one finisher","completed state survives reconnect"],"abilityVersion":2,"errors":[]},{"width":1440,"height":900,"checks":["real ability UI selects one ally","both online clients mounted","once-only grant and cost survive restore","eight server-confirmed dodges complete preparation","duplicate request idempotent","full-hand discard then one finisher","completed state survives reconnect"],"abilityVersion":2,"errors":[]}]

@@ -193,7 +193,7 @@ export function reviewedNovember11Champion(
       break;
     }
     case "07c65d00-5efb-435d-a4fa-172b9bfcfd20":
-      if (is("아군 선수 카드의 '회피'가 총 8번 발동합니다."))
+      if (is("아군 선수 카드의 '회피'가 총 8번 발동합니다.")) {
         condition({
           type: "EVENT",
           event: "DAMAGE_DEALT",
@@ -203,6 +203,8 @@ export function reviewedNovember11Champion(
           reason: "DODGE",
           required: 8,
         });
+        r={...r,questProgressRequired:8,questCondition:{...r.questCondition,required:8}};
+      }
       if (
         clean(record.abilityText) ===
         clean(
@@ -222,6 +224,7 @@ export function reviewedNovember11Champion(
           },
           {
             action: "BUFF",
+            target: {zone:"BOARD",owner:"SELF",cardType:"WRESTLER",selection:"PLAYER_CHOICE",count:1},
             values: { balance: { operation: "GRANT_DODGE_ONCE" } },
           },
           {
