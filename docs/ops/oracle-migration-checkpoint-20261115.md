@@ -33,3 +33,13 @@ No production server/DB migration or paid-plan upgrade performed. Render remains
 2. Inspect saved Terraform variables/configuration: exact shape/image/public subnet/public IPv4/SSH key/default disk. A later form may differ from the desired A1 settings.
 3. Resolve Always Free entitlement and capacity before recommending production migration. Never equate trial credits with permanent free hosting.
 4. If a VM can be provisioned, first use a separate test address and compare real multiplayer behavior against Render with the existing Singapore Supabase DB. No performance speedup has been established for Oracle.
+
+## Verified saved-stack Apply result (user uploaded full log)
+
+- Apply at 2026-11-15 01:50:31 Korea time failed: `500-InternalError, Out of host capacity` during LaunchInstance in Singapore AD-1. No successful instance creation is shown.
+- The saved stack DOES contain `VM.Standard.A1.Flex`, `ocpus = 2`, `memory_in_gbs = 12`, an image reference, the existing subnet and `assign_public_ip = true`.
+- Unlike the earlier GUI warning, this saved stack's instance metadata DOES contain an `ssh_authorized_keys` public key. Do not tell the user this stack is definitely missing SSH keys. Ownership/private-key availability remains unverified; never request private key text in chat.
+- Plan was exactly `1 to add, 0 to change, 0 to destroy`. Provider initialization succeeded (OCI 9.13.0); linux_arm64 checksum warning was not the failure cause.
+- Resource instance display name in the stack is `instance-20261115-0135`, NOT `ko-game-server`. Any future CLI duplicate-protection/name-based discovery must account for this before provisioning.
+- The uploaded plan/apply log does not prove billing entitlements or permanent free storage. It establishes that this attempt was blocked by host capacity, not rejected for a malformed shape/SSH option.
+- Retry using the SAME saved stack after the prior job has finished, avoiding repeated Create Instance workflows. No immediate retries or migration were executed by the assistant when reading this log.
