@@ -137,6 +137,21 @@ class Tests(unittest.TestCase):
             with self.assertRaises(m.Stop) as error: m.cli('compute', 'instance', 'launch')
             self.assertNotIsInstance(error.exception, m.CommandError)
 
+    def test_cli_accepts_successful_empty_list_output(self):
+        with patch.object(m.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, '', '')):
+            self.assertEqual(m.cli('compute', 'instance', 'list'), [])
+            self.assertEqual(m.cli('bv', 'volume', 'list'), [])
+
+    def test_empty_or_malformed_post_cannot_be_treated_as_success(self):
+        for payload in ['', 'not json', '{}']:
+            with self.subTest(payload=payload), patch.object(m.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, payload, '')):
+                with self.assertRaises(m.Stop): m.cli('compute', 'instance', 'launch')
+
+    def test_region_request_includes_required_tenancy(self):
+        with patch.object(m, 'cli', return_value=[]) as cli, tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(m.Stop): m.preflight('tenancy-test', Path(d) / 'missing')
+            cli.assert_called_once_with('iam', 'region-subscription', 'list', '--tenancy-id', 'tenancy-test', '--all')
+
 
 if __name__ == '__main__':
     unittest.main()

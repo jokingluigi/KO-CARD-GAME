@@ -29,6 +29,8 @@ class CommandError(Stop):
 
 
 def cli(*args):
+    label = ' '.join(args[:3])
+    print('[OCI] ' + label, flush=True)
     try:
         r = subprocess.run(['oci', '--region', REGION, '--output', 'json', *args],
                            capture_output=True, text=True, timeout=180)
@@ -37,10 +39,14 @@ def cli(*args):
     if r.returncode:
         # CLI payloads here contain resource metadata only, never private key material.
         raise CommandError((r.stderr or r.stdout)[-3500:])
+    # OCI CLI may successfully render no text for an empty collection. Only list
+    # commands accept that representation; never treat an empty POST/GET as success.
+    if not r.stdout.strip() and len(args) >= 3 and args[2] == 'list':
+        return []
     try:
         return json.loads(r.stdout)['data']
     except (ValueError, KeyError) as e:
-        raise Stop('응답을 해석하지 못했습니다. 자동 재시도를 중단합니다.') from e
+        raise Stop(label + ': 응답을 해석하지 못했습니다. 자동 재시도를 중단합니다.') from e
 
 
 def write_state(path, data):
@@ -80,7 +86,7 @@ def inspect_storage(compartment, domains):
 
 
 def preflight(compartment, result_file):
-    regions = cli('iam', 'region-subscription', 'list')
+    regions = cli('iam', 'region-subscription', 'list', '--tenancy-id', compartment, '--all')
     if not any(r.get('region-name') == REGION and r.get('is-home-region') is True for r in regions):
         raise Stop('싱가포르가 홈 리전이 아닙니다. 생성하지 않습니다.')
     subnet_id = None

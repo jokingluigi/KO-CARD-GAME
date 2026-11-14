@@ -31,3 +31,7 @@ A new owner key is generated in Cloud Shell at `~/.ko-oracle-a1/oracle-owner` (m
 `python3 -m unittest discover -s scripts/oracle -p 'test_*.py'`
 
 Mocked tests cover fixed resource parameters, bounded capacity retries, existing instances, uncertain result/restart, noncapacity errors, home-region checks, volume guards and ARM image selection. They do not exercise an authenticated OCI launch, live inventory, actual billing, network reachability, or a physical-device game session.
+
+## Cloud Shell compatibility correction
+
+A first live user attempt stopped at JSON parsing. Successful empty list output now maps to an empty collection (never for launch/get). Region subscription queries now supply the required `--tenancy-id` flag verified against Oracle's generated CLI source: https://github.com/oracle/oci-cli/blob/master/services/identity/src/oci_cli_identity/generated/identity_cli.py . Stage labels identify which OCI call fails without dumping request metadata. Fifteen mocked tests pass; a live successful A1 launch is still unverified.
