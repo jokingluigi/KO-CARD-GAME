@@ -271,6 +271,56 @@ class Tests(unittest.TestCase):
         for text in ['TooManyRequests',json.dumps({'status':500,'code':'TooManyRequests'}),'invalid json']:
             self.assertFalse(m.CommandError(text).rate_limited)
 
+    def test_pending_resource_manager_job_blocks_launch(self):
+        with tempfile.TemporaryDirectory() as d:
+            def service(*args):
+                if args[:3]==('resource-manager','job','list'):return [{'lifecycle-state':'ACCEPTED'}]
+                return []
+            with patch.object(m,'cli',side_effect=service):
+                with self.assertRaises(m.Stop):self.attempt(Path(d)/'launch.json')
+                self.assertFalse((Path(d)/'launch.json').exists())
+
+    def test_terminal_jobs_allow_checks_but_unknown_status_does_not(self):
+        with patch.object(m,'cli',return_value=[{'lifecycle-state':s} for s in ['FAILED','CANCELED','SUCCEEDED']]):
+            m.check_no_active_jobs('compartment')
+        with patch.object(m,'cli',return_value=[{}]):
+            with self.assertRaises(m.Stop):m.check_no_active_jobs('compartment')
+
+    def test_aged_unknown_reconciles_once_with_two_checks_and_backup(self):
+        import os,time
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'launch.json';prior={'status':'request-started','domain':'AD-1','schema':2};m.write_state(p,prior)
+            os.utime(p,(time.time()-901,time.time()-901))
+            with patch.object(m,'cli',return_value=[]) as cli:
+                sleeps=[];m.reconcile_after_cancel('compartment',[{'name':'AD-1'}],p,sleep=sleeps.append)
+            self.assertEqual(sleeps,[30]);self.assertEqual(cli.call_count,4)
+            backup=json.loads(p.with_name('launch-before-verified-recovery.json').read_text())
+            self.assertEqual(backup['prior'],prior);self.assertEqual(len(backup['checks']),2)
+            self.assertEqual(json.loads(p.read_text())['status'],'verified-absent')
+            m.write_state(p,prior);os.utime(p,(time.time()-901,time.time()-901))
+            with self.assertRaises(m.Stop):m.reconcile_after_cancel('compartment',[{'name':'AD-1'}],p,sleep=lambda _:None)
+
+    def test_reconcile_never_resets_fresh_success_or_incompatible_record(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'launch.json'
+            for prior in [{'status':'request-started','domain':'AD-1','schema':2},
+                          {'status':'created','instance-id':'exists'},
+                          {'status':'request-started','domain':'other','schema':2}]:
+                m.write_state(p,prior)
+                with patch.object(m,'cli') as cli:
+                    with self.assertRaises(m.Stop):m.reconcile_after_cancel('compartment',[{'name':'AD-1'}],p)
+                    cli.assert_not_called()
+                self.assertEqual(json.loads(p.read_text()),prior)
+
+    def test_reconcile_stops_if_a_server_appears_at_second_check(self):
+        import os,time
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'launch.json';prior={'status':'request-started','domain':'AD-1','schema':2};m.write_state(p,prior)
+            os.utime(p,(time.time()-901,time.time()-901))
+            with patch.object(m,'cli',side_effect=[[],[],[],[INSTANCE]]):
+                with self.assertRaises(m.Stop):m.reconcile_after_cancel('compartment',[{'name':'AD-1'}],p,sleep=lambda _:None)
+            self.assertEqual(json.loads(p.read_text()),prior)
+
 
 if __name__ == '__main__':
     unittest.main()

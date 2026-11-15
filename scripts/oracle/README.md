@@ -71,3 +71,15 @@ The user supplied a real `429 TooManyRequests` response while listing instances.
 - A timeout, malformed response, or unknown error still preserves ambiguity and blocks another POST.
 
 Verified 30 tests (28 mocked control-flow cases plus two actual OCI CLI parser/help checks). No authenticated live OCI launch was run by this workspace. No assertion that the live rate limit has cleared.
+
+## Explicit resume after canceling queued Terraform jobs (2026-11-16)
+
+The user supplied an unresolved schema-2 journal and a screenshot of an ACCEPTED Resource Manager Apply job, and explicitly requested canceling the queued job and starting a new helper run. Added `--resume-after-cancel` for that recovery. Do not also pass the legacy CLI-error recovery flag.
+
+The helper now blocks launching while ANY root-compartment Resource Manager job has a nonterminal/unknown state. Wait until the user's cancellation actually reaches CANCELED. FAILED and SUCCEEDED are terminal but instance discovery still blocks a duplicate.
+
+The new recovery accepts only the exact known schema-2 request-started record in the expected AD, aged at least 15 minutes. It checks for no active Resource Manager jobs and **no nonterminated root-compartment VM of any shape** twice, 30 seconds apart. The original record and check observations are preserved once in `launch-before-verified-recovery.json`. Recent/incompatible/completed records and repeated unknown recoveries remain blocked. It does not cancel cloud jobs or delete real resources.
+
+This is an explicit operational reconciliation based on observed account state, not a global lock or guarantee against another cloud actor creating a VM. Do not press GUI Apply or run a second helper while using it. A later timeout remains fail-closed and cannot be repeatedly bypassed using this flag.
+
+35 tests passed: 33 mocked cases plus two actual OCI CLI parser/help checks. New cases cover accepted/unknown job states, aged one-time backup, fresh/completed/incompatible records, and a VM appearing at the second check. No live Oracle creation or reconciliation was executed from this workspace.

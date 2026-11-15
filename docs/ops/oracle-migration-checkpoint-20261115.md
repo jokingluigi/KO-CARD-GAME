@@ -47,3 +47,9 @@ No production server/DB migration or paid-plan upgrade performed. Render remains
 ## Automation resumed at user's request
 
 User explicitly requested retrying automatically until capacity becomes available while preserving 2 OCPU/12GB. A new helper revision fixes unsupported VNIC CLI flags, adds installed-help checks, continuous `--attempts 0` mode, and opt-in recovery solely for the documented old local CLI rejection. 23 tests passed, including two actual CLI parser/help checks without API calls. No Oracle job has been started by this development environment. Cloud Shell session persistence is not guaranteed. See scripts/oracle/README.md and the new QA receipt; earlier "fix not applied" notes above describe the historical state, not this revision.
+
+## 2026-11-16 queued-job cancellation / new helper request
+
+Latest user screenshot showed `apply-job-20261116005643` still ACCEPTED in RMS queue; execution had not started in that log. The user explicitly requested canceling it and receiving a new automated task. Cancellation completion is NOT yet confirmed. Do not launch another job before CANCELED/terminal state.
+
+Published helper revision pending this change adds `--resume-after-cancel` (do not combine with `--recover-old-cli-error`). Root Resource Manager jobs and instances are checked before recovering the provided aged schema-2 journal, with two negative observations 30 seconds apart, a one-time original-record backup, and protection against fresh/unknown/newly appeared VMs. Other manual cloud actors are not locked; no parallel GUI Apply. 35 mocked/CLI-parser tests passed, no live OCI provisioning/recovery run.

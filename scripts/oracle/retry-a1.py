@@ -176,7 +176,7 @@ def recover_confirmed_old_usage_error(journal, domains):
     if not journal.exists():
         return
     pending = json.loads(journal.read_text())
-    if pending.get('status') in ('capacity-rejected', 'cli-rejected', 'rate-rejected'):
+    if pending.get('status') in ('capacity-rejected', 'cli-rejected', 'rate-rejected', 'verified-absent'):
         return
     if (set(pending) != {'status', 'domain'} or pending.get('status') != 'request-started'
             or pending['domain'] not in {d['name'] for d in domains}):
@@ -187,6 +187,44 @@ def recover_confirmed_old_usage_error(journal, domains):
     write_state(backup, pending)
     write_state(journal, {'status': 'cli-rejected', 'reason': 'operator-confirmed old unsupported-option error'})
     print('이전에 API 전송 전에 거절된 CLI 옵션 오류 기록을 보관하고 복구했습니다.', flush=True)
+
+
+def check_no_active_jobs(compartment):
+    jobs = cli('resource-manager', 'job', 'list', '--compartment-id', compartment, '--all')
+    terminal = {'SUCCEEDED', 'FAILED', 'CANCELED'}
+    active = [j for j in jobs if str(j.get('lifecycle-state', '')).upper() not in terminal]
+    if active:
+        raise Stop('Resource Manager에 아직 종료되지 않은 작업이 있습니다. Canceled/Failed/Succeeded 확인 후 실행하세요.')
+
+
+def reconcile_after_cancel(compartment, domains, journal, sleep=time.sleep):
+    """Explicit operator recovery, twice checking no VMs/jobs; never erase the old evidence."""
+    if not journal.exists():
+        return
+    pending = json.loads(journal.read_text())
+    if pending.get('status') in ('capacity-rejected', 'cli-rejected', 'rate-rejected', 'verified-absent'):
+        return
+    if (set(pending) != {'status', 'domain', 'schema'} or pending.get('status') != 'request-started'
+            or pending.get('schema') != 2 or pending['domain'] not in {d['name'] for d in domains}):
+        raise Stop('예상한 이전 미확정 기록과 다릅니다. 자동 복구하지 않습니다.')
+    backup = journal.with_name('launch-before-verified-recovery.json')
+    if backup.exists():
+        raise Stop('이미 미확정 기록을 한 번 복구했습니다. 새로운 미확정 요청은 자동 초기화하지 않습니다.')
+    if time.time() - journal.stat().st_mtime < 900:
+        raise Stop('생성 요청 기록이 아직 15분 이내입니다. 결과 전파를 기다린 뒤 재확인해야 합니다.')
+    checks = []
+    for step in range(2):
+        check_no_active_jobs(compartment)
+        if live_instances(compartment):
+            raise Stop('현재 서버가 존재합니다. 기록 복구나 추가 생성을 하지 않습니다.')
+        checks.append({'checked_at_epoch': time.time(), 'instances': 0, 'active_jobs': 0})
+        if step == 0:
+            print('서버와 진행 중 작업이 없습니다. 30초 후 한 번 더 확인합니다.', flush=True)
+            sleep(30)
+    # These reads reconcile aged state; they cannot lock out another human/cloud actor.
+    write_state(backup, {'prior': pending, 'checks': checks})
+    write_state(journal, {'status': 'verified-absent', 'domain': pending['domain'], 'schema': 2})
+    print('서버/작업 부재를 두 번 확인했습니다. 이전 기록을 별도 보관하고 재시도합니다.', flush=True)
 
 
 def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=time.sleep, attempts=None, interval=None):
@@ -206,9 +244,10 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
         # An interrupted/ambiguous launch must never become a second POST automatically.
         if journal.exists():
             pending = json.loads(journal.read_text())
-            if pending.get('status') not in ('capacity-rejected', 'cli-rejected', 'rate-rejected'):
+            if pending.get('status') not in ('capacity-rejected', 'cli-rejected', 'rate-rejected', 'verified-absent'):
                 raise Stop('이전 생성 요청의 결과가 불확실합니다. 중복 방지를 위해 수동 확인이 필요합니다.')
         for domain in domains:
+            check_no_active_jobs(compartment)
             existing = find_existing(live_instances(compartment))
             if existing:
                 announce(existing)
@@ -256,6 +295,8 @@ def main():
     parser = argparse.ArgumentParser(description='Fixed A1 2 OCPU / 12GB capacity retries; never upgrades billing.')
     parser.add_argument('--attempts', type=int, default=ATTEMPTS, help='0: until success/session ends; otherwise bounded rounds')
     parser.add_argument('--interval', type=int, default=INTERVAL, help='Seconds after a capacity-rejected round; minimum 60')
+    parser.add_argument('--resume-after-cancel', action='store_true',
+                        help='Reconcile an aged unknown record after canceling GUI jobs; checks twice and backs up once')
     parser.add_argument('--recover-old-cli-error', action='store_true',
                         help='Use only after the documented old --create-vnic-details usage rejection, never for a timeout')
     args = parser.parse_args()
@@ -273,6 +314,7 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as e:
             raise Stop('이미 실행 중입니다. 동시에 두 번 실행하지 않습니다.') from e
+        check_no_active_jobs(compartment)
         existing = find_existing(live_instances(compartment))
         if existing:
             announce(existing)
@@ -284,6 +326,8 @@ def main():
         subnet, domains, image = preflight(compartment, result)
         if args.recover_old_cli_error:
             recover_confirmed_old_usage_error(folder / 'launch.json', domains)
+        if args.resume_after_cancel:
+            reconcile_after_cancel(compartment, domains, folder / 'launch.json')
         key, public = ensure_key(folder)
         print('접속 개인키 보관 위치:', str(key), '(내용은 공유하지 마세요)', flush=True)
         print('무료 계정 업그레이드/결제 설정 변경 없음. 기존 Render/DB 변경 없음.', flush=True)
