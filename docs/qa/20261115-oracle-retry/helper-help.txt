@@ -1,0 +1,11 @@
+usage: retry-a1.py [-h] [--attempts ATTEMPTS] [--recover-old-cli-error]
+
+Fixed A1 2 OCPU / 12GB capacity retries; never upgrades billing.
+
+options:
+  -h, --help            show this help message and exit
+  --attempts ATTEMPTS   0: until success/session ends; otherwise bounded
+                        rounds
+  --recover-old-cli-error
+                        Use only after the documented old --create-vnic-
+                        details usage rejection, never for a timeout

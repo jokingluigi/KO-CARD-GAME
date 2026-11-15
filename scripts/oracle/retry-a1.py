@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Bounded Oracle Cloud Shell A1 capacity retries. Never upgrades accounts or changes Render/DB."""
+import argparse
 import fcntl
+import itertools
 import json
 import os
 from pathlib import Path
@@ -23,8 +25,9 @@ class Stop(RuntimeError):
 
 
 class CommandError(Stop):
-    def __init__(self, message):
+    def __init__(self, message, returncode=None):
         super().__init__(message)
+        self.usage_error = returncode == 2 and "Usage:" in message and "Error:" in message
         self.capacity = bool(re.search(r'out of (?:host )?capacity', message, re.I))
 
 
@@ -38,7 +41,7 @@ def cli(*args):
         raise Stop('CLI 실행 결과가 불확실합니다. 자동 재시도를 중단합니다: ' + str(type(e).__name__)) from e
     if r.returncode:
         # CLI payloads here contain resource metadata only, never private key material.
-        raise CommandError((r.stderr or r.stdout)[-3500:])
+        raise CommandError((r.stderr or r.stdout)[-3500:], r.returncode)
     # OCI CLI may successfully render no text for an empty collection. Only list
     # commands accept that representation; never treat an empty POST/GET as success.
     if not r.stdout.strip() and len(args) >= 3 and args[2] == 'list':
@@ -135,8 +138,47 @@ def announce(instance):
     print('Oracle 인스턴스 목록에서 이 서버를 열어 주세요. 아직 게임 이전은 하지 않았습니다.', flush=True)
 
 
-def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=time.sleep):
-    for attempt in range(1, ATTEMPTS + 1):
+def validate_launch_options():
+    """Ask the installed CLI itself; generated API options can be hidden by CLI extensions."""
+    required = {'--compartment-id', '--availability-domain', '--display-name', '--shape',
+                '--shape-config', '--source-details', '--subnet-id', '--assign-public-ip', '--metadata'}
+    try:
+        r = subprocess.run(['oci', 'compute', 'instance', 'launch', '--help'],
+                           env={**os.environ, 'PAGER': 'cat', 'MANPAGER': 'cat'},
+                           capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise Stop('OCI CLI 사용법 확인에 실패했습니다. 서버 생성은 시작하지 않았습니다.') from e
+    if r.returncode:
+        raise Stop('OCI CLI 사용법 확인이 거절됐습니다. 서버 생성은 시작하지 않았습니다.')
+    available = set(re.findall(r'--[a-z][a-z0-9-]*', r.stdout))
+    missing = required - available
+    if missing:
+        raise Stop('설치된 CLI에 필요한 옵션이 없습니다: ' + ', '.join(sorted(missing)))
+
+
+def recover_confirmed_old_usage_error(journal, domains):
+    """Only explicit operator attestation of the previously documented pre-API CLI rejection."""
+    if not journal.exists():
+        return
+    pending = json.loads(journal.read_text())
+    if pending.get('status') in ('capacity-rejected', 'cli-rejected'):
+        return
+    if (set(pending) != {'status', 'domain'} or pending.get('status') != 'request-started'
+            or pending['domain'] not in {d['name'] for d in domains}):
+        raise Stop('이 기록은 알려진 구버전 CLI 옵션 오류와 일치하지 않습니다. 자동으로 지우지 않습니다.')
+    backup = journal.with_name('launch-before-cli-fix.json')
+    if backup.exists():
+        raise Stop('이미 복구를 한 번 수행한 기록이 있습니다. 불확실한 요청을 다시 초기화하지 않습니다.')
+    write_state(backup, pending)
+    write_state(journal, {'status': 'cli-rejected', 'reason': 'operator-confirmed old unsupported-option error'})
+    print('이전에 API 전송 전에 거절된 CLI 옵션 오류 기록을 보관하고 복구했습니다.', flush=True)
+
+
+def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=time.sleep, attempts=None):
+    attempts = ATTEMPTS if attempts is None else attempts
+    if attempts < 0:
+        raise Stop('재시도 횟수는 0(성공까지) 또는 양수여야 합니다.')
+    for attempt in itertools.count(1):
         existing = find_existing(live_instances(compartment))
         if existing:
             announce(existing)
@@ -144,25 +186,30 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
         # An interrupted/ambiguous launch must never become a second POST automatically.
         if journal.exists():
             pending = json.loads(journal.read_text())
-            if pending.get('status') != 'capacity-rejected':
+            if pending.get('status') not in ('capacity-rejected', 'cli-rejected'):
                 raise Stop('이전 생성 요청의 결과가 불확실합니다. 중복 방지를 위해 수동 확인이 필요합니다.')
         for domain in domains:
-            # Recheck immediately before every POST, including a different availability domain.
             existing = find_existing(live_instances(compartment))
             if existing:
                 announce(existing)
                 return existing
-            write_state(journal, {'status': 'request-started', 'domain': domain['name']})
-            print(f'[{attempt}/{ATTEMPTS}] {domain["name"]}: A1 2 OCPU / 12GB / 디스크 50GB 시도', flush=True)
+            # Failed provider launches can leave volumes behind. Recheck before every POST.
+            inspect_storage(compartment, domains)
+            write_state(journal, {'status': 'request-started', 'domain': domain['name'], 'schema': 2})
+            limit = str(attempts) if attempts else '성공까지'
+            print(f'[{attempt}/{limit}] {domain["name"]}: A1 2 OCPU / 12GB / 디스크 50GB 시도', flush=True)
             try:
                 instance = cli('compute', 'instance', 'launch', '--compartment-id', compartment,
                                '--availability-domain', domain['name'], '--display-name', NAME,
                                '--shape', SHAPE, '--shape-config', json.dumps({'ocpus': 2, 'memoryInGBs': 12}),
                                '--source-details', json.dumps({'sourceType': 'image', 'imageId': image_id,
                                                              'bootVolumeSizeInGBs': 50}),
-                               '--create-vnic-details', json.dumps({'subnetId': subnet_id, 'assignPublicIp': True}),
+                               '--subnet-id', subnet_id, '--assign-public-ip', 'true',
                                '--metadata', json.dumps({'ssh_authorized_keys': public_key}))
             except CommandError as e:
+                if e.usage_error:
+                    write_state(journal, {'status': 'cli-rejected', 'domain': domain['name'], 'schema': 2})
+                    raise
                 if not e.capacity:
                     raise
                 write_state(journal, {'status': 'capacity-rejected', 'domain': domain['name']})
@@ -171,14 +218,21 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
             write_state(journal, {'status': 'created', 'instance-id': instance['id']})
             announce(instance)
             return instance
-        if attempt < ATTEMPTS:
-            print('10분 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.', flush=True)
-            sleep(INTERVAL)
-    print('12회 모두 재고 부족입니다. 자동 시도를 종료했습니다. 나중에 같은 명령으로 재개할 수 있습니다.', flush=True)
-    return None
+        if attempts and attempt >= attempts:
+            print(f'{attempts}회 모두 재고 부족입니다. 자동 시도를 종료했습니다.', flush=True)
+            return None
+        print('10분 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.', flush=True)
+        sleep(INTERVAL)
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Fixed A1 2 OCPU / 12GB capacity retries; never upgrades billing.')
+    parser.add_argument('--attempts', type=int, default=ATTEMPTS, help='0: until success/session ends; otherwise bounded rounds')
+    parser.add_argument('--recover-old-cli-error', action='store_true',
+                        help='Use only after the documented old --create-vnic-details usage rejection, never for a timeout')
+    args = parser.parse_args()
+    if args.attempts < 0:
+        parser.error('--attempts must be 0 or greater')
     compartment = os.environ.get('OCI_TENANCY') or os.environ.get('OCI_CLI_TENANCY')
     if not compartment:
         raise Stop('Cloud Shell 계정 정보를 찾지 못했습니다.')
@@ -196,12 +250,15 @@ def main():
         result = Path.home() / 'ko-game-network-result.txt'
         if not result.exists():
             raise Stop('앞서 저장한 네트워크 파일이 없습니다. 새 네트워크를 임의로 만들지 않습니다.')
+        validate_launch_options()
         subnet, domains, image = preflight(compartment, result)
+        if args.recover_old_cli_error:
+            recover_confirmed_old_usage_error(folder / 'launch.json', domains)
         key, public = ensure_key(folder)
         print('접속 개인키 보관 위치:', str(key), '(내용은 공유하지 마세요)', flush=True)
         print('무료 계정 업그레이드/결제 설정 변경 없음. 기존 Render/DB 변경 없음.', flush=True)
         print('프로젝트 이전 작업용 공개키도 등록합니다. 개인키를 전달할 필요는 없습니다.', flush=True)
-        retry(compartment, subnet, domains, image, public + '\n' + MIGRATION_PUBLIC_KEY, folder / 'launch.json')
+        retry(compartment, subnet, domains, image, public + '\n' + MIGRATION_PUBLIC_KEY, folder / 'launch.json', attempts=args.attempts)
 
 
 if __name__ == '__main__':

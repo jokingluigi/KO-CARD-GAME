@@ -43,3 +43,7 @@ No production server/DB migration or paid-plan upgrade performed. Render remains
 - Resource instance display name in the stack is `instance-20261115-0135`, NOT `ko-game-server`. Any future CLI duplicate-protection/name-based discovery must account for this before provisioning.
 - The uploaded plan/apply log does not prove billing entitlements or permanent free storage. It establishes that this attempt was blocked by host capacity, not rejected for a malformed shape/SSH option.
 - Retry using the SAME saved stack after the prior job has finished, avoiding repeated Create Instance workflows. No immediate retries or migration were executed by the assistant when reading this log.
+
+## Automation resumed at user's request
+
+User explicitly requested retrying automatically until capacity becomes available while preserving 2 OCPU/12GB. A new helper revision fixes unsupported VNIC CLI flags, adds installed-help checks, continuous `--attempts 0` mode, and opt-in recovery solely for the documented old local CLI rejection. 23 tests passed, including two actual CLI parser/help checks without API calls. No Oracle job has been started by this development environment. Cloud Shell session persistence is not guaranteed. See scripts/oracle/README.md and the new QA receipt; earlier "fix not applied" notes above describe the historical state, not this revision.
