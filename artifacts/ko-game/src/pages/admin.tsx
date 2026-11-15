@@ -1,4 +1,5 @@
 import {AdminShopDecks} from "@/components/admin-shop-decks";
+import {AdminAccounts} from "@/components/admin-accounts";
 import {AdminCosmeticsHub} from '@/components/admin-cosmetics-hub';
 import {
   lazy,
@@ -229,7 +230,7 @@ export default function Admin() {
           {page?.id === "battle-sprites" ? <AdminBattleSprites/> : page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmeticsHub onNavigate={goPath} legacy={displayPath.replace(/\/$/,'')==='/admin/skins'} onUnauthorized={onUnauthorized}/> : page?.id === "dashboard" ? (
             <AdminDashboard go={go} />
           ) : page?.id === "users" ? (
-            <AdminUserDirectory go={go} />
+            <><AdminAccounts /><AdminUserDirectory go={go} /></>
           ) : page?.id === 'multiplayer-performance' ? <AdminMultiplayerPerformance/> : page?.id === "system" ? (
             <AdminServerMaintenance />
           ) : page?.id === "test" ? (

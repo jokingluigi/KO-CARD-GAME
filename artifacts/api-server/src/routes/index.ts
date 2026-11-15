@@ -17,6 +17,7 @@ import towerRouter from './tower';
 import adminTowerRouter from './admin-tower';
 import { Router, type IRouter } from "express";
 import adminRouter from "./admin";
+import adminAccountsRouter from "./admin-accounts";
 import cardsRouter from "./cards";
 import gameMediaRouter from "./game-media";
 import healthRouter from "./health";
@@ -63,6 +64,7 @@ router.get('/card-tags',async (_request,response,next)=>{try{response.setHeader(
 router.use("/admin/tags", adminTagsRouter);
 router.use("/admin/home-menu",adminHomeMenuRouter);
 router.use("/admin", adminRouter);
+router.use("/admin/accounts", adminAccountsRouter);
 router.use("/auth", authRouter);
 router.use("/test-auth", testAuthRouter);
 router.use("/decks", decksRouter);
