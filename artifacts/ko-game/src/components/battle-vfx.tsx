@@ -4,6 +4,7 @@ import {createContext,useContext,useCallback,useEffect,useRef,useState,type Reac
 import {createPortal} from 'react-dom';
 import {prefersReducedMotion} from './presentation-config';
 import {vfxBudget,vfxParticles,type BattleVfxKind} from './battle-vfx-model';
+import {PixelFxOrFallback,preloadPixelFx,type PixelFxProps} from './pixelfx-sprite';
 const assets:Record<BattleVfxKind,string[]>={
  IMPACT:['effekseer:HitEffect01_Yellow.png','effekseer:Smoke.png','dirt_01.png'],
  BLOCK:['circle_03.png','spark_01.png'],
@@ -38,7 +39,7 @@ function contactTexture(image: HTMLImageElement): CanvasImageSource {
  }
  context.putImageData(pixels,0,0); additiveCache.set(image,canvas); return canvas;
 }
-export function preloadExternalVfx() { for(const name of new Set(Object.values(assets).flat()))texture(name); }
+export function preloadExternalVfx() { preloadPixelFx();for(const name of new Set(Object.values(assets).flat()))texture(name); }
 // Bake unchanged color filters once, rather than filtering smoke/emission for
 // every particle on every animation frame (particularly expensive on phones).
 const preparedTextures = new WeakMap<HTMLImageElement, CanvasImageSource>();
@@ -52,8 +53,11 @@ function preparedTexture(image: HTMLImageElement): CanvasImageSource {
  ctx.filter=filter;ctx.drawImage(contactTexture(image),0,0);
  preparedTextures.set(image,canvas);return canvas;
 }
-/** External Kenney CC0 textures. Canvas only positions/animates the supplied art. */
-export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,direction}:{kind:BattleVfxKind;left:number;top:number;strength?:number;seed:string;delay?:number;duration?:number;direction?:{x:number;y:number}}) {
+/** Authored PIXELFX contacts/support, with existing particles for other cues. */
+export function BattleVfx(props:PixelFxProps) {
+ return <PixelFxOrFallback props={props} fallback={<LegacyBattleVfx {...props}/>}/>;
+}
+function LegacyBattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,direction}:PixelFxProps) {
  const ref=useRef<HTMLCanvasElement>(null);
  useEffect(()=>{
   const canvas=ref.current;if(!canvas||prefersReducedMotion())return;
