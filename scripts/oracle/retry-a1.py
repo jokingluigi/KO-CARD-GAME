@@ -174,8 +174,11 @@ def recover_confirmed_old_usage_error(journal, domains):
     print('이전에 API 전송 전에 거절된 CLI 옵션 오류 기록을 보관하고 복구했습니다.', flush=True)
 
 
-def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=time.sleep, attempts=None):
+def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=time.sleep, attempts=None, interval=None):
     attempts = ATTEMPTS if attempts is None else attempts
+    interval = INTERVAL if interval is None else interval
+    if interval < 60:
+        raise Stop('재시도 간격은 최소 60초입니다.')
     if attempts < 0:
         raise Stop('재시도 횟수는 0(성공까지) 또는 양수여야 합니다.')
     for attempt in itertools.count(1):
@@ -221,18 +224,21 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
         if attempts and attempt >= attempts:
             print(f'{attempts}회 모두 재고 부족입니다. 자동 시도를 종료했습니다.', flush=True)
             return None
-        print('10분 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.', flush=True)
-        sleep(INTERVAL)
+        print(f'{interval}초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.', flush=True)
+        sleep(interval)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Fixed A1 2 OCPU / 12GB capacity retries; never upgrades billing.')
     parser.add_argument('--attempts', type=int, default=ATTEMPTS, help='0: until success/session ends; otherwise bounded rounds')
+    parser.add_argument('--interval', type=int, default=INTERVAL, help='Seconds after a capacity-rejected round; minimum 60')
     parser.add_argument('--recover-old-cli-error', action='store_true',
                         help='Use only after the documented old --create-vnic-details usage rejection, never for a timeout')
     args = parser.parse_args()
     if args.attempts < 0:
         parser.error('--attempts must be 0 or greater')
+    if args.interval < 60:
+        parser.error('--interval must be at least 60 seconds')
     compartment = os.environ.get('OCI_TENANCY') or os.environ.get('OCI_CLI_TENANCY')
     if not compartment:
         raise Stop('Cloud Shell 계정 정보를 찾지 못했습니다.')
@@ -258,7 +264,7 @@ def main():
         print('접속 개인키 보관 위치:', str(key), '(내용은 공유하지 마세요)', flush=True)
         print('무료 계정 업그레이드/결제 설정 변경 없음. 기존 Render/DB 변경 없음.', flush=True)
         print('프로젝트 이전 작업용 공개키도 등록합니다. 개인키를 전달할 필요는 없습니다.', flush=True)
-        retry(compartment, subnet, domains, image, public + '\n' + MIGRATION_PUBLIC_KEY, folder / 'launch.json', attempts=args.attempts)
+        retry(compartment, subnet, domains, image, public + '\n' + MIGRATION_PUBLIC_KEY, folder / 'launch.json', attempts=args.attempts, interval=args.interval)
 
 
 if __name__ == '__main__':

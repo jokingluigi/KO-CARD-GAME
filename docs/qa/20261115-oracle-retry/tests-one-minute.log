@@ -1,0 +1,109 @@
+..[1/3] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[2/3] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[3/3] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+3회 모두 재고 부족입니다. 자동 시도를 종료했습니다.
+.[1/2] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[2/2] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+
+SERVER FOUND — 자동 생성을 종료합니다.
+이름: ko-game-server 
+상태: RUNNING
+Instance ID: ocid1.instance.test
+Oracle 인스턴스 목록에서 이 서버를 열어 주세요. 아직 게임 이전은 하지 않았습니다.
+.[OCI] compute instance list
+[OCI] bv volume list
+...[OCI] compute instance launch
+[OCI] compute instance launch
+[OCI] compute instance launch
+.[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+
+SERVER FOUND — 자동 생성을 종료합니다.
+이름: ko-game-server 
+상태: RUNNING
+Instance ID: ocid1.instance.test
+Oracle 인스턴스 목록에서 이 서버를 열어 주세요. 아직 게임 이전은 하지 않았습니다.
+.
+SERVER FOUND — 자동 생성을 종료합니다.
+이름: ko-game-server 
+상태: RUNNING
+Instance ID: ocid1.instance.test
+Oracle 인스턴스 목록에서 이 서버를 열어 주세요. 아직 게임 이전은 하지 않았습니다.
+..[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+.[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+..[1/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+60초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[2/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+
+SERVER FOUND — 자동 생성을 종료합니다.
+이름: ko-game-server 
+상태: RUNNING
+Instance ID: ocid1.instance.test
+Oracle 인스턴스 목록에서 이 서버를 열어 주세요. 아직 게임 이전은 하지 않았습니다.
+..이전에 API 전송 전에 거절된 CLI 옵션 오류 기록을 보관하고 복구했습니다.
+.....[OCI] compute instance launch
+..[1/12] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+.[1/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[2/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[3/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[4/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[5/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[6/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[7/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[8/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[9/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[10/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[11/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[12/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[13/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[14/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.
+600초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.
+[15/성공까지] AD-1: A1 2 OCPU / 12GB / 디스크 50GB 시도
+
+SERVER FOUND — 자동 생성을 종료합니다.
+이름: ko-game-server 
+상태: RUNNING
+Instance ID: ocid1.instance.test
+Oracle 인스턴스 목록에서 이 서버를 열어 주세요. 아직 게임 이전은 하지 않았습니다.
+.
+----------------------------------------------------------------------
+Ran 25 tests in 1.626s
+
+OK

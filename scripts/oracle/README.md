@@ -53,3 +53,9 @@ This runs in the user's Cloud Shell account. It is not running on the assistant'
 ### Verification
 
 Twenty-one mocked control-flow tests and two **actual OCI CLI 3.96.2** parser/help checks passed (23 total). The actual CLI was installed in an isolated temporary directory; `--generate-full-command-json-input` exits without launching anything and was used to validate the helper's full launch argument list. Actual API provisioning, inventory, card charges, account-specific free entitlements, and overnight persistence were NOT tested. Receipt: `docs/qa/20261115-oracle-retry/tests.log`.
+
+## User-selected one-minute retries
+
+`--interval 60` waits 60 seconds **after** a capacity-rejected round before the next round. Default remains 600 seconds for compatibility. Values below 60 are rejected before resource requests. The delay is not a guarantee of exact wall-clock minute scheduling; CLI/API processing takes additional time. All duplicate, storage and uncertainty guards are unchanged.
+
+To change an already-running process, wait for its capacity-retry sleep message, Ctrl+C, then start the new revision with `--attempts 0 --interval 60`. Avoid interrupting an in-flight launch: an uncertain journal intentionally blocks a second request. `--recover-old-cli-error` cannot clear a schema-2 unknown request. Stop other GUI Apply jobs/scripts before running this helper.

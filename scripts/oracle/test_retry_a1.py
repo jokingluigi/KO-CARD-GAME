@@ -212,6 +212,25 @@ class Tests(unittest.TestCase):
                 with self.assertRaises(m.Stop): self.attempt(Path(d)/'launch.json')
                 self.assertFalse((Path(d)/'launch.json').exists())
 
+    def test_one_minute_interval_applies_only_between_failed_rounds(self):
+        with tempfile.TemporaryDirectory() as d:
+            calls=[]
+            def service(*args):
+                if args[2]=='list': return []
+                calls.append(args)
+                if len(calls)==1: raise m.CommandError('Out of host capacity')
+                return INSTANCE
+            with patch.object(m,'cli',side_effect=service):
+                sleeps=[]
+                self.assertEqual(self.attempt(Path(d)/'launch.json',interval=60,attempts=0,sleep=sleeps.append),INSTANCE)
+                self.assertEqual(sleeps,[60])
+                self.assertEqual(len(calls),2)
+
+    def test_too_short_interval_stops_before_any_resource_request(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(m,'cli') as cli:
+            with self.assertRaises(m.Stop): self.attempt(Path(d)/'launch.json',interval=1)
+            cli.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
