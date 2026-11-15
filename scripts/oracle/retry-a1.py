@@ -29,27 +29,42 @@ class CommandError(Stop):
         super().__init__(message)
         self.usage_error = returncode == 2 and "Usage:" in message and "Error:" in message
         self.capacity = bool(re.search(r'out of (?:host )?capacity', message, re.I))
+        self.rate_limited = False
+        self.retry_after = 0
+        try:
+            payload, _ = json.JSONDecoder().raw_decode(message[message.index('{'):])
+            self.rate_limited = payload.get('status') == 429 and payload.get('code') == 'TooManyRequests'
+            headers = {str(k).lower(): v for k, v in payload.get('headers', {}).items()}
+            self.retry_after = max(0, int(headers.get('retry-after', 0)))
+        except (ValueError, TypeError, AttributeError):
+            pass
 
 
 def cli(*args):
     label = ' '.join(args[:3])
-    print('[OCI] ' + label, flush=True)
-    try:
-        r = subprocess.run(['oci', '--region', REGION, '--output', 'json', *args],
-                           capture_output=True, text=True, timeout=180)
-    except (subprocess.TimeoutExpired, OSError) as e:
-        raise Stop('CLI 실행 결과가 불확실합니다. 자동 재시도를 중단합니다: ' + str(type(e).__name__)) from e
-    if r.returncode:
-        # CLI payloads here contain resource metadata only, never private key material.
-        raise CommandError((r.stderr or r.stdout)[-3500:], r.returncode)
-    # OCI CLI may successfully render no text for an empty collection. Only list
-    # commands accept that representation; never treat an empty POST/GET as success.
-    if not r.stdout.strip() and len(args) >= 3 and args[2] == 'list':
-        return []
-    try:
-        return json.loads(r.stdout)['data']
-    except (ValueError, KeyError) as e:
-        raise Stop(label + ': 응답을 해석하지 못했습니다. 자동 재시도를 중단합니다.') from e
+    read_only = len(args) >= 3 and args[2] in ('get', 'list')
+    for backoff in range(7):
+        print('[OCI] ' + label, flush=True)
+        try:
+            r = subprocess.run(['oci', '--no-retry', '--region', REGION, '--output', 'json', *args],
+                               capture_output=True, text=True, timeout=180)
+        except (subprocess.TimeoutExpired, OSError) as e:
+            raise Stop('CLI 실행 결과가 불확실합니다. 자동 재시도를 중단합니다: ' + str(type(e).__name__)) from e
+        if r.returncode:
+            error = CommandError((r.stderr or r.stdout)[-3500:], r.returncode)
+            if error.rate_limited and read_only and backoff < 6:
+                delay = max(min(300 * 2**backoff, 3600), error.retry_after)
+                print(f'Oracle 조회 요청 제한(429). {delay}초 동안 요청을 쉬고 자동 재개합니다.', flush=True)
+                time.sleep(delay)
+                continue
+            raise error
+        # Empty successful collection output is allowed only for list commands.
+        if not r.stdout.strip() and len(args) >= 3 and args[2] == 'list':
+            return []
+        try:
+            return json.loads(r.stdout)['data']
+        except (ValueError, KeyError) as e:
+            raise Stop(label + ': 응답을 해석하지 못했습니다. 자동 재시도를 중단합니다.') from e
 
 
 def write_state(path, data):
@@ -161,7 +176,7 @@ def recover_confirmed_old_usage_error(journal, domains):
     if not journal.exists():
         return
     pending = json.loads(journal.read_text())
-    if pending.get('status') in ('capacity-rejected', 'cli-rejected'):
+    if pending.get('status') in ('capacity-rejected', 'cli-rejected', 'rate-rejected'):
         return
     if (set(pending) != {'status', 'domain'} or pending.get('status') != 'request-started'
             or pending['domain'] not in {d['name'] for d in domains}):
@@ -181,7 +196,9 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
         raise Stop('재시도 간격은 최소 60초입니다.')
     if attempts < 0:
         raise Stop('재시도 횟수는 0(성공까지) 또는 양수여야 합니다.')
+    rate_streak = 0
     for attempt in itertools.count(1):
+        round_interval = interval
         existing = find_existing(live_instances(compartment))
         if existing:
             announce(existing)
@@ -189,7 +206,7 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
         # An interrupted/ambiguous launch must never become a second POST automatically.
         if journal.exists():
             pending = json.loads(journal.read_text())
-            if pending.get('status') not in ('capacity-rejected', 'cli-rejected'):
+            if pending.get('status') not in ('capacity-rejected', 'cli-rejected', 'rate-rejected'):
                 raise Stop('이전 생성 요청의 결과가 불확실합니다. 중복 방지를 위해 수동 확인이 필요합니다.')
         for domain in domains:
             existing = find_existing(live_instances(compartment))
@@ -210,11 +227,18 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
                                '--subnet-id', subnet_id, '--assign-public-ip', 'true',
                                '--metadata', json.dumps({'ssh_authorized_keys': public_key}))
             except CommandError as e:
+                if e.rate_limited:
+                    rate_streak += 1
+                    round_interval = max(interval, min(300 * 2**(rate_streak - 1), 3600), e.retry_after)
+                    write_state(journal, {'status': 'rate-rejected', 'domain': domain['name'], 'schema': 2})
+                    print(f'Oracle 생성 요청 제한(429). {round_interval}초 쉬고 서버 존재 여부부터 다시 확인합니다.', flush=True)
+                    break
                 if e.usage_error:
                     write_state(journal, {'status': 'cli-rejected', 'domain': domain['name'], 'schema': 2})
                     raise
                 if not e.capacity:
                     raise
+                rate_streak = 0
                 write_state(journal, {'status': 'capacity-rejected', 'domain': domain['name']})
                 print('재고 부족. 다른 사양/유료 계정으로 전환하지 않습니다.', flush=True)
                 continue
@@ -222,10 +246,10 @@ def retry(compartment, subnet_id, domains, image_id, public_key, journal, sleep=
             announce(instance)
             return instance
         if attempts and attempt >= attempts:
-            print(f'{attempts}회 모두 재고 부족입니다. 자동 시도를 종료했습니다.', flush=True)
+            print(f'{attempts}회 시도했지만 할당되지 않았습니다. 자동 시도를 종료했습니다.', flush=True)
             return None
-        print(f'{interval}초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.', flush=True)
-        sleep(interval)
+        print(f'{round_interval}초 후 다시 시도합니다. 중단: Ctrl+C. Cloud Shell을 닫으면 계속 실행된다고 보장할 수 없습니다.', flush=True)
+        sleep(round_interval)
 
 
 def main():

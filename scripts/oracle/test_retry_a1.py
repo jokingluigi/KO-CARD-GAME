@@ -231,6 +231,46 @@ class Tests(unittest.TestCase):
             with self.assertRaises(m.Stop): self.attempt(Path(d)/'launch.json',interval=1)
             cli.assert_not_called()
 
+    def test_read_429_waits_then_returns_without_launch(self):
+        err='ServiceError: '+json.dumps({'status':429,'code':'TooManyRequests','message':'Too many requests for the user'})
+        replies=[subprocess.CompletedProcess([],1,'',err),subprocess.CompletedProcess([],1,'',err),subprocess.CompletedProcess([],0,'{"data":[]}','')]
+        with patch.object(m.subprocess,'run',side_effect=replies) as run, patch.object(m.time,'sleep') as sleep:
+            self.assertEqual(m.cli('compute','instance','list'),[])
+            self.assertEqual([c.args[0] for c in sleep.call_args_list],[300,600])
+            self.assertTrue(all('--no-retry' in c.args[0] for c in run.call_args_list))
+            self.assertTrue(all('launch' not in c.args[0] for c in run.call_args_list))
+
+    def test_provider_retry_after_is_honored(self):
+        err='ServiceError: '+json.dumps({'status':429,'code':'TooManyRequests','headers':{'Retry-After':'900'}})
+        with patch.object(m.subprocess,'run',side_effect=[subprocess.CompletedProcess([],1,'',err),subprocess.CompletedProcess([],0,'{"data":[]}','')]),patch.object(m.time,'sleep') as sleep:
+            m.cli('compute','instance','list');sleep.assert_called_once_with(900)
+
+    def test_429_read_backoff_is_bounded(self):
+        err='ServiceError: '+json.dumps({'status':429,'code':'TooManyRequests'})
+        with patch.object(m.subprocess,'run',return_value=subprocess.CompletedProcess([],1,'',err)) as run,patch.object(m.time,'sleep') as sleep:
+            with self.assertRaises(m.CommandError):m.cli('compute','instance','list')
+            self.assertEqual(run.call_count,7)
+            self.assertEqual([c.args[0] for c in sleep.call_args_list],[300,600,1200,2400,3600,3600])
+
+    def test_launch_429_returns_to_outer_loop_and_checks_instance_before_second_post(self):
+        with tempfile.TemporaryDirectory() as d:
+            calls=[];posts=[]
+            def service(*args):
+                calls.append(args)
+                if args[2]=='list':return []
+                posts.append(args)
+                if len(posts)<3:raise m.CommandError('ServiceError: '+json.dumps({'status':429,'code':'TooManyRequests'}))
+                return INSTANCE
+            with patch.object(m,'cli',side_effect=service):
+                sleeps=[];self.assertEqual(self.attempt(Path(d)/'launch.json',interval=60,attempts=0,sleep=sleeps.append),INSTANCE)
+                self.assertEqual(sleeps,[300,600])
+                positions=[i for i,c in enumerate(calls) if c[2]=='launch']
+                self.assertTrue(all(any(c[:3]==('compute','instance','list') for c in calls[a+1:b]) for a,b in zip(positions,positions[1:])))
+
+    def test_only_definite_429_is_retryable_not_bare_code_or_500(self):
+        for text in ['TooManyRequests',json.dumps({'status':500,'code':'TooManyRequests'}),'invalid json']:
+            self.assertFalse(m.CommandError(text).rate_limited)
+
 
 if __name__ == '__main__':
     unittest.main()

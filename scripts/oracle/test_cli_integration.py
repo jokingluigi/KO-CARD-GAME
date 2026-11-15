@@ -33,7 +33,7 @@ class ActualCliTests(unittest.TestCase):
                          'ocid1.image.test','PUBLIC-KEY',Path(folder)/'launch.json')
         self.assertEqual(len(captured),1)
         # This flag generates a JSON template and does not invoke LaunchInstance.
-        result=subprocess.run([CLI,'--region',helper.REGION,'--output','json',*captured[0],
+        result=subprocess.run([CLI,'--no-retry','--region',helper.REGION,'--output','json',*captured[0],
                                '--generate-full-command-json-input'],capture_output=True,text=True,timeout=60,
                               env={**os.environ,'PAGER':'cat'})
         self.assertEqual(result.returncode,0,result.stderr)

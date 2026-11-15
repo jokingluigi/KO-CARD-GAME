@@ -17,7 +17,7 @@ This script applies the configuration already selected as Always Free-eligible i
 - A non-blocking local flock prevents concurrent helper copies in the same Cloud Shell home.
 - Existing nonterminated `ko-game-server` stops further creation; another A1 instance also blocks automatic creation pending quota review.
 - A durable launch journal is written **before** POST. Timeout/interruption/unknown error leaves it unresolved; the next execution lists instances and stops if unresolved rather than repeating a possibly successful POST.
-- Only a definitive capacity rejection or CLI-local usage rejection marks a launch definitively unsent/retryable. CLI-local errors stop the current run. Other failures preserve uncertainty. Permission, quota, rate-limit, JSON and authentication errors stop immediately.
+- Only a definitive capacity rejection or CLI-local usage rejection marks a launch definitively unsent/retryable. CLI-local errors stop the current run. Other failures preserve uncertainty. Permission, quota, JSON and authentication errors stop immediately. Structured HTTP 429 errors use the backoff behavior below.
 - Other actors manually creating differently named instances concurrently are outside the local lock. Do not run the GUI Create button or a different helper while this runs.
 
 ## SSH access
@@ -59,3 +59,15 @@ Twenty-one mocked control-flow tests and two **actual OCI CLI 3.96.2** parser/he
 `--interval 60` waits 60 seconds **after** a capacity-rejected round before the next round. Default remains 600 seconds for compatibility. Values below 60 are rejected before resource requests. The delay is not a guarantee of exact wall-clock minute scheduling; CLI/API processing takes additional time. All duplicate, storage and uncertainty guards are unchanged.
 
 To change an already-running process, wait for its capacity-retry sleep message, Ctrl+C, then start the new revision with `--attempts 0 --interval 60`. Avoid interrupting an in-flight launch: an uncertain journal intentionally blocks a second request. `--recover-old-cli-error` cannot clear a schema-2 unknown request. Stop other GUI Apply jobs/scripts before running this helper.
+
+## Oracle 429 request-limit handling
+
+The user supplied a real `429 TooManyRequests` response while listing instances. Added structured error parsing: only JSON with `status=429` and `code=TooManyRequests` is treated as a definite rate-limit rejection. A bare code string or other HTTP status does not permit retrying a POST.
+
+- Read-only list/get calls pause for 5, 10, 20, 40, then at most 60 minutes between requests; they stop after seven consecutive rejected reads. Numeric provider Retry-After values can extend the delay.
+- Launch 429 is recorded as `rate-rejected`; control returns to the outer loop for a cooldown and fresh instance/storage checks before any second POST. It does not immediately replay a launch inside the CLI wrapper.
+- `--no-retry` disables hidden OCI SDK retries. The actual CLI parser check also covers this global flag.
+- Normal capacity failures retain the requested 60-second interval. Rate-limit cooldowns override that interval; user should not additionally run GUI Apply or other retry helpers.
+- A timeout, malformed response, or unknown error still preserves ambiguity and blocks another POST.
+
+Verified 30 tests (28 mocked control-flow cases plus two actual OCI CLI parser/help checks). No authenticated live OCI launch was run by this workspace. No assertion that the live rate limit has cleared.
