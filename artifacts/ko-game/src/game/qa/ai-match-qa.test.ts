@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
-import { chooseBestAction, evaluateAction, rankActions } from "../actions/ai-evaluator";
+import { chooseBestAction, evaluateAction, rankActions, DEFAULT_AI_DIFFICULTY, type AIDifficulty } from "../actions/ai-evaluator";
 import { executeAction, getLegalActions } from "../actions/engine-actions";
 import { cardRecordToDefinition, type PublishedCardRecord } from "../cards/published-cards";
 import { createInitialGameState } from "../engine/create-initial-game-state";
@@ -18,8 +18,12 @@ import type { GameState } from "../types/game-state";
 
 const apiOrigin = process.env.KO_QA_CURRENT_FIXTURE === '1' ? 'current public snapshot 2026-10-07' : process.env.KO_QA_API_ORIGIN ?? "http://127.0.0.1:8080";
 const reportPath = process.env.KO_AI_QA_REPORT ?? "qa-results/ko-ai-match-qa.md";
-const MATCH_COUNT = 100;
+const MATCH_START = Number(process.env.KO_AI_QA_MATCH ?? 1);
+const MATCH_COUNT = process.env.KO_AI_QA_MATCH ? 1 : 100;
+if (!Number.isInteger(MATCH_START) || MATCH_START < 1 || MATCH_START > 100) throw new Error("Invalid KO_AI_QA_MATCH");
 const MAX_ACTIONS_PER_MATCH = 400;
+const difficulty = (process.env.KO_AI_QA_DIFFICULTY ?? DEFAULT_AI_DIFFICULTY) as AIDifficulty;
+if (!["EASY", "NORMAL", "HARD", "BOSS"].includes(difficulty)) throw new Error("Invalid KO_AI_QA_DIFFICULTY");
 
 async function loadCatalog() {
   if (process.env.KO_QA_CURRENT_FIXTURE === '1') {
@@ -186,7 +190,7 @@ function runMatch(
       assert.ok(legal.length > 0, `match ${match} deadlocked at action ${actions}`);
       const ranked = rankActions(state, legal, playerId);
       assert.ok(ranked.every((entry) => Number.isFinite(entry.score) || entry.score === -Infinity));
-      const chosen = chooseBestAction(state, legal, playerId);
+      const chosen = chooseBestAction(state, legal, playerId, difficulty);
       assert.ok(legal.some((action) => sameAction(action, chosen)), "AI selected an action outside legal actions");
 
       const before = JSON.stringify(state);
@@ -250,6 +254,7 @@ function runMatch(
       ...(state.status !== "FINISHED" ? { error: `exceeded ${MAX_ACTIONS_PER_MATCH} actions` } : {}),
     };
   } catch (error) {
+    if (process.env.KO_AI_QA_MATCH) console.error(error);
     return {
       match,
       seed,
@@ -269,7 +274,7 @@ function runMatch(
   }
 }
 
-test("AI completes 100 varied deterministic full matches through legal engine actions", async () => {
+test(`AI completes ${MATCH_COUNT} varied deterministic full matches through legal engine actions`, async () => {
   const { cards, champions } = await loadCatalog();
   const templates = deckTemplates(cards);
   const championPairs = champions.length >= 2
@@ -281,7 +286,7 @@ test("AI completes 100 varied deterministic full matches through legal engine ac
     : [["test-champion-quest", "test-champion-no-quest"] as [string, string]];
   const summaries: MatchSummary[] = [];
 
-  for (let index = 0; index < MATCH_COUNT; index += 1) {
+  for (let index = MATCH_START - 1; index < MATCH_START - 1 + MATCH_COUNT; index += 1) {
     const pair = championPairs[index % championPairs.length]!;
     const firstTemplate = templates[index % templates.length]!;
     const secondTemplate = templates[(index * 3 + 1) % templates.length]!;
@@ -316,6 +321,7 @@ test("AI completes 100 varied deterministic full matches through legal engine ac
     "# KO AI Match QA",
     "",
     `- API source: ${apiOrigin}`,
+    `- AI difficulty: ${difficulty}`,
     `- Published cards: ${cards.length}`,
     `- Published Champions: ${champions.length}`,
     `- matches requested: ${MATCH_COUNT}`,

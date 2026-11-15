@@ -90,8 +90,16 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     const live = next.players.find(p=>p.id===interceptor.playerId)?.board.find(c=>c?.instanceId===interceptor.cardInstanceId);
     return live ? applyEffect(next,interceptor.playerId,live,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:player.nextTurnGoldBonus,health:player.nextTurnGoldBonus}}) : next;
   }, interceptImmediateBonusGold(turnStartedState,playerId,player.nextTurnGoldBonus)??turnStartedState);
-  const afterDraw = drawCard(towerTurnStart(resolveStateBasedDeaths(afterInterception), playerId), playerId);
+  // Expiring owner-turn health can retire a wrestler whose effects end the
+  // game. Do not continue into relics, the normal draw or queued turn effects.
+  const afterDeaths = resolveStateBasedDeaths(afterInterception);
+  if (afterDeaths.status === 'FINISHED') return afterDeaths;
+  const afterRelics = towerTurnStart(afterDeaths, playerId);
+  if (afterRelics.status === 'FINISHED') return afterRelics;
+  const afterDraw = drawCard(afterRelics, playerId);
+  if (afterDraw.status === 'FINISHED') return afterDraw;
   const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
+  if (afterDelayed.status === 'FINISHED') return afterDelayed;
   const turnStartPlayer = afterDelayed.players.find((candidate) => candidate.id === playerId);
   const turnStartCards = [
     ...(turnStartPlayer?.board.filter((card): card is CardInstance => card !== null) ?? []),

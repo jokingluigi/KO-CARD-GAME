@@ -317,6 +317,16 @@ export function evaluateAction(
   return scoreTransition(visible, result.state, action, playerId);
 }
 
+function endTurnComparison(before: GameState, after: GameState, playerId: string): GameState {
+  return {
+    ...after,
+    players: after.players.map(p => {
+      const prior = before.players.find(candidate => candidate.id === p.id)!;
+      return { ...p, currentGold: prior.currentGold, hand: p.id === playerId ? p.hand : prior.hand };
+    }),
+  };
+}
+
 function scoreTransition(
   visible: GameState,
   afterState: GameState,
@@ -324,7 +334,13 @@ function scoreTransition(
   playerId: string,
 ): number {
   const before = evaluateState(visible, playerId);
-  const after = evaluateState(afterState, playerId);
+  // Passing always expires unspent gold and refreshes/draws for the opponent.
+  // Those unavoidable phase changes must not make throwing away a wrestler
+  // look better than keeping it. Real health, board and turn-trigger effects
+  // still come from the engine's resulting state.
+  const comparisonState = action.type === "END_TURN"
+    ? endTurnComparison(visible, afterState, playerId) : afterState;
+  const after = evaluateState(comparisonState, playerId);
   const ownBefore = visible.players.find((p) => p.id === playerId)!;
   const ownAfter = afterState.players.find((p) => p.id === playerId)!;
   const questBonus =
@@ -337,7 +353,7 @@ function scoreTransition(
   const drawBonus =
     Math.max(0, ownAfter.hand.length - ownBefore.hand.length) *
     Math.max(0, 5 - ownBefore.hand.length);
-  const spent = Math.max(0, ownBefore.currentGold - ownAfter.currentGold);
+  const spent = action.type === "END_TURN" ? 0 : Math.max(0, ownBefore.currentGold - ownAfter.currentGold);
   const enemyThreat = afterState.players
     .find((p) => p.id !== playerId)!
     .board.reduce((n, c) => n + (c && !c.isStunned ? c.currentAttack : 0), 0);
@@ -515,7 +531,10 @@ function publicReplyPenalty(
   const enemyId = end.players.find((p) => p.id !== playerId)!.id;
   if (end.activePlayerId !== enemyId) return 0;
   const base = evaluateState(state, playerId);
-  let worst = evaluateState(end, playerId) - base;
+  const phaseAdjustment = state.activePlayerId === playerId
+    ? evaluateState(end, playerId) - evaluateState(endTurnComparison(state, end, playerId), playerId)
+    : 0;
+  let worst = evaluateState(end, playerId) - base - phaseAdjustment;
   let beam = [end],
     budget = 24;
   for (let depth = 0; depth < 3 && beam.length && budget > 0; depth++) {
@@ -546,7 +565,7 @@ function publicReplyPenalty(
         if (!r.success) continue;
         if (r.state.status === "FINISHED" && r.state.loserId === playerId)
           return -100000;
-        worst = Math.min(worst, evaluateState(r.state, playerId) - base);
+        worst = Math.min(worst, evaluateState(r.state, playerId) - base - phaseAdjustment);
         next.push(r.state);
       }
     }
@@ -618,7 +637,12 @@ export function chooseBestAction(
     };
   }
   const roots: Node[] = [];
-  for (const a of orderedActions(visible, actions, playerId)) {
+  const ordered = orderedActions(visible, actions, playerId);
+  // Always evaluate the safe stopping option before the search budget can be
+  // consumed by many card placements or target combinations.
+  const pass = ordered.find(a => a.type === "END_TURN");
+  const rootActions = pass ? [pass, ...ordered.filter(a => a !== pass)] : ordered;
+  for (const a of rootActions) {
     const r = simulate(visible, a);
     if (!r) continue;
     if (r.state.status === "FINISHED" && r.state.winnerId === playerId) {
@@ -626,6 +650,13 @@ export function chooseBestAction(
       return a;
     }
     roots.push({ first: a, ...r, depth: 1 });
+  }
+  // A future opponent lethal may outweigh a terminal loss numerically once
+  // several penalties are added. Survival is a constraint, not another bonus.
+  if (roots.some(n => n.state.status !== "FINISHED" || n.state.winnerId === playerId)) {
+    for (let i = roots.length - 1; i >= 0; i--) {
+      if (roots[i].state.status === "FINISHED" && roots[i].state.winnerId !== playerId) roots.splice(i, 1);
+    }
   }
   roots.sort((a, b) => b.score - a.score);
   const fallback = roots[0]?.first ??
@@ -673,6 +704,7 @@ export function chooseBestAction(
           stats.lethalDepth = depth + 1;
           return node.first;
         }
+        if (r.state.status === "FINISHED") continue;
         const child = {
           first: node.first,
           state: r.state,
