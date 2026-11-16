@@ -1,0 +1,3020 @@
+{
+  "source": "https://github.com/patch-gg/pixelfx",
+  "revision": "5294518ce7c72e48b6100a744596e0acf57f2826",
+  "effects": {
+    "arcane/arcane-missiles": {
+      "file": "library/arcane-arcane-missiles-b5efe5f13042.png",
+      "sha256": "b5efe5f1304226f733d7fe639bbeb6f987362a121bd6d07639bfb1f9b7880a1d",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        81
+      ],
+      "pivot": [
+        81,
+        44.5
+      ],
+      "visibleWidth": 124,
+      "visibleHeight": 57,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.75,
+      "loop": false,
+      "peakFrame": 6,
+      "sourceId": "arcane/arcane-missiles"
+    },
+    "arcane/arcane-orb": {
+      "file": "library/arcane-arcane-orb-0f40bdeea15a.png",
+      "sha256": "0f40bdeea15adc1c372990ac8357e2f179ac6f45a491f6e5f313312fa3ed80f1",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        92,
+        108
+      ],
+      "pivot": [
+        47,
+        63.5
+      ],
+      "visibleWidth": 64,
+      "visibleHeight": 75,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 19,
+      "sourceId": "arcane/arcane-orb"
+    },
+    "arcane/blink-in": {
+      "file": "library/arcane-blink-in-b226d7c7c2b5.png",
+      "sha256": "b226d7c7c2b5469a85037e24e91d0a6449c5828065eb122d7c0f53b287b8f970",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        103,
+        92
+      ],
+      "pivot": [
+        46,
+        58
+      ],
+      "visibleWidth": 46,
+      "visibleHeight": 52,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.4,
+      "loop": false,
+      "peakFrame": 6,
+      "sourceId": "arcane/blink-in"
+    },
+    "arcane/blink-out": {
+      "file": "library/arcane-blink-out-28ea599c4a43.png",
+      "sha256": "28ea599c4a43425e01a37f848944271647eee8a0fdf266fc9c211b8d63aec644",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        110,
+        92
+      ],
+      "pivot": [
+        56,
+        57
+      ],
+      "visibleWidth": 56,
+      "visibleHeight": 58,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "arcane/blink-out"
+    },
+    "arcane/magic-circle-cast": {
+      "file": "library/arcane-magic-circle-cast-4bffa53909b2.png",
+      "sha256": "4bffa53909b20c03a14d5bd1a66dba46378cddee500c14e476d0622d1f730ebb",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        125,
+        160
+      ],
+      "pivot": [
+        62.5,
+        77
+      ],
+      "visibleWidth": 67,
+      "visibleHeight": 152,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.9,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "arcane/magic-circle-cast"
+    },
+    "arcane/mana-burst": {
+      "file": "library/arcane-mana-burst-2bfd6171ad73.png",
+      "sha256": "2bfd6171ad73b3cbd99729c3163c1760d58ee55844ef55104e4abae5c884bc4f",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        143
+      ],
+      "pivot": [
+        76.5,
+        86.5
+      ],
+      "visibleWidth": 79,
+      "visibleHeight": 93,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "arcane/mana-burst"
+    },
+    "arcane/portal": {
+      "file": "library/arcane-portal-d1b5ec32acee.png",
+      "sha256": "d1b5ec32aceef8a44230c1f2f17e8240fd0b18eafc6ea24d738d89ca040eda5f",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        150,
+        115
+      ],
+      "pivot": [
+        78.5,
+        69.5
+      ],
+      "visibleWidth": 83,
+      "visibleHeight": 79,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 3,
+      "sourceId": "arcane/portal"
+    },
+    "arcane/rune-circle": {
+      "file": "library/arcane-rune-circle-29d33b372936.png",
+      "sha256": "29d33b372936f1c0936eb5e6a8ebcfa2757c81b0cc6b6980528acb50ad799c46",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        120,
+        88
+      ],
+      "pivot": [
+        60,
+        46
+      ],
+      "visibleWidth": 100,
+      "visibleHeight": 74,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 4,
+      "loop": true,
+      "peakFrame": 2,
+      "sourceId": "arcane/rune-circle"
+    },
+    "arcane/spell-charge": {
+      "file": "library/arcane-spell-charge-a02e399a4086.png",
+      "sha256": "a02e399a4086a75c1337eca640d1d0a0b8b37ec3afd0ca1825013fac4863a042",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        107,
+        81
+      ],
+      "pivot": [
+        54.5,
+        42.5
+      ],
+      "visibleWidth": 83,
+      "visibleHeight": 65,
+      "fps": 30,
+      "duration": 1.5333333333333334,
+      "nativeDuration": 1.6,
+      "loop": true,
+      "peakFrame": 23,
+      "sourceId": "arcane/spell-charge"
+    },
+    "critters/ghost": {
+      "file": "library/critters-ghost-7ed7911376a7.png",
+      "sha256": "7ed7911376a71cf54ade09f7a3fedec88affd09f4ba0ec958f01bdb1d71bf955",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        84,
+        81
+      ],
+      "pivot": [
+        44,
+        48.5
+      ],
+      "visibleWidth": 32,
+      "visibleHeight": 47,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 9,
+      "sourceId": "critters/ghost"
+    },
+    "critters/wisp": {
+      "file": "library/critters-wisp-efb25cc68af6.png",
+      "sha256": "efb25cc68af6a2a7ff0bed8d4171545df505dc28d653a80323da6fc287f50fee",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        126,
+        100
+      ],
+      "pivot": [
+        65.5,
+        58
+      ],
+      "visibleWidth": 73,
+      "visibleHeight": 70,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3.2,
+      "loop": true,
+      "peakFrame": 2,
+      "sourceId": "critters/wisp"
+    },
+    "explosions/cartoon-pow": {
+      "file": "library/explosions-cartoon-pow-a2812fc50d97.png",
+      "sha256": "a2812fc50d978e18c6b6b3e513690440e428bc0c632e2368b7b1a20ac5572fb1",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        149,
+        135
+      ],
+      "pivot": [
+        77,
+        66
+      ],
+      "visibleWidth": 112,
+      "visibleHeight": 94,
+      "fps": 30,
+      "duration": 1.0666666666666667,
+      "nativeDuration": 1.05,
+      "loop": false,
+      "peakFrame": 1,
+      "sourceId": "explosions/cartoon-pow"
+    },
+    "explosions/firework-burst": {
+      "file": "library/explosions-firework-burst-70a77dad4eb1.png",
+      "sha256": "70a77dad4eb1f394dc69708e91f504386ecaccb8cdedf91f480f0a4332e40c7c",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        143,
+        160
+      ],
+      "pivot": [
+        71.5,
+        67
+      ],
+      "visibleWidth": 69,
+      "visibleHeight": 70,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "explosions/firework-burst"
+    },
+    "explosions/grenade": {
+      "file": "library/explosions-grenade-30526c360e58.png",
+      "sha256": "30526c360e58a6149722506bdd5cd1a19746dcec3385773b19364fad1617a5a2",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        108
+      ],
+      "pivot": [
+        86.5,
+        58
+      ],
+      "visibleWidth": 109,
+      "visibleHeight": 66,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 4.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "explosions/grenade"
+    },
+    "explosions/implosion": {
+      "file": "library/explosions-implosion-b3dd026565a7.png",
+      "sha256": "b3dd026565a7bd04be8ee873ac7b2ee071b7760d513e2c2b98f51c72f3f9bc2c",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        153
+      ],
+      "pivot": [
+        84,
+        75
+      ],
+      "visibleWidth": 140,
+      "visibleHeight": 142,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.65,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "explosions/implosion"
+    },
+    "explosions/plasma-explosion": {
+      "file": "library/explosions-plasma-explosion-cfdd5f03a098.png",
+      "sha256": "cfdd5f03a098d91bf70568d204859647aea97fc6396d58419e7e2f578f1db508",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        154
+      ],
+      "pivot": [
+        80,
+        77
+      ],
+      "visibleWidth": 80,
+      "visibleHeight": 80,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.7,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "explosions/plasma-explosion"
+    },
+    "explosions/smoke-bomb": {
+      "file": "library/explosions-smoke-bomb-752623346c9e.png",
+      "sha256": "752623346c9ef842a0b81b5f32078a7017d9d175c2455d0bd54ee559bbf55207",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        97
+      ],
+      "pivot": [
+        77,
+        55.5
+      ],
+      "visibleWidth": 144,
+      "visibleHeight": 75,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 5,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "explosions/smoke-bomb"
+    },
+    "fire/fire-ring": {
+      "file": "library/fire-fire-ring-036e40ff4bb4.png",
+      "sha256": "036e40ff4bb4ddcab957a212ebaf5b72b39df63e219a6cf1fbedf084854cde09",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        82
+      ],
+      "pivot": [
+        80.5,
+        50
+      ],
+      "visibleWidth": 141,
+      "visibleHeight": 40,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.9,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "fire/fire-ring"
+    },
+    "fire/fireball": {
+      "file": "library/fire-fireball-6f1f3cb92573.png",
+      "sha256": "6f1f3cb92573a624c1cf98633ec9405ee29540a6e54653afa000a7a3ba1a14db",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        121,
+        57
+      ],
+      "pivot": [
+        58,
+        25
+      ],
+      "visibleWidth": 96,
+      "visibleHeight": 26,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.2,
+      "loop": true,
+      "peakFrame": 4,
+      "sourceId": "fire/fireball"
+    },
+    "fire/flame-pillar": {
+      "file": "library/fire-flame-pillar-b009f382c800.png",
+      "sha256": "b009f382c8008abfc65733a8948d516eba9dd6b321b4ed627685a4f33b94376d",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        127,
+        160
+      ],
+      "pivot": [
+        63.5,
+        97
+      ],
+      "visibleWidth": 71,
+      "visibleHeight": 114,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 5,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "fire/flame-pillar"
+    },
+    "fire/spirit-flame": {
+      "file": "library/fire-spirit-flame-c205bc18aa8d.png",
+      "sha256": "c205bc18aa8d5bde18e67d7f64b812722ae2c01cde692554609a9584f802fd35",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        78,
+        98
+      ],
+      "pivot": [
+        39,
+        46.5
+      ],
+      "visibleWidth": 26,
+      "visibleHeight": 51,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 11,
+      "sourceId": "fire/spirit-flame"
+    },
+    "holy/blessing": {
+      "file": "library/holy-blessing-724a500655ea.png",
+      "sha256": "724a500655ea0a0e826f949be8c9ea4fa512e11c21576fc2178bf0a8e6250d87",
+      "frames": 28,
+      "columns": 9,
+      "frameSize": [
+        53,
+        130
+      ],
+      "pivot": [
+        26.5,
+        60.5
+      ],
+      "visibleWidth": 45,
+      "visibleHeight": 101,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 15,
+      "sourceId": "holy/blessing"
+    },
+    "holy/divine-shield": {
+      "file": "library/holy-divine-shield-8f906801156a.png",
+      "sha256": "8f906801156a99cf3b198f6d56ef9fed8e3c4449d35f32948e0a2b837d5194d5",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        78,
+        80
+      ],
+      "pivot": [
+        39,
+        41.5
+      ],
+      "visibleWidth": 62,
+      "visibleHeight": 61,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 9,
+      "sourceId": "holy/divine-shield"
+    },
+    "holy/feather-burst": {
+      "file": "library/holy-feather-burst-780e50b0c132.png",
+      "sha256": "780e50b0c132335a747ba9e460f9ec34801a669a7c71e72fade27fcda1343946",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        137,
+        123
+      ],
+      "pivot": [
+        63.5,
+        53.5
+      ],
+      "visibleWidth": 89,
+      "visibleHeight": 71,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "holy/feather-burst"
+    },
+    "holy/halo": {
+      "file": "library/holy-halo-b713546cf58e.png",
+      "sha256": "b713546cf58e6839fe124880f30bc4dedec8f584fc53739066212e459c29bd1a",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        45,
+        40
+      ],
+      "pivot": [
+        21,
+        20
+      ],
+      "visibleWidth": 26,
+      "visibleHeight": 16,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2,
+      "loop": true,
+      "peakFrame": 3,
+      "sourceId": "holy/halo"
+    },
+    "holy/heal": {
+      "file": "library/holy-heal-b1c55d6483af.png",
+      "sha256": "b1c55d6483af1ba1ab98ee4616a67dac350753388c556e9626bcca082d17c4ba",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        48,
+        81
+      ],
+      "pivot": [
+        24,
+        39
+      ],
+      "visibleWidth": 32,
+      "visibleHeight": 66,
+      "fps": 30,
+      "duration": 0.8666666666666667,
+      "nativeDuration": 1.9,
+      "loop": false,
+      "peakFrame": 8,
+      "sourceId": "holy/heal"
+    },
+    "holy/heal-aoe": {
+      "file": "library/holy-heal-aoe-52bf60a32e10.png",
+      "sha256": "52bf60a32e10d86a3f3593282ed0d72adcc30421a871edb3467ad35ababf1197",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        72
+      ],
+      "pivot": [
+        81,
+        44.5
+      ],
+      "visibleWidth": 142,
+      "visibleHeight": 41,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.9,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "holy/heal-aoe"
+    },
+    "holy/holy-pillar": {
+      "file": "library/holy-holy-pillar-b34de2d0c42d.png",
+      "sha256": "b34de2d0c42d006c9ef32baebfce503579bde0c0c07060838489815000059f69",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        135,
+        160
+      ],
+      "pivot": [
+        65.5,
+        75
+      ],
+      "visibleWidth": 131,
+      "visibleHeight": 150,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.5,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "holy/holy-pillar"
+    },
+    "holy/resurrection": {
+      "file": "library/holy-resurrection-6e986e224373.png",
+      "sha256": "6e986e224373e0c105a80c09d3c2d1209073cd09fd391188b2f3dc26eb2a5945",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        158
+      ],
+      "pivot": [
+        81,
+        69.5
+      ],
+      "visibleWidth": 120,
+      "visibleHeight": 139,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 4.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "holy/resurrection"
+    },
+    "holy/smite": {
+      "file": "library/holy-smite-cd151921d289.png",
+      "sha256": "cd151921d2891ab856586ff3c4a17645b09a13071652455983b5211e7d52203c",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        153
+      ],
+      "pivot": [
+        80.5,
+        72
+      ],
+      "visibleWidth": 65,
+      "visibleHeight": 140,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "holy/smite"
+    },
+    "holy/sunburst": {
+      "file": "library/holy-sunburst-acc953a1a29a.png",
+      "sha256": "acc953a1a29a56d071bf111a3d8f32edf630d4a12769202e13d8ba701b444da6",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        112,
+        109
+      ],
+      "pivot": [
+        54.5,
+        54.5
+      ],
+      "visibleWidth": 75,
+      "visibleHeight": 81,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 4,
+      "loop": true,
+      "peakFrame": 17,
+      "sourceId": "holy/sunburst"
+    },
+    "ice/frost-nova": {
+      "file": "library/ice-frost-nova-f32d90fccd1f.png",
+      "sha256": "f32d90fccd1fae1bc34494c48ee6dba96e965816b825199f51f01fab9f879427",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        76
+      ],
+      "pivot": [
+        81,
+        41.5
+      ],
+      "visibleWidth": 126,
+      "visibleHeight": 53,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.4,
+      "loop": false,
+      "peakFrame": 4,
+      "sourceId": "ice/frost-nova"
+    },
+    "ice/ice-shatter": {
+      "file": "library/ice-ice-shatter-cc7a77ed4ebc.png",
+      "sha256": "cc7a77ed4ebc052b8e1eaf413a0754860493799aef583c4baecde5b710f0c2f0",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        79
+      ],
+      "pivot": [
+        36.5,
+        48
+      ],
+      "visibleWidth": 65,
+      "visibleHeight": 44,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ice/ice-shatter"
+    },
+    "impacts/blunt-hit": {
+      "file": "library/impacts-blunt-hit-3855ffd1de5c.png",
+      "sha256": "3855ffd1de5c458f2c349fb392be57525e1a25a7a0b06442cc6f0df6013e30b6",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        99,
+        79
+      ],
+      "pivot": [
+        56,
+        45
+      ],
+      "visibleWidth": 40,
+      "visibleHeight": 48,
+      "fps": 30,
+      "duration": 0.9333333333333333,
+      "nativeDuration": 0.9,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/blunt-hit"
+    },
+    "impacts/bullet-impact": {
+      "file": "library/impacts-bullet-impact-f02ee5f264b9.png",
+      "sha256": "f02ee5f264b9347d5e2cfc2cf60e7ab6851fe74cf1d9dda3154dab5cb1309767",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        119,
+        70
+      ],
+      "pivot": [
+        83.5,
+        35
+      ],
+      "visibleWidth": 35,
+      "visibleHeight": 36,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.4,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/bullet-impact"
+    },
+    "impacts/crit-hit": {
+      "file": "library/impacts-crit-hit-4817f915854b.png",
+      "sha256": "4817f915854b661fa002ae11a2ff632ba1cf35cbc378b21e8e10b6cebc447461",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        115
+      ],
+      "pivot": [
+        68,
+        68.5
+      ],
+      "visibleWidth": 66,
+      "visibleHeight": 67,
+      "fps": 30,
+      "duration": 0.9333333333333333,
+      "nativeDuration": 0.9,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/crit-hit"
+    },
+    "impacts/ground-slam": {
+      "file": "library/impacts-ground-slam-89aa0d72cde7.png",
+      "sha256": "89aa0d72cde79a0653100eef2175b257138cf67dfab685c9958168caf6ae4833",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        104
+      ],
+      "pivot": [
+        82.5,
+        66.5
+      ],
+      "visibleWidth": 149,
+      "visibleHeight": 69,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 4,
+      "sourceId": "impacts/ground-slam"
+    },
+    "impacts/heavy-landing": {
+      "file": "library/impacts-heavy-landing-d3e36f0978d5.png",
+      "sha256": "d3e36f0978d589e9ec055f1b74453564dba681177df26bfef7fc54b36bf4b5c3",
+      "frames": 28,
+      "columns": 3,
+      "frameSize": [
+        153,
+        47
+      ],
+      "pivot": [
+        74.5,
+        24
+      ],
+      "visibleWidth": 125,
+      "visibleHeight": 38,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "impacts/heavy-landing"
+    },
+    "impacts/hit-flash": {
+      "file": "library/impacts-hit-flash-e9e9c6f5e983.png",
+      "sha256": "e9e9c6f5e983f57d002aa89d7496586209bf04c2c35e78276f4fd4856bf95eef",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        66,
+        60
+      ],
+      "pivot": [
+        32,
+        32
+      ],
+      "visibleWidth": 38,
+      "visibleHeight": 46,
+      "fps": 30,
+      "duration": 0.5333333333333333,
+      "nativeDuration": 0.5,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/hit-flash"
+    },
+    "impacts/hit-spark": {
+      "file": "library/impacts-hit-spark-d3d6e6a46d44.png",
+      "sha256": "d3d6e6a46d44302944083aaf7f56e86b174a56859d5581ef178906d0f26f6c61",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        109,
+        67
+      ],
+      "pivot": [
+        42.5,
+        32.5
+      ],
+      "visibleWidth": 45,
+      "visibleHeight": 37,
+      "fps": 30,
+      "duration": 0.5333333333333333,
+      "nativeDuration": 0.5,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/hit-spark"
+    },
+    "impacts/impact-frame": {
+      "file": "library/impacts-impact-frame-4b5e7e38cae6.png",
+      "sha256": "4b5e7e38cae633797efda0151f837528f94a6eb56445b278c9449f36a546dd36",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 0.48,
+      "nativeDuration": 0.3,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/impact-frame"
+    },
+    "impacts/parry": {
+      "file": "library/impacts-parry-1a189d934df0.png",
+      "sha256": "1a189d934df0fc3108a424daeaff66d5f5547f94a4ed57b85b0f0c9bdb82e729",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        96
+      ],
+      "pivot": [
+        76.5,
+        51
+      ],
+      "visibleWidth": 47,
+      "visibleHeight": 48,
+      "fps": 30,
+      "duration": 1,
+      "nativeDuration": 1,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/parry"
+    },
+    "impacts/shield-block": {
+      "file": "library/impacts-shield-block-c4f80a31f51b.png",
+      "sha256": "c4f80a31f51b1d0c6dce5215245c39c82a50c8aa3f82f2dbc0ae0ea12113e983",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        100,
+        87
+      ],
+      "pivot": [
+        39,
+        50.5
+      ],
+      "visibleWidth": 42,
+      "visibleHeight": 45,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.1,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "impacts/shield-block"
+    },
+    "lightning/chain-lightning": {
+      "file": "library/lightning-chain-lightning-77658d0dd822.png",
+      "sha256": "77658d0dd822cf8d47675c23f0026e8a638148decb09d1b34ab24db6d1b1a48c",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        73
+      ],
+      "pivot": [
+        80,
+        41
+      ],
+      "visibleWidth": 126,
+      "visibleHeight": 38,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "lightning/chain-lightning"
+    },
+    "lightning/charge-up": {
+      "file": "library/lightning-charge-up-d3b4a954dd2a.png",
+      "sha256": "d3b4a954dd2a40ee91d2522362edacf6227670feea13c4c6601cc3f1bbec3c76",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        128
+      ],
+      "pivot": [
+        79.5,
+        65.5
+      ],
+      "visibleWidth": 95,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.7,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "lightning/charge-up"
+    },
+    "lightning/lightning-strike": {
+      "file": "library/lightning-lightning-strike-469711d7495d.png",
+      "sha256": "469711d7495d94747036d68492f8f5122ecf2bcc93b506ab3684ff14604d42e0",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        139,
+        160
+      ],
+      "pivot": [
+        69.5,
+        74
+      ],
+      "visibleWidth": 111,
+      "visibleHeight": 140,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "lightning/lightning-strike"
+    },
+    "lightning/plasma-ball": {
+      "file": "library/lightning-plasma-ball-9d00f9fcd193.png",
+      "sha256": "9d00f9fcd19396f53c2702b377c72e9447bce70b527a217b0284a8a74dc1a7c2",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        70,
+        98
+      ],
+      "pivot": [
+        35,
+        49
+      ],
+      "visibleWidth": 52,
+      "visibleHeight": 84,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 1,
+      "sourceId": "lightning/plasma-ball"
+    },
+    "lightning/spark-arc": {
+      "file": "library/lightning-spark-arc-4343752a4c13.png",
+      "sha256": "4343752a4c1324847c1f13816588898e18ab3703594903392fa8f164a95f9b42",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        78,
+        108
+      ],
+      "pivot": [
+        38,
+        52.5
+      ],
+      "visibleWidth": 56,
+      "visibleHeight": 87,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2,
+      "loop": true,
+      "peakFrame": 20,
+      "sourceId": "lightning/spark-arc"
+    },
+    "lightning/thunderclap": {
+      "file": "library/lightning-thunderclap-ab90619c3e64.png",
+      "sha256": "ab90619c3e645131bff911f0bd51e1fd8f9df00628afe5814ab426934e24e050",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        89
+      ],
+      "pivot": [
+        79,
+        53
+      ],
+      "visibleWidth": 88,
+      "visibleHeight": 54,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.9,
+      "loop": false,
+      "peakFrame": 4,
+      "sourceId": "lightning/thunderclap"
+    },
+    "melee/claw-swipe": {
+      "file": "library/melee-claw-swipe-a0e056f47955.png",
+      "sha256": "a0e056f479550b9771345d8c385a37c052f86968d11d82f617b96580e6426e5c",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        72,
+        63
+      ],
+      "pivot": [
+        34.5,
+        34
+      ],
+      "visibleWidth": 41,
+      "visibleHeight": 42,
+      "fps": 30,
+      "duration": 0.9333333333333333,
+      "nativeDuration": 0.9,
+      "loop": false,
+      "peakFrame": 3,
+      "sourceId": "melee/claw-swipe"
+    },
+    "melee/dagger-flurry": {
+      "file": "library/melee-dagger-flurry-cb95518ef9e4.png",
+      "sha256": "cb95518ef9e4f2690af1b1b04555a203324b07edd860e58634741410c071bdcd",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        119,
+        82
+      ],
+      "pivot": [
+        58,
+        40
+      ],
+      "visibleWidth": 70,
+      "visibleHeight": 50,
+      "fps": 30,
+      "duration": 0.7333333333333333,
+      "nativeDuration": 0.95,
+      "loop": false,
+      "peakFrame": 9,
+      "sourceId": "melee/dagger-flurry"
+    },
+    "melee/double-slash": {
+      "file": "library/melee-double-slash-2e91d945a8d2.png",
+      "sha256": "2e91d945a8d2d33180131a67d4d6e7c756b932d0cba89a0cf71b8aad129b4bb0",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        120,
+        109
+      ],
+      "pivot": [
+        62,
+        65.5
+      ],
+      "visibleWidth": 54,
+      "visibleHeight": 55,
+      "fps": 30,
+      "duration": 0.8,
+      "nativeDuration": 0.8,
+      "loop": false,
+      "peakFrame": 6,
+      "sourceId": "melee/double-slash"
+    },
+    "melee/spin-slash": {
+      "file": "library/melee-spin-slash-ce7225f06b66.png",
+      "sha256": "ce7225f06b66ae5562fedc4f4b139181f8ba7d52473067ef284bdf5384984f50",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        87
+      ],
+      "pivot": [
+        67.5,
+        54.5
+      ],
+      "visibleWidth": 99,
+      "visibleHeight": 35,
+      "fps": 30,
+      "duration": 0.8,
+      "nativeDuration": 0.8,
+      "loop": false,
+      "peakFrame": 6,
+      "sourceId": "melee/spin-slash"
+    },
+    "melee/sword-slash": {
+      "file": "library/melee-sword-slash-95448ee3a7eb.png",
+      "sha256": "95448ee3a7eb3d479fdbdd16dd68d97e24e169c6d38881e29a4df22b4f57fb7f",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        125,
+        96
+      ],
+      "pivot": [
+        57,
+        55
+      ],
+      "visibleWidth": 70,
+      "visibleHeight": 52,
+      "fps": 30,
+      "duration": 0.7333333333333333,
+      "nativeDuration": 0.75,
+      "loop": false,
+      "peakFrame": 2,
+      "sourceId": "melee/sword-slash"
+    },
+    "melee/thrust": {
+      "file": "library/melee-thrust-d39b9554380a.png",
+      "sha256": "d39b9554380a54142edbd50ff55df2eb5ef13e4b4814d3a01f5050d5e91bab68",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        157,
+        63
+      ],
+      "pivot": [
+        60.5,
+        32
+      ],
+      "visibleWidth": 113,
+      "visibleHeight": 34,
+      "fps": 30,
+      "duration": 0.7333333333333333,
+      "nativeDuration": 0.75,
+      "loop": false,
+      "peakFrame": 4,
+      "sourceId": "melee/thrust"
+    },
+    "melee/uppercut": {
+      "file": "library/melee-uppercut-6c746bf84bf8.png",
+      "sha256": "6c746bf84bf8573e990e7a66219ebf4d614ea6f3ff9fc401bebba6564879ebe4",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        126,
+        100
+      ],
+      "pivot": [
+        64.5,
+        56
+      ],
+      "visibleWidth": 61,
+      "visibleHeight": 80,
+      "fps": 30,
+      "duration": 0.8666666666666667,
+      "nativeDuration": 0.85,
+      "loop": false,
+      "peakFrame": 4,
+      "sourceId": "melee/uppercut"
+    },
+    "melee/whip-crack": {
+      "file": "library/melee-whip-crack-1d1725e462b4.png",
+      "sha256": "1d1725e462b4815e4418ac1750a9fdfd8dae9f3694e46835a3b9d22552950afe",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        138,
+        75
+      ],
+      "pivot": [
+        59,
+        41.5
+      ],
+      "visibleWidth": 94,
+      "visibleHeight": 29,
+      "fps": 30,
+      "duration": 0.8666666666666667,
+      "nativeDuration": 0.85,
+      "loop": false,
+      "peakFrame": 8,
+      "sourceId": "melee/whip-crack"
+    },
+    "moves/dash-strike": {
+      "file": "library/moves-dash-strike-311fcd07147f.png",
+      "sha256": "311fcd07147f8b85fc4d077781b1123860129af29e95fac4165b3af3fecbe599",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        103
+      ],
+      "pivot": [
+        73,
+        62
+      ],
+      "visibleWidth": 124,
+      "visibleHeight": 66,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "moves/dash-strike"
+    },
+    "moves/holy-smite": {
+      "file": "library/moves-holy-smite-a9e44f06069e.png",
+      "sha256": "a9e44f06069e8c2c8f87a034f362a4984713da01526298c50702eb50577ea016",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        156
+      ],
+      "pivot": [
+        81.5,
+        74.5
+      ],
+      "visibleWidth": 67,
+      "visibleHeight": 141,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "moves/holy-smite"
+    },
+    "moves/sword-combo": {
+      "file": "library/moves-sword-combo-a94bde0fd3d9.png",
+      "sha256": "a94bde0fd3d9709096f898582b2826545d55404f96a38349c94d749c2aee407e",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        96
+      ],
+      "pivot": [
+        65.5,
+        57.5
+      ],
+      "visibleWidth": 71,
+      "visibleHeight": 67,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.975,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "moves/sword-combo"
+    },
+    "nature/healing-bloom": {
+      "file": "library/nature-healing-bloom-812e9d8abe49.png",
+      "sha256": "812e9d8abe4972f4bb1112dcfc2d9a010906a07ee2fb3d21a45f0d3bca92195e",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        114,
+        107
+      ],
+      "pivot": [
+        55.5,
+        65
+      ],
+      "visibleWidth": 43,
+      "visibleHeight": 62,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "nature/healing-bloom"
+    },
+    "nature/leaf-storm": {
+      "file": "library/nature-leaf-storm-7061b3f490ee.png",
+      "sha256": "7061b3f490ee1be8649f64eafe6f11f30295e9b584be65eb40725478d738363c",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        103,
+        97
+      ],
+      "pivot": [
+        49,
+        49
+      ],
+      "visibleWidth": 58,
+      "visibleHeight": 86,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 15,
+      "sourceId": "nature/leaf-storm"
+    },
+    "nature/poison-cloud": {
+      "file": "library/nature-poison-cloud-5ec0ca342919.png",
+      "sha256": "5ec0ca342919aa37eec908fdee71cc1c7d70b6f88e14a6c097aea9e9b0850bcb",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        52
+      ],
+      "pivot": [
+        84.5,
+        32.5
+      ],
+      "visibleWidth": 141,
+      "visibleHeight": 21,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 4,
+      "loop": true,
+      "peakFrame": 2,
+      "sourceId": "nature/poison-cloud"
+    },
+    "nature/spore-burst": {
+      "file": "library/nature-spore-burst-cf7a04f853df.png",
+      "sha256": "cf7a04f853df5ac10d90fe45d6391041a4aedecd4641c71e134e8231335ad4db",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        106,
+        110
+      ],
+      "pivot": [
+        51,
+        58.5
+      ],
+      "visibleWidth": 88,
+      "visibleHeight": 81,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "nature/spore-burst"
+    },
+    "nature/thorns": {
+      "file": "library/nature-thorns-5a1b53127746.png",
+      "sha256": "5a1b53127746a82a210d07198d1322a404f2684d6323fc9e3da6803a9091418d",
+      "frames": 28,
+      "columns": 3,
+      "frameSize": [
+        160,
+        51
+      ],
+      "pivot": [
+        77.5,
+        25.5
+      ],
+      "visibleWidth": 137,
+      "visibleHeight": 37,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.4,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "nature/thorns"
+    },
+    "nature/vine-whip": {
+      "file": "library/nature-vine-whip-cae758be628e.png",
+      "sha256": "cae758be628ef0363d3eee5abccd7d1fb4e3fc02761ed1f2d63dc1f02b545708",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        92
+      ],
+      "pivot": [
+        88.5,
+        64
+      ],
+      "visibleWidth": 93,
+      "visibleHeight": 40,
+      "fps": 30,
+      "duration": 1.0666666666666667,
+      "nativeDuration": 1.4,
+      "loop": false,
+      "peakFrame": 6,
+      "sourceId": "nature/vine-whip"
+    },
+    "pickups/chest-open": {
+      "file": "library/pickups-chest-open-15bc46978cbf.png",
+      "sha256": "15bc46978cbf1ae74a4679dabb9840093dc6b1dad664853001a91b95413e8840",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        149,
+        77
+      ],
+      "pivot": [
+        75.5,
+        42
+      ],
+      "visibleWidth": 103,
+      "visibleHeight": 54,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 4.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "pickups/chest-open"
+    },
+    "pickups/coin-spin": {
+      "file": "library/pickups-coin-spin-cef9a6e7e533.png",
+      "sha256": "cef9a6e7e5332a3ae282506dfd76ce839eeda2ab054165ca304964790f0be17f",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        44,
+        45
+      ],
+      "pivot": [
+        22,
+        26
+      ],
+      "visibleWidth": 22,
+      "visibleHeight": 30,
+      "fps": 30,
+      "duration": 1.5333333333333334,
+      "nativeDuration": 1.6,
+      "loop": true,
+      "peakFrame": 13,
+      "sourceId": "pickups/coin-spin"
+    },
+    "pickups/collect-burst": {
+      "file": "library/pickups-collect-burst-d6d747208cb6.png",
+      "sha256": "d6d747208cb63ec16a1f0dfa8b12191c7cf18021817a78fa687bb81837e9cc14",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        86,
+        90
+      ],
+      "pivot": [
+        46.5,
+        53
+      ],
+      "visibleWidth": 39,
+      "visibleHeight": 36,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.35,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "pickups/collect-burst"
+    },
+    "pickups/crystal-shard": {
+      "file": "library/pickups-crystal-shard-cb505351fc14.png",
+      "sha256": "cb505351fc14c9bbb9b4d901e77ba85f1b9d6bad23d6cf2a845d2b44a2b73880",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        50,
+        67
+      ],
+      "pivot": [
+        26,
+        39.5
+      ],
+      "visibleWidth": 32,
+      "visibleHeight": 45,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3.2,
+      "loop": true,
+      "peakFrame": 11,
+      "sourceId": "pickups/crystal-shard"
+    },
+    "pickups/gem-spin": {
+      "file": "library/pickups-gem-spin-5105281125cc.png",
+      "sha256": "5105281125cc847999300caa01e1b1b8e23d8ca102befbacd1099b500471735f",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        50,
+        50
+      ],
+      "pivot": [
+        20.5,
+        29.5
+      ],
+      "visibleWidth": 27,
+      "visibleHeight": 29,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 21,
+      "sourceId": "pickups/gem-spin"
+    },
+    "pickups/key-glint": {
+      "file": "library/pickups-key-glint-12c4cb1c1f05.png",
+      "sha256": "12c4cb1c1f0579c2edfe67de0dc0880b313aa882ce454811433b322400c54483",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        50,
+        46
+      ],
+      "pivot": [
+        21.5,
+        27.5
+      ],
+      "visibleWidth": 29,
+      "visibleHeight": 29,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2,
+      "loop": true,
+      "peakFrame": 14,
+      "sourceId": "pickups/key-glint"
+    },
+    "pickups/loot-beam": {
+      "file": "library/pickups-loot-beam-9bed549dedb0.png",
+      "sha256": "9bed549dedb0caaaf463b60f3f417712650520239df81b5dd5cf22fb9a1cdb54",
+      "frames": 28,
+      "columns": 9,
+      "frameSize": [
+        62,
+        160
+      ],
+      "pivot": [
+        32,
+        84.5
+      ],
+      "visibleWidth": 28,
+      "visibleHeight": 137,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 16,
+      "sourceId": "pickups/loot-beam"
+    },
+    "pickups/power-star": {
+      "file": "library/pickups-power-star-bdaacdaa3505.png",
+      "sha256": "bdaacdaa350518b2d8bb72b1d3590484b58445c130782e16eccc20a2449edbd0",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        80,
+        70
+      ],
+      "pivot": [
+        39.5,
+        36
+      ],
+      "visibleWidth": 63,
+      "visibleHeight": 56,
+      "fps": 30,
+      "duration": 1.5333333333333334,
+      "nativeDuration": 1.6,
+      "loop": true,
+      "peakFrame": 7,
+      "sourceId": "pickups/power-star"
+    },
+    "projectiles/bullet-tracer": {
+      "file": "library/projectiles-bullet-tracer-276af1429210.png",
+      "sha256": "276af142921004687fe4a76a469ce8f9f48adb7e4fb8393e097837b99299f962",
+      "frames": 28,
+      "columns": 3,
+      "frameSize": [
+        160,
+        37
+      ],
+      "pivot": [
+        87.5,
+        19.5
+      ],
+      "visibleWidth": 133,
+      "visibleHeight": 15,
+      "fps": 30,
+      "duration": 0.5333333333333333,
+      "nativeDuration": 0.6,
+      "loop": true,
+      "peakFrame": 16,
+      "sourceId": "projectiles/bullet-tracer"
+    },
+    "projectiles/cannonball": {
+      "file": "library/projectiles-cannonball-802a6041d4cb.png",
+      "sha256": "802a6041d4cbfb49adbcfa319f32d02b9160ff40617baff52a7e471d53aa03f4",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        147,
+        117
+      ],
+      "pivot": [
+        60,
+        54
+      ],
+      "visibleWidth": 108,
+      "visibleHeight": 108,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "projectiles/cannonball"
+    },
+    "projectiles/magic-missile": {
+      "file": "library/projectiles-magic-missile-b9db27028a07.png",
+      "sha256": "b9db27028a077f8f7fcdaaccdcc2cb638d4d832cf8c84a263fcdf8d134618380",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        75
+      ],
+      "pivot": [
+        103,
+        42
+      ],
+      "visibleWidth": 72,
+      "visibleHeight": 40,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.9,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "projectiles/magic-missile"
+    },
+    "projectiles/muzzle-pistol": {
+      "file": "library/projectiles-muzzle-pistol-5d05b248fc98.png",
+      "sha256": "5d05b248fc980330f0c531021c8131baad609dc5c13470426b536ac5a9166674",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        87,
+        65
+      ],
+      "pivot": [
+        46,
+        33
+      ],
+      "visibleWidth": 30,
+      "visibleHeight": 24,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.8,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "projectiles/muzzle-pistol"
+    },
+    "projectiles/rocket": {
+      "file": "library/projectiles-rocket-001ecd40f93c.png",
+      "sha256": "001ecd40f93ca93fd48310bb5b74395ea50a8d59b87fae1f2bbf11ad2658734f",
+      "frames": 28,
+      "columns": 3,
+      "frameSize": [
+        160,
+        49
+      ],
+      "pivot": [
+        84.5,
+        29
+      ],
+      "visibleWidth": 145,
+      "visibleHeight": 28,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.2,
+      "loop": true,
+      "peakFrame": 0,
+      "sourceId": "projectiles/rocket"
+    },
+    "scifi/emp-blast": {
+      "file": "library/scifi-emp-blast-2dc2ec2ee61b.png",
+      "sha256": "2dc2ec2ee61b47582f77ebf001c35d4ffa4d957ee942f43cb26c95b7e0ccee2d",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        156,
+        110
+      ],
+      "pivot": [
+        76,
+        59
+      ],
+      "visibleWidth": 78,
+      "visibleHeight": 58,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "scifi/emp-blast"
+    },
+    "scifi/force-field": {
+      "file": "library/scifi-force-field-63d3d071f057.png",
+      "sha256": "63d3d071f057c2a1866e82266b2999f21ccfb74f447eb938d1ab3bcfaa0568c4",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        93
+      ],
+      "pivot": [
+        55.5,
+        57
+      ],
+      "visibleWidth": 89,
+      "visibleHeight": 50,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 6,
+      "sourceId": "scifi/force-field"
+    },
+    "scifi/glitch": {
+      "file": "library/scifi-glitch-534b6168c686.png",
+      "sha256": "534b6168c68622ef3fcf3e1686c926f3f893a512be9a00c52ba76bbaa4177262",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        63,
+        51
+      ],
+      "pivot": [
+        27,
+        27
+      ],
+      "visibleWidth": 38,
+      "visibleHeight": 40,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 23,
+      "sourceId": "scifi/glitch"
+    },
+    "scifi/hologram": {
+      "file": "library/scifi-hologram-a2dcb1fa66ee.png",
+      "sha256": "a2dcb1fa66ee566e59e84c4317d2521be41f985e2a60bf8c3945adf5b623135c",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        63,
+        93
+      ],
+      "pivot": [
+        33,
+        44
+      ],
+      "visibleWidth": 52,
+      "visibleHeight": 76,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 4,
+      "loop": true,
+      "peakFrame": 24,
+      "sourceId": "scifi/hologram"
+    },
+    "scifi/laser-grid": {
+      "file": "library/scifi-laser-grid-c03ff7c90f53.png",
+      "sha256": "c03ff7c90f53ca180744df04694a96453da4d2a742005961c156808e2d26e9f2",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        118,
+        77
+      ],
+      "pivot": [
+        59,
+        38
+      ],
+      "visibleWidth": 110,
+      "visibleHeight": 66,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 11,
+      "sourceId": "scifi/laser-grid"
+    },
+    "scifi/scanner": {
+      "file": "library/scifi-scanner-9e5f4c3d61d6.png",
+      "sha256": "9e5f4c3d61d68637248c8277544edc9f45ef055f93a71af0744f03244c5dd691",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        99,
+        80
+      ],
+      "pivot": [
+        48.5,
+        38.5
+      ],
+      "visibleWidth": 81,
+      "visibleHeight": 71,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3.2,
+      "loop": true,
+      "peakFrame": 4,
+      "sourceId": "scifi/scanner"
+    },
+    "scifi/tractor-beam": {
+      "file": "library/scifi-tractor-beam-5f520dbb8b75.png",
+      "sha256": "5f520dbb8b756e6f1169e93b12e5610724547d832ee249ce533f2186d888c015",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        80,
+        128
+      ],
+      "pivot": [
+        39,
+        63.5
+      ],
+      "visibleWidth": 70,
+      "visibleHeight": 107,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 20,
+      "sourceId": "scifi/tractor-beam"
+    },
+    "scifi/warp-in": {
+      "file": "library/scifi-warp-in-e567b09d3d83.png",
+      "sha256": "e567b09d3d83238b4887495cea9299a25ba39ca73b2f13902e0243ca9873f42a",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        160,
+        144
+      ],
+      "pivot": [
+        80.5,
+        64.5
+      ],
+      "visibleWidth": 79,
+      "visibleHeight": 129,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "scifi/warp-in"
+    },
+    "scifi/warp-out": {
+      "file": "library/scifi-warp-out-0f90bbd1a6f5.png",
+      "sha256": "0f90bbd1a6f5fa574c11105f2a7a3b3f525350583ac733fb1e9db0106cc5a83d",
+      "frames": 28,
+      "columns": 7,
+      "frameSize": [
+        92,
+        160
+      ],
+      "pivot": [
+        44.5,
+        68.5
+      ],
+      "visibleWidth": 31,
+      "visibleHeight": 137,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "scifi/warp-out"
+    },
+    "shadow/black-hole": {
+      "file": "library/shadow-black-hole-fd96b9bc71f8.png",
+      "sha256": "fd96b9bc71f83054fb0d5bd816d40f31ac281105e23246ea4f415ace34b24377",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        130
+      ],
+      "pivot": [
+        83,
+        69.5
+      ],
+      "visibleWidth": 132,
+      "visibleHeight": 107,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 4,
+      "loop": true,
+      "peakFrame": 0,
+      "sourceId": "shadow/black-hole"
+    },
+    "shadow/curse": {
+      "file": "library/shadow-curse-0411d5e8d56d.png",
+      "sha256": "0411d5e8d56d2d8d4e75cec9afa229a1132801dc484711656565970f9d3c8d8f",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        102,
+        113
+      ],
+      "pivot": [
+        51,
+        60
+      ],
+      "visibleWidth": 44,
+      "visibleHeight": 70,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.4,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "shadow/curse"
+    },
+    "shadow/dark-explosion": {
+      "file": "library/shadow-dark-explosion-6dd35572a027.png",
+      "sha256": "6dd35572a0270fd27696dce4bf94f491291a62510a807488b5fe51e2e0ba37f9",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        151,
+        160
+      ],
+      "pivot": [
+        75.5,
+        82
+      ],
+      "visibleWidth": 135,
+      "visibleHeight": 108,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "shadow/dark-explosion"
+    },
+    "shadow/eclipse": {
+      "file": "library/shadow-eclipse-5ddf4701b617.png",
+      "sha256": "5ddf4701b617e7930539ce1b59e053cfc7e82d9b5e835fd9302e298cbe477701",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        140
+      ],
+      "pivot": [
+        77,
+        68.5
+      ],
+      "visibleWidth": 144,
+      "visibleHeight": 113,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 4,
+      "loop": true,
+      "peakFrame": 2,
+      "sourceId": "shadow/eclipse"
+    },
+    "shadow/grasping-hands": {
+      "file": "library/shadow-grasping-hands-bf869cda08f4.png",
+      "sha256": "bf869cda08f4417c70fec060bf5822c19d6d732186737cf79301dd8a8d9e52bc",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        124,
+        89
+      ],
+      "pivot": [
+        63,
+        49
+      ],
+      "visibleWidth": 102,
+      "visibleHeight": 68,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.1,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "shadow/grasping-hands"
+    },
+    "shadow/hex-sigil": {
+      "file": "library/shadow-hex-sigil-5d8cc70a96ca.png",
+      "sha256": "5d8cc70a96ca43ae0754ca87795bb6fa69ffe852a4782d95abc574aa95d6f7be",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        156,
+        129
+      ],
+      "pivot": [
+        78,
+        62
+      ],
+      "visibleWidth": 88,
+      "visibleHeight": 88,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 4.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "shadow/hex-sigil"
+    },
+    "shadow/life-steal": {
+      "file": "library/shadow-life-steal-748483e13f57.png",
+      "sha256": "748483e13f5720c1229ed9891bac0dc126e8d0a4bf8277df6aa2d72cc356602d",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        64
+      ],
+      "pivot": [
+        80.5,
+        35
+      ],
+      "visibleWidth": 139,
+      "visibleHeight": 48,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "shadow/life-steal"
+    },
+    "shadow/necro-skulls": {
+      "file": "library/shadow-necro-skulls-1d827934e053.png",
+      "sha256": "1d827934e0538cd8c810623af986b998e6561243d412d3f2f7d0f1f987ffbdad",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        105,
+        99
+      ],
+      "pivot": [
+        53,
+        36.5
+      ],
+      "visibleWidth": 94,
+      "visibleHeight": 47,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 0,
+      "sourceId": "shadow/necro-skulls"
+    },
+    "shadow/shadow-flames": {
+      "file": "library/shadow-shadow-flames-6bfc7040959f.png",
+      "sha256": "6bfc7040959f9bc448a73eae32669171870275bb84f70ad72fc1e519342cbe6a",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        84,
+        100
+      ],
+      "pivot": [
+        41.5,
+        56.5
+      ],
+      "visibleWidth": 43,
+      "visibleHeight": 77,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2.4,
+      "loop": true,
+      "peakFrame": 16,
+      "sourceId": "shadow/shadow-flames"
+    },
+    "shadow/shadow-tendrils": {
+      "file": "library/shadow-shadow-tendrils-a297303680f8.png",
+      "sha256": "a297303680f8099e87b51a956644488e62e681c91f13528e5f8a0c3e8316dc35",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        137,
+        98
+      ],
+      "pivot": [
+        73.5,
+        55
+      ],
+      "visibleWidth": 87,
+      "visibleHeight": 66,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "shadow/shadow-tendrils"
+    },
+    "shadow/soul-drain": {
+      "file": "library/shadow-soul-drain-fbe201d87548.png",
+      "sha256": "fbe201d87548526135cf4d8f2b93cc1e776b065bd83978ee9e81b5854ecbe3f2",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        71
+      ],
+      "pivot": [
+        83.5,
+        36.5
+      ],
+      "visibleWidth": 137,
+      "visibleHeight": 53,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3.2,
+      "loop": true,
+      "peakFrame": 23,
+      "sourceId": "shadow/soul-drain"
+    },
+    "shadow/void-orb": {
+      "file": "library/shadow-void-orb-c279d164dbf8.png",
+      "sha256": "c279d164dbf81bceadb5c5f6889b6b64df95e46571e26474931fb1759e3f1cc6",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        134,
+        145
+      ],
+      "pivot": [
+        67.5,
+        77
+      ],
+      "visibleWidth": 105,
+      "visibleHeight": 118,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3.2,
+      "loop": true,
+      "peakFrame": 6,
+      "sourceId": "shadow/void-orb"
+    },
+    "spawn/coin-drop": {
+      "file": "library/spawn-coin-drop-9719cc4b8cc7.png",
+      "sha256": "9719cc4b8cc72fe6ff2e782e09349fc6411857eb084927864cb31aead3aedf47",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        108,
+        80
+      ],
+      "pivot": [
+        56,
+        38.5
+      ],
+      "visibleWidth": 52,
+      "visibleHeight": 67,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/coin-drop"
+    },
+    "spawn/disintegrate": {
+      "file": "library/spawn-disintegrate-9124e69fe9c3.png",
+      "sha256": "9124e69fe9c3755fae55f3883545a449e7b61a4af4020ab8a90eab15d3f49953",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        124,
+        86
+      ],
+      "pivot": [
+        48,
+        53
+      ],
+      "visibleWidth": 52,
+      "visibleHeight": 54,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.4,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/disintegrate"
+    },
+    "spawn/dissolve-burn": {
+      "file": "library/spawn-dissolve-burn-e6521096a742.png",
+      "sha256": "e6521096a742219870374c1dfcd8e52290e2dee3387c826d26110a3938b2bc2c",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        88,
+        94
+      ],
+      "pivot": [
+        46.5,
+        66.5
+      ],
+      "visibleWidth": 41,
+      "visibleHeight": 45,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/dissolve-burn"
+    },
+    "spawn/poof": {
+      "file": "library/spawn-poof-dc42a13c137e.png",
+      "sha256": "dc42a13c137ec582d4aba8dba224da8dc53bc713c1763133ba5604b15ca0c3b5",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        90,
+        95
+      ],
+      "pivot": [
+        45.5,
+        44.5
+      ],
+      "visibleWidth": 73,
+      "visibleHeight": 75,
+      "fps": 30,
+      "duration": 1.2666666666666666,
+      "nativeDuration": 1.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/poof"
+    },
+    "spawn/respawn-beam": {
+      "file": "library/spawn-respawn-beam-eb103b541698.png",
+      "sha256": "eb103b541698dcf872e0099b0a58eb646355a0883e17c1992b48745293e9e3bc",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        128,
+        154
+      ],
+      "pivot": [
+        64,
+        73
+      ],
+      "visibleWidth": 88,
+      "visibleHeight": 146,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.5,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/respawn-beam"
+    },
+    "spawn/shatter-death": {
+      "file": "library/spawn-shatter-death-1cbb362bbdd9.png",
+      "sha256": "1cbb362bbdd9b790454ef25f84e02cd48f9d8bec750e56f056465ce131441143",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        152,
+        87
+      ],
+      "pivot": [
+        66,
+        52.5
+      ],
+      "visibleWidth": 64,
+      "visibleHeight": 55,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/shatter-death"
+    },
+    "spawn/soul-rise": {
+      "file": "library/spawn-soul-rise-86f6430db45b.png",
+      "sha256": "86f6430db45b39f17d72cf69092a486333fa66b1b80dccbc1eddfb344654bc34",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        82,
+        103
+      ],
+      "pivot": [
+        41,
+        71.5
+      ],
+      "visibleWidth": 40,
+      "visibleHeight": 49,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/soul-rise"
+    },
+    "spawn/spawn-portal": {
+      "file": "library/spawn-spawn-portal-21416d25bc8a.png",
+      "sha256": "21416d25bc8af5264c32996e851ab4ccfa04472446d5f0f78aaba115776bcbd5",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        119
+      ],
+      "pivot": [
+        82,
+        63.5
+      ],
+      "visibleWidth": 76,
+      "visibleHeight": 95,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/spawn-portal"
+    },
+    "spawn/summon-rise": {
+      "file": "library/spawn-summon-rise-f0639dd43675.png",
+      "sha256": "f0639dd436755f2a7f7e3d39268d4a7f547e3d8999720a9a4505b4e89fa2ddff",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        144,
+        117
+      ],
+      "pivot": [
+        76,
+        64
+      ],
+      "visibleWidth": 122,
+      "visibleHeight": 90,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 4.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "spawn/summon-rise"
+    },
+    "status/haste": {
+      "file": "library/status-haste-af722a90d43e.png",
+      "sha256": "af722a90d43ea74574d5c2c57eb2364de2439947a88849e45c8c22c02a4dac87",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        83,
+        49
+      ],
+      "pivot": [
+        38,
+        24
+      ],
+      "visibleWidth": 68,
+      "visibleHeight": 40,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.2,
+      "loop": true,
+      "peakFrame": 22,
+      "sourceId": "status/haste"
+    },
+    "status/rage": {
+      "file": "library/status-rage-b4661b3c1b06.png",
+      "sha256": "b4661b3c1b0642f01abb313d7908fc14634975d11ee838010cb1f726e0030e78",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        64,
+        66
+      ],
+      "pivot": [
+        32,
+        34
+      ],
+      "visibleWidth": 52,
+      "visibleHeight": 52,
+      "fps": 30,
+      "duration": 1.1333333333333333,
+      "nativeDuration": 1.2,
+      "loop": true,
+      "peakFrame": 1,
+      "sourceId": "status/rage"
+    },
+    "status/stunned": {
+      "file": "library/status-stunned-00e56ee18b86.png",
+      "sha256": "00e56ee18b863c48c860a554f17490de5c505caa8b412157622a35b38defe071",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        54,
+        37
+      ],
+      "pivot": [
+        27,
+        18.5
+      ],
+      "visibleWidth": 38,
+      "visibleHeight": 17,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 2,
+      "loop": true,
+      "peakFrame": 9,
+      "sourceId": "status/stunned"
+    },
+    "transitions/burn-away": {
+      "file": "library/transitions-burn-away-97586dfa7901.png",
+      "sha256": "97586dfa7901a3a0aaf3007aca661c920b2f5f87de0bed90f260784078d3cf6f",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "transitions/burn-away"
+    },
+    "transitions/diamond-wipe": {
+      "file": "library/transitions-diamond-wipe-56391cb0b690.png",
+      "sha256": "56391cb0b6900293fe1df081f509e9bedcb3a40d2853ec915d252ee7b9676b26",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "transitions/diamond-wipe"
+    },
+    "transitions/iris": {
+      "file": "library/transitions-iris-3a64889377d7.png",
+      "sha256": "3a64889377d74b1d1bbd1c961d797292476b5d873d6bc335cc21f594e4cb3a03",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "transitions/iris"
+    },
+    "transitions/pixel-dissolve": {
+      "file": "library/transitions-pixel-dissolve-bd50ebb99327.png",
+      "sha256": "bd50ebb99327fe8b3cd1a5d03cfaf89cff1079a3e735d3713f1b7bb5fe737b99",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "transitions/pixel-dissolve"
+    },
+    "transitions/shatter-wipe": {
+      "file": "library/transitions-shatter-wipe-5508e548cf5f.png",
+      "sha256": "5508e548cf5f47285dc09ff3cb2b3bfaf58ff75347e625d77ada7b6817af3d4a",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.8,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "transitions/shatter-wipe"
+    },
+    "transitions/slash-wipe": {
+      "file": "library/transitions-slash-wipe-25330ad3f18a.png",
+      "sha256": "25330ad3f18acf041ac6f086791fb314ae6bd4573d54f960b4324150af7bef66",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.7,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "transitions/slash-wipe"
+    },
+    "ui/achievement": {
+      "file": "library/ui-achievement-f9f4d653ca95.png",
+      "sha256": "f9f4d653ca95b4d107fb4364b34452ed4be3588c086f7b41e25499e84b48c8d3",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        54
+      ],
+      "pivot": [
+        84.5,
+        25.5
+      ],
+      "visibleWidth": 141,
+      "visibleHeight": 29,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.4,
+      "loop": false,
+      "peakFrame": 3,
+      "sourceId": "ui/achievement"
+    },
+    "ui/coin-collect": {
+      "file": "library/ui-coin-collect-50050d99890c.png",
+      "sha256": "50050d99890cc6f9410265b82de0f9e6a9358696979267b3662498eb7e5ad268",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        158,
+        115
+      ],
+      "pivot": [
+        87,
+        59
+      ],
+      "visibleWidth": 130,
+      "visibleHeight": 92,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.45,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ui/coin-collect"
+    },
+    "ui/combo-counter": {
+      "file": "library/ui-combo-counter-c7d5b785f002.png",
+      "sha256": "c7d5b785f00223c80c77725d973951764593b4bb306ec3f57d17df4e68190948",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        78
+      ],
+      "pivot": [
+        81.5,
+        39
+      ],
+      "visibleWidth": 153,
+      "visibleHeight": 50,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.45,
+      "loop": false,
+      "peakFrame": 3,
+      "sourceId": "ui/combo-counter"
+    },
+    "ui/confetti": {
+      "file": "library/ui-confetti-48b32a6cc676.png",
+      "sha256": "48b32a6cc676e96d6e5afafe318ff0eb3a2eaf9c3bea248d7aa384072866ccdd",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        82
+      ],
+      "pivot": [
+        84.5,
+        52.5
+      ],
+      "visibleWidth": 129,
+      "visibleHeight": 49,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.4,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ui/confetti"
+    },
+    "ui/countdown": {
+      "file": "library/ui-countdown-3a7a15ff6e50.png",
+      "sha256": "3a7a15ff6e509101b041d21accf0294ae4737075d0030cc4881eea5dd8773449",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        140,
+        136
+      ],
+      "pivot": [
+        76,
+        68
+      ],
+      "visibleWidth": 112,
+      "visibleHeight": 80,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.1,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ui/countdown"
+    },
+    "ui/crit-number": {
+      "file": "library/ui-crit-number-a42f0443f82d.png",
+      "sha256": "a42f0443f82d6e2c7c5db1665bfc1b84c16cfcedf617b75a5568f0e0b8bbc561",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        148,
+        114
+      ],
+      "pivot": [
+        75,
+        54.5
+      ],
+      "visibleWidth": 130,
+      "visibleHeight": 75,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.5,
+      "loop": false,
+      "peakFrame": 0,
+      "sourceId": "ui/crit-number"
+    },
+    "ui/exclamation": {
+      "file": "library/ui-exclamation-8f5a9ec3688e.png",
+      "sha256": "8f5a9ec3688e88a87643291b56229b5bbbfa3f4577f869ccf3ee74dcfbe53f6c",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        58,
+        62
+      ],
+      "pivot": [
+        29,
+        28
+      ],
+      "visibleWidth": 36,
+      "visibleHeight": 36,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 1.4,
+      "loop": false,
+      "peakFrame": 1,
+      "sourceId": "ui/exclamation"
+    },
+    "ui/health-bar-hit": {
+      "file": "library/ui-health-bar-hit-2f0624f41d20.png",
+      "sha256": "2f0624f41d20aabbb5afd8d21bb8c41e75f3ab16443f97fd82553812150ebb83",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        140,
+        63
+      ],
+      "pivot": [
+        69,
+        30
+      ],
+      "visibleWidth": 130,
+      "visibleHeight": 20,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2,
+      "loop": false,
+      "peakFrame": 1,
+      "sourceId": "ui/health-bar-hit"
+    },
+    "ui/heart-lost": {
+      "file": "library/ui-heart-lost-ed9905cc04de.png",
+      "sha256": "ed9905cc04de997144b26c1fd7235273defaea9ef46210c37c4f0b606cc3a94d",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        83,
+        85
+      ],
+      "pivot": [
+        38,
+        34
+      ],
+      "visibleWidth": 32,
+      "visibleHeight": 32,
+      "fps": 30,
+      "duration": 1.2666666666666666,
+      "nativeDuration": 1.5,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ui/heart-lost"
+    },
+    "ui/level-up": {
+      "file": "library/ui-level-up-6b90b462e26e.png",
+      "sha256": "6b90b462e26ee91fa3aaf7af5c4452078875f69efea120ce99eecde3b0671e71",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        160,
+        133
+      ],
+      "pivot": [
+        77.5,
+        70.5
+      ],
+      "visibleWidth": 57,
+      "visibleHeight": 109,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ui/level-up"
+    },
+    "ui/quest-complete": {
+      "file": "library/ui-quest-complete-41c49640c03b.png",
+      "sha256": "41c49640c03b625f4ba62c45441a8a83fd7ac3c4f71d01ff2f72eef3bf9bff9f",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        77
+      ],
+      "pivot": [
+        79,
+        33.5
+      ],
+      "visibleWidth": 142,
+      "visibleHeight": 39,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.6,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "ui/quest-complete"
+    },
+    "water/splash": {
+      "file": "library/water-splash-149dc4b38e89.png",
+      "sha256": "149dc4b38e8916a316bc4cf1ab3c8b52f3eb12e2125ab56d4f447034c8e99c3d",
+      "frames": 28,
+      "columns": 5,
+      "frameSize": [
+        124,
+        88
+      ],
+      "pivot": [
+        65,
+        51
+      ],
+      "visibleWidth": 50,
+      "visibleHeight": 50,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 2.5,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "water/splash"
+    },
+    "water/water-orb": {
+      "file": "library/water-water-orb-749dd1c30cc7.png",
+      "sha256": "749dd1c30cc74b511756b6587936a0cd2bc385624ade0bc6886e83f2ea235600",
+      "frames": 28,
+      "columns": 6,
+      "frameSize": [
+        92,
+        106
+      ],
+      "pivot": [
+        50,
+        62.5
+      ],
+      "visibleWidth": 44,
+      "visibleHeight": 73,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 3,
+      "loop": true,
+      "peakFrame": 17,
+      "sourceId": "water/water-orb"
+    },
+    "water/wave-crash": {
+      "file": "library/water-wave-crash-d617d1f0df2a.png",
+      "sha256": "d617d1f0df2ace39162f098948c16a96a57ed001cbd47da64d7f02f5b4646d8b",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        66
+      ],
+      "pivot": [
+        80,
+        37.5
+      ],
+      "visibleWidth": 148,
+      "visibleHeight": 35,
+      "fps": 30,
+      "duration": 1.3333333333333333,
+      "nativeDuration": 3.2,
+      "loop": false,
+      "peakFrame": 5,
+      "sourceId": "water/wave-crash"
+    },
+    "weather/aurora": {
+      "file": "library/weather-aurora-9a5f74658902.png",
+      "sha256": "9a5f74658902bdb3f389c9cf8074606bc8d9431e7dc2f80919c0e0b162f979f0",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        44.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 85,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 12,
+      "loop": true,
+      "peakFrame": 11,
+      "sourceId": "weather/aurora"
+    },
+    "weather/fireflies": {
+      "file": "library/weather-fireflies-66668a5a295c.png",
+      "sha256": "66668a5a295cc65d37c4982068b120404e6c6666c3ab09d6ee9714846ae02807",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 12,
+      "loop": true,
+      "peakFrame": 18,
+      "sourceId": "weather/fireflies"
+    },
+    "weather/fog": {
+      "file": "library/weather-fog-b308de57f6f2.png",
+      "sha256": "b308de57f6f2842c863bb097c1bdba00f5700b26c09a14dd75ee14434de6e135",
+      "frames": 28,
+      "columns": 3,
+      "frameSize": [
+        160,
+        39
+      ],
+      "pivot": [
+        80,
+        22
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 34,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 12,
+      "loop": true,
+      "peakFrame": 0,
+      "sourceId": "weather/fog"
+    },
+    "weather/god-rays": {
+      "file": "library/weather-god-rays-d434dc2348c9.png",
+      "sha256": "d434dc2348c9f0fee2ed555706da873d6dedb24036cff3a9a252bf5acebd8057",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 10,
+      "loop": true,
+      "peakFrame": 13,
+      "sourceId": "weather/god-rays"
+    },
+    "weather/storm": {
+      "file": "library/weather-storm-cbbfbe2839c0.png",
+      "sha256": "cbbfbe2839c0aa5a6681e1402ecc25d6a7656661c3bc6787f9e2268aea787ab5",
+      "frames": 28,
+      "columns": 4,
+      "frameSize": [
+        160,
+        91
+      ],
+      "pivot": [
+        80,
+        45.5
+      ],
+      "visibleWidth": 160,
+      "visibleHeight": 91,
+      "fps": 30,
+      "duration": 1.6,
+      "nativeDuration": 10,
+      "loop": true,
+      "peakFrame": 0,
+      "sourceId": "weather/storm"
+    }
+  }
+}

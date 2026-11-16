@@ -1,3 +1,4 @@
+import {emitPixelFx} from "@/components/pixelfx-scenes";
 import { questMusic } from '@/components/quest-media';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
 import {describeTowerEffect} from '../../../../lib/game-engine/src/tower/effects';
@@ -116,6 +117,15 @@ export default function Tower() {
     busyRef.current = true; setBusy(true); setError('');
     try {
       const result = await work();
+      if(result.run){
+        if(!run)emitPixelFx(99);
+        else if(result.run.phase==='BATTLE'&&run.phase!=='BATTLE')emitPixelFx(result.run.encounter.bossSlot?103:result.run.encounter.difficulty==='HARD'?102:101);
+        else if(result.run.hiddenClear&&!run.hiddenClear||result.run.regularClear&&!run.regularClear)emitPixelFx(108);
+        else if(result.run.relicIds.length>run.relicIds.length)emitPixelFx(104);
+        else if(result.run.floor>run.floor)emitPixelFx(106);
+        else if(result.run.phase!==run.phase)emitPixelFx(result.run.phase==='HUB'?100:107);
+      }
+      if(run?.phase!=='BATTLE'&&result.run?.phase==='BATTLE'&&result.run.encounter.bossSlot)emitPixelFx(71);
       if(run?.phase!=='BATTLE' && result.run?.phase==='BATTLE' && result.battle) setBossIntroGameId(result.battle.gameId);
       if (detail && result.run) await loadRun(result.run.id);
       else if (run?.phase === 'BATTLE' && result.run?.phase !== 'BATTLE' && result.battle?.status === 'FINISHED') {

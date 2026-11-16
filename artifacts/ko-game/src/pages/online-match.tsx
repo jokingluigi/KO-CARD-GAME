@@ -1,3 +1,4 @@
+import {emitPixelFx} from "@/components/pixelfx-scenes";
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import { currentChampionAbility } from '@/game/champions/types';
 import {launchDeckEditor} from "@/lib/launch-deck";
@@ -308,11 +309,13 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         if(message.cosmetics)setCosmetics(message.cosmetics);
         setIntroFirstSpeaker(message.introFirstSpeaker);
         setServerOffset(message.serverTime - Date.now());
+        if(opponentConnectionStateRef.current==='DISCONNECTED_GRACE'&&message.connectionStates[nextSeat==='PLAYER_ONE'?'PLAYER_TWO':'PLAYER_ONE']==='CONNECTED')emitPixelFx(80);
         setConnectionStates(message.connectionStates);
         opponentConnectionStateRef.current = message.connectionStates[
           nextSeat === "PLAYER_ONE" ? "PLAYER_TWO" : "PLAYER_ONE"
         ];
         setSessionReplaced(false);
+
         const sequencedEvents = message.events.filter((event): event is { sequenceNumber: number } =>
           Boolean(event && typeof event === "object" && typeof (event as { sequenceNumber?: unknown }).sequenceNumber === "number"),
         );

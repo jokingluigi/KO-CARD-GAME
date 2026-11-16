@@ -1,3 +1,4 @@
+import {emitPixelFx} from "@/components/pixelfx-scenes";
 import {isTokenCard} from "@/game/cards/types";
 import '@/components/catalog-browsing.css';
 import {
@@ -678,6 +679,7 @@ export default function Decks() {
       recovery.discard();
       openDeck(result.deck);
       setStatusMessage("전략을 저장했습니다.");
+      emitPixelFx(98);
     } catch (error: unknown) {
       setErrorMessage(error instanceof Error ? error.message : "덱을 저장하지 못했습니다.");
     } finally {

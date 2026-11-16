@@ -1,3 +1,4 @@
+import {usePixelFx} from "@/components/pixelfx-scenes";
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import {createAIDecisionClient} from "@/lib/ai-decision-client";
 import {useTutorialAutoReward} from "@/components/tutorial/tutorial-rewards";
@@ -141,6 +142,7 @@ function actualAttackDamage(
 }
 
 export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser } = {}) {
+  usePixelFx(113,"home");
   const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const isTutorial = window.location.pathname.endsWith('/tutorial') || window.location.pathname.endsWith('/practice');

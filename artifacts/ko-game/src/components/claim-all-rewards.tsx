@@ -1,3 +1,4 @@
+import {emitPixelFx} from "./pixelfx-scenes";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Gift, CheckCircle2, Coins, LoaderCircle } from "lucide-react";
@@ -73,6 +74,7 @@ export function ClaimAllRewardsButton({
       signalRewardsUpdated(id);
       if (alive.current) {
         setResult(response);
+        if(response.claimedCount>0)emitPixelFx(95,trigger.current,{width:220});
         onCompleted?.(response);
       }
       void refreshCurrentUser()

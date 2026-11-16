@@ -1,3 +1,4 @@
+import {usePixelFxBattle,damagePixelFx} from "./pixelfx-battle-bridge";
 import {questPortraitForSkin} from './quest-media';
 import {BattleCardChoiceDialog} from './battle-card-choice-dialog';
 import {FinisherProgress,championPreparationProgress} from './finisher-progress';
@@ -352,6 +353,7 @@ export function GameStatePreview({
   const opponentHandRef = React.useRef<HTMLDivElement | null>(null);
   const championRef = React.useRef<HTMLDivElement | null>(null);
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
+  usePixelFxBattle(state,{board:boardCardRefs,hand:handCardRefs,self:playerChampionRef,enemy:championRef},selectedAttackerId??selectedCardId,playError,turnSecondsRemaining);
   const spellDropTargetRef=React.useRef<{cardId:string;targetId:string;gameId:string;turn:number;createdAt:number}|null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
   const [readableSpells,setReadableSpells]=React.useState<Set<CardPlayAnimationState>>(()=>new Set());
@@ -818,6 +820,8 @@ export function GameStatePreview({
         ...draft,
         label: draft.kind === "QUEST_PROGRESS" ? '피니셔 준비 진행' : draft.label,
         ...cuePosition(draft),
+        targetWidth:(draft.cardInstanceId?boardCardRefs.current.get(draft.cardInstanceId)??handCardRefs.current.get(draft.cardInstanceId):draft.playerId===state.players[0]?.id?playerChampionRef.current:championRef.current)?.getBoundingClientRect().width,
+        effect:draft.kind==='DAMAGE'&&!draft.combat&&!draft.selfDamage&&draft.sourceCardInstanceId?damagePixelFx((getCardDefinition(currentCardSnapshot.get(draft.sourceCardInstanceId)?.definitionId??previousCards.get(draft.sourceCardInstanceId)?.definitionId??'')?.name??'')):undefined,
         ...(rect?.width && rect.height ? { sourceLeft: rect.left + rect.width / 2, sourceTop: rect.top + rect.height / 2 } : {}),
         ...(before && after && before.definitionId !== after.definitionId
           ? { previousArtwork: artwork(before) ?? undefined, nextArtwork: artwork(after) ?? undefined } : {}),
@@ -854,7 +858,7 @@ export function GameStatePreview({
           cardInstanceId,
           duration: 320,
         };
-        cues.push({ ...draft, ...cuePosition(draft) });
+        cues.push({ ...draft, ...cuePosition(draft),targetWidth:undefined,effect:undefined });
       }
     }
     if (cues.length) {

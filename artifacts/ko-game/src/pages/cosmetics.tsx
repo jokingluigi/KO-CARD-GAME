@@ -1,3 +1,4 @@
+import {emitPixelFx} from "@/components/pixelfx-scenes";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Check, ChevronRight, Search, Sparkles } from "lucide-react";
@@ -136,6 +137,7 @@ export default function Cosmetics() {
       );
       if (mounted.current) {
         setData((old) => (old ? { ...old, loadout } : old));
+        emitPixelFx(97);
         setNotice(
           reset
             ? "기본 외형으로 변경했어요. 다음 대전부터 적용돼요."

@@ -1,3 +1,6 @@
+import {PackOpening} from "../src/components/pack-opening";
+import {CollectionActionAnimation} from "../src/components/collection-action-animation";
+import {emitPixelFx,pixelFxRecipes} from "../src/components/pixelfx-scenes";
 /** Local visual QA. Not included in the production entrypoint. */
 import React from 'react';
 import {createRoot} from 'react-dom/client';
@@ -22,6 +25,11 @@ function reset(armor=0,attack=5) {
 }
 (window as any).pixelFxQA={
  inspect(){return state;},
+ pack(){const rewards=['NORMAL_CARD','EPIC_CARD','LEGENDARY_CARD'].map((rewardType,i)=>({rewardType,cardDefinitionId:'qa-'+i,alreadyOwned:false,card:{...definitions[0],id:'qa-'+i,name:'PIXELFX '+rewardType,text:'효과 표시 검증',rarity:rewardType.split('_')[0],imageUrl:null}}));root.render(<PackOpening packName="PIXELFX QA" rewards={rewards as any} onClose={()=>root.render(null)}/>);},
+ craft(){root.render(<CollectionActionAnimation scene={{id:Date.now(),kind:'CRAFT',name:'제작 검증'}} onComplete={()=>root.render(null)}/>);},
+ areas(){return Object.keys(pixelFxRecipes).map(Number);},
+ area(area:number,duration=1000){emitPixelFx(area,document.querySelector('.ko-opponent-board-row .ko-board-slot'),{width:150,duration});},
+ snapshot(next:GameState){state=next;load(next);},
  reset,
  preview(kind:string,strength=3,duration=900) {
    const target=document.querySelector('.ko-opponent-board-row .ko-board-slot')!.getBoundingClientRect();

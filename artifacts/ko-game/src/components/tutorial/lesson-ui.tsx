@@ -1,3 +1,4 @@
+import {usePixelFx} from "../pixelfx-scenes";
 import {TutorialRewardsPanel,type TutorialProof} from "./tutorial-rewards";
 import { useEffect, useState } from "react";
 import { GameGuideDialogTrigger } from "../game-guide/game-guide-dialog";
@@ -147,6 +148,7 @@ export function TutorialCoach({
   onCourses: () => void;
   onNext: () => void;
 }) {
+  usePixelFx(goal.complete?112:111,`${id}:${goal.key}:${goal.complete}`,!busy);
   const [open, setOpen] = useState(true),
     [settled, setSettled] = useState(false);
   useEffect(() => {

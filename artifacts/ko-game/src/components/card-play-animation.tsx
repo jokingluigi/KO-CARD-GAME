@@ -1,3 +1,4 @@
+import {finisherPixelFx} from "./pixelfx-battle-bridge";
 import './battle-atmosphere.css';
 import {useCosmeticImage} from './cosmetic-battle';
 import { useEffect, useRef, useState, useId } from "react";
@@ -193,8 +194,11 @@ export function CardPlayAnimation({
       )}
       {(animation.kind==='TECHNIQUE'||landed)&&<BattleVfx kind={animation.kind==='TECHNIQUE'?'MAGIC':rarity==='LEGENDARY'?'GOLD':'IMPACT'}
         left={targetLeft+source.width*targetScale/2} top={targetTop+source.height*targetScale/2}
+        effect={animation.kind==='TECHNIQUE'?(finisherSpell?finisherPixelFx(definition?.name??''):'arcane/magic-circle-cast'):rarity==='LEGENDARY'?'holy/holy-pillar':'spawn/summon-rise'}
+        area={animation.kind==='TECHNIQUE'?(finisherSpell?68:41):rarity==='LEGENDARY'?26:25}
+        targetWidth={finisherSpell?Math.min(viewport.width*.65,720):source.width*targetScale} sizeMultiplier={finisherSpell?1:rarity==='LEGENDARY'?2:1.5}
         seed={`play:${animation.card.instanceId}`} strength={animation.kind==='TECHNIQUE'?5:animation.card.currentCost}
-        delay={animation.kind==='TECHNIQUE'&&!reduced?duration*.28:0} duration={animation.kind==='TECHNIQUE'?250:Math.max(120,duration*.24)} />}
+        delay={animation.kind==='TECHNIQUE'&&!reduced?duration*.28:0} duration={animation.kind==='TECHNIQUE'?850:Math.max(520,duration*.7)} />}
       <div
         ref={cardRef}
         className="card-play-animation__card"

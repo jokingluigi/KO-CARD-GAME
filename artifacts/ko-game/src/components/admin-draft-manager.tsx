@@ -1,3 +1,4 @@
+import {emitPixelFx} from "./pixelfx-scenes";
 import { ArrowRight, Bot, Swords } from "lucide-react";
 import { MatchRecapPanel } from "./match-recap-panel";
 import { DraftReadyPanel } from "./draft-ready-panel";
@@ -130,6 +131,7 @@ export function AdminDraftManager({
   async function command(type: string, id?: string) {
     if (!view) return;
     const result = await draftCommand(view, type, id);
+    if(result.own.deck.length>view.own.deck.length)emitPixelFx(109);
     setView(result);
     if (result.phase === "ABORTED") {
       setView(null);

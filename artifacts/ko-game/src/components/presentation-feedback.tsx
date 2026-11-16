@@ -1,4 +1,5 @@
 import "./effect-readability.css";
+import {PixelFxArea} from "./pixelfx-scenes";
 import {audioManager} from '../audio/audio-manager';
 import {useScreenImpact} from './screen-impact';
 import {damageImpact} from './screen-impact-policy';
@@ -7,9 +8,11 @@ import type { CSSProperties } from "react";
 
 import type { PresentationCueDraft } from "./presentation-feedback-utils";
 import { damageNumberTier } from './presentation-policy';
-import { BattleVfx } from './battle-vfx';
+
 
 export type PresentationCue = PresentationCueDraft & {
+  effect?:import("./pixelfx-sprite").EffectId;
+  targetWidth?:number;
   left: number;
   top: number;
   sourceLeft?: number;
@@ -88,9 +91,9 @@ export function PresentationFeedback({
 
   return (
     <>
-    {!cue.quiet && (cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage || (['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD','PROTECTION_BREAK'].includes(cue.kind)&&!(cue.kind==='HEAL'&&cue.playerId&&!cue.cardInstanceId))) &&
-      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='PROTECTION_BREAK'?'ARMOR':cue.kind==='ARMOR'?'ARMOR':cue.kind==='BLOCK'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
-        left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
+    {!cue.quiet && !(cue.kind==='DAMAGE'&&cue.combat) && !['RETIRE','DESTROY','REMOVE','QUEST_COMPLETE','TURN'].includes(cue.kind) &&
+      <PixelFxArea area={cue.kind==='DAMAGE'?(cue.selfDamage?140:spriteDamage?9:(cue.value??0)>=8?6:41):({DODGE:11,BLOCK:13,ARMOR:15,HEAL:cue.cardInstanceId?48:49,MAX_HEALTH:22,PROTECTION_BREAK:14,BUFF:21,DEBUFF:23,SILENCE:20,EFFECT:119,DRAW:35,GENERATE:36,TRANSFORM:39,QUEST_PROGRESS:63,GOLD:56} as Partial<Record<PresentationCue['kind'],number>>)[cue.kind]??24}
+        left={cue.left} top={cue.top} effect={cue.effect} width={cue.targetWidth} duration={Math.max(460,cue.duration)} />}
     <div
       aria-hidden="true"
       className={`presentation-feedback ${toneClass[cue.kind]}`}

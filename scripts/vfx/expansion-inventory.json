@@ -1,0 +1,2130 @@
+{
+  "dateUTC": "2026-11-16T02:00:30.697060+00:00",
+  "currentRevision": "4a54033b4282d210a79c8b3a55e73798e93a9124",
+  "pixelfxRevision": "5294518ce7c72e48b6100a744596e0acf57f2826",
+  "publishedCardDefinitions": 182,
+  "publishedChampions": 11,
+  "publicFinisherTechniques": 12,
+  "areas": [
+    {
+      "id": "FX-001",
+      "group": "공격·타격",
+      "name": "공격 대상 고정",
+      "presets": [
+        "arcane/rune-circle",
+        "ui/exclamation"
+      ],
+      "motion": "대상 외곽 조준 링, 공격 방향 표시",
+      "size": "대상",
+      "priority": 1
+    },
+    {
+      "id": "FX-002",
+      "group": "공격·타격",
+      "name": "공격 준비·기 모으기",
+      "presets": [
+        "arcane/spell-charge",
+        "lightning/charge-up"
+      ],
+      "motion": "공격자에게 짧게 모였다가 실제 접촉 때 방출",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-003",
+      "group": "공격·타격",
+      "name": "돌진·공격 이동 궤적",
+      "presets": [
+        "moves/dash-strike",
+        "melee/thrust"
+      ],
+      "motion": "카드/캐릭터의 실제 이동 경로를 따라 잔상",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-004",
+      "group": "공격·타격",
+      "name": "일반 육탄 타격",
+      "presets": [
+        "impacts/blunt-hit",
+        "impacts/hit-spark"
+      ],
+      "motion": "피격점 중심의 큰 금빛 섬광과 방향성 파편",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-005",
+      "group": "공격·타격",
+      "name": "베기·할퀴기 등 무기형 타격",
+      "presets": [
+        "melee/sword-slash",
+        "melee/claw-swipe",
+        "melee/whip-crack"
+      ],
+      "motion": "카드별 지정 모티프를 사용하고 타격 시점을 공유",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-006",
+      "group": "공격·타격",
+      "name": "고피해 강타·대형 착탄",
+      "presets": [
+        "impacts/crit-hit",
+        "impacts/ground-slam"
+      ],
+      "motion": "일반 공격보다 굵은 핵심 형태, 바닥 충격파",
+      "size": "대형",
+      "priority": 0
+    },
+    {
+      "id": "FX-007",
+      "group": "공격·타격",
+      "name": "연속 공격·다중 타격",
+      "presets": [
+        "melee/double-slash",
+        "melee/dagger-flurry"
+      ],
+      "motion": "실제 확정된 타격 횟수대로 짧은 변주 재생",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-008",
+      "group": "공격·타격",
+      "name": "프로그램·연계 단계 완료",
+      "presets": [
+        "ui/combo-counter",
+        "lightning/spark-arc"
+      ],
+      "motion": "처리된 효과 단계를 연결하고 최종 단계만 큰 마무리",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-009",
+      "group": "공격·타격",
+      "name": "챔피언 직접 피격",
+      "presets": [
+        "impacts/hit-flash",
+        "ui/health-bar-hit"
+      ],
+      "motion": "챔피언 본체/초상화 피격점과 체력바를 함께 반응",
+      "size": "챔피언",
+      "priority": 0
+    },
+    {
+      "id": "FX-010",
+      "group": "공격·타격",
+      "name": "확정 핀폴·결정적 피니시",
+      "presets": [
+        "impacts/impact-frame",
+        "ui/crit-number"
+      ],
+      "motion": "확정 핀폴 표식과 짧은 강한 접촉 연출",
+      "size": "대형",
+      "priority": 0
+    },
+    {
+      "id": "FX-011",
+      "group": "방어·상태·능력치",
+      "name": "회피 발동",
+      "presets": [
+        "arcane/blink-out",
+        "spawn/poof"
+      ],
+      "motion": "타격 직전 잔상 분리, 피해가 없었다는 표시",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-012",
+      "group": "방어·상태·능력치",
+      "name": "회피 후 복귀",
+      "presets": [
+        "arcane/blink-in",
+        "melee/spin-slash"
+      ],
+      "motion": "잔상 회수와 본체 복귀를 기존 회피 동작에 맞춤",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-013",
+      "group": "방어·상태·능력치",
+      "name": "아머·막기 성공",
+      "presets": [
+        "impacts/shield-block",
+        "impacts/parry"
+      ],
+      "motion": "공격 방향 쪽 방패와 튕겨 나가는 스파크",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-014",
+      "group": "방어·상태·능력치",
+      "name": "아머·보호막 파괴",
+      "presets": [
+        "spawn/shatter-death",
+        "scifi/emp-blast"
+      ],
+      "motion": "새 방패가 생기는 대신 기존 방패가 깨져 흩어짐",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-015",
+      "group": "방어·상태·능력치",
+      "name": "방어·보호 상태 부여",
+      "presets": [
+        "scifi/force-field",
+        "holy/divine-shield"
+      ],
+      "motion": "보호를 얻는 순간 테두리가 닫히고 짧은 잔광",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-016",
+      "group": "방어·상태·능력치",
+      "name": "면역으로 피해 무효",
+      "presets": [
+        "holy/divine-shield",
+        "impacts/parry"
+      ],
+      "motion": "피격 섬광과 다른 금속성 반사·무효 표식",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-017",
+      "group": "방어·상태·능력치",
+      "name": "도발 부여·공격 유도",
+      "presets": [
+        "ui/exclamation",
+        "arcane/rune-circle"
+      ],
+      "motion": "선수 외곽에 눈에 띄는 경계와 짧은 도발 파동",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-018",
+      "group": "방어·상태·능력치",
+      "name": "공격 불가 상태 부여",
+      "presets": [
+        "shadow/hex-sigil",
+        "arcane/rune-circle"
+      ],
+      "motion": "공격 아이콘 쪽 봉인 문양, 상태 의미를 명확히 표시",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-019",
+      "group": "방어·상태·능력치",
+      "name": "기절 부여·해제",
+      "presets": [
+        "status/stunned",
+        "ui/exclamation"
+      ],
+      "motion": "머리 위 별/기절 표시, 해제 때 짧게 사라짐",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-020",
+      "group": "방어·상태·능력치",
+      "name": "침묵·능력 비활성화",
+      "presets": [
+        "scifi/emp-blast",
+        "shadow/hex-sigil"
+      ],
+      "motion": "룬이 꺼지고 효과 영역이 잠기는 파동",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-021",
+      "group": "방어·상태·능력치",
+      "name": "공격력 증가",
+      "presets": [
+        "status/rage",
+        "holy/blessing"
+      ],
+      "motion": "공격력 숫자로 에너지가 모이며 상승",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-022",
+      "group": "방어·상태·능력치",
+      "name": "최대 체력 증가",
+      "presets": [
+        "holy/blessing",
+        "nature/healing-bloom"
+      ],
+      "motion": "회복과 다른 외곽 확장, 최대 체력 숫자 강조",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-023",
+      "group": "방어·상태·능력치",
+      "name": "공격·체력 감소",
+      "presets": [
+        "shadow/curse",
+        "shadow/hex-sigil"
+      ],
+      "motion": "감소한 수치 위치로 수축하는 어두운 파편",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-024",
+      "group": "방어·상태·능력치",
+      "name": "키워드 신규 획득",
+      "presets": [
+        "pickups/power-star",
+        "arcane/rune-circle"
+      ],
+      "motion": "획득한 키워드 아이콘에만 짧은 승인 효과",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-025",
+      "group": "소환·퇴장·카드 이동",
+      "name": "일반 선수 소환",
+      "presets": [
+        "spawn/summon-rise",
+        "impacts/heavy-landing"
+      ],
+      "motion": "빈 슬롯의 착지 링과 카드 등장 분리",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-026",
+      "group": "소환·퇴장·카드 이동",
+      "name": "레전더리·대형 선수 등장",
+      "presets": [
+        "holy/holy-pillar",
+        "impacts/ground-slam"
+      ],
+      "motion": "더 큰 바닥 문양, 등장 대사·일러스트와 합성",
+      "size": "대형",
+      "priority": 0
+    },
+    {
+      "id": "FX-027",
+      "group": "소환·퇴장·카드 이동",
+      "name": "토큰·분신·추가 소환",
+      "presets": [
+        "spawn/spawn-portal",
+        "spawn/poof"
+      ],
+      "motion": "소환된 실제 슬롯마다 짧은 포털, 동시 소환은 묶음 처리",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-028",
+      "group": "소환·퇴장·카드 이동",
+      "name": "묘지에서 부활",
+      "presets": [
+        "holy/resurrection",
+        "spawn/respawn-beam"
+      ],
+      "motion": "묘지에서 이어지는 빛과 필드 재구성",
+      "size": "경로",
+      "priority": 0
+    },
+    {
+      "id": "FX-029",
+      "group": "소환·퇴장·카드 이동",
+      "name": "소버린 등 자기 부활",
+      "presets": [
+        "spawn/soul-rise",
+        "spawn/respawn-beam"
+      ],
+      "motion": "퇴장 흔적에서 다시 모이고 감소한 수치를 구분",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-030",
+      "group": "소환·퇴장·카드 이동",
+      "name": "리타이어",
+      "presets": [
+        "spawn/soul-rise",
+        "spawn/poof"
+      ],
+      "motion": "영혼·먼지가 묘지 방향으로 빠져나감",
+      "size": "경로",
+      "priority": 0
+    },
+    {
+      "id": "FX-031",
+      "group": "소환·퇴장·카드 이동",
+      "name": "파괴",
+      "presets": [
+        "spawn/shatter-death",
+        "spawn/dissolve-burn"
+      ],
+      "motion": "카드 파편/연소로 리타이어와 명확히 구별",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-032",
+      "group": "소환·퇴장·카드 이동",
+      "name": "제외·소멸",
+      "presets": [
+        "spawn/disintegrate",
+        "shadow/black-hole"
+      ],
+      "motion": "재로 지워지거나 공허에 흡수, 묘지 이동과 구별",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-033",
+      "group": "소환·퇴장·카드 이동",
+      "name": "손패로 되돌림",
+      "presets": [
+        "arcane/blink-out",
+        "arcane/blink-in"
+      ],
+      "motion": "필드 출발→손패 도착의 잔상 연결",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-034",
+      "group": "소환·퇴장·카드 이동",
+      "name": "덱으로 되돌림·섞기",
+      "presets": [
+        "scifi/warp-out",
+        "arcane/portal"
+      ],
+      "motion": "카드 뒷면으로 닫히는 소용돌이와 덱 도착점",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-035",
+      "group": "소환·퇴장·카드 이동",
+      "name": "정상 드로우",
+      "presets": [
+        "arcane/arcane-orb",
+        "pickups/collect-burst"
+      ],
+      "motion": "덱 출발점과 손패 도착점의 짧은 연결",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-036",
+      "group": "소환·퇴장·카드 이동",
+      "name": "손패 카드 생성",
+      "presets": [
+        "scifi/hologram",
+        "pickups/collect-burst"
+      ],
+      "motion": "드로우와 다른 재구성·실체화 연출",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-037",
+      "group": "소환·퇴장·카드 이동",
+      "name": "손패 초과로 카드 소실",
+      "presets": [
+        "spawn/dissolve-burn",
+        "transitions/burn-away"
+      ],
+      "motion": "실제 공개·제거된 경우에만 타는 카드 연출",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-038",
+      "group": "소환·퇴장·카드 이동",
+      "name": "카드 탈취·소유권 변경",
+      "presets": [
+        "scifi/tractor-beam",
+        "shadow/shadow-tendrils"
+      ],
+      "motion": "기존 위치에서 새 소유자 위치로 이어지는 흐름",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-039",
+      "group": "소환·퇴장·카드 이동",
+      "name": "변신·카드 교체",
+      "presets": [
+        "transitions/pixel-dissolve",
+        "spawn/spawn-portal"
+      ],
+      "motion": "이전 일러스트 해체→새 모습 재구성",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-040",
+      "group": "소환·퇴장·카드 이동",
+      "name": "융합·합체",
+      "presets": [
+        "arcane/arcane-orb",
+        "explosions/plasma-explosion"
+      ],
+      "motion": "실제 재료 카드에서 결과 카드로 집결",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-041",
+      "group": "주문·회복·자원",
+      "name": "대상 지정 주문 발사",
+      "presets": [
+        "arcane/spell-charge",
+        "arcane/arcane-missiles"
+      ],
+      "motion": "시전자→선택된 대상의 발사체와 착탄 분리",
+      "size": "경로",
+      "priority": 0
+    },
+    {
+      "id": "FX-042",
+      "group": "주문·회복·자원",
+      "name": "불꽃 테마 피해",
+      "presets": [
+        "fire/fireball",
+        "fire/flame-pillar"
+      ],
+      "motion": "지정된 카드의 불꽃 모티프, 피해 판정은 기존 이벤트 사용",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-043",
+      "group": "주문·회복·자원",
+      "name": "전격·연쇄 테마 피해",
+      "presets": [
+        "lightning/lightning-strike",
+        "lightning/chain-lightning"
+      ],
+      "motion": "실제 피해 대상 순서대로 번개가 연결됨",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-044",
+      "group": "주문·회복·자원",
+      "name": "암흑·악마 테마 피해",
+      "presets": [
+        "shadow/void-orb",
+        "shadow/shadow-flames"
+      ],
+      "motion": "검보라 중심핵과 상대 위치의 어두운 착탄",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-045",
+      "group": "주문·회복·자원",
+      "name": "얼음·물·구슬 테마 변형",
+      "presets": [
+        "ice/frost-nova",
+        "water/water-orb",
+        "water/splash"
+      ],
+      "motion": "지정된 구슬/주문 테마로만 사용, 새 빙결 판정은 만들지 않음",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-046",
+      "group": "주문·회복·자원",
+      "name": "필드 전체 광역 효과",
+      "presets": [
+        "fire/fire-ring",
+        "ice/frost-nova",
+        "lightning/thunderclap"
+      ],
+      "motion": "필드 바닥 파동 1개와 대상별 짧은 반응으로 구성",
+      "size": "필드",
+      "priority": 0
+    },
+    {
+      "id": "FX-047",
+      "group": "주문·회복·자원",
+      "name": "무작위·분산 다중 대상",
+      "presets": [
+        "arcane/arcane-missiles",
+        "projectiles/magic-missile"
+      ],
+      "motion": "서버/엔진이 확정한 실제 대상 목록만 순차 표시",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-048",
+      "group": "주문·회복·자원",
+      "name": "선수 체력 회복",
+      "presets": [
+        "holy/heal",
+        "nature/healing-bloom"
+      ],
+      "motion": "발밑 링·상승 입자와 체력 증가 숫자 동기화",
+      "size": "선수",
+      "priority": 0
+    },
+    {
+      "id": "FX-049",
+      "group": "주문·회복·자원",
+      "name": "챔피언 체력 회복",
+      "presets": [
+        "holy/heal",
+        "holy/blessing"
+      ],
+      "motion": "스프라이트 본체·초상화와 체력바까지 전용 연결",
+      "size": "챔피언",
+      "priority": 0
+    },
+    {
+      "id": "FX-050",
+      "group": "주문·회복·자원",
+      "name": "아군 전체 회복",
+      "presets": [
+        "holy/heal-aoe"
+      ],
+      "motion": "실제 유효한 회복 대상들을 연결하는 하나의 바닥 링",
+      "size": "필드",
+      "priority": 1
+    },
+    {
+      "id": "FX-051",
+      "group": "주문·회복·자원",
+      "name": "흡혈·생명력 흡수",
+      "presets": [
+        "shadow/life-steal",
+        "shadow/soul-drain"
+      ],
+      "motion": "피해 지점→회복 주체로 생명 입자 이동",
+      "size": "경로",
+      "priority": 0
+    },
+    {
+      "id": "FX-052",
+      "group": "주문·회복·자원",
+      "name": "치유·재생 주기 발동",
+      "presets": [
+        "nature/healing-bloom",
+        "holy/heal"
+      ],
+      "motion": "실제 회복이 발생한 턴에만 작은 새싹/상승광",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-053",
+      "group": "주문·회복·자원",
+      "name": "비용 감소",
+      "presets": [
+        "ui/coin-collect",
+        "pickups/coin-spin"
+      ],
+      "motion": "카드 비용 숫자에서 빠져나오는 금빛 알갱이",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-054",
+      "group": "주문·회복·자원",
+      "name": "비용 증가",
+      "presets": [
+        "shadow/curse",
+        "shadow/hex-sigil"
+      ],
+      "motion": "비용 숫자로 수축하는 봉인·압박 표현",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-055",
+      "group": "주문·회복·자원",
+      "name": "골드 소모",
+      "presets": [
+        "ui/coin-collect",
+        "pickups/coin-spin"
+      ],
+      "motion": "골드 표시→사용 카드 방향으로 짧은 소비 궤적",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-056",
+      "group": "주문·회복·자원",
+      "name": "골드 획득·회수",
+      "presets": [
+        "ui/coin-collect",
+        "spawn/coin-drop"
+      ],
+      "motion": "발생 원인→골드 표시로 도착, 중복 합산 방지",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-057",
+      "group": "주문·회복·자원",
+      "name": "다음 턴 추가 골드 예약·지급",
+      "presets": [
+        "ui/countdown",
+        "pickups/coin-spin"
+      ],
+      "motion": "예약 표식과 실제 지급 순간을 나눠 표시",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-058",
+      "group": "주문·회복·자원",
+      "name": "덱 전체 버프",
+      "presets": [
+        "arcane/rune-circle",
+        "holy/blessing"
+      ],
+      "motion": "덱 뒷면에 문양, 숨은 카드의 정체는 표시하지 않음",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-059",
+      "group": "주문·회복·자원",
+      "name": "손패 버프·강화",
+      "presets": [
+        "holy/blessing",
+        "pickups/power-star"
+      ],
+      "motion": "수정된 실제 손패 카드에만 순차 별빛",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-060",
+      "group": "주문·회복·자원",
+      "name": "피로 피해·빈 덱 경고",
+      "presets": [
+        "ui/heart-lost",
+        "ui/health-bar-hit"
+      ],
+      "motion": "덱과 체력바에 피로 신호, 일반 공격과 구별",
+      "size": "챔피언",
+      "priority": 1
+    },
+    {
+      "id": "FX-061",
+      "group": "챔피언·피니셔",
+      "name": "고유 능력 준비",
+      "presets": [
+        "arcane/spell-charge",
+        "arcane/rune-circle"
+      ],
+      "motion": "챔피언 본체/능력 버튼에서 시작되는 짧은 준비",
+      "size": "챔피언",
+      "priority": 0
+    },
+    {
+      "id": "FX-062",
+      "group": "챔피언·피니셔",
+      "name": "고유 능력별 전용 마무리",
+      "presets": [
+        "holy/smite",
+        "shadow/void-orb",
+        "projectiles/bullet-tracer"
+      ],
+      "motion": "11종 챔피언의 실제 능력 결과에 맞춰 개별 레시피",
+      "size": "경로",
+      "priority": 0
+    },
+    {
+      "id": "FX-063",
+      "group": "챔피언·피니셔",
+      "name": "피니셔 준비 진행",
+      "presets": [
+        "arcane/rune-circle",
+        "ui/achievement"
+      ],
+      "motion": "조건이 실제 증가한 경우 진행 UI로 모이는 입자",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-064",
+      "group": "챔피언·피니셔",
+      "name": "피니셔 준비 완료 직전",
+      "presets": [
+        "lightning/charge-up",
+        "arcane/spell-charge"
+      ],
+      "motion": "실제 준비 진행값 기반의 짧은 예고, 상시 점멸 금지",
+      "size": "챔피언",
+      "priority": 2
+    },
+    {
+      "id": "FX-065",
+      "group": "챔피언·피니셔",
+      "name": "준비 완료·퀘스트 클리어",
+      "presets": [
+        "ui/quest-complete",
+        "holy/sunburst"
+      ],
+      "motion": "배너·챔피언·보상 획득을 하나의 연출로 연결",
+      "size": "필드",
+      "priority": 0
+    },
+    {
+      "id": "FX-066",
+      "group": "챔피언·피니셔",
+      "name": "피니셔를 손패에 획득",
+      "presets": [
+        "pickups/loot-beam",
+        "pickups/power-star"
+      ],
+      "motion": "완료 지점→실제 추가된 피니셔 카드로 빛 이동",
+      "size": "경로",
+      "priority": 0
+    },
+    {
+      "id": "FX-067",
+      "group": "챔피언·피니셔",
+      "name": "고유 능력 업그레이드",
+      "presets": [
+        "ui/level-up",
+        "holy/blessing"
+      ],
+      "motion": "강화된 능력 버튼·아이콘을 확실히 변화",
+      "size": "챔피언",
+      "priority": 1
+    },
+    {
+      "id": "FX-068",
+      "group": "챔피언·피니셔",
+      "name": "피니셔 카드 시전",
+      "presets": [
+        "moves/holy-smite",
+        "moves/sword-combo",
+        "shadow/dark-explosion"
+      ],
+      "motion": "12종 피니셔 개별 구성, 자신의 캐릭터 동작과 연결",
+      "size": "필드",
+      "priority": 0
+    },
+    {
+      "id": "FX-069",
+      "group": "챔피언·피니셔",
+      "name": "각성·강림·챔피언 토큰 등장",
+      "presets": [
+        "holy/holy-pillar",
+        "spawn/spawn-portal",
+        "shadow/eclipse"
+      ],
+      "motion": "발밑→본체→배경 순서의 큰 등장",
+      "size": "대형",
+      "priority": 0
+    },
+    {
+      "id": "FX-070",
+      "group": "챔피언·피니셔",
+      "name": "각성 보호·챔피언 보호 발동",
+      "presets": [
+        "holy/divine-shield",
+        "scifi/force-field"
+      ],
+      "motion": "실제로 유지되는 보호 범위와 발동 순간 구별",
+      "size": "챔피언",
+      "priority": 1
+    },
+    {
+      "id": "FX-071",
+      "group": "챔피언·피니셔",
+      "name": "보스·숨은 보스 존재감",
+      "presets": [
+        "shadow/eclipse",
+        "weather/storm",
+        "arcane/rune-circle"
+      ],
+      "motion": "저빈도 배경 레이어와 행동 순간의 강한 악센트",
+      "size": "필드",
+      "priority": 2
+    },
+    {
+      "id": "FX-072",
+      "group": "챔피언·피니셔",
+      "name": "챔피언 KO·결정타",
+      "presets": [
+        "spawn/shatter-death",
+        "spawn/soul-rise",
+        "impacts/impact-frame"
+      ],
+      "motion": "현재 초상화 파편 연출에 동기화하고 결과 화면으로 연결",
+      "size": "필드",
+      "priority": 0
+    },
+    {
+      "id": "FX-073",
+      "group": "대전 흐름·결과",
+      "name": "VS·매치 인트로",
+      "presets": [
+        "transitions/slash-wipe",
+        "lightning/spark-arc"
+      ],
+      "motion": "양쪽 챔피언이 만나는 중앙 경계, 이름 가리지 않음",
+      "size": "화면",
+      "priority": 2
+    },
+    {
+      "id": "FX-074",
+      "group": "대전 흐름·결과",
+      "name": "대전 시작·준비 완료",
+      "presets": [
+        "ui/countdown",
+        "arcane/rune-circle"
+      ],
+      "motion": "시작 신호를 한 번만 강조",
+      "size": "필드",
+      "priority": 2
+    },
+    {
+      "id": "FX-075",
+      "group": "대전 흐름·결과",
+      "name": "멀리건·교체 확정",
+      "presets": [
+        "arcane/blink-out",
+        "arcane/blink-in"
+      ],
+      "motion": "반납·새 카드의 방향을 구분한 짧은 이동",
+      "size": "경로",
+      "priority": 2
+    },
+    {
+      "id": "FX-076",
+      "group": "대전 흐름·결과",
+      "name": "내 턴·골드 갱신",
+      "presets": [
+        "ui/exclamation",
+        "ui/coin-collect"
+      ],
+      "motion": "턴 표시와 실제 골드 증가를 연결",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-077",
+      "group": "대전 흐름·결과",
+      "name": "시간 부족·턴 종료 임박",
+      "presets": [
+        "ui/countdown",
+        "lightning/spark-arc"
+      ],
+      "motion": "타이머 주변에만 절제된 경고, 카드 판독 유지",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-078",
+      "group": "대전 흐름·결과",
+      "name": "승리",
+      "presets": [
+        "ui/confetti",
+        "explosions/firework-burst",
+        "weather/god-rays"
+      ],
+      "motion": "결과 배경과 보상 영역에 축하, 계속 버튼은 즉시 사용",
+      "size": "화면",
+      "priority": 2
+    },
+    {
+      "id": "FX-079",
+      "group": "대전 흐름·결과",
+      "name": "패배",
+      "presets": [
+        "transitions/shatter-wipe",
+        "transitions/iris"
+      ],
+      "motion": "KO 후 잔광·결과 화면 전환",
+      "size": "화면",
+      "priority": 2
+    },
+    {
+      "id": "FX-080",
+      "group": "대전 흐름·결과",
+      "name": "재접속·대전 복귀 성공",
+      "presets": [
+        "scifi/glitch",
+        "transitions/pixel-dissolve"
+      ],
+      "motion": "복귀가 확정된 순간 한 번의 조용한 정렬 효과",
+      "size": "화면",
+      "priority": 3
+    },
+    {
+      "id": "FX-081",
+      "group": "팩·제작·컬렉션",
+      "name": "팩 봉인 해제",
+      "presets": [
+        "pickups/chest-open",
+        "arcane/mana-burst"
+      ],
+      "motion": "봉인 틈에서 빛이 새고 개봉 순간 방출",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-082",
+      "group": "팩·제작·컬렉션",
+      "name": "일반 카드 공개",
+      "presets": [
+        "pickups/collect-burst",
+        "ui/achievement"
+      ],
+      "motion": "카드 외곽의 짧은 공개 효과",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-083",
+      "group": "팩·제작·컬렉션",
+      "name": "에픽 카드 공개",
+      "presets": [
+        "arcane/mana-burst",
+        "pickups/gem-spin"
+      ],
+      "motion": "희귀도 색의 광원과 얇은 파편",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-084",
+      "group": "팩·제작·컬렉션",
+      "name": "레전더리 카드 공개",
+      "presets": [
+        "holy/holy-pillar",
+        "weather/god-rays",
+        "ui/confetti"
+      ],
+      "motion": "일반 공개와 구별되는 큰 기둥·배경 빛",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-085",
+      "group": "팩·제작·컬렉션",
+      "name": "챔피언 획득·해금",
+      "presets": [
+        "holy/resurrection",
+        "ui/level-up"
+      ],
+      "motion": "챔피언 일러스트와 이름이 드러나는 별도 공개",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-086",
+      "group": "팩·제작·컬렉션",
+      "name": "스킨·챔피언 스킨 공개",
+      "presets": [
+        "scifi/hologram",
+        "pickups/key-glint"
+      ],
+      "motion": "스킨 실루엣→실제 스킨의 재구성",
+      "size": "대형",
+      "priority": 2
+    },
+    {
+      "id": "FX-087",
+      "group": "팩·제작·컬렉션",
+      "name": "중복 카드·조각 환산",
+      "presets": [
+        "pickups/crystal-shard",
+        "pickups/collect-burst"
+      ],
+      "motion": "실제 환산된 재화만 수치와 함께 모임",
+      "size": "경로",
+      "priority": 2
+    },
+    {
+      "id": "FX-088",
+      "group": "팩·제작·컬렉션",
+      "name": "카드 제작 완료",
+      "presets": [
+        "arcane/arcane-orb",
+        "arcane/rune-circle"
+      ],
+      "motion": "재료가 모여 실제 제작 카드로 굳어짐",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-089",
+      "group": "팩·제작·컬렉션",
+      "name": "챔피언 제작 완료",
+      "presets": [
+        "holy/sunburst",
+        "holy/holy-pillar"
+      ],
+      "motion": "일반 제작보다 큰 문양과 이름 강조",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-090",
+      "group": "팩·제작·컬렉션",
+      "name": "카드 분해·프리즘 획득",
+      "presets": [
+        "spawn/disintegrate",
+        "pickups/crystal-shard"
+      ],
+      "motion": "카드가 조각이 되어 프리즘 잔액으로 이동",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-091",
+      "group": "보상·계정 진행",
+      "name": "팩 구매·팩 지급",
+      "presets": [
+        "pickups/chest-open",
+        "pickups/collect-burst"
+      ],
+      "motion": "지급된 팩 묶음과 잔액 변화의 짧은 강조",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-092",
+      "group": "보상·계정 진행",
+      "name": "출석 보상 수령",
+      "presets": [
+        "ui/coin-collect",
+        "pickups/collect-burst"
+      ],
+      "motion": "선택한 출석 칸→해당 보상으로 이동",
+      "size": "경로",
+      "priority": 2
+    },
+    {
+      "id": "FX-093",
+      "group": "보상·계정 진행",
+      "name": "일일 퀘스트 보상",
+      "presets": [
+        "ui/quest-complete",
+        "ui/coin-collect"
+      ],
+      "motion": "완료한 항목만 체크하고 실제 보상 이동",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-094",
+      "group": "보상·계정 진행",
+      "name": "시즌 퀘스트 보상",
+      "presets": [
+        "ui/achievement",
+        "pickups/loot-beam"
+      ],
+      "motion": "시즌 완료 항목의 특별한 승인 효과",
+      "size": "대형",
+      "priority": 2
+    },
+    {
+      "id": "FX-095",
+      "group": "보상·계정 진행",
+      "name": "보상 한꺼번에 수령",
+      "presets": [
+        "pickups/collect-burst",
+        "ui/coin-collect"
+      ],
+      "motion": "수령 개수마다 폭발하지 않고 하나의 합산 흐름",
+      "size": "경로",
+      "priority": 2
+    },
+    {
+      "id": "FX-096",
+      "group": "보상·계정 진행",
+      "name": "대전 결과 보상 정산",
+      "presets": [
+        "ui/coin-collect",
+        "pickups/gem-spin"
+      ],
+      "motion": "서버 확정 수량만 잔액에 도착",
+      "size": "경로",
+      "priority": 2
+    },
+    {
+      "id": "FX-097",
+      "group": "보상·계정 진행",
+      "name": "꾸미기 장착 완료",
+      "presets": [
+        "pickups/key-glint",
+        "scifi/hologram"
+      ],
+      "motion": "실제 장착한 외형 미리보기에만 짧은 반짝임",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-098",
+      "group": "보상·계정 진행",
+      "name": "덱 저장·구성 완료",
+      "presets": [
+        "pickups/key-glint",
+        "ui/achievement"
+      ],
+      "motion": "저장 성공 표식에 작은 승인 효과",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-099",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "타워 입장",
+      "presets": [
+        "transitions/iris",
+        "weather/fog"
+      ],
+      "motion": "타워 테마에 맞는 짧은 진입 전환",
+      "size": "화면",
+      "priority": 2
+    },
+    {
+      "id": "FX-100",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "층·경로 선택",
+      "presets": [
+        "pickups/key-glint",
+        "arcane/rune-circle"
+      ],
+      "motion": "실제로 고른 경로 지점의 반응",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-101",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "방 전투 시작",
+      "presets": [
+        "arcane/rune-circle",
+        "transitions/diamond-wipe"
+      ],
+      "motion": "전투가 시작되는 필드의 입장 문양",
+      "size": "필드",
+      "priority": 2
+    },
+    {
+      "id": "FX-102",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "정예 전투 등장",
+      "presets": [
+        "fire/spirit-flame",
+        "scifi/scanner"
+      ],
+      "motion": "정예 구분과 해당 적 테마를 한 번 강조",
+      "size": "대형",
+      "priority": 2
+    },
+    {
+      "id": "FX-103",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "보스·히든 보스 입장",
+      "presets": [
+        "shadow/eclipse",
+        "arcane/portal",
+        "weather/storm"
+      ],
+      "motion": "보스 소개 장면의 배경과 등장점",
+      "size": "필드",
+      "priority": 1
+    },
+    {
+      "id": "FX-104",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "유물 획득",
+      "presets": [
+        "pickups/power-star",
+        "pickups/loot-beam"
+      ],
+      "motion": "유물 선택·획득 확정 순간에만 빛 집결",
+      "size": "대형",
+      "priority": 2
+    },
+    {
+      "id": "FX-105",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "유물 효과 발동",
+      "presets": [
+        "nature/thorns",
+        "holy/halo",
+        "lightning/spark-arc"
+      ],
+      "motion": "현재 설정된 유물 판정과 대상에 맞춘 선택형 모티프",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-106",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "층·보스 격파",
+      "presets": [
+        "ui/achievement",
+        "arcane/portal"
+      ],
+      "motion": "클리어 표식과 다음 층 진입점 연결",
+      "size": "필드",
+      "priority": 2
+    },
+    {
+      "id": "FX-107",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "타워 선택·교체·보상 확정",
+      "presets": [
+        "pickups/collect-burst",
+        "pickups/key-glint"
+      ],
+      "motion": "현재 선택한 카드/보상만 짧게 승인",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-108",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "타워 최종·히든 클리어",
+      "presets": [
+        "weather/god-rays",
+        "ui/confetti",
+        "holy/sunburst"
+      ],
+      "motion": "최종 결과 장면의 큰 보상 연출",
+      "size": "화면",
+      "priority": 2
+    },
+    {
+      "id": "FX-109",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "드래프트 카드 선택",
+      "presets": [
+        "pickups/key-glint",
+        "arcane/blink-in"
+      ],
+      "motion": "선택 카드가 덱 슬롯에 안착",
+      "size": "경로",
+      "priority": 2
+    },
+    {
+      "id": "FX-110",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "드래프트 덱 준비 완료",
+      "presets": [
+        "ui/achievement",
+        "arcane/rune-circle"
+      ],
+      "motion": "완성 덱과 시작 버튼의 완료 표식",
+      "size": "대형",
+      "priority": 2
+    },
+    {
+      "id": "FX-111",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "튜토리얼 다음 행동 안내",
+      "presets": [
+        "ui/exclamation",
+        "arcane/rune-circle"
+      ],
+      "motion": "현재 목표 대상만 절제된 강조",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-112",
+      "group": "타워·드래프트·튜토리얼",
+      "name": "튜토리얼 목표·레슨 완료",
+      "presets": [
+        "ui/achievement",
+        "ui/quest-complete"
+      ],
+      "motion": "실제 목표 달성 후 완료 표식과 보상 연결",
+      "size": "대형",
+      "priority": 2
+    },
+    {
+      "id": "FX-113",
+      "group": "배경·공통 UI",
+      "name": "메인 화면 분위기",
+      "presets": [
+        "weather/fireflies",
+        "weather/aurora",
+        "weather/god-rays"
+      ],
+      "motion": "설정한 배경 테마에서 저빈도 배경 장식",
+      "size": "배경",
+      "priority": 3
+    },
+    {
+      "id": "FX-114",
+      "group": "배경·공통 UI",
+      "name": "선택한 대표 카드·스킨 분위기",
+      "presets": [
+        "holy/halo",
+        "fire/spirit-flame",
+        "critters/wisp"
+      ],
+      "motion": "선택한 하나의 카드만 테마별 장식",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-115",
+      "group": "배경·공통 UI",
+      "name": "설정·관리자 이펙트 미리보기",
+      "presets": [
+        "arcane/rune-circle",
+        "impacts/hit-spark"
+      ],
+      "motion": "대상 크기·레이어·타이밍·강도를 직접 비교",
+      "size": "대형",
+      "priority": 1
+    },
+    {
+      "id": "FX-116",
+      "group": "배경·공통 UI",
+      "name": "큰 화면 이동·장면 전환",
+      "presets": [
+        "transitions/diamond-wipe",
+        "transitions/slash-wipe"
+      ],
+      "motion": "주요 장면 변경에만 짧은 일관된 전환",
+      "size": "화면",
+      "priority": 3
+    },
+    {
+      "id": "FX-117",
+      "group": "배경·공통 UI",
+      "name": "특수 보상 창 등장",
+      "presets": [
+        "pickups/key-glint",
+        "arcane/mana-burst"
+      ],
+      "motion": "보상 패널 뒤쪽의 짧은 도착광",
+      "size": "대형",
+      "priority": 3
+    },
+    {
+      "id": "FX-118",
+      "group": "배경·공통 UI",
+      "name": "대상 선택 취소·되돌림",
+      "presets": [
+        "arcane/blink-out",
+        "scifi/glitch"
+      ],
+      "motion": "취소된 선택 표시만 조용히 회수",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-119",
+      "group": "배경·공통 UI",
+      "name": "주문 대상 확정·효과 경로",
+      "presets": [
+        "arcane/rune-circle",
+        "projectiles/magic-missile"
+      ],
+      "motion": "실제 확정 대상의 출발/도착을 읽기 쉽게 표시",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-120",
+      "group": "배경·공통 UI",
+      "name": "행동 불가·오류·중요 알림",
+      "presets": [
+        "ui/exclamation",
+        "ui/countdown"
+      ],
+      "motion": "관련 버튼/안내 영역만 짧게 강조",
+      "size": "선수",
+      "priority": 3
+    },
+    {
+      "id": "FX-121",
+      "group": "특수 키워드·메커니즘",
+      "name": "포획·삼키기",
+      "presets": [
+        "shadow/black-hole",
+        "shadow/grasping-hands"
+      ],
+      "motion": "대상→포획 주체로 수축하고 연결 표식 유지, 파괴와 구별",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-122",
+      "group": "특수 키워드·메커니즘",
+      "name": "포획 해방·되돌아오기",
+      "presets": [
+        "spawn/respawn-beam",
+        "scifi/warp-in"
+      ],
+      "motion": "포획 연결이 풀리고 실제 복귀 위치에서 재구성",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-123",
+      "group": "특수 키워드·메커니즘",
+      "name": "공격·체력·능력치 교환",
+      "presets": [
+        "lightning/spark-arc",
+        "scifi/hologram"
+      ],
+      "motion": "바뀐 수치 위치 사이의 쌍방향 흐름, 단순 버프와 구별",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-124",
+      "group": "특수 키워드·메커니즘",
+      "name": "최고 능력치·능력치 복사",
+      "presets": [
+        "scifi/hologram",
+        "arcane/arcane-orb"
+      ],
+      "motion": "허용된 공개 원본→복사 대상의 거울상과 확정 숫자",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-125",
+      "group": "특수 키워드·메커니즘",
+      "name": "처치·리타이어 후 능력치 흡수",
+      "presets": [
+        "shadow/soul-drain",
+        "shadow/shadow-tendrils"
+      ],
+      "motion": "피해자의 실제 수치 변화→흡수 주체의 해당 숫자로 모임",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-126",
+      "group": "특수 키워드·메커니즘",
+      "name": "덱 카드 밀기·덱 소모",
+      "presets": [
+        "spawn/dissolve-burn",
+        "arcane/portal"
+      ],
+      "motion": "덱 출발의 제거 흐름, 실제 공개되기 전에는 뒷면만 사용",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-127",
+      "group": "특수 키워드·메커니즘",
+      "name": "카드 카운트다운 감소·완료",
+      "presets": [
+        "ui/countdown",
+        "arcane/rune-circle"
+      ],
+      "motion": "실제 카운트 변경 때만 숫자 문양, 완료 시 변신/해제 효과로 연결",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-128",
+      "group": "특수 키워드·메커니즘",
+      "name": "러쉬 진입·행동 가능",
+      "presets": [
+        "status/haste",
+        "moves/dash-strike"
+      ],
+      "motion": "새 선수의 공격 가능 상태를 짧은 전진 잔상으로 표시",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-129",
+      "group": "특수 키워드·메커니즘",
+      "name": "기습 진입·첫 공격 준비",
+      "presets": [
+        "arcane/blink-in",
+        "explosions/smoke-bomb"
+      ],
+      "motion": "기습 조건이 활성화된 경우의 빠른 출현과 첫 행동 표식",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-130",
+      "group": "특수 키워드·메커니즘",
+      "name": "수배 표식·처치 보상 예약",
+      "presets": [
+        "ui/exclamation",
+        "pickups/coin-spin"
+      ],
+      "motion": "수배 표식과 확정된 다음 턴 보상 예약을 연결, 즉시 지급처럼 보이지 않게 함",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-131",
+      "group": "특수 키워드·메커니즘",
+      "name": "키워드 제거·공격 봉인 해제",
+      "presets": [
+        "scifi/emp-blast",
+        "arcane/blink-in"
+      ],
+      "motion": "사라지는 키워드 표식을 회수하고 실제 행동 가능 상태를 표시",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-132",
+      "group": "특수 키워드·메커니즘",
+      "name": "카드 텍스트·능력 부여·사자 임명",
+      "presets": [
+        "arcane/rune-circle",
+        "scifi/hologram"
+      ],
+      "motion": "부여 원본과 받은 선수 사이의 계약 문양, 새 텍스트/표식에만 강조",
+      "size": "경로",
+      "priority": 1
+    },
+    {
+      "id": "FX-133",
+      "group": "특수 키워드·메커니즘",
+      "name": "예약 효과·지연 효과의 실제 발동",
+      "presets": [
+        "arcane/rune-circle",
+        "lightning/charge-up"
+      ],
+      "motion": "예약 표식은 작게, 실제 발동 때 확정 대상에 후속 연출",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-134",
+      "group": "특수 키워드·메커니즘",
+      "name": "턴 종료 효과 반복",
+      "presets": [
+        "lightning/spark-arc",
+        "arcane/rune-circle"
+      ],
+      "motion": "실제 반복 처리 횟수에 맞춘 짧은 반향, 큰 장면의 중복 재생은 억제",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-135",
+      "group": "특수 키워드·메커니즘",
+      "name": "리타이어 방지·생존 보호",
+      "presets": [
+        "holy/halo",
+        "holy/divine-shield"
+      ],
+      "motion": "퇴장 직전 붙잡히는 빛과 생존 표식, 회복/부활과 구별",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-136",
+      "group": "특수 키워드·메커니즘",
+      "name": "피해량 보정·추가 피해 효과",
+      "presets": [
+        "status/rage",
+        "lightning/spark-arc"
+      ],
+      "motion": "피해 보정 주체의 작은 표식과 확정된 최종 피해 숫자 연결",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-137",
+      "group": "특수 키워드·메커니즘",
+      "name": "조건부 효과 준비·성립",
+      "presets": [
+        "arcane/rune-circle",
+        "pickups/key-glint"
+      ],
+      "motion": "공개 조건이 실제 성립하거나 등록 효과가 발동할 때만 짧은 신호",
+      "size": "선수",
+      "priority": 2
+    },
+    {
+      "id": "FX-138",
+      "group": "특수 키워드·메커니즘",
+      "name": "효과 분기·고유 능력 전환",
+      "presets": [
+        "scifi/hologram",
+        "arcane/blink-in"
+      ],
+      "motion": "실제 선택/교체된 분기와 능력 아이콘을 구분해 보여줌",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-139",
+      "group": "특수 키워드·메커니즘",
+      "name": "대전 중 카드 공개·숨은 정보 공개 확정",
+      "presets": [
+        "scifi/scanner",
+        "arcane/blink-in"
+      ],
+      "motion": "실제 공개 이벤트가 허용한 카드만 뒷면에서 앞면으로 전환",
+      "size": "선수",
+      "priority": 1
+    },
+    {
+      "id": "FX-140",
+      "group": "특수 키워드·메커니즘",
+      "name": "자기 피해·자해 비용",
+      "presets": [
+        "ui/health-bar-hit",
+        "shadow/hex-sigil"
+      ],
+      "motion": "아군 효과로 내 체력이 감소했음을 작은 붉은/보라 비용 표식으로 구별",
+      "size": "챔피언",
+      "priority": 0
+    }
+  ],
+  "firstWavePresets": [
+    "impacts/hit-spark",
+    "impacts/blunt-hit",
+    "impacts/crit-hit",
+    "impacts/ground-slam",
+    "impacts/heavy-landing",
+    "impacts/parry",
+    "impacts/shield-block",
+    "impacts/hit-flash",
+    "melee/sword-slash",
+    "melee/claw-swipe",
+    "melee/double-slash",
+    "melee/uppercut",
+    "spawn/summon-rise",
+    "spawn/spawn-portal",
+    "spawn/soul-rise",
+    "spawn/shatter-death",
+    "spawn/disintegrate",
+    "arcane/spell-charge",
+    "arcane/magic-circle-cast",
+    "arcane/arcane-missiles",
+    "arcane/blink-in",
+    "arcane/blink-out",
+    "arcane/portal",
+    "holy/heal",
+    "holy/heal-aoe",
+    "holy/blessing",
+    "holy/divine-shield",
+    "holy/resurrection",
+    "shadow/life-steal",
+    "shadow/curse",
+    "shadow/dark-explosion",
+    "lightning/chain-lightning",
+    "ui/quest-complete",
+    "ui/level-up",
+    "ui/coin-collect",
+    "ui/combo-counter"
+  ],
+  "distinctPresetCandidates": 117,
+  "priorityCounts": {
+    "1": 69,
+    "0": 29,
+    "2": 31,
+    "3": 11
+  },
+  "engineCoverage": {
+    "actionCount": 51,
+    "runtimeActionCount": 52,
+    "keywordCount": 16,
+    "runtimeTriggerCount": 32,
+    "actionBindings": {
+      "PROGRAM": [
+        8
+      ],
+      "REPLACE_CHAMPION_ABILITY": [
+        67,
+        138
+      ],
+      "BUFF": [
+        21,
+        22,
+        59
+      ],
+      "SET_STATS": [
+        21,
+        22,
+        23
+      ],
+      "MODIFY_STAT": [
+        21,
+        22,
+        23
+      ],
+      "MODIFY_MAX_HEALTH": [
+        22
+      ],
+      "SET_STAT": [
+        21,
+        22,
+        23
+      ],
+      "DAMAGE": [
+        4,
+        6,
+        41,
+        46,
+        140
+      ],
+      "HEAL": [
+        48,
+        49,
+        50
+      ],
+      "SILENCE": [
+        20
+      ],
+      "DESTROY": [
+        31
+      ],
+      "RETIRE": [
+        30
+      ],
+      "ADD_GOLD": [
+        56
+      ],
+      "ADD_NEXT_TURN_GOLD": [
+        57
+      ],
+      "DRAW": [
+        35
+      ],
+      "REDUCE_COST": [
+        53
+      ],
+      "INCREASE_COST": [
+        54
+      ],
+      "STUN": [
+        19
+      ],
+      "DISABLE_ABILITY": [
+        20
+      ],
+      "WEAKEN_TO_STUN_SILENCE": [
+        19,
+        20,
+        23
+      ],
+      "ADD_KEYWORD": [
+        24
+      ],
+      "REMOVE_KEYWORD": [
+        131
+      ],
+      "SWAP_STATS": [
+        123
+      ],
+      "ADD_DAMAGE_MODIFIER": [
+        136
+      ],
+      "SUMMON": [
+        25,
+        27
+      ],
+      "SUMMON_FROM_HAND": [
+        25,
+        27,
+        33
+      ],
+      "REVIVE": [
+        28,
+        29
+      ],
+      "GENERATE": [
+        36
+      ],
+      "MOVE_TO_HAND": [
+        33
+      ],
+      "MOVE_TO_DECK": [
+        34
+      ],
+      "STEAL": [
+        38
+      ],
+      "MILL": [
+        126
+      ],
+      "SPEND_GOLD_BUFF_SELF": [
+        55,
+        21,
+        22
+      ],
+      "DEPLOY_CHAMPION_TOKEN": [
+        69
+      ],
+      "CAPTURE": [
+        121
+      ],
+      "RELEASE_CAPTURED": [
+        122
+      ],
+      "REMOVE_FROM_GAME": [
+        32
+      ],
+      "SWITCH_EFFECT_BRANCH": [
+        138
+      ],
+      "QUEUE_EFFECT": [
+        133
+      ],
+      "ADD_AGGREGATED_ATTACK": [
+        125
+      ],
+      "COPY_BEST_STATS": [
+        124
+      ],
+      "REPEAT_TURN_END": [
+        134
+      ],
+      "TRANSFORM_SOURCE": [
+        39
+      ],
+      "TRANSFORM_TARGET": [
+        39
+      ],
+      "REGISTER_DELAYED": [
+        133
+      ],
+      "REGISTER_LISTENER": [
+        137
+      ],
+      "PREVENT_DAMAGE": [
+        13,
+        16
+      ],
+      "PREVENT_RETIRE": [
+        135
+      ],
+      "GRANT_RANDOM_CARD_TEXT": [
+        132
+      ],
+      "FUSION": [
+        40
+      ],
+      "VANISH": [
+        32
+      ]
+    },
+    "runtimeExtraBindings": {
+      "REVEAL_CARD": [
+        139
+      ]
+    },
+    "keywordBindings": {
+      "PROGRAM": [
+        8
+      ],
+      "RUSH": [
+        128
+      ],
+      "SURPRISE": [
+        129
+      ],
+      "TAUNT": [
+        17
+      ],
+      "DODGE": [
+        11,
+        12
+      ],
+      "MULTI_STRIKE": [
+        7
+      ],
+      "IMMUNE": [
+        16
+      ],
+      "REGEN": [
+        52
+      ],
+      "ARMOR": [
+        13,
+        14
+      ],
+      "CONDITION": [
+        137
+      ],
+      "DEFENSE": [
+        15
+      ],
+      "LIFESTEAL": [
+        51
+      ],
+      "COUNTDOWN": [
+        127
+      ],
+      "WANTED": [
+        130
+      ],
+      "FUSION": [
+        40
+      ],
+      "CANNOT_ATTACK": [
+        18,
+        131
+      ]
+    },
+    "triggerBindings": {
+      "ACTIVE": [
+        61,
+        62
+      ],
+      "AFTER_MULLIGAN": [
+        75
+      ],
+      "ANY_BEFORE_RETIRE": [
+        135
+      ],
+      "ATTACK_SURVIVED": [
+        13,
+        137
+      ],
+      "BEFORE_ATTACK": [
+        2,
+        128,
+        129
+      ],
+      "BEFORE_DAMAGE": [
+        13,
+        16
+      ],
+      "BEFORE_RETIRE": [
+        135
+      ],
+      "CARD_DESTROYED": [
+        31,
+        125
+      ],
+      "CARD_DRAWN": [
+        35
+      ],
+      "CARD_ENTERED": [
+        25,
+        27
+      ],
+      "CARD_RETIRED": [
+        30,
+        125
+      ],
+      "CARD_SUMMONED": [
+        25,
+        27
+      ],
+      "COUNTDOWN": [
+        127
+      ],
+      "ENTER_FIELD": [
+        25,
+        26,
+        27
+      ],
+      "EXACT_ZERO_DAMAGE": [
+        10
+      ],
+      "FIRST_ATTACKED": [
+        4,
+        11,
+        13
+      ],
+      "GAME_START": [
+        73,
+        74
+      ],
+      "HAND_WRESTLER_ADDED": [
+        35,
+        36
+      ],
+      "LEAVE_FIELD": [
+        30,
+        31,
+        32,
+        33
+      ],
+      "ON_FUSION": [
+        40
+      ],
+      "OTHER_ALLY_ATTACK": [
+        8,
+        137
+      ],
+      "POSITION": [
+        1,
+        119
+      ],
+      "SELF_ATTACK": [
+        3,
+        4,
+        7
+      ],
+      "SELF_DAMAGED": [
+        4,
+        125,
+        140
+      ],
+      "SELF_ENTERED": [
+        25,
+        27
+      ],
+      "SELF_RETIRE": [
+        30,
+        125
+      ],
+      "SELF_RETURNED_TO_HAND": [
+        33
+      ],
+      "SOURCE_RETIRED_TARGET": [
+        30,
+        125,
+        130
+      ],
+      "STAT_CHANGED": [
+        21,
+        22,
+        23,
+        123
+      ],
+      "TECHNIQUE_CAST": [
+        41,
+        68
+      ],
+      "TURN_END": [
+        52,
+        133,
+        134
+      ],
+      "TURN_START": [
+        52,
+        57,
+        127,
+        133
+      ]
+    },
+    "unmappedActions": [],
+    "unmappedKeywords": [],
+    "unmappedTriggers": []
+  }
+}
