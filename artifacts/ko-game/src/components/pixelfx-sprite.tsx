@@ -80,7 +80,7 @@ export function PixelFxSprite({id,kind,left,top,strength=3,seed,delay=0,duration
     }).catch(()=>{if(!disposed)failed.current();});
     return()=>{disposed=true;cancelAnimationFrame(handle);document.removeEventListener('visibilitychange',hidden);clear();};
   },[id,kind,left,top,strength,seed,delay,duration,direction?.x,direction?.y,targetWidth,sizeMultiplier,requestedOpacity]);
-  return <canvas ref={ref} aria-hidden="true" className="battle-vfx" data-external-vfx={kind} data-pixelfx={id} data-fx-area={area} style={{left,top,imageRendering:'pixelated'}}/>;
+  return <canvas ref={ref} aria-hidden="true" className="battle-vfx" data-external-vfx={kind} data-pixelfx={id} data-fx-area={area} style={{position:'fixed',pointerEvents:'none',transform:'translate(-50%,-50%)',zIndex:235,left,top,imageRendering:'pixelated'}}/>;
 }
 
 export function PixelFxOrFallback({props,fallback}:{props:PixelFxProps;fallback:ReactNode}) {

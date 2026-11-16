@@ -20,3 +20,5 @@ Checks:
 - All 137 PNG hashes, dimensions, nonempty alpha, and transparent final frames verified. All recipe effect IDs resolve.
 
 Browser logs/screenshots are in local `qa-results/pixelfx-expansion/`; summarized results are checked in beside this report. Physical phone and live multiplayer content matrix: not run.
+
+A separate touch smoke test (`node docs/qa/pixelfx-settings-smoke.mjs`) opens the actual settings route without visiting a battle, verifies all 140 options, visible pixels and a fixed, noninteractive overlay. Essential canvas positioning is inline so lazily loaded battle CSS is not required.

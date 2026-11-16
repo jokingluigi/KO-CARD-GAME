@@ -13,7 +13,7 @@ Implementation checkpoints:
 - [x] Out-of-battle pack/crafting/rewards/modes/UI hooks.
 - [x] 140-area coverage audit with concrete hooks; do not count config-only entries as implemented.
 - [x] Desktop + true touch/mobile + accessibility + failure/performance tests.
-- [ ] Production release and asset verification.
+- [x] Production release and asset verification (initial release 8526e48 served; final overlay hardening and full public asset verification recorded in outputs).
 
 Preserve preexisting untracked QA/video directories. No agents were requested; work without delegation.
 
