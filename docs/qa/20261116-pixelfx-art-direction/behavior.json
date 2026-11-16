@@ -1,0 +1,8 @@
+{
+  "noInitialOrIdenticalReplay": true,
+  "statusCountdownCaptureRelease": true,
+  "packSealAndThreeRarities": true,
+  "crafting": true,
+  "failedAssetFallback": true,
+  "touchLandscape": true
+}

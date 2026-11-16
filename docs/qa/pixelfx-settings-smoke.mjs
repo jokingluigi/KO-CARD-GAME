@@ -9,8 +9,8 @@ try{
  await page.getByLabel('미리볼 효과').waitFor();assert.equal(await page.getByLabel('미리볼 효과').locator('option').count(),140);
  // Preview remains positioned and noninteractive even if battle CSS has not loaded.
  await page.getByLabel('미리볼 효과').selectOption('68');await page.getByRole('button',{name:'재생',exact:true}).click();
- await page.waitForFunction(()=>Array.from(document.querySelectorAll('[data-fx-area="68"]')).some(c=>c.width>0&&c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0)));
- const styles=await page.locator('[data-fx-area="68"]').first().evaluate(c=>({position:getComputedStyle(c).position,pointer:getComputedStyle(c).pointerEvents}));
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('[data-fx-area="68"]')).some(c=>{if(!c.isConnected||!c.width)return false;const css=getComputedStyle(c);const visible=c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);if(visible)window.__fxStyles={position:css.position,pointer:css.pointerEvents};return visible;}));
+ const styles=await page.evaluate(()=>window.__fxStyles);
  assert.deepEqual(styles,{position:'fixed',pointer:'none'});await page.screenshot({path:'qa-results/pixelfx-expansion/settings-touch.png'});
  assert.deepEqual(errors,[]);console.log(JSON.stringify({previewOptions:140,touch:true,visiblePixels:true,independentOverlay:true}));await context.close();
 }finally{await browser.close();}

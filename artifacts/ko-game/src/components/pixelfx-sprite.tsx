@@ -1,12 +1,16 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import atlas from './pixelfx-atlas.json';
 import library from './pixelfx-library.json';
+import koAtlas from './pixelfx-ko-atlas.json';
+import {resolveKoEffect} from './pixelfx-art-direction';
 import {prefersReducedMotion} from './presentation-config';
 import {readCombatPreferences} from './combat-preferences';
 import {vfxBudget,type BattleVfxKind} from './battle-vfx-model';
 
-export type EffectId=keyof typeof atlas.effects | keyof typeof library.effects;
+export type EffectId=keyof typeof atlas.effects | keyof typeof library.effects | keyof typeof koAtlas.effects;
 function sheetFor(id:EffectId) {
+ const own=(koAtlas.effects as Record<string,typeof koAtlas.effects['ko/impact']>)[id];
+ if(own)return own;
  const entry=(library.effects as Record<string,typeof library.effects['holy/heal']>)[id];
  return entry ?? {...atlas.effects[id as keyof typeof atlas.effects],frameSize:[128,128],visibleWidth:64,visibleHeight:64};
 }
@@ -26,10 +30,10 @@ function load(id:EffectId) {
   return pending;
 }
 export function preloadPixelFx() {
-  for(const id of ['impacts/blunt-hit','impacts/crit-hit','impacts/shield-block','holy/heal'] as EffectId[])void load(id).catch(()=>{});
+  for(const id of ['ko/impact','ko/critical','ko/guard','ko/heal'] as EffectId[])void load(id).catch(()=>{});
 }
 export function pixelFxFor(kind:BattleVfxKind,strength:number):EffectId|null {
-  return ({IMPACT:strength>=8?'impacts/crit-hit':'impacts/blunt-hit',BLOCK:'impacts/shield-block',ARMOR:'holy/divine-shield',HEAL:'holy/heal',MAGIC:'arcane/mana-burst',GOLD:'ui/coin-collect',DESTROY:'spawn/shatter-death',RETIRE:'spawn/soul-rise'} as const)[kind];
+  return ({IMPACT:strength>=8?'ko/critical':'ko/impact',BLOCK:'ko/guard',ARMOR:'ko/guard',HEAL:'ko/heal',MAGIC:'ko/spell',GOLD:'ko/gold',DESTROY:'ko/shatter',RETIRE:'ko/retire'} as const)[kind];
 }
 export type PixelFxProps={kind:BattleVfxKind;left:number;top:number;strength?:number;seed:string;delay?:number;duration?:number;direction?:{x:number;y:number};effect?:EffectId;targetWidth?:number;sizeMultiplier?:number;opacity?:number;area?:number};
 
@@ -85,7 +89,7 @@ export function PixelFxSprite({id,kind,left,top,strength=3,seed,delay=0,duration
 
 export function PixelFxOrFallback({props,fallback}:{props:PixelFxProps;fallback:ReactNode}) {
   const [unavailable,setUnavailable]=useState(false);
-  const id=props.effect??pixelFxFor(props.kind,props.strength??3);
+  const id=props.effect?resolveKoEffect(props.effect,props.area):pixelFxFor(props.kind,props.strength??3);
   if(unavailable||!id||readCombatPreferences().flash===0)return <>{fallback}</>;
   return <PixelFxSprite {...props} id={id} onUnavailable={()=>setUnavailable(true)}/>;
 }

@@ -39,7 +39,6 @@ export function usePixelFxBattle(state:GameState,nodes:Nodes,selection:string|nu
    if(event.type==='ATTACK_DECLARED'){
     const id=event.source?.type==='CARD'?event.source.cardInstanceId:event.cardInstanceId;
     const card=visibleCards(state).find(c=>c.instanceId===id);
-    play(2,id);
     play(card?.keywords.includes('MULTI_STRIKE')?7:3,id);
    }
    if(event.type==='PROGRAM_ACTIVATED')play(8,target);
@@ -47,7 +46,6 @@ export function usePixelFxBattle(state:GameState,nodes:Nodes,selection:string|nu
    if(event.type==='CARD_TEXT_GRANTED')play(132,target);
    if(event.type==='CHAMPION_ABILITY_CHANGED')play(138,event.playerId);
    if(event.type==='CHAMPION_ABILITY_USED'){
-    play(61,event.playerId);
     const owner=state.players.find(p=>p.id===event.playerId);
     play(62,event.playerId,championPixelFx(owner?.champion?.name??''));
    }

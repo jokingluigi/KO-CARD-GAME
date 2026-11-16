@@ -30,7 +30,7 @@ try{
   await page.waitForTimeout(1800);
   await page.evaluate(()=>window.pixelFxQA.reset());await page.waitForTimeout(250);
   await page.locator('.ko-player-board-row .ko-board-slot').first().click();await page.locator('.ko-opponent-board-row .ko-board-slot').first().click();
-  await page.waitForFunction(()=>document.querySelector('[data-pixelfx="impacts/blunt-hit"]'));await page.waitForTimeout(1200);
+  await page.waitForFunction(()=>document.querySelector('[data-pixelfx="ko/impact"]'));await page.waitForTimeout(1200);
   await page.evaluate(()=>window.pixelFxQA.prepareHeal());await page.waitForTimeout(500);await page.evaluate(()=>window.pixelFxQA.heal());
   await page.waitForFunction(()=>document.querySelector('[data-fx-area="48"]'));
   assert.equal(await page.evaluate(()=>window.pixelFxQA.inspect().players[0].board[0].currentHealth),23);

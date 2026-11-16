@@ -1,4 +1,5 @@
-import {useEffect,useState,useSyncExternalStore} from 'react';
+import {koEffectForArea,resolveKoEffect} from "./pixelfx-art-direction";
+import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {createRoot} from 'react-dom/client';
 import recipes from './pixelfx-recipes.json';
 import {PixelFxSprite,type EffectId} from './pixelfx-sprite';
@@ -32,8 +33,8 @@ export function PixelFxArea({area,left,top,width=170,duration=800,effect}:{area:
  const recipe=recipes[String(area) as keyof typeof recipes];
  if(!recipe)return null;
  const large=[6,10,26,65,68,69,72,78,84,85,89,103,108].includes(area);
- const layers=readCombatPreferences().quality==='LOW'?1:2;
- return <>{(effect?[effect]:recipe.effects.slice(0,layers)).map((id,index)=><PixelFxSprite key={id} id={id as EffectId} kind="MAGIC" seed={`${area}:${index}`} area={area} left={left} top={top} targetWidth={width} sizeMultiplier={large?1.85:1.25} duration={duration} delay={index*65} opacity={index===0?.85:.55} onUnavailable={()=>{}}/>)}</>;
+ const id=effect?resolveKoEffect(effect,area):koEffectForArea(area);
+ return <PixelFxSprite id={id} kind="MAGIC" seed={`${area}`} area={area} left={left} top={top} targetWidth={width} sizeMultiplier={large?1.65:1.2} duration={duration} opacity={.92} onUnavailable={()=>{}}/>;
 }
 /** Explicit success/change key; mounting static reward descriptions never grants a reward effect. */
 export function usePixelFx(area:number,key:unknown,enabled=true){
@@ -41,5 +42,9 @@ export function usePixelFx(area:number,key:unknown,enabled=true){
 }
 export function PixelFxPreview(){
  const [area,setArea]=useState(4);
- return <section className="rounded border border-neutral-700 p-4"><h3 className="font-bold">PIXELFX 효과 미리보기</h3><p className="text-sm text-neutral-400">섬광·모션 설정을 따릅니다.</p><select aria-label="미리볼 효과" value={area} onChange={event=>setArea(Number(event.target.value))} className="my-3 max-w-full bg-neutral-900">{Object.entries(recipes).map(([id,recipe])=><option key={id} value={id}>{id}. {recipe.name}</option>)}</select><button type="button" className="ml-3 rounded border px-3 py-2" onClick={event=>emitPixelFx(area,event.currentTarget,{width:210})}>재생</button></section>;
+ const target=useRef<HTMLDivElement>(null);
+ return <section className="rounded border border-neutral-700 p-4"><h3 className="font-bold">PIXELFX 효과 미리보기</h3><p className="text-sm text-neutral-400">검정·금색 전장에 맞춘 연출 · 섬광·모션 설정 적용</p>
+ <div className="my-4 flex min-h-64 items-center justify-center overflow-hidden rounded-lg border border-amber-900/40 bg-[#211a15]" style={{backgroundImage:'radial-gradient(ellipse at center,#443321 0%,#1b1714 75%)'}}>
+  <div ref={target} className="flex h-44 w-32 flex-col items-center justify-center rounded-lg border-2 border-[#9b8151] bg-[#141313] text-[#d3b67b] shadow-xl"><span className="text-xs tracking-widest opacity-60">KO CARD GAME</span><span className="my-5 font-display text-4xl">KO</span><span className="text-xs">{recipes[String(area) as keyof typeof recipes].name}</span></div>
+ </div><select aria-label="미리볼 효과" value={area} onChange={event=>setArea(Number(event.target.value))} className="my-3 max-w-full bg-neutral-900">{Object.entries(recipes).map(([id,recipe])=><option key={id} value={id}>{id}. {recipe.name}</option>)}</select><button type="button" className="ml-3 rounded border px-3 py-2" onClick={()=>emitPixelFx(area,target.current,{width:150})}>재생</button></section>;
 }

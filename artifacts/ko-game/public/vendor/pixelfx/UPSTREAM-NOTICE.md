@@ -18,3 +18,9 @@ Original source IDs and integrity hashes are in `library-manifest.json`.
 Exports use transparent backgrounds and a neutral card carrier for actor-dependent
 masks; stock humanoid actors and gallery fonts are not included. Runtime playback
 uses the generated atlases rather than evaluating upstream effect code.
+
+## KO art direction set
+
+`ko/*.png` is original KO CARD GAME artwork rendered with the pinned PIXELFX
+painter. `ko-manifest.json` records 21 content hashes. The shared palette and
+card-oriented shapes are authored in `scripts/vfx/ko-art-direction.mjs`.
