@@ -47,7 +47,15 @@ export function resolveCommittedTechnique(
     ? resolveTriggeredAbilities(
         spellListeners,
         playerId,
-        { ...card, abilities: [{ trigger: "ACTIVE", effects: body }] },
+        {
+          ...card,
+          abilities: [
+            ...card.abilities.filter(
+              (a) => a.trigger !== "ACTIVE" && a.trigger !== "ENTER_FIELD",
+            ),
+            { trigger: "ACTIVE", effects: body },
+          ],
+        },
         "ACTIVE",
       )
     : spellListeners;

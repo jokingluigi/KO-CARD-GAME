@@ -1,7 +1,7 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { isChampionProtectedByToken } from './direct-champion';
-import { resolveRegisteredRuleListeners, resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resolveCardGainGrowth, resolveRegisteredRuleListeners, resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { normalizeCardForZone } from '../cards/zone-state';
 import { checkpointAwakening, hasAwakeningInvulnerability } from '../champions/awakening';
 
@@ -67,7 +67,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
   }
 
   const [drawnCard, ...remainingDeck] = drawingPlayer.deck;
-  if (drawingPlayer.hand.length >= MAX_HAND_SIZE) return {
+  if (drawingPlayer.hand.length >= MAX_HAND_SIZE) return resolveCardGainGrowth({
     ...state,
     players: state.players.map(player => player.id !== playerId ? player : {
       ...player, deck: remainingDeck, removedFromGame: [...player.removedFromGame, drawnCard],
@@ -78,7 +78,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
       { type: 'CARD_REMOVED', playerId, cardInstanceId: drawnCard.instanceId, cardDefinitionId: drawnCard.definitionId,
         source: {type:'SYSTEM'}, target: {type:'CARD',cardInstanceId:drawnCard.instanceId}, reason: 'OVERDRAW' },
     ],
-  };
+  },playerId);
   const drawState: GameState = {
     ...state,
     players: state.players.map((player) =>
@@ -94,5 +94,5 @@ export function drawCard(state: GameState, playerId: string): GameState {
         target: { type: 'CARD', cardInstanceId: drawnCard.instanceId }, reason: 'DRAW' },
     ],
   };
-  return resolveTriggeredAbilities(drawState, playerId, drawnCard, 'CARD_DRAWN');
+  return resolveCardGainGrowth(resolveTriggeredAbilities(drawState, playerId, drawnCard, 'CARD_DRAWN'),playerId);
 }
