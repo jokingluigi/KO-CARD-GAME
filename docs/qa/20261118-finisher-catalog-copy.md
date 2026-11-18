@@ -22,3 +22,11 @@ Validation:
 - Local mocked-API browser test `finisher-catalog-copy-browser.mjs`: 390px touch and 1440px desktop show both Rosie branches and Calavera's finisher reward, with no legacy upgrade/empty-condition copy or script errors. This is separate from live release-version verification.
 
 No production champion data was changed by this fix. Release status must be confirmed by deployed API health and frontend version endpoints.
+
+## All-champion follow-up
+
+The owner requested checking every champion, not just Rosie/Calavera. Extended the captured public fixture and checks to all 11 champions and all 12 linked finisher cards. Every configured reward exists, catalog and normalized runtime links agree, and no linked reward uses legacy upgrade/zero-gold copy. The focused all-champion suite passes 17 tests. The mocked-API collection browser check passes all 11 champions at both 390px touch and 1440px desktop.
+
+Render reports API and frontend release `ee324cc644526ccb915c2fb5cc2e1d821e3f183b` live. Public API health confirms that SHA. Public HTML serves `index-Dg-RnsSj.js` containing that SHA, collection/deck chunks use the new preparation copy, and `card-catalog-filters-D1hitGOP.js` contains both linked/branch reward text paths. However `/version.json` still returns the previous b105423 build with a CDN HIT header; the release helper's canonical frontend version check therefore did not pass. This is recorded separately from verification of the actual served page assets. Live-browser automation was attempted but blocked by the execution browser's certificate trust configuration; the desktop/touch browser passes above use local serving with captured public data. TLS verification was not disabled.
+
+This follow-up adds verification only; it does not require another product deployment or modify saved champion definitions.

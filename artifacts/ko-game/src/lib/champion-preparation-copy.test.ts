@@ -12,6 +12,12 @@ import type {ChampionState} from '../game/champions/types';
 const data=JSON.parse(readFileSync('docs/qa/snapshots/20261118-admin/finisher-regression.json','utf8'));
 const rosie=data.champions.find((c:any)=>c.id==='champion-minion-a');
 const cal=data.champions.find((c:any)=>c.id==='5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c');
+for(const record of data.champions)test(`${record.name}: catalog and runtime both expose configured finishers rather than old upgrades`,()=>{
+ const copy=championPreparationCopy(record);assert.equal(copy.linked,true);assert.ok(copy.reward.includes('피니셔'));assert.doesNotMatch(copy.reward,/강화|보상 없음|골드 0/);assert.ok(copy.condition&&!copy.condition.includes('정보가 없습니다'));
+ const definition=championRecordToDefinition(record);assert.ok(definition.quest);const q=record.questCondition;
+ if(q.finisher){assert.deepEqual(definition.quest.finisher,q.finisher);assert.match(championQuestRewardText(definition as ChampionState),/피니셔/);assert.ok(data.cards.some((c:any)=>c.id===q.finisher.cardDefinitionId));}
+ else {assert.equal(definition.quest.finisherChoices?.length,q.finisherChoices.length);for(const option of q.finisherChoices)assert.ok(data.cards.some((c:any)=>c.id===option.cardDefinitionId));}
+});
 function setup(record:any){const s=createInitialGameState();s.status='IN_PROGRESS';s.openingMulligan=undefined;s.events=[];s.turn=5;s.activePlayerId='player-1';s.cardPool=data.cards.map(cardRecordToDefinition);for(const p of s.players){p.hand=[];p.deck=[];p.board=[null,null,null,null];p.graveyard=[];p.champion!.quest=null;}s.players[0].champion={...s.players[0].champion!,...championRecordToDefinition(record),health:20,questProgress:0,questCompleted:false};return s;}
 test('Rosie catalog shows both branch conditions/rewards instead of empty legacy quest fields',()=>{assert.equal(rosie.questText,null);const copy=championPreparationCopy(rosie);assert.match(copy.condition,/12회 생성/);assert.match(copy.condition,/3장 이상/);assert.match(copy.reward,/어셈블/);assert.match(copy.reward,/흉내내기/);assert.equal(copy.linked,true);assert.doesNotMatch(copy.reward,/골드|강화|보상 없음/);});
 test('Calavera catalog prioritizes linked finisher over saved legacy upgrade prose',()=>{assert.match(cal.questRewardText,/고유 능력.*강화/);const copy=championPreparationCopy(cal);assert.match(copy.condition,/언데드.*8장/);assert.match(copy.reward,/피니셔.*손패/);assert.doesNotMatch(copy.reward,/강화/);assert.equal(copy.linked,true);});
