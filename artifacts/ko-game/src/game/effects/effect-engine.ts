@@ -1437,6 +1437,7 @@ function applyRandomCardCreation(
           }
         : undefined,
     });
+    if (effect.values?.generatedMinimumCost !== undefined) generated.card = {...generated.card, currentCost:Math.max(effect.values.generatedMinimumCost,generated.card.currentCost)};
     if (sourceCard.definitionId === '8a09fec1-16d8-452b-85c3-a38c7a3a03f6') {
       generated.card = { ...generated.card, currentCost: Math.max(1, generated.card.currentCost),
         currentAttack: Math.max(1, generated.card.currentAttack), currentHealth: Math.max(1, generated.card.currentHealth), maxHealth: Math.max(1, generated.card.maxHealth) };
@@ -2378,6 +2379,7 @@ function applyEffectInternal(
               }
             : undefined,
         });
+         if (effect.values?.generatedMinimumCost !== undefined) generated.card={...generated.card,currentCost:Math.max(effect.values.generatedMinimumCost,generated.card.currentCost)};
          const card = aggregate
           ? {
                ...generated.card,

@@ -60,7 +60,9 @@
     "../../artifacts/ko-game/src/game/cards/helper-healing.ts",
     "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261111.ts",
     "../../artifacts/ko-game/src/game/champions/balance-content-20261111.ts",
-    "../../artifacts/ko-game/src/game/engine/board-capacity.ts"
+    "../../artifacts/ko-game/src/game/engine/board-capacity.ts",
+    "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261118.ts",
+    "../../artifacts/ko-game/src/game/champions/reviewed-admin-content-20261118.ts"
   ],
   "references": [
     {

@@ -1,0 +1,187 @@
+[
+  {
+    "id": "b6b6247d-4e98-4cfb-8fa6-5479afec48f3",
+    "name": "늑대인간 판도라",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "text": "턴 종료:선택한 아군 선수 카드를 리타이어시키고 그 카드의 체력과 공격력을 흡수하고 '회피'를 1 얻습니다.",
+    "rarity": "TOKEN",
+    "isStarterGrant": false,
+    "keywords": [
+      "DODGE"
+    ],
+    "tags": [
+      "실험체",
+      "레이디"
+    ],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 22,
+    "createdAt": "2026-09-23T16:56:11.098Z",
+    "updatedAt": "2026-11-18T11:21:52.028Z"
+  },
+  {
+    "id": "c651644e-de3b-4e28-b925-a4c9f9bcd29c",
+    "name": "로지양",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 0,
+    "health": 1,
+    "text": "등장:현재 손패에 있는 카드들을 전부 덱으로 보내고, 자신의 손패를 완전히 무작위 카드들로 채우고, 그 카드들의 비용/체력/공격력을 전부 1씩 깍습니다.(비용과 체력은 1이 최소치)",
+    "rarity": "LEGENDARY",
+    "isStarterGrant": false,
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "레이디",
+      "마피아"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 9,
+    "createdAt": "2026-11-04T16:31:18.813Z",
+    "updatedAt": "2026-11-18T11:24:20.168Z"
+  },
+  {
+    "id": "358ac04a-d921-4e77-b5ad-a2c516408e82",
+    "name": "블랙 마카롱(로마니 마피아)",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 2,
+    "health": 6,
+    "text": "등장:필드와 손패에 있는 '마피아' 태그가 있는 선수 카드 수만큼 공격력이 증가합니다. \n이 카드가 상대 선수 카드를 리타이어 시킬때마다 이 카드와 필드에 있는 '마피아' 태그를 가진 선수 카드들의 공격력이 1 증가합니다.",
+    "rarity": "LEGENDARY",
+    "isStarterGrant": false,
+    "keywords": [
+      "SURPRISE",
+      "ARMOR"
+    ],
+    "tags": [
+      "군주",
+      "마피아"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {
+      "armor": 1
+    },
+    "status": "PUBLISHED",
+    "version": 9,
+    "createdAt": "2026-11-11T02:10:32.058Z",
+    "updatedAt": "2026-11-18T11:20:22.562Z"
+  },
+  {
+    "id": "152011c5-5d5d-4c8c-946d-eaf69c2d6442",
+    "name": "소버린",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 4,
+    "health": 4,
+    "text": "이 카드가 리타이어 되면 공격력과 최대 체력을 2씩 깍고 부활합니다. 이 카드가 상대 선수 카드를 리타이어 시키면 +1/+1을 얻으며, 만약 그 카드가 '악마' 태그가 있다면 +1/+1을 추가로 얻습니다.",
+    "rarity": "LEGENDARY",
+    "isStarterGrant": false,
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4,
+    "createdAt": "2026-11-11T02:27:26.958Z",
+    "updatedAt": "2026-11-18T11:19:22.901Z"
+  },
+  {
+    "id": "df532c95-0e4d-4b17-8200-a86e6a682341",
+    "name": "조킹루이지",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 1,
+    "health": 1,
+    "text": "등장: 자신의 양 옆에 이 카드와 챔피언 토튼을 제외한 '디 어쏘리티' 카드들 중에서 무작위로 소환하고 자신을 제외한 생성한 그 선수 카드들에게 '기습'을 부여합니다.\n콤보:'디 어쏘리티' 태그를 가진 아군 선수 카드가 상대를 공격하면 그 카드와 이 카드에게 공격력을 +1 부여합니다. 이 카드는 아군 필드에 이 카드를 제외한 '디 어쏘리티' 태그가 있는 카드가 존재하는 동안 '무적'입니다.(이 카드는 '도발'을 보유 할 수 없습니다.)",
+    "rarity": "LEGENDARY",
+    "isStarterGrant": false,
+    "keywords": [
+      "SURPRISE",
+      "DODGE"
+    ],
+    "tags": [
+      "디 어쏘리티",
+      "빌런"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 44,
+    "createdAt": "2026-09-10T08:27:21.220Z",
+    "updatedAt": "2026-11-18T11:35:31.820Z"
+  },
+  {
+    "id": "96bad223-bd08-407e-a7c4-1fc1c18e79dd",
+    "name": "조킹루이지(로마니 마피아)",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 0,
+    "health": 2,
+    "text": "콤보:'마피아' 태그를 가진 아군 선수 카드가 상대를 공격하면 그 카드에게 +1/+1을 부여합니다. 이 카드는 아군 필드에 '마피아' 태그가 있는 카드가 존재하는 동안 '무적'입니다.(이 카드는 '도발'을 보유 할 수 없습니다.)",
+    "rarity": "LEGENDARY",
+    "isStarterGrant": false,
+    "keywords": [
+      "IMMUNE",
+      "DEFENSE",
+      "CANNOT_ATTACK"
+    ],
+    "tags": [
+      "마피아",
+      "빌런"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8,
+    "createdAt": "2026-11-11T02:07:07.267Z",
+    "updatedAt": "2026-11-18T11:36:43.378Z"
+  },
+  {
+    "id": "4ad681e3-6ed6-4651-8107-4b24adddd753",
+    "name": "하녀 판도라",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 1,
+    "health": 4,
+    "text": "핀폴:'늑대인간 판도라'로 변신합니다.",
+    "rarity": "LEGENDARY",
+    "isStarterGrant": false,
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [
+      "실험체",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 18,
+    "createdAt": "2026-09-23T16:54:10.149Z",
+    "updatedAt": "2026-11-18T11:21:28.388Z"
+  }
+]

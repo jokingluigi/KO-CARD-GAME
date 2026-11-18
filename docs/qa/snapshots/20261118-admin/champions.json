@@ -1,0 +1,171 @@
+[
+  {
+    "id": "champion-minion-a",
+    "name": "로지양",
+    "description": "",
+    "maxHealth": 20,
+    "abilityName": "완전히 무작위",
+    "abilityCost": 1,
+    "abilityText": "완전히 무작위 카드를 비용/체력/공격력을 전부 1씩 깍아서 생성합니다.(비용과 체력은 1이 최대치)",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "values": {
+            "generatedModifiers": {
+              "cost": -1
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "피니셔 준비",
+    "questText": null,
+    "questCondition": {
+      "event": "CARD_PLAYED",
+      "progress": 1,
+      "required": 1,
+      "finisherChoices": [
+        {
+          "id": "option-1",
+          "name": "어셈블",
+          "condition": {
+            "type": "EVENT",
+            "event": "CARD_PLAYED",
+            "owner": "SELF",
+            "required": 5
+          },
+          "description": "카드 총 12회 생성",
+          "cardDefinitionId": "0785ff4f-ce7c-4ab0-83e7-197249767543"
+        },
+        {
+          "id": "option-2",
+          "name": "흉내내기",
+          "condition": {
+            "type": "EVENT",
+            "event": "CARD_PLAYED",
+            "owner": "SELF",
+            "required": 1
+          },
+          "description": "레전더리 혹은 챔피언 등급 카드를 3장 이상 필드에 내기",
+          "cardDefinitionId": "52528873-0704-4569-9bd8-2c4ff227ce51"
+        }
+      ]
+    },
+    "questProgressRequired": 1,
+    "questRewardText": null,
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": false,
+    "isStarterGrant": true,
+    "version": 32,
+    "createdAt": "2026-10-01T01:06:53.594Z",
+    "updatedAt": "2026-11-18T11:23:57.661Z"
+  },
+  {
+    "id": "88d106cf-ee5a-4a22-ab0a-47b33589fcac",
+    "name": "블랙마카롱",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "고유 능력",
+    "abilityCost": 2,
+    "abilityText": "선택한 상대 선수 카드에게 2 데미지를 줍니다. 이 효과로 상대 선수 카드가 리타이어했다면 아군 필드에 '로마니 마피아 따까리'를 소환합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": ".",
+    "questText": "고유 능력으로 상대 선수 카드 5번 리타이어",
+    "questCondition": {
+      "event": "CARD_PLAYED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "0672077d-06f0-426c-a925-135862f3f22d"
+      },
+      "progress": 1,
+      "required": 3
+    },
+    "questProgressRequired": 3,
+    "questRewardText": "'뇌진탕 펀치'를 손패에 추가한다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 15,
+    "createdAt": "2026-11-10T14:06:10.105Z",
+    "updatedAt": "2026-11-18T11:27:21.876Z"
+  },
+  {
+    "id": "c52da37b-5e7a-4223-bcf3-73824c677534",
+    "name": "크루세이더즈",
+    "description": "",
+    "maxHealth": 20,
+    "abilityName": "모험 준비",
+    "abilityCost": 1,
+    "abilityText": "필드에 있는 아군 선수 카드들 중 무작위로 하나의 공격력을 1 증가시키고, 챔피언의 체력을 2 회복한다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "각성",
+    "questText": "자신의 챔피언의 체력이 3 이하가 된다.",
+    "questCondition": {
+      "event": "STATE_CONDITION",
+      "finisher": {
+        "delivery": "CAST",
+        "cardDefinitionId": "57a19ccf-d63d-422a-b30a-07739c28a952"
+      },
+      "required": 1,
+      "condition": {
+        "op": "LTE",
+        "type": "HEALTH",
+        "owner": "SELF",
+        "value": 5
+      }
+    },
+    "questProgressRequired": 1,
+    "questRewardText": null,
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 31,
+    "createdAt": "2026-09-27T16:53:12.053Z",
+    "updatedAt": "2026-11-18T11:25:25.175Z"
+  }
+]
