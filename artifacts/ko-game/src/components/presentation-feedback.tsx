@@ -1,5 +1,5 @@
 import "./effect-readability.css";
-import {PixelFxArea} from "./pixelfx-scenes";
+
 import {audioManager} from '../audio/audio-manager';
 import {useScreenImpact} from './screen-impact';
 import {damageImpact} from './screen-impact-policy';
@@ -9,9 +9,8 @@ import type { CSSProperties } from "react";
 import type { PresentationCueDraft } from "./presentation-feedback-utils";
 import { damageNumberTier } from './presentation-policy';
 
-
 export type PresentationCue = PresentationCueDraft & {
-  effect?:import("./pixelfx-sprite").EffectId;
+
   targetWidth?:number;
   left: number;
   top: number;
@@ -91,9 +90,7 @@ export function PresentationFeedback({
 
   return (
     <>
-    {!cue.quiet && !(cue.kind==='DAMAGE'&&cue.combat) && !['RETIRE','DESTROY','REMOVE','QUEST_COMPLETE','TURN'].includes(cue.kind) &&
-      <PixelFxArea area={cue.kind==='DAMAGE'?(cue.selfDamage?140:spriteDamage?9:(cue.value??0)>=8?6:41):({DODGE:11,BLOCK:13,ARMOR:15,HEAL:cue.cardInstanceId?48:49,MAX_HEALTH:22,PROTECTION_BREAK:14,BUFF:21,DEBUFF:23,SILENCE:20,EFFECT:119,DRAW:35,GENERATE:36,TRANSFORM:39,QUEST_PROGRESS:63,GOLD:56} as Partial<Record<PresentationCue['kind'],number>>)[cue.kind]??24}
-        left={cue.left} top={cue.top} effect={cue.effect} width={cue.targetWidth} duration={Math.max(460,cue.duration)} />}
+
     <div
       aria-hidden="true"
       className={`presentation-feedback ${toneClass[cue.kind]}`}
@@ -106,18 +103,13 @@ export function PresentationFeedback({
         onCompleteRef.current();
       }}
     >
-      {!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage&&<i className="presentation-feedback__effect-hit"/>}
-      {!cue.quiet&&cue.kind==='ARMOR'&&<i className="presentation-feedback__shield"/>}
-      {!cue.quiet && cue.kind==='SILENCE'&&<i className="presentation-feedback__silence-ring"/>}
-      {!cue.quiet && cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&
-        (Math.abs(cue.sourceLeft - cue.left) + Math.abs(cue.sourceTop - cue.top) > 30) &&
-        <img alt="" src={`${import.meta.env.BASE_URL}vendor/kenney/particle/star_01.png`} className="presentation-feedback__transfer"/>}
+
       {!cue.quiet && cue.kind === "TRANSFORM" && cue.previousArtwork && cue.nextArtwork &&
         <span className="presentation-feedback__morph" aria-hidden="true">
           <img src={cue.previousArtwork} alt="" className="presentation-feedback__morph-before" />
           <img src={cue.nextArtwork} alt="" className="presentation-feedback__morph-after" />
         </span>}
-      {cue.kind==="MAX_HEALTH"&&!cue.quiet&&<i className="ko-capacity-expand"/>}
+
       <span className="presentation-feedback__label">{cue.label}</span>
       {cue.kind === "QUEST_PROGRESS" && cue.value ? <small>+{cue.value}</small> : null}
     </div>

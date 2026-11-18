@@ -85,14 +85,17 @@ for (const removal of ['RETIRE', 'DESTROY'] as const) test(`${removal}: all AI p
     const result = executeAction(state, chosen); assert.ok(result.success); assert.equal(result.state.players[1]!.board[1], null);
   }
 });
-test('all AI profiles respect Tower field cap in actual legal actions', () => {
-  const state = setup(); state.players[0]!.board[1] = null;
-  state.players[0]!.hand = [generateCardInstance(card, { instanceId: 'restricted-hand' })]; state.players[0]!.currentGold = 10;
-  state.tower = { playerId: 'player-1', relics: [{ id: 'cap', effectType: 'MAX_FIELD_ONE', values: { attack: 4, health: 4 } }] };
-  for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
-    const actions = getLegalActions(state, 'player-1'); assert.ok(actions.every(action => action.type !== 'PLAY_WRESTLER'));
-    const chosen = chooseBestAction(state, actions, 'player-1', difficulty); assert.ok(actions.includes(chosen)); assert.ok(executeAction(state, chosen).success);
+test('all AI profiles use ordinary four-slot capacity after mode retirement', () => {
+  const state=setup();state.players[0]!.board[1]=null;state.players[0]!.currentGold=10;
+  state.players[0]!.hand=[generateCardInstance(card,{instanceId:'available-hand'})];
+  for(const difficulty of ['NORMAL','HARD','BOSS'] as const){
+    const actions=getLegalActions(state,'player-1');
+    const play=actions.find(action=>action.type==='PLAY_WRESTLER');assert.ok(play);
+    const result=executeAction(state,play);assert.ok(result.success);assert.equal(result.state.players[0]!.board.filter(Boolean).length,2);
+    const chosen=chooseBestAction(state,actions,'player-1',difficulty);assert.ok(executeAction(state,chosen).success);
   }
+  state.players[0]!.board=[0,1,2,3].map(slot=>({...generateCardInstance(card,{instanceId:'full:'+slot}),boardSlot:slot})) as typeof state.players[0]['board'];
+  assert.ok(getLegalActions(structuredClone(state),'player-1').every(action=>action.type!=='PLAY_WRESTLER'));
 });
 
 test('all AI profiles prefer the cheaper wrestler when board stats are identical', () => {

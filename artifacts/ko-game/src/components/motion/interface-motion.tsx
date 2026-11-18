@@ -1,4 +1,4 @@
-import {emitPixelFx} from "../pixelfx-scenes";
+
 import { clearInterfaceFlights } from "../physical-feedback";
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
@@ -20,7 +20,7 @@ export function InterfaceMotionBridge() {
     if (!root) return;
     const before = previous.current;
     previous.current = path;
-    if(before!==path&&!/match|admin/.test(path+before))emitPixelFx(116,undefined,{width:Math.min(innerWidth*.55,500),duration:480});
+
     const direction = interfaceDirection(before, path),
       running = new Map<Element, Animation>(),
       seen = new WeakMap<Element, string>(),

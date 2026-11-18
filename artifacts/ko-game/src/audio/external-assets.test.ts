@@ -6,7 +6,7 @@ import {externalSound} from './external-assets';
 test('bundled external assets exist and match pinned provenance hashes',()=>{
  const root=new URL('../../public/vendor/kenney/',import.meta.url);
  const manifest=JSON.parse(readFileSync(new URL('manifest.json',root),'utf8'));
- assert.ok(manifest.length>=30);
+ assert.ok(manifest.length>0);
  for(const entry of manifest){
   assert.equal(entry.license,'CC0-1.0');
   assert.equal(createHash('sha256').update(readFileSync(new URL(entry.file,root))).digest('hex'),entry.sha256);
@@ -22,11 +22,8 @@ test('default cues use existing external files while admin uploads stay unchange
  assert.equal(externalSound('/api/storage/objects/uploads/audio/custom.wav'),'/api/storage/objects/uploads/audio/custom.wav');
 });
 
-test('Effekseer sample textures and layered external audio retain provenance',()=>{
+test('layered external audio retains provenance',()=>{
  const root=new URL('../../public/vendor/',import.meta.url);
- const manifest=JSON.parse(readFileSync(new URL('effekseer/manifest.json',root),'utf8'));
- assert.match(readFileSync(new URL('effekseer/SAMPLE-LICENSE.txt',root),'utf8'),/CC-0/);
- for(const x of manifest.assets){assert.equal(createHash('sha256').update(readFileSync(new URL('effekseer/'+x.file,root))).digest('hex'),x.sha256);}
  const mixes=JSON.parse(readFileSync(new URL('impact-mixes/manifest.json',root),'utf8'));
  for(const mix of mixes){assert.ok(mix.sourceFiles.length>=3);assert.equal(createHash('sha256').update(readFileSync(new URL('impact-mixes/'+mix.file,root))).digest('hex'),mix.sha256);assert.ok(mix.decodedPeakDbFS<0);}
 });

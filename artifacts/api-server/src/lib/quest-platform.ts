@@ -2,7 +2,7 @@
 import type { GameEvent, GameState } from "@workspace/game-engine";
 import { questEventIncrement, validateQuestCondition, QUEST_CONDITION_SCHEMA_VERSION } from "@workspace/game-engine";
 import { isRewardType } from "./reward-service";
-export const QUEST_MODES = ["AI", "PVP", "TOWER", "DRAFT"] as const;
+export const QUEST_MODES = ["AI", "PVP", "DRAFT"] as const;
 export type QuestMode = typeof QUEST_MODES[number];
 export type QuestReward = { rewardType: string; rewardAmount: number; rewardTargetId: string | null };
 export type QuestPlatform = {
@@ -14,7 +14,7 @@ export const QUEST_OBJECTIVES = ["PLAY_MATCH", "WIN_MATCH", "LOSS_MATCH", "CARD_
 export function readPlatform(record: { platform?: unknown; rewardType: string; rewardAmount: number; rewardTargetId?: string | null }): QuestPlatform {
  const p = record.platform as Partial<QuestPlatform> | null | undefined;
  return { questType: p?.questType ?? "DAILY", version: p?.version ?? 1, seasonId: p?.seasonId ?? null,
- deletedAt: p?.deletedAt ?? null, archived: p?.archived ?? false, weight: p?.weight ?? 100, modes: p?.modes ?? [...QUEST_MODES],
+ deletedAt: p?.deletedAt ?? null, archived: p?.archived ?? false, weight: p?.weight ?? 100, modes: (p?.modes ?? [...QUEST_MODES]).filter(mode=>QUEST_MODES.includes(mode)),
  rarity: p?.rarity ?? null, result: p?.result ?? "ANY", activationAt: p?.activationAt ?? null,
  rewards: p?.rewards ?? [{ rewardType: record.rewardType, rewardAmount: record.rewardAmount, rewardTargetId: record.rewardTargetId ?? null }] };
 }

@@ -567,7 +567,7 @@ test('admin DELETE of awakening champion and forced exchange survives repeated r
   const entry = new URL('../../../artifacts/api-server/src/lib/startup-schema.ts', import.meta.url);
   const output = new URL('../../../artifacts/api-server/dist/catalog-startup-http-qa.mjs', import.meta.url);
   await build({entryPoints:[fileURLToPath(entry)],outfile:fileURLToPath(output),bundle:true,platform:'node',format:'esm',packages:'external',loader:{'.sql':'text'}});
-  const { ensureTowerStorage } = await import(output.href);
+  const { ensureApplicationStorage } = await import(output.href);
   await database.insert(schema.cardsTable).values({id:'epic-spell-forced-exchange',name:'강제 교환',cardType:'TECHNIQUE',cost:4,attack:0,health:0,text:'삭제할 관리자 카드',rarity:'EPIC'}).onConflictDoNothing();
   await database.insert(schema.championsTable).values({id:'crisis-awakening-champion',name:'각성 챔피언',abilityName:'관리자 정의',abilityEffects:{}}).onConflictDoNothing();
   assert.equal((await request('/auth/login','POST',{email:'admin@awakening.invalid',password:'AwakeningLocalQA123'})).status,200);
@@ -578,7 +578,7 @@ test('admin DELETE of awakening champion and forced exchange survives repeated r
   const beforeCards=(await pg.query('SELECT * FROM cards ORDER BY id')).rows;
   const beforeChampions=(await pg.query('SELECT * FROM champions ORDER BY id')).rows;
   for(let restart=0;restart<2;restart++) {
-    await ensureTowerStorage(database);
+    await ensureApplicationStorage(database);
     assert.deepEqual((await pg.query('SELECT * FROM cards ORDER BY id')).rows,beforeCards);
     assert.deepEqual((await pg.query('SELECT * FROM champions ORDER BY id')).rows,beforeChampions);
   }

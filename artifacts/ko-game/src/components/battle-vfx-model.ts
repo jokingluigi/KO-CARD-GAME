@@ -1,9 +1,4 @@
-import type { AttackAnimationState } from "./attack-animation-utils";
-import { readCombatPreferences } from './combat-preferences';
 import { combatImpactProfile } from './combat-impact-profile';
-
-export type BattleVfxKind =
-  "IMPACT" | "BLOCK" | "ARMOR" | "HEAL" | "MAGIC" | "GOLD" | "DESTROY" | "RETIRE";
 
 /** Presentation time only; these values never control a combat result. */
 export function combatTimeline(
@@ -60,49 +55,6 @@ export function attackFrames(
     { offset: 1, opacity: 1, transform: pose(0, 0, 1) },
   ];
 }
-
-export function attackBurstKind(
-  animation: Pick<AttackAnimationState, "damage">,
-): BattleVfxKind {
-  return animation.damage > 0 ? "IMPACT" : "BLOCK";
-}
-
-export function vfxBudget(
-  compact: boolean,
-  reduced: boolean,
-  strength: number,
-) {
-  if (reduced) return { particles: 0, dpr: 1, size: 160 };
-  const quality = readCombatPreferences().quality;
-  return {
-    particles: Math.round((quality==='LOW'?.25:quality==='MEDIUM'?.6:1)*Math.min(
-      compact ? 20 : 36,
-      10 + Math.max(0, Math.min(12, strength)) * 2,
-    )),
-    dpr: quality==='LOW'?1:compact ? 1.5 : 2,
-    size: compact ? 240 : 360,
-  };
-}
-
-export function vfxParticles(seed: string, count: number) {
-  let value =
-    Array.from(seed).reduce(
-      (hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619),
-      2166136261,
-    ) >>> 0;
-  const random = () => {
-    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
-    return value / 4294967296;
-  };
-  return Array.from({ length: count }, () => ({
-    angle: random() * Math.PI * 2,
-    speed: 24 + random() * 92,
-    size: 1 + random() * 3,
-    life: 0.5 + random() * 0.5,
-    spin: random() * 6 - 3,
-  }));
-}
-
 
 /** Target compression shares the attack clock: contact and hold precede directional recoil. */
 export function targetReactionFrames(dx:number,dy:number,damage:number,timeline:ReturnType<typeof combatTimeline>,reduced=false):Keyframe[] {

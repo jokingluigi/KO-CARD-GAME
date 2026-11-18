@@ -18,7 +18,7 @@ import { readCombatPreferences, impactMultiplier } from "./combat-preferences";
 import { prefersReducedMotion } from "./presentation-config";
 import { useScreenImpact } from "./screen-impact";
 import { damageImpact } from "./screen-impact-policy";
-import { useContactVfx } from "./battle-vfx";
+
 import {
   CHAMPION_MOTION,
   motionFrames,
@@ -109,8 +109,7 @@ export function ChampionSpriteVisual({
       length: number;
       angle: number;
     } | null>(null);
-  const screen = useScreenImpact(),
-    contact = useContactVfx();
+  const screen = useScreenImpact();
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     const update = () => {
@@ -246,16 +245,7 @@ export function ChampionSpriteVisual({
         !cue.basicAttack
       ) {
         if (decorated)
-          contact?.({
-            id: "sprite:" + cue.id,
-            left: at.x,
-            top: at.y,
-            strength: Math.min(7, cue.damage ?? 1),
-            direction: direction ?? {
-              x: self ? -0.6 : 0.6,
-              y: self ? 0.8 : -0.8,
-            },
-          });
+          {}
         screen.request({
           id: "sprite:" + cue.id,
           profile: damageImpact(
@@ -375,61 +365,19 @@ export function ChampionSpriteVisual({
         } as CSSProperties
       }
     >
-      <div ref={ink} className="ko-sprite-ink" aria-hidden="true" />
-      {moving && cue?.kind === "AWAKEN" && image && !reduced && <div key={cue.id} className="ko-sprite-awakening-echo" aria-hidden="true" style={{maskImage:`url("${image}")`,scale:self ? "1 1" : "-1 1"}}/>}
+
+
       <div className="ko-sprite-stance">
         <div className="ko-sprite-breath">
           <div className="ko-sprite-low-tremor">
             <div ref={body} className="ko-sprite-pose">
               {children}
-              {image && cue?.kind === "HEAL" && (
-                <div ref={sheen} className="ko-sprite-sheen" aria-hidden="true">
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      transform: `scaleX(${self ? 1 : -1})`,
-                    }}
-                  >
-                    <img
-                      src={image}
-                      alt=""
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit:
-                          settings.imageDisplayMode === "CONTAIN"
-                            ? "contain"
-                            : "cover",
-                        objectPosition: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
-                        transform: `scale(${settings.imageScale})`,
-                        transformOrigin: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
       </div>
-      {link &&
-        createPortal(
-          <div
-            aria-hidden="true"
-            className="ko-sprite-link"
-            data-sprite-link={cue?.kind}
-            style={{
-              left: link.x,
-              top: link.y,
-              width: link.length,
-              rotate: `${link.angle}deg`,
-              backgroundColor: accent,
-              animationDuration: CHAMPION_MOTION.linkMs + "ms",
-            }}
-          />,
-          document.body,
-        )}
+
     </div>
   );
 }

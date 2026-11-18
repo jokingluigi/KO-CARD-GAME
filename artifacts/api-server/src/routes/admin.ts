@@ -463,23 +463,23 @@ async function removeImageIfUnreferenced(assetId: string) {
     .select({ count: sql<number>`count(*)::int` })
     .from(cardFrameDefinitionsTable)
     .where(eq(cardFrameDefinitionsTable.frameAssetId, assetId));
-  // Already referenced assets cannot be removed: avoid scanning Tower JSON for them.
+  // Preserve attachments referenced by archived content as well as active cards.
   if((cardReference?.count??0)>0||(championReference?.count??0)>0||(shopReference?.count??0)>0||(frameReference?.count??0)>0)return;
-  let towerReferenced = false;
+  let archivedContentReferenced = false;
   try {
     const result = await db.execute(sql`SELECT EXISTS (
       SELECT 1 FROM tower_characters WHERE strpos(data::text, ${assetId}) > 0
       UNION ALL SELECT 1 FROM tower_relics WHERE strpos(data::text, ${assetId}) > 0
       UNION ALL SELECT 1 FROM tower_runs WHERE strpos(snapshot::text, ${assetId}) > 0
     ) AS referenced`);
-    towerReferenced = result.rows[0]?.referenced === true;
+    archivedContentReferenced = result.rows[0]?.referenced === true;
   } catch (error) {
     const code = (error as { code?: string; cause?: { code?: string } }).code ?? (error as { cause?: { code?: string } }).cause?.code;
     if (code !== '42P01') throw error;
     // Existing installations without Tower migration retain their current image cleanup behavior.
   }
   if (
-    !towerReferenced &&
+    !archivedContentReferenced &&
     (cardReference?.count ?? 0) === 0 &&
     (championReference?.count ?? 0) === 0 &&
     (shopReference?.count ?? 0) === 0 &&
@@ -1731,7 +1731,7 @@ router.get("/champions", async (request, response): Promise<void> => {
   const champions = await db.select().from(championsTable)
     .where(filters.length ? and(...filters) : undefined)
     .orderBy(asc(championsTable.name));
-  response.json({ champions });
+  response.json({ champions:champions.filter(champion=>champion.id!=='champion-tower-vanilla') });
 });
 
 router.get(["/champions/:id","/champions/:id/test"], async (request, response): Promise<void> => {

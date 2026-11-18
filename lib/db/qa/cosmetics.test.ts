@@ -1003,33 +1003,7 @@ test("admin-added deck products and quest seasons delete safely without erasing 
   assert.equal((await database.select().from(schema.dailyQuestAssignmentsTable).where(eq(schema.dailyQuestAssignmentsTable.id, "retained-assignment"))).length, 1);
 });
 
-test("tower catalog deletion supports every editable resource and protects dependencies/published runs", async () => {
-  const resources = { starters: schema.towerStartersTable, presets: schema.towerPresetsTable, relics: schema.towerRelicsTable, characters: schema.towerCharactersTable, scenes: schema.towerScenesTable };
-  for (const [kind, table] of Object.entries(resources)) {
-    const id = "delete-tower-" + kind;
-    await database.insert(table).values({ id, data: { id, name: id } });
-    assert.equal((await api("/admin/tower/" + kind + "/" + id, "player-a", "DELETE")).status, 403);
-    assert.equal((await api("/admin/tower/" + kind + "/" + id, "admin", "DELETE")).status, 200);
-    assert.equal((await api("/admin/tower/" + kind + "/" + id, "admin", "DELETE")).status, 404);
-  }
-  await database.insert(schema.towerMetadataTable).values({ id: cards[0]!.id, kind: "CARD", data: { synergyTags: ["삭제 테스트"] } });
-  assert.equal((await api("/admin/tower/metadata/CHAMPION/" + cards[0]!.id, "admin", "DELETE")).status, 404);
-  assert.equal((await api("/admin/tower/metadata/CARD/" + cards[0]!.id, "admin", "DELETE")).status, 200);
-  assert.equal((await database.select().from(schema.cardsTable).where(eq(schema.cardsTable.id, cards[0]!.id))).length, 1);
-  await database.insert(schema.towerRelicsTable).values({ id: "referenced-relic", data: { id: "referenced-relic", name: "연결 유물" } });
-  await database.insert(schema.towerPresetsTable).values({ id: "dependent-preset", data: { id: "dependent-preset", name: "참조 덱", unlockCondition: { type: "ALL", conditions: [{ type: "RELIC", id: "referenced-relic" }] } } });
-  const blocked = await api("/admin/tower/relics/referenced-relic", "admin", "DELETE");
-  assert.equal(blocked.status, 409); assert.match(blocked.body.message, /참조 덱/);
-  assert.equal((await api("/admin/tower/presets/dependent-preset", "admin", "DELETE")).status, 200);
-  assert.equal((await api("/admin/tower/relics/referenced-relic", "admin", "DELETE")).status, 200);
-  for (const id of ["delete-tower-season", "protected-tower-season"]) await database.insert(schema.towerSeasonsTable).values({ id, name: id, active: false, data: { id, name: id } });
-  assert.equal((await api("/admin/tower/seasons/delete-tower-season", "admin", "DELETE")).status, 200);
-  await database.insert(schema.towerVersionsTable).values({ id: "retained-version", towerId: "protected-tower-season", version: 1, snapshot: {}, publishedBy: "admin" });
-  await database.insert(schema.towerRunsTable).values({ id: "retained-run", userId: "player-a", seasonId: "protected-tower-season", state: {}, snapshot: {} });
-  assert.equal((await api("/admin/tower/seasons/protected-tower-season", "admin", "DELETE")).status, 409);
-  assert.equal((await database.select().from(schema.towerVersionsTable).where(eq(schema.towerVersionsTable.id, "retained-version"))).length, 1);
-  assert.equal((await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id, "retained-run"))).length, 1);
-});
+
 
 after(async () => {
   if (process.env.KO_COSMETICS_BROWSER_MODE === "1") {
@@ -1307,6 +1281,18 @@ test('duplicate image emotes award normal prisms exactly once per claim and disc
  const first=await open();assert.equal(first.status,200,JSON.stringify(first.body));assert.equal(first.body.rewards[0].prismReward,50);assert.equal(await balance(),before+50);
  assert.deepEqual((await open()).body,first.body);assert.equal(await balance(),before+50);
  const policy=await api('/packs/duplicate-policy','player-b');assert.equal(policy.status,200);assert.equal(policy.body.rewards.IMAGE_EMOTE,50);
+});
+
+test("retired mode endpoints stay unavailable and cannot change archived runs",async()=>{
+ const id="archived-mode-run";
+ await database.insert(schema.towerSeasonsTable).values({id:"archived",name:"Archived",data:{kept:true}});
+ await database.insert(schema.towerRunsTable).values({id,userId:"player-a",seasonId:"archived",state:{kept:true},snapshot:{kept:true}});
+ const before=await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id,id));
+ for(const path of ["/tower/availability","/tower/home","/tower/runs/current","/admin/tower","/admin/tower/seasons"]){
+  assert.equal((await api(path,"admin")).status,404,path);
+  assert.equal((await api(path,"admin","POST",{})).status,404,path);
+ }
+ assert.deepEqual(await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id,id)),before);
 });
 
 // Reuse this isolated database for the existing pack transaction regression.

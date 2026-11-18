@@ -1,4 +1,4 @@
-import {emitPixelFx} from "./pixelfx-scenes";
+
 import {cosmeticAssetDisplay} from "@workspace/cosmetics";
 import {flyBetween} from "./physical-feedback";
 import {prefersReducedMotion} from "./presentation-config";
@@ -50,7 +50,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
   const [sealVisible,setSealVisible]=useState(!preview && packCount===1);
   const vault=useRef<HTMLSpanElement>(null);
   const openingRoot=useRef<HTMLElement>(null);
-  useEffect(()=>{if(!opened)return;emitPixelFx(81,openingRoot.current,{width:280});const timer=setTimeout(()=>setSealVisible(false),prefersReducedMotion()?0:350);return()=>clearTimeout(timer);},[opened]);
+  useEffect(()=>{if(!opened)return;const timer=setTimeout(()=>setSealVisible(false),prefersReducedMotion()?0:350);return()=>clearTimeout(timer);},[opened]);
   const closeWithCollection=()=>{if(!preview)Array.from(openingRoot.current?.querySelectorAll("[data-pack-revealed=true] .ko-card-depth")??[]).slice(0,6).forEach(n=>flyBetween(n,vault.current));onClose();};
   const [revealed, setRevealed] = useState<number[]>([]);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
@@ -95,7 +95,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
         const reward=rewards[index];
         const area=reward?.alreadyOwned?87:({NORMAL_CARD:82,EPIC_CARD:83,LEGENDARY_CARD:84,CHAMPION_UNLOCK:85,SKIN:86,CHAMPION_SKIN:86,IMAGE_EMOTE:86} as Record<string,number>)[reward?.rewardType??'']??82;
         const target=openingRoot.current?.querySelectorAll('[data-pack-revealed]')[index];
-        emitPixelFx(area,target,{width:area===84?240:155});
+
       }
       const specials = newlyRevealed.filter(index =>
         rewards[index]?.rewardType === "LEGENDARY_CARD" || rewards[index]?.rewardType === "CHAMPION_UNLOCK");
@@ -107,7 +107,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
   useEffect(() => {
     if (!specialReward) return;
     playRevealMusic(specialReward);
-    emitPixelFx(specialReward.rewardType==='CHAMPION_UNLOCK'?85:84,undefined,{width:Math.min(innerWidth*.6,520),duration:1300});
+
     const timeout = window.setTimeout(() => setSpecialQueue((current) => current.slice(1)),
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 350
         : specialReward.rewardType === 'CHAMPION_UNLOCK' ? 2300 : 1700);

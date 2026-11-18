@@ -55,7 +55,7 @@ router.get("/champions", async (request, response): Promise<void> => {
     .where(user?.role === "ADMIN" ? ne(championsTable.status, "DISABLED") : or(eq(championsTable.status, "PUBLISHED"), and(eq(championsTable.status,"DRAFT"),inArray(championsTable.id,owned.map(row=>row.id)))))
     .orderBy(asc(championsTable.name));
   response.setHeader("Cache-Control", "no-store");
-  response.json({ champions });
+  response.json({ champions:champions.filter(champion=>champion.id!=='champion-tower-vanilla') });
 });
 
 export default router;

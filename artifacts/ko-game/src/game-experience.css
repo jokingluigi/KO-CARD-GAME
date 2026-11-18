@@ -99,9 +99,6 @@
 }
 .ko-prep-actions { position:sticky; bottom:0; padding:16px 0 max(16px,env(safe-area-inset-bottom)); background:#121317; border-top:1px solid var(--ko-line); }
 .ko-prep-screen > section { justify-content:flex-start; }
-.ko-tower > div { max-width:1100px; }
-.ko-tower > div > section { padding:20px; border:1px solid #443c2d; background:var(--ko-surface); }
-.ko-tower h2,.ko-tower h3 { color:var(--ko-gold); }
 .ko-loading-screen { display:flex; min-height:70dvh; align-items:center; padding:24px 0; background:#080808; }
 .ko-loading-track { height:3px; margin-top:24px; background:#373126; overflow:hidden; }
 .ko-loading-track::after { content:""; display:block; height:100%; width:35%; background:var(--ko-gold); animation:ko-loading-pass 1.2s ease-in-out infinite alternate; }

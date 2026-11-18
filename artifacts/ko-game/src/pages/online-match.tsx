@@ -1,4 +1,4 @@
-import {emitPixelFx} from "@/components/pixelfx-scenes";
+
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import { currentChampionAbility } from '@/game/champions/types';
 import {launchDeckEditor} from "@/lib/launch-deck";
@@ -6,7 +6,7 @@ import {acceptsSnapshotVersion} from "@/lib/online-snapshot-policy";
 import {useDeadlineReached} from "@/lib/use-deadline-reached";
 import {BattleTurnClock} from "@/components/battle-turn-clock";
 import {executeAction as previewBattleAction} from '@workspace/game-engine';
-import {preloadExternalVfx} from "@/components/battle-vfx";
+
 import {watchActionAcknowledgement} from "@/lib/action-recovery";
 import {confirmedCounterDamage} from "@/components/attack-animation-utils";
 import { prepareIntroPortraits } from '@/game/match-assets';
@@ -200,15 +200,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   },[client,matchId]);
   useEffect(()=>{const sample=receivedStateRef.current;if(!('sample' in client)||!sample||sample.version!==version)return;const frame=requestAnimationFrame(()=>{if(!document.hidden)client.sample('stateApplyMs',performance.now()-sample.at);});return()=>cancelAnimationFrame(frame);},[version,client]);
 
-  useEffect(() => {
-    // Prepare the fixed hit textures before an actual attack needs them.
-    if (window.requestIdleCallback) {
-      const idle = window.requestIdleCallback(preloadExternalVfx, {timeout: 1500});
-      return () => window.cancelIdleCallback(idle);
-    }
-    const timer = window.setTimeout(preloadExternalVfx, 500);
-    return () => window.clearTimeout(timer);
-  }, []);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -309,7 +301,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         if(message.cosmetics)setCosmetics(message.cosmetics);
         setIntroFirstSpeaker(message.introFirstSpeaker);
         setServerOffset(message.serverTime - Date.now());
-        if(opponentConnectionStateRef.current==='DISCONNECTED_GRACE'&&message.connectionStates[nextSeat==='PLAYER_ONE'?'PLAYER_TWO':'PLAYER_ONE']==='CONNECTED')emitPixelFx(80);
+
         setConnectionStates(message.connectionStates);
         opponentConnectionStateRef.current = message.connectionStates[
           nextSeat === "PLAYER_ONE" ? "PLAYER_TWO" : "PLAYER_ONE"

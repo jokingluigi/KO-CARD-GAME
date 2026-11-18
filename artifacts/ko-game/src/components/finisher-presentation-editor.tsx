@@ -5,7 +5,7 @@ import {
   type SpriteFrame,
 } from "@workspace/cosmetics";
 import { BattleSpriteEditor } from "./battle-sprite-editor";
-import { TowerMusicEditor } from "./tower-music-editor";
+import { MusicTrackEditor } from "./music-track-editor";
 import { cosmeticsRequest } from "@/lib/cosmetics-client";
 type Entry = NonNullable<BattleSprite["finishers"]>[string];
 /** Same sprite editor/upload endpoints; a branch edits only its own presentation. */
@@ -161,7 +161,7 @@ export function FinisherPresentationEditor({
             공통 설정을 사용합니다. 아래 기본 표정부터 등록하면 이 선택지의 각성
             세트로 사용합니다.
           </p>
-          <TowerMusicEditor
+          <MusicTrackEditor
             key={branch + ":music"}
             label="선택지 각성 음악"
             value={entry.music}

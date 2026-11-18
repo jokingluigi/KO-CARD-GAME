@@ -4,7 +4,6 @@ import {FinisherLinkEditor} from "./finisher-link-editor";
 import {ChampionPreparationEditor} from './champion-preparation-editor';
 import {AdminEditorWorkspace} from './admin-editor-workspace';
 import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
-import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { AWAKENING_CARD_IDS } from '@/game/champions/awakening-definitions';
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useLocation } from "wouter";
@@ -558,7 +557,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     {open && <AdminEditorWorkspace title={editing ? `${form.name || '챔피언'} 편집` : '새 챔피언 만들기'} description={editing ? `현재 버전 v${editing.version} · 능력, 이미지, 대사를 한곳에서 편집합니다.` : '기본 정보와 능력을 설정하세요. 새 챔피언은 미공개로 저장됩니다.'} dirty={adminDraftDirty} isNew={!editing} busy={busy} uploading={basicPortraitUploading||portraitUploading} error={error} onClose={closeEditor} onSave={()=>void save()}>
       <div className="admin-workbench-columns"><div className="admin-workbench-fields">
         <details className="admin-champion-advanced"><summary>특수 인트로 관계</summary>
-        {editing?.id === TOWER_VANILLA_CHAMPION_ID && <p className="mb-4 rounded border border-amber-700 p-3 text-sm text-amber-200">타워 일반 층 전용입니다. 초상화를 설정할 수 있으며, 전투에서는 체력 30·능력 없음·피니셔 준비 없음으로 적용됩니다.</p>}
         {editing && <section className="mb-4 rounded border border-neutral-800 bg-neutral-900/50 p-3">
           <div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-black">이 챔피언의 특수 인트로 관계</h4><button type="button" disabled={introBusy} onClick={() => setIntroDraft({ championOneId: editing.id, championTwoId: champions.find(c => c.id !== editing.id)?.id, lineOne: "", lineTwo: "", firstSpeaker: "ONE", status: "DRAFT" })} className="rounded bg-primary px-2 py-1 text-[11px] font-bold text-black">새 관계</button></div>
           {introError && <p className="mb-2 text-xs text-red-300">{introError}</p>}

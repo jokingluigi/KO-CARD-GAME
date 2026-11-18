@@ -676,59 +676,16 @@ test("durable AI completion replay is captured once; reward/quest receipt is not
   assert.equal(row!.outcome, "LOSS");
   assert.equal(await collectUsageBatch(), 0);
 });
-test("tower pending outbox survives next-battle overwrite and reprocessing", async () => {
-  const summary = {
-    ...sample.summary,
-    matchId: "local-tower-battle",
-    startedAt: new Date(Date.now() - 1000).toISOString(),
-    endedAt: new Date().toISOString(),
-  };
-  await database
-    .insert(schema.towerSeasonsTable)
-    .values({ id: "local-season", name: "Isolated usage QA", data: {} });
-  await database.insert(schema.towerRunsTable).values({
-    id: "local-tower-run",
-    userId: "user-a",
-    seasonId: "local-season",
-    state: {},
-    snapshot: {},
-    usagePending: [summary as unknown as Record<string, unknown>],
-    currentBattle: null,
-  });
-  await collectUsageBatch();
-  assert.equal(
-    (
-      await queryRows(
-        database,
-        sql`SELECT * FROM usage_participations WHERE source_key='tower:local-tower-battle'`,
-      )
-    ).length,
-    1,
-  );
-  assert.deepEqual(
-    (
-      await database
-        .select()
-        .from(schema.towerRunsTable)
-        .where(eq(schema.towerRunsTable.id, "local-tower-run"))
-    )[0]!.usagePending,
-    [],
-  );
-  await database
-    .update(schema.towerRunsTable)
-    .set({ usagePending: [summary as unknown as Record<string, unknown>] })
-    .where(eq(schema.towerRunsTable.id, "local-tower-run"));
-  await collectUsageBatch();
-  assert.equal(
-    (
-      await queryRows(
-        database,
-        sql`SELECT * FROM usage_participations WHERE source_key='tower:local-tower-battle'`,
-      )
-    ).length,
-    1,
-  );
+test("retired mode outbox is left archived without ingestion or mutation",async()=>{
+ const summary={...sample.summary,matchId:"local-tower-battle"};
+ await database.insert(schema.towerSeasonsTable).values({id:"local-season",name:"Archive",data:{}});
+ await database.insert(schema.towerRunsTable).values({id:"local-tower-run",userId:"user-a",seasonId:"local-season",state:{},snapshot:{},usagePending:[summary as unknown as Record<string,unknown>],currentBattle:null});
+ const before=await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id,"local-tower-run"));
+ await collectUsageBatch();await collectUsageBatch();
+ assert.deepEqual(await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id,"local-tower-run")),before);
+ assert.equal((await queryRows(database,sql`SELECT * FROM usage_participations WHERE source_key='tower:local-tower-battle'`)).length,0);
 });
+
 test("actual server replay PLAY → token → ability → quest → cancel → finish → collect → admin API", async () => {
   const state = initial("ai-00000000-0000-4000-8000-000000000002");
   const identity = {
@@ -940,66 +897,21 @@ test("transaction failure rolls back all rollups and a later retry is counted ex
     Number(before) + 1,
   );
 });
-test("a failed source remains durable with backoff while other matches continue", async () => {
-  const summary = {
-    ...sample.summary,
-    matchId: "failing-tower-summary",
-    unresolvedEvents: 1,
-    startedAt: new Date(Date.now() - 1000).toISOString(),
-    endedAt: new Date().toISOString(),
-  };
-  const good = {
-    ...summary,
-    matchId: "healthy-tower-summary",
-    unresolvedEvents: 0,
-  };
-  await database
-    .update(schema.towerRunsTable)
-    .set({
-      usagePending: [summary, good] as unknown as Record<string, unknown>[],
-    })
-    .where(eq(schema.towerRunsTable.id, "local-tower-run"));
-  await collectUsageBatch();
-  const [row] = await database
-    .select()
-    .from(schema.towerRunsTable)
-    .where(eq(schema.towerRunsTable.id, "local-tower-run"));
-  assert.equal(row!.usagePending.length, 1);
-  assert.equal((row!.usagePending[0] as any).matchId, summary.matchId);
-  const [failure] = await queryRows(
-    database,
-    sql`SELECT * FROM usage_collection_failures WHERE source_key='tower:failing-tower-summary'`,
-  );
-  assert.equal(failure!.attempts, 1);
-  await collectUsageBatch();
-  assert.equal(
-    (
-      await queryRows(
-        database,
-        sql`SELECT attempts FROM usage_collection_failures WHERE source_key='tower:failing-tower-summary'`,
-      )
-    )[0]!.attempts,
-    1,
-  );
-  await database
-    .update(schema.towerRunsTable)
-    .set({
-      usagePending: [{ ...summary, unresolvedEvents: 0 }] as unknown as Record<
-        string,
-        unknown
-      >[],
-    })
-    .where(eq(schema.towerRunsTable.id, "local-tower-run"));
-  await database.execute(
-    sql`UPDATE usage_collection_failures SET next_retry_at=now()-interval '1 second' WHERE source_key='tower:failing-tower-summary'`,
-  );
-  await collectUsageBatch();
-  assert.equal(
-    (await queryRows(database, sql`SELECT * FROM usage_collection_failures`))
-      .length,
-    0,
-  );
+test("a failed AI source remains durable with backoff while other matches continue",async()=>{
+ const summary={...sample.summary,matchId:"failing-ai-summary",unresolvedEvents:1,startedAt:new Date(Date.now()-1000).toISOString(),endedAt:new Date().toISOString()};
+ const good={...summary,matchId:"healthy-ai-summary",unresolvedEvents:0};
+ await database.insert(schema.aiQuestMatchesTable).values([summary,good].map(value=>({id:value.matchId,userId:"user-a",deckId:"local-deck",aiDeckId:"local-ai",difficulty:"NORMAL",initialState:{},questDate:"2099-01-01",usageSummary:value as unknown as Record<string,unknown>})));
+ await collectUsageBatch();
+ const [failed]=await database.select().from(schema.aiQuestMatchesTable).where(eq(schema.aiQuestMatchesTable.id,summary.matchId));
+ const [healthy]=await database.select().from(schema.aiQuestMatchesTable).where(eq(schema.aiQuestMatchesTable.id,good.matchId));
+ assert.equal(failed!.usageRecordedAt,null);assert.equal((failed!.usageSummary as any).matchId,summary.matchId);assert.ok(healthy!.usageRecordedAt);
+ const [failure]=await queryRows(database,sql`SELECT * FROM usage_collection_failures WHERE source_key='ai:failing-ai-summary'`);assert.equal(failure!.attempts,1);
+ await collectUsageBatch();assert.equal((await queryRows(database,sql`SELECT attempts FROM usage_collection_failures WHERE source_key='ai:failing-ai-summary'`))[0]!.attempts,1);
+ await database.update(schema.aiQuestMatchesTable).set({usageSummary:{...summary,unresolvedEvents:0} as unknown as Record<string,unknown>}).where(eq(schema.aiQuestMatchesTable.id,summary.matchId));
+ await database.execute(sql`UPDATE usage_collection_failures SET next_retry_at=now()-interval '1 second' WHERE source_key='ai:failing-ai-summary'`);
+ await collectUsageBatch();assert.equal((await queryRows(database,sql`SELECT * FROM usage_collection_failures`)).length,0);
 });
+
 test("durable PvP collector includes both humans, excludes active/cancelled records and recovers receipt-before-checkpoint crashes", async () => {
   await database.insert(schema.decksTable).values(
     ["user-a", "user-b"].map((id) => ({

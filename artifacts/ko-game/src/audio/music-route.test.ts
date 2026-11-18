@@ -10,14 +10,14 @@ test("main BGM is eligible on direct non-battle route loads", () => {
 });
 
 test("match routes suppress main BGM and use the battle context", () => {
-  for (const path of ["/tutorial", "/ai-match", "/online/match/match-123", "/draft/match/draft-123", "/tower"]) {
+  for (const path of ["/tutorial", "/ai-match", "/online/match/match-123", "/draft/match/draft-123"]) {
     assert.equal(musicContextForPath(path), "BATTLE", path);
     assert.equal(shouldLoadMainBgm(path), false, path);
   }
 });
 
 test("every administrator route suppresses background music including test matches", () => {
-  for (const path of ["/admin", "/admin/", "/admin/cards", "/admin/draft", "/admin/draft/match/draft-123", "/admin/tower-test", "/admin/notices"]) {
+  for (const path of ["/admin", "/admin/", "/admin/cards", "/admin/draft", "/admin/draft/match/draft-123", "/admin/notices"]) {
     assert.equal(musicContextForPath(path), "SILENT", path);
     assert.equal(shouldLoadMainBgm(path), false, path);
   }

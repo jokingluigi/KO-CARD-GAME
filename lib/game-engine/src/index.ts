@@ -99,10 +99,6 @@ export {
   type QuestConditionNode,
 } from "./quest-conditions";
 export type { GameMediaCatalog } from "../../../artifacts/ko-game/src/game/media";
-export * from './tower/types';
-export * from './tower/domain';
-export * from './tower/config';
-export * from './tower/battle';
 export {
   isOnlineActionPayload,
   type OnlineActionPayload,
@@ -110,12 +106,10 @@ export {
 
 export { MINION_A_ID, minionACatalog, completeMinionACatalog } from '../../../artifacts/ko-game/src/game/champions/minion-a';
 
-export { TOWER_RELIC_DEFINITIONS } from './tower/relic-definitions';
 
 export { validChampionQuestCondition, evaluateChampionQuestCondition } from './champion-quest-conditions';
 export type { ChampionQuestCondition } from './champion-quest-conditions';
 
-export { TOWER_VANILLA_CHAMPION_ID, towerVanillaChampion } from '../../../artifacts/ko-game/src/game/champions/tower-vanilla';
 
 export { ZOMBIE_RULES } from '../../../artifacts/ko-game/src/game/engine/zombie-token';
 export * from './draft/domain';
@@ -127,10 +121,7 @@ export * from '../../../artifacts/ko-game/src/game/champions/awakening-types';
 export * from '../../../artifacts/ko-game/src/game/champions/awakening-definitions';
 export { hasAwakeningInvulnerability } from '../../../artifacts/ko-game/src/game/champions/awakening';
 
-export * from './tower/types-v2';
-export * from './tower/v2';
 
-export * from './tower/effects';
 export {selectAIOpponentDeck} from './ai-deck-selection';
 
 export { LESSONS, tutorialCatalog, lessonUnavailable, createTutorialLesson, tutorialGoal, tutorialActionAllowed } from "./tutorial";

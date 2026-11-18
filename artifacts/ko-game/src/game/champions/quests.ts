@@ -1,6 +1,5 @@
 import { preparationCompletionReward, processFinisherChoices, grantPreparedFinisher } from './finisher-preparation';
 import { evaluateChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
-import { towerQuestProgressBonus, towerQuestComplete, refreshTowerAuras } from '../tower/relics';
 import type { GameEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { ChampionQuest } from './types';
@@ -130,11 +129,7 @@ function processChampionQuestEventPass(
     if (conditionResult) resolvedState = { ...resolvedState, players: resolvedState.players.map(p => p.id === originalPlayer.id && p.champion ? { ...p, champion: { ...p.champion, questConditionCounts: conditionResult.counts } } : p) };
     if (!champion || !quest || champion.questCompleted || (conditionResult ? !conditionResult.completed : progressEvents.length === 0)) continue;
 
-    const relicBonus = quest.goldSpent || quest.selfEffectDamage || quest.strictEventCount
-      ? { state: resolvedState, amount: 0 }
-      : towerQuestProgressBonus(resolvedState, originalPlayer.id);
-    resolvedState = relicBonus.state;
-    const progressAmount = conditionResult ? quest.requiredProgress - champion.questProgress : (quest.goldSpent ? progressEvents.reduce((sum, event) => sum - Number(event.amount), 0) : progressEvents.length * (quest.progressPerEvent ?? 1)) + relicBonus.amount;
+    const progressAmount = conditionResult ? quest.requiredProgress - champion.questProgress : (quest.goldSpent ? progressEvents.reduce((sum, event) => sum - Number(event.amount), 0) : progressEvents.length * (quest.progressPerEvent ?? 1));
     const questProgress = Math.min(
       champion.questProgress + progressAmount,
       quest.requiredProgress,
@@ -201,7 +196,6 @@ function processChampionQuestEventPass(
         ? champion.id
         : resolvedState.latestQuestCompletedChampionId,
     };
-    if (questCompleted) resolvedState = towerQuestComplete(resolvedState, originalPlayer.id);
     if (questCompleted && quest.awakening && !quest.finisher) resolvedState = beginAwakeningSequence(resolvedState, originalPlayer.id);
     if(questCompleted && completionReward.type==='FINISHER')resolvedState=grantPreparedFinisher(resolvedState,originalPlayer.id,completionReward,quest.id);
     if (questCompleted && completionReward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
@@ -279,7 +273,7 @@ function processChampionQuestEventPass(
     }
   }
 
-  return reconcileAwakeningSequences(refreshTowerAuras(resolvedState));
+  return reconcileAwakeningSequences(resolvedState);
 }
 
 /** Both champions qualify on either turn, including events caused by rewards. */

@@ -5,7 +5,6 @@ import { healNewCardAware } from './new-card-rules';
 import { resumeCountdownTurnStart } from './countdown';
 import type { GameState, PlayerState } from '../types/game-state';
 import type { CardInstance } from '../cards/types';
-import { expireTowerOpponentTurnBuffs, expireTowerTurnEndBuffs, towerTurnStart } from '../tower/relics';
 import { normalizeCardForZone } from '../cards/zone-state';
 import { getActiveCardAbilities, getActiveCardKeywords } from '../cards/granted-text';
 import type { GameMediaCatalog } from '../media';
@@ -91,12 +90,10 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     return live ? applyEffect(next,interceptor.playerId,live,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:player.nextTurnGoldBonus,health:player.nextTurnGoldBonus}}) : next;
   }, interceptImmediateBonusGold(turnStartedState,playerId,player.nextTurnGoldBonus)??turnStartedState);
   // Expiring owner-turn health can retire a wrestler whose effects end the
-  // game. Do not continue into relics, the normal draw or queued turn effects.
+  // game. Do not continue into the normal draw or queued turn effects.
   const afterDeaths = resolveStateBasedDeaths(afterInterception);
   if (afterDeaths.status === 'FINISHED') return afterDeaths;
-  const afterRelics = towerTurnStart(afterDeaths, playerId);
-  if (afterRelics.status === 'FINISHED') return afterRelics;
-  const afterDraw = drawCard(afterRelics, playerId);
+  const afterDraw = drawCard(afterDeaths, playerId);
   if (afterDraw.status === 'FINISHED') return afterDraw;
   const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
   if (afterDelayed.status === 'FINISHED') return afterDelayed;
@@ -319,7 +316,7 @@ export function endTurn(
         };
       }
 
-      const expired = expireTowerOpponentTurnBuffs(state, player);
+      const expired = player;
       return expired;
     }),
     events: [
@@ -377,7 +374,7 @@ export function endTurn(
     afterRepeated = resolveTurnEndPass(afterRepeated);
   }
 
-  const scheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
+  const scheduled = resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId);
   if (scheduled.status === 'FINISHED') return actionSuccess(processChampionQuestEvents(state, scheduled));
   const afterScheduled = { ...scheduled, pendingCardEffects: scheduled.pendingCardEffects?.filter(effect => effect.expiresAtTurn === undefined || effect.expiresAtTurn > state.turn) };
   if(afterScheduled.targetingState?.active)return actionSuccess(processChampionQuestEvents(state,{...afterScheduled,pendingNextTurnStart:{playerId:nextPlayer.id}}));

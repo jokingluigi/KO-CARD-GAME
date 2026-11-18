@@ -1,4 +1,4 @@
-import {emitPixelFx} from "./pixelfx-scenes";
+
 import { flyBetween } from "./physical-feedback";
 import { prefersReducedMotion } from "./presentation-config";
 import { interfaceFrames } from "./motion/interface-motion-policy";
@@ -26,7 +26,7 @@ export function CollectionActionAnimation({
   onCompleteRef.current = onComplete;
   useEffect(() => {
     const reduced = prefersReducedMotion();
-    emitPixelFx(({CRAFT:88,CHAMPION_CRAFT:89,DISENCHANT:90,PACK_PURCHASE:91,REWARD:117})[scene.kind],surface.current,{width:260,duration:1100});
+
     let a: Animation | undefined;
     try {
       a = surface.current?.animate(interfaceFrames("SUCCESS", reduced), {

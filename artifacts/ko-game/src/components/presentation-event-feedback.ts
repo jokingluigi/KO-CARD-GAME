@@ -39,11 +39,12 @@ export function mergeStatusPresentation(drafts:PresentationCueDraft[],status:Sta
  const pending=new Map(status.filter(c=>c.kind==='ARMOR').map(c=>[eventKeys[c.eventIndex??-1],c]));
  const result:PresentationCueDraft[]=[];
  for(const cue of drafts){
-  for(const [key,shield] of pending)if(key&&cue.kind!=='EFFECT'&&cue.id.startsWith(key)){
+  for(const [key,shield] of pending)if(key&&cue.kind!=='EFFECT'&&(cue.id.startsWith(key)||(shield.eventIndex!==undefined&&eventKeys.findIndex(eventKey=>cue.id.startsWith(eventKey))>shield.eventIndex))){
    result.push(shield);pending.delete(key);break;
   }
   result.push(cue);
  }
+ result.push(...pending.values());
  result.push(...status.filter(c=>c.kind!=='ARMOR'));
  return result;
 }

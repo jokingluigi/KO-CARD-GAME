@@ -1,0 +1,2211 @@
+{
+  "baseCommit": "37c3394487372708f70c9be66852b46db40d6b91",
+  "branch": "handoff/claude-vfx-tower-retirement-20261118",
+  "changes": [
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/index.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/lib/admin-content-deletion.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/lib/quest-platform.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/lib/startup-schema.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/api-server/src/lib/tower-battle-actions.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/api-server/src/lib/tower-catalog.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/api-server/src/lib/tower-run-store.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/lib/usage-statistics-store.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/api-server/src/routes/admin-tower.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/routes/admin.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/routes/cards.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/api-server/src/routes/index.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/api-server/src/routes/tower.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/effekseer/HitEffect01_Yellow.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/effekseer/SAMPLE-LICENSE.txt"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/effekseer/Smoke.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/effekseer/manifest.json"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/manifest.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/LICENSE.txt"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/circle_03.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/dirt_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/light_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/magic_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/magic_03.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/scratch_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/slash_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/smoke_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/smoke_04.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/smoke_07.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/spark_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/spark_04.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/kenney/particle/star_01.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/LICENSE.txt"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/README.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/UPSTREAM-NOTICE.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/critical-acb785bf744e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/critical.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/guard-cce2ea8fe37a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/guard.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/heal-df8807e937ce.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/heal.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/impact-ea4d2c5d0e22.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/impact.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko-manifest.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/buff-8214fced70e6.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/critical-dec5d3f09b45.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/debuff-22b0bf25b214.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/draw-92df37c44c9c.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/ember-40829baa5c87.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/gold-93af877cad10.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/guard-9cfa9980ce1b.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/heal-72d99c2eb4bc.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/impact-3b586ee6ab9a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/retire-a575a1f1aa93.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/reward-313b3643fad8.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/rush-fcbf4e832193.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/seal-7524404a4211.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/shadow-6ea0bc980d30.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/shatter-87a71e9694ca.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/slash-22cbbeece731.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/spell-a7b806aa4bec.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/summon-a95db3113a0e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/transform-c88a5c01afa4.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/vanish-60a43ed76828.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/ko/warning-5298bfee889d.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library-manifest.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-arcane-missiles-b5efe5f13042.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-arcane-orb-0f40bdeea15a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-blink-in-b226d7c7c2b5.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-blink-out-28ea599c4a43.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-magic-circle-cast-4bffa53909b2.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-mana-burst-2bfd6171ad73.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-portal-d1b5ec32acee.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-rune-circle-29d33b372936.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/arcane-spell-charge-a02e399a4086.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/critters-ghost-7ed7911376a7.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/critters-wisp-efb25cc68af6.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/explosions-cartoon-pow-a2812fc50d97.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/explosions-firework-burst-70a77dad4eb1.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/explosions-grenade-30526c360e58.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/explosions-implosion-b3dd026565a7.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/explosions-plasma-explosion-cfdd5f03a098.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/explosions-smoke-bomb-752623346c9e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/fire-fire-ring-036e40ff4bb4.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/fire-fireball-6f1f3cb92573.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/fire-flame-pillar-b009f382c800.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/fire-spirit-flame-c205bc18aa8d.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-blessing-724a500655ea.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-divine-shield-8f906801156a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-feather-burst-780e50b0c132.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-halo-b713546cf58e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-heal-aoe-52bf60a32e10.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-heal-b1c55d6483af.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-holy-pillar-b34de2d0c42d.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-resurrection-6e986e224373.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-smite-cd151921d289.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/holy-sunburst-acc953a1a29a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ice-frost-nova-f32d90fccd1f.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ice-ice-shatter-cc7a77ed4ebc.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-blunt-hit-3855ffd1de5c.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-bullet-impact-f02ee5f264b9.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-crit-hit-4817f915854b.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-ground-slam-89aa0d72cde7.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-heavy-landing-d3e36f0978d5.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-hit-flash-e9e9c6f5e983.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-hit-spark-d3d6e6a46d44.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-impact-frame-4b5e7e38cae6.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-parry-1a189d934df0.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/impacts-shield-block-c4f80a31f51b.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/lightning-chain-lightning-77658d0dd822.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/lightning-charge-up-d3b4a954dd2a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/lightning-lightning-strike-469711d7495d.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/lightning-plasma-ball-9d00f9fcd193.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/lightning-spark-arc-4343752a4c13.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/lightning-thunderclap-ab90619c3e64.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-claw-swipe-a0e056f47955.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-dagger-flurry-cb95518ef9e4.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-double-slash-2e91d945a8d2.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-spin-slash-ce7225f06b66.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-sword-slash-95448ee3a7eb.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-thrust-d39b9554380a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-uppercut-6c746bf84bf8.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/melee-whip-crack-1d1725e462b4.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/moves-dash-strike-311fcd07147f.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/moves-holy-smite-a9e44f06069e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/moves-sword-combo-a94bde0fd3d9.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/nature-healing-bloom-812e9d8abe49.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/nature-leaf-storm-7061b3f490ee.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/nature-poison-cloud-5ec0ca342919.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/nature-spore-burst-cf7a04f853df.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/nature-thorns-5a1b53127746.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/nature-vine-whip-cae758be628e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-chest-open-15bc46978cbf.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-coin-spin-cef9a6e7e533.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-collect-burst-d6d747208cb6.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-crystal-shard-cb505351fc14.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-gem-spin-5105281125cc.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-key-glint-12c4cb1c1f05.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-loot-beam-9bed549dedb0.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/pickups-power-star-bdaacdaa3505.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/projectiles-bullet-tracer-276af1429210.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/projectiles-cannonball-802a6041d4cb.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/projectiles-magic-missile-b9db27028a07.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/projectiles-muzzle-pistol-5d05b248fc98.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/projectiles-rocket-001ecd40f93c.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-emp-blast-2dc2ec2ee61b.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-force-field-63d3d071f057.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-glitch-534b6168c686.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-hologram-a2dcb1fa66ee.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-laser-grid-c03ff7c90f53.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-scanner-9e5f4c3d61d6.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-tractor-beam-5f520dbb8b75.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-warp-in-e567b09d3d83.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/scifi-warp-out-0f90bbd1a6f5.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-black-hole-fd96b9bc71f8.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-curse-0411d5e8d56d.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-dark-explosion-6dd35572a027.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-eclipse-5ddf4701b617.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-grasping-hands-bf869cda08f4.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-hex-sigil-5d8cc70a96ca.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-life-steal-748483e13f57.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-necro-skulls-1d827934e053.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-shadow-flames-6bfc7040959f.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-shadow-tendrils-a297303680f8.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-soul-drain-fbe201d87548.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/shadow-void-orb-c279d164dbf8.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-coin-drop-9719cc4b8cc7.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-disintegrate-9124e69fe9c3.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-dissolve-burn-e6521096a742.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-poof-dc42a13c137e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-respawn-beam-eb103b541698.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-shatter-death-1cbb362bbdd9.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-soul-rise-86f6430db45b.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-spawn-portal-21416d25bc8a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/spawn-summon-rise-f0639dd43675.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/status-haste-af722a90d43e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/status-rage-b4661b3c1b06.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/status-stunned-00e56ee18b86.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/transitions-burn-away-97586dfa7901.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/transitions-diamond-wipe-56391cb0b690.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/transitions-iris-3a64889377d7.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/transitions-pixel-dissolve-bd50ebb99327.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/transitions-shatter-wipe-5508e548cf5f.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/transitions-slash-wipe-25330ad3f18a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-achievement-f9f4d653ca95.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-coin-collect-50050d99890c.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-combo-counter-c7d5b785f002.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-confetti-48b32a6cc676.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-countdown-3a7a15ff6e50.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-crit-number-a42f0443f82d.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-exclamation-8f5a9ec3688e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-health-bar-hit-2f0624f41d20.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-heart-lost-ed9905cc04de.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-level-up-6b90b462e26e.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/ui-quest-complete-41c49640c03b.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/water-splash-149dc4b38e89.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/water-water-orb-749dd1c30cc7.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/water-wave-crash-d617d1f0df2a.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/weather-aurora-9a5f74658902.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/weather-fireflies-66668a5a295c.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/weather-fog-b308de57f6f2.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/weather-god-rays-d434dc2348c9.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/library/weather-storm-cbbfbe2839c0.png"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/public/vendor/pixelfx/manifest.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/qa/pixelfx-driver.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/App.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/audio/external-assets.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/audio/music-route.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/audio/music-route.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/battle-presentation.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-champion-manager.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-dashboard.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-draft-manager.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-quest-manager.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-tower-manager.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-tower-test.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/admin-tower-v2.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/attack-animation.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-atmosphere.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-board.css"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-resource-feedback.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-turn-handoff.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-vfx-model.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-vfx-model.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-vfx.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/battle-zone-visuals.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/card-leave-animation.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/card-play-animation.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/champion-sprite-visual.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/champion-sprite-visual.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/cinematic-layer.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/cinematic-presentation.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/claim-all-rewards.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/collection-action-animation.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/combat-settings-preview.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/cosmetic-preview.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/draft-ready-panel.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/effect-readability.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/finisher-presentation-editor.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/game-loading.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/game-navigation.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/game-state-preview.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/main-menu.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/match-result-overlay.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/motion/interface-motion.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/motion/interface-motion.tsx"
+      ]
+    },
+    {
+      "status": "R083",
+      "paths": [
+        "artifacts/ko-game/src/components/tower-music-editor.tsx",
+        "artifacts/ko-game/src/components/music-track-editor.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/online-match-intro.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/pack-opening.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/physical-card.css"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-art-direction.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-art-direction.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-atlas.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-battle-bridge.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-ko-atlas.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-library.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-recipes.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-scenes.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/pixelfx-sprite.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/player-ux/player-ux.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/player-ux/policy.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/player-ux/policy.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/presentation-event-feedback.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/presentation-event-feedback.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/presentation-feedback-utils.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/presentation-feedback.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/quest-presentation.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/screen-impact.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/tower-dialogue-view.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/components/tower-effect-editor.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/components/tutorial/lesson-ui.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game-experience.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/actions/ai-evaluator.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/actions/engine-actions.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/cards/types.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/champions/awakening.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/champions/quests.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/game/champions/tower-vanilla.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/effects/effect-engine.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/balance-effects.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/board-capacity.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/card-status.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/champion-reward-replacement.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/champion-system.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/champion-token.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/combat.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/destroy-card.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/enter-field.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/fusion.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/play-wrestler.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/engine/turn-system.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/game/tower/configured-effects.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/game/tower/relic-events.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/game/tower/relics.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/game/tower/relics.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/game/types/game-state.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/index.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/lib/admin-navigation.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/lib/admin-navigation.ts"
+      ]
+    },
+    {
+      "status": "R073",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-music-upload.test.ts",
+        "artifacts/ko-game/src/lib/music-track-upload.test.ts"
+      ]
+    },
+    {
+      "status": "R089",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-music-upload.ts",
+        "artifacts/ko-game/src/lib/music-track-upload.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-action-payload.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-client.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-music.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-music.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-sandbox.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/lib/tower-sandbox.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/admin.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/attendance.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/cosmetics.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/daily-quests.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/decks.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/home.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/online-match.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/pages/settings.tsx"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "artifacts/ko-game/src/pages/tower.tsx"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/premium-presentation.css"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "artifacts/ko-game/src/styles/admin-console.css"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/design/pixelfx-expansion-20261116.md"
+      ]
+    },
+    {
+      "status": "A",
+      "paths": [
+        "docs/development/CLAUDE_KO_CARD_GAME_SETUP.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/ops/pixelfx-expansion-progress.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-art-direction/README.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-art-direction/assets.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-art-direction/behavior.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-art-direction/results.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-expansion/README.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-expansion/assets.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-expansion/behavior.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-expansion/coverage.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx-expansion/results.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/20261116-pixelfx.md"
+      ]
+    },
+    {
+      "status": "A",
+      "paths": [
+        "docs/qa/20261116-retire-tower/README.md"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/pixelfx-browser.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/pixelfx-expansion-behavior.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/pixelfx-expansion-browser.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "docs/qa/pixelfx-settings-smoke.mjs"
+      ]
+    },
+    {
+      "status": "A",
+      "paths": [
+        "docs/qa/retire-tower-and-distinct-fx.mjs"
+      ]
+    },
+    {
+      "status": "A",
+      "paths": [
+        "docs/qa/vfx-discard-smoke.mjs"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/db/qa/awakening-http.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/db/qa/cosmetics.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/db/qa/latest-admin-effects-http.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/db/qa/startup-schema.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/db/qa/tower-db.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/db/qa/tower-v2-http.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/db/qa/tower-vanilla.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/db/qa/usage-statistics.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/game-engine/src/index.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "paths": [
+        "lib/game-engine/src/music-track.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/battle.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/battle.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/config.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/config.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/domain.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/domain.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/effects.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/relic-definitions.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/types-v2.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/types.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/v2.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "lib/game-engine/src/tower/v2.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "paths": [
+        "lib/game-engine/tsconfig.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "scripts/vfx/expansion-inventory.json"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "scripts/vfx/ko-art-direction.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "scripts/vfx/ko-pixelfx-effects.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "scripts/vfx/render-ko-art-direction.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "scripts/vfx/render-pixelfx-library.mjs"
+      ]
+    },
+    {
+      "status": "D",
+      "paths": [
+        "scripts/vfx/render-pixelfx.mjs"
+      ]
+    }
+  ]
+}

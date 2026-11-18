@@ -1,3 +1,4 @@
+import {hasVacantBoardSlot} from './board-capacity';
 import { hasPendingProgram } from './program';
 import { canPlayFusion, queueHandFusion } from './fusion';
 import { getActiveCardKeywords } from '../cards/granted-text';
@@ -13,7 +14,6 @@ import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
 import { resolveBoardListeners, resolveQueuedEffectsForPlayedWrestler, resolveRegisteredRuleListeners } from '../effects/effect-engine';
 import { getActiveCardAbilities } from '../cards/granted-text';
-import { canEnterTowerField, towerSummonCost } from '../tower/relics';
 
 /** Costs reserved for a hand play are evaluated before payment, never on summons. */
 export function wrestlerPlayCost(state: GameState, playerId: string, card: import('../cards/types').CardInstance): number {
@@ -22,7 +22,7 @@ export function wrestlerPlayCost(state: GameState, playerId: string, card: impor
     (pending.expiresAtTurn === undefined || pending.expiresAtTurn >= state.turn) &&
     pending.effect.target?.zone === 'HAND' && pending.effect.action === 'SET_STAT' &&
     pending.effect.values?.stat === 'COST' && pending.effect.values.amount === 0);
-  return free ? 0 : towerSummonCost(state, playerId, card.currentCost);
+  return free ? 0 : card.currentCost;
 }
 
 export function playWrestlerFromHand(
@@ -57,7 +57,7 @@ export function playWrestlerFromHand(
     );
   }
 
-  if (isBoardFull(player.board) || !canEnterTowerField(state, playerId)) {
+  if (isBoardFull(player.board) || !hasVacantBoardSlot(state, playerId)) {
     return actionFailure(state, 'BOARD_FULL', '필드에 빈 자리가 없습니다.');
   }
 

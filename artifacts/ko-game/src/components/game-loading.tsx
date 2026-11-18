@@ -16,7 +16,6 @@ const names: Record<string, string> = {
   "/online/friendly": "친선전",
   "/tutorial": "튜토리얼",
   "/ai-match": "AI 대전",
-  "/tower": "타워",
   "/draft": "드래프트",
   "/cosmetics": "꾸미기",
   "/online": "대전 모드",

@@ -1,113 +1,5 @@
 [
   {
-    "file": "particle/spark_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/spark_01.png",
-    "sha256": "ca5e7eac772d5af176f0d45be34f416908859bf28697c31f3ec7f34609919f53",
-    "bytes": 89628,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/spark_04.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/spark_04.png",
-    "sha256": "e3fac37e94127b3b5fcfaaf91eca8c157dc32d08a760e8c9df35dc5fcf017407",
-    "bytes": 78726,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/smoke_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/smoke_01.png",
-    "sha256": "89df665bb2e9a021edad2a9077d2651c44e6c6cd28f3fd38f800c41a5febd2a2",
-    "bytes": 91637,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/smoke_04.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/smoke_04.png",
-    "sha256": "be2579db131de274567e0e1b5a2e81f9790205f0e68a3c1a038d130a7b24e092",
-    "bytes": 92360,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/smoke_07.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/smoke_07.png",
-    "sha256": "b18497db9e6acfa194bace6d417e7e2d480df3b54d6d5c9b3e07fabc6398345a",
-    "bytes": 74367,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/dirt_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/dirt_01.png",
-    "sha256": "5dc794d1cde78d48b92b538f3fb4eedc47edefb636724df00d9815c15b4dc987",
-    "bytes": 46129,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/magic_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/magic_01.png",
-    "sha256": "4530b084d541351c779aac12877e831a398f7e4575126fa2a26c5eb2c47ca37b",
-    "bytes": 77122,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/magic_03.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/magic_03.png",
-    "sha256": "b4702e45c034d9ca22a9c45c051105502ac51e26523740782fd8fd77ebea4b83",
-    "bytes": 55275,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/star_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/star_01.png",
-    "sha256": "4cd179dbc319bfbe13a685abc6f3f4e8e668f4e1aff828bd86baddf0d20c72a7",
-    "bytes": 39485,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/slash_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/slash_01.png",
-    "sha256": "ebe034d985eff38bcc5191317aa117997eb0e2ebf5a2988395dea056e0d84a5f",
-    "bytes": 23710,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/light_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/light_01.png",
-    "sha256": "e15db5a8ccea012f4df82689f1a829bdaac04fd8a3066a723f157e0b01ffbf0a",
-    "bytes": 86592,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
-    "file": "particle/circle_03.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/circle_03.png",
-    "sha256": "5c0d9704ed222df863a6a8602dca952ffcd04421136ea439a0be2f257ebb8c73",
-    "bytes": 69716,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
-  },
-  {
     "file": "impact/impact_punch_medium_000.ogg",
     "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_punch_medium_000.ogg",
     "sha256": "486988aa2d6440ffc4c62a0e8ccf3c23673ba84424bd4723378d451b7255eb5c",
@@ -259,15 +151,6 @@
     "license": "CC0-1.0",
     "author": "Kenney",
     "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
-  },
-  {
-    "file": "particle/scratch_01.png",
-    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/scratch_01.png",
-    "sha256": "8ef43e57056e4d5dcf10739806cc43bb9cd14221c997c79b6c1680c5a1838443",
-    "bytes": 61785,
-    "license": "CC0-1.0",
-    "author": "Kenney",
-    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
   },
   {
     "file": "interface/glass_001.wav",

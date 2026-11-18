@@ -1,5 +1,4 @@
-import {useEffect,useRef} from "react";
-import {emitPixelFx} from "./pixelfx-scenes";
+
 import type {
   CosmeticCardPreview,
   CosmeticChampionPreview,
@@ -20,8 +19,6 @@ export function CosmeticPreview({
   compact?: boolean;
   artworkHeight?: number;
 }) {
-  const last=useRef<string|null>(null);
-  useEffect(()=>{if(!compact&&last.current!==item.id){last.current=item.id;emitPixelFx(114,undefined,{width:180,duration:900});}},[item.id,compact]);
   const tokenAssets =
     item.type === "CHAMPION_SKIN"
       ? Object.entries(item.imageAssets).filter(([key]) =>

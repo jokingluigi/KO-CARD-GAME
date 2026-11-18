@@ -36,6 +36,7 @@ export type PresentationCueDraft = {
   duration: number;
   stat?: GameEvent["stat"];
   quiet?: boolean;
+  /** A confirmed status reaction can use a different visual from status acquisition. */
   combat?: boolean;
   selfDamage?: boolean;
 };

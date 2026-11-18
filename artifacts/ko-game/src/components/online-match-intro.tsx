@@ -1,4 +1,4 @@
-import {usePixelFx} from "./pixelfx-scenes";
+
 import {prefersReducedMotion} from "./presentation-config";
 import type {CosmeticDisplaySettings} from "@workspace/cosmetics";
 import { cachedPortrait, loadPortrait } from '../game/portrait-loading';
@@ -128,7 +128,7 @@ export function MatchIntroOverlay({
 }: MatchIntroOverlayProps) {
   const [now, setNow] = useState(() => Date.now());
   const introRoot=useRef<HTMLDivElement>(null);
-  usePixelFx(73,startedAt);
+
   useLayoutEffect(()=>()=>{
     if(prefersReducedMotion() || Date.now()-startedAt<800)return;
     for(const side of ['self','opponent'] as Speaker[]){

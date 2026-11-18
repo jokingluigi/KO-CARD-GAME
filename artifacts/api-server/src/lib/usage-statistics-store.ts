@@ -201,28 +201,6 @@ export async function collectUsageBatch(database: StatisticsDatabase = db) {
         sql`UPDATE ai_quest_matches SET usage_recorded_at=now(),usage_summary=NULL WHERE id=${row.id}`,
       );
     });
-  const tower = await queryRows<{
-    id: string;
-    user_id: string;
-    summary: UsageSummary;
-  }>(
-    database,
-    sql`SELECT t.id,t.user_id,j.value AS summary FROM tower_runs t CROSS JOIN LATERAL jsonb_array_elements(t.usage_pending) j WHERE t.usage_pending<>'[]'::jsonb AND NOT EXISTS(SELECT 1 FROM usage_collection_failures f WHERE f.source_key='tower:'||(j.value->>'matchId') AND f.next_retry_at>now()) ORDER BY t.updated_at LIMIT 20`,
-  );
-  for (const row of tower)
-    await attempt("tower:" + row.summary.matchId, async () => {
-      const key = "tower:" + row.summary.matchId;
-      await ingestUsage(
-        key,
-        row.summary,
-        { "player-1": row.user_id },
-        database,
-      );
-      await database.execute(
-        sql`UPDATE tower_runs SET usage_pending=(SELECT COALESCE(jsonb_agg(j.value),'[]'::jsonb) FROM jsonb_array_elements(usage_pending) j WHERE j.value->>'matchId'<>${row.summary.matchId}) WHERE id=${row.id}`,
-      );
-      processed++;
-    });
   const draft = await queryRows<{
     id: string;
     start: UsageStart;

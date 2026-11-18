@@ -1,5 +1,4 @@
 import { resolveBoardDestructionListeners } from '../effects/effect-engine';
-import { resolveTowerRemoval } from '../tower/relics';
 import { queueWantedReward, wantedSourceOwner } from './wanted';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -81,5 +80,5 @@ export function destroyCard(
 
   const rewarded = queueWantedReward(destroyedState, card, playerId, provenance.sourcePlayerId
     ?? wantedSourceOwner(state, provenance.sourceInstanceId) ?? provenance.sourceContext?.sourcePlayerId);
-  return actionSuccess(resolveBoardDestructionListeners(resolveTowerRemoval(rewarded, destroyedState.events[destroyedState.events.length - 1]!, destroyedState.events.length - 1), destroyedState.events.length - 1));
+  return actionSuccess(resolveBoardDestructionListeners(rewarded, destroyedState.events.length - 1));
 }

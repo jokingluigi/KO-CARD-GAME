@@ -19,7 +19,6 @@
     "../../artifacts/ko-game/src/game/cards/life-exchange.ts",
     "../../artifacts/ko-game/src/game/cards/luna.ts",
     "../../artifacts/ko-game/src/game/cards/countdown.ts",
-    "../../artifacts/ko-game/src/game/tower/**/*.ts",
     "../../artifacts/ko-game/src/game/actions/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/generation.ts",
     "../../artifacts/ko-game/src/game/cards/new-card-effects.ts",
@@ -47,7 +46,6 @@
     "../../artifacts/ko-game/src/game/champions/pandora-targeting.ts",
     "../../artifacts/ko-game/src/game/champions/natomato-targeting.ts",
     "../../artifacts/ko-game/src/game/champions/minion-a.ts",
-    "../../artifacts/ko-game/src/game/champions/tower-vanilla.ts",
     "../../artifacts/ko-game/src/game/champions/published-champions.ts",
     "../../artifacts/ko-game/src/game/champions/balance-patch-20261024.ts",
     "../../artifacts/ko-game/src/game/effects/**/*.ts",
@@ -61,7 +59,8 @@
     "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261030.ts",
     "../../artifacts/ko-game/src/game/cards/helper-healing.ts",
     "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261111.ts",
-    "../../artifacts/ko-game/src/game/champions/balance-content-20261111.ts"
+    "../../artifacts/ko-game/src/game/champions/balance-content-20261111.ts",
+    "../../artifacts/ko-game/src/game/engine/board-capacity.ts"
   ],
   "references": [
     {

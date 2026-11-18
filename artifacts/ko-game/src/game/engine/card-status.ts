@@ -8,7 +8,6 @@ import { getActiveAbility, hasMandatoryPlayerChoice, resolveActiveAbility } from
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
-import { refreshTowerAuras } from '../tower/relics';
 import { removeGrantedCardText } from '../cards/granted-text';
 
 function updateBoardCard(
@@ -37,13 +36,12 @@ export function silenceCard(
   state: GameState,
   cardInstanceId: CardInstanceId,
 ): GameState {
-  const aura = state.tower?.auraStats?.[cardInstanceId];
-  return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) => {
+  return updateBoardCard(state, cardInstanceId, (card) => {
     if (isCardSilenceImmune(state,card)) return card;
     const definition = state.cardPool?.find(item => item.id === card.definitionId);
     const draft = card.draftMutation ? draftBaseline(card, definition) : undefined;
-    const attack = (card.awakening?.baseAttack ?? draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);
-    const maxHealth = (card.awakening?.baseHealth ?? draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
+    const attack = (card.awakening?.baseAttack ?? draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack);
+    const maxHealth = (card.awakening?.baseHealth ?? draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth);
     return {
       ...removeGrantedCardText(card),
       grantedTags: undefined,
@@ -62,7 +60,7 @@ export function silenceCard(
       countdownResolved: undefined,
       countdownLastTickTurn: undefined,
     };
-  }));
+  });
 }
 
 export function setCardStunned(

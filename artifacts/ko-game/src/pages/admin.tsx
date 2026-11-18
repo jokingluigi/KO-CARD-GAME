@@ -51,16 +51,6 @@ const AdminDraftManager = lazy(() =>
     default: m.AdminDraftManager,
   })),
 );
-const AdminTowerManager = lazy(() =>
-  import("@/components/admin-tower-manager").then((m) => ({
-    default: m.AdminTowerManager,
-  })),
-);
-const AdminTowerTest = lazy(() =>
-  import("@/components/admin-tower-test").then((m) => ({
-    default: m.AdminTowerTest,
-  })),
-);
 const AdminCardManager = lazy(() =>
   import("@/components/admin-card-manager").then((m) => ({
     default: m.AdminCardManager,
@@ -245,10 +235,6 @@ export default function Admin() {
               <div className="admin-related-links">
                 <button onClick={() => go("cards")}>카드별 테스트</button>
                 <button onClick={() => go("champions")}>챔피언별 테스트</button>
-                <button onClick={() => go("tower")}>타워 콘텐츠 테스트</button>
-                <button onClick={() => go("tower-test")}>
-                  타워 전투 샌드박스
-                </button>
               </div>
             </section>
           ) : page?.id === "card-statistics" || page?.id === "champion-statistics" ? (
@@ -259,10 +245,6 @@ export default function Admin() {
             <AdminTagManager onUnauthorized={onUnauthorized} />
           ) : page?.id === "draft" ? (
             <AdminDraftManager />
-          ) : page?.id === "tower" ? (
-            <AdminTowerManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "tower-test" ? (
-            <AdminTowerTest onUnauthorized={onUnauthorized} />
           ) : page?.id === "cards" ? (
             <AdminCardManager onUnauthorized={onUnauthorized} />
           ) : page?.id === "champions" ? (

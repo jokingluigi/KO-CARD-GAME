@@ -35,3 +35,13 @@ test('protection breaks only on a blocked result with actual consumed protection
  assert.deepEqual(statusPresentation([],b,a,'expired'),[]);
  assert.deepEqual(statusPresentation([event],b,b,'not-consumed'),[]);
 });
+test('fully absorbed armour contact is retained even without a damage-number draft',()=>{
+ const event={type:'DAMAGE_DEALT' as const,reason:'COMBAT',amount:0,target:{type:'CARD' as const,cardInstanceId:card.instanceId}};
+ const counter={...event,amount:2,target:{type:'CARD' as const,cardInstanceId:'attacker'}};
+ const before=new Map([[card.instanceId,card]]),after=new Map(before),keys=['zero','counter'];
+ const status=statusPresentation([event,counter],before,after,'zero-contact');
+ const merged=mergeStatusPresentation(presentationCueDrafts([event,counter],0,keys),status,keys);
+ assert.deepEqual(merged.map(c=>c.kind),['ARMOR','DAMAGE']);
+ assert.deepEqual(mergeStatusPresentation([],status,keys).map(c=>c.kind),['ARMOR']);
+ const dodged={...event,tags:['DODGE']};assert.deepEqual(statusPresentation([dodged],before,after,'dodge'),[]);
+});

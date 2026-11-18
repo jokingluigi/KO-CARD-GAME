@@ -30,7 +30,6 @@ const Settings=lazy(()=>import('@/pages/settings'));
 const AccountRecovery=lazy(()=>import('@/pages/account-recovery'));
 const PlayerNotebook=lazy(()=>import("@/pages/player-notebook"));
 const Cosmetics = lazy(() => import("@/pages/cosmetics"));
-const Tower = lazy(() => import("@/pages/tower"));
 const Draft = lazy(() => import("@/pages/draft"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Admin = lazy(() => import("@/pages/admin"));
@@ -60,7 +59,6 @@ function Router() {
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/player-notebook" component={PlayerNotebook}/>
         <Route path="/cosmetics" component={Cosmetics}/>
-        <Route path="/tower" component={Tower} />
         <Route path="/draft" component={Draft} />
         <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/guide" component={GameGuide}/>

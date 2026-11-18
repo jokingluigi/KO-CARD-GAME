@@ -1,4 +1,4 @@
-import {usePixelFx} from "@/components/pixelfx-scenes";
+
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import {createAIDecisionClient} from "@/lib/ai-decision-client";
 import {useTutorialAutoReward} from "@/components/tutorial/tutorial-rewards";
@@ -18,7 +18,6 @@ import {AdminTestDeck} from '@/components/admin-test-deck';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { generateCardInstance, canonicalCardCatalog } from '@/game/cards/generation';
-import { TOWER_SANDBOX_KEY, createTowerSandbox } from '@/lib/tower-sandbox';
 
 import { prepareAdminCardTest } from '@/game/engine/admin-card-test';
 import { enterField } from '@/game/engine/enter-field';
@@ -142,12 +141,11 @@ function actualAttackDamage(
 }
 
 export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser } = {}) {
-  usePixelFx(113,"home");
+
   const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const isTutorial = window.location.pathname.endsWith('/tutorial') || window.location.pathname.endsWith('/practice');
-  const isTowerSandbox = searchParams.get('source') === 'admin' && searchParams.get('towerTest') === '1';
-  const isAiMatch = window.location.pathname.endsWith('/ai-match') || isTowerSandbox;
+  const isAiMatch = window.location.pathname.endsWith('/ai-match');
   const quickMatchId = isAiMatch ? searchParams.get('quickMatch') : null;
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
@@ -384,39 +382,6 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       }).catch(()=>{if(!cancelled){clearTimeout(timeout);setPlayError('공개 카드와 챔피언을 불러오지 못했어요. 다시 시도해 주세요.');}});
       return ()=>{cancelled=true;controller.abort();clearTimeout(timeout);};
     }
-    if (isTowerSandbox) {
-      setMatchReady(false);
-      Promise.all([
-        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards`, { credentials: 'include' }).then(async response => {
-          if (!response.ok) throw new Error('관리자 카드 데이터를 불러오지 못했습니다.');
-          return await response.json() as { cards: Array<Parameters<typeof cardRecordToDefinition>[0]> };
-        }),
-        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/champions`, { credentials: 'include' }).then(async response => {
-          if (!response.ok) throw new Error('관리자 챔피언 데이터를 불러오지 못했습니다.');
-          return await response.json() as { champions: Array<Parameters<typeof championRecordToDefinition>[0]> };
-        }),
-        fetchGameMedia(),
-      ]).then(([cardData, championData, media]) => {
-        if (cancelled) return;
-        const saved = sessionStorage.getItem(TOWER_SANDBOX_KEY);
-        if (!saved) throw new Error('타워 테스트 설정이 없습니다. 관리자에서 다시 시작해 주세요.');
-        const definitions = cardData.cards.map(cardRecordToDefinition);
-        const champions = championData.champions.map(championRecordToDefinition);
-        let state = createTowerSandbox(JSON.parse(saved), definitions, champions);
-        const exchanged = executeAction(state, { type: 'MULLIGAN', playerId: state.players[1]!.id, cardInstanceIds: [] });
-        if (!exchanged.success) throw new Error(exchanged.message);
-        state = exchanged.state;
-        setRuntimeCardDefinitions(definitions);
-        setMediaCatalog(media);
-        preloadMatchAssets(definitions, state.players.flatMap(p=>p.champion?[p.champion]:[]));
-        setGameState(state);
-        setIsAdminTestMatch(true);
-        setAiMatchStarted(true);
-        aiMatchQuestContextRef.current = null;
-        setSelectedCardId(null); setSelectedAttackerId(null); setPlayError(null); setMatchReady(true);
-      }).catch(error => { if (!cancelled) { setPlayError(error instanceof Error ? error.message : '타워 테스트를 시작하지 못했습니다.'); setMatchReady(false); } });
-      return () => { cancelled = true; };
-    }
     if (isAiMatch && !quickMatchId) {
       setMatchReady(false);setAiMatchStarted(false);setAiDecks(null);setAiMatchData(null);setAvailableAIDecks(null);
       setAiSetupError(null);setPlayError(null);setAiSetupMessage('출전 덱과 상대 정보를 확인하고 있어요.');
@@ -638,7 +603,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     return () => {
       cancelled = true;
     };
-  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, quickMatchId, isTowerSandbox, testCardId, testChampionId, isTutorial, tutorialRetry, aiSetupRetry]);
+  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, quickMatchId, testCardId, testChampionId, isTutorial, tutorialRetry, aiSetupRetry]);
 
   useEffect(()=>{
     if(!quickMatchId||authStatus!=='authenticated'||!authUser)return;
@@ -667,12 +632,12 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const [aiCosmetics,setAiCosmetics]=useState<MatchCosmetics|undefined>(undefined);
   const aiRestartErrorRef=useRef<string|null>(null);
   useEffect(()=>{
-    if(!isAiMatch||isAdminSource||quickMatchId||isTowerSandbox||aiMatchStarted||!aiDecks||!aiMatchData||aiAutoLaunchRef.current)return;
+    if(!isAiMatch||isAdminSource||quickMatchId||aiMatchStarted||!aiDecks||!aiMatchData||aiAutoLaunchRef.current)return;
     const launch=resolveLaunchDeck(aiDecks);
     if(launch.reason||!launch.deck)return;
     aiAutoLaunchRef.current=true;
     void startAiMatch(launch.deck.id);
-  },[isAiMatch,isAdminSource,quickMatchId,isTowerSandbox,aiMatchStarted,aiDecks,aiMatchData]);
+  },[isAiMatch,isAdminSource,quickMatchId,aiMatchStarted,aiDecks,aiMatchData]);
   async function startAiMatch(deckId: string) {
     aiRestartErrorRef.current=null;
     if (aiMatchStartingRef.current) return;
@@ -1616,12 +1581,12 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     );
   }
 
-  if(isAiMatch&&!quickMatchId&&!isTowerSandbox&&!isAdminSource&&!aiMatchStarted){
+  if(isAiMatch&&!quickMatchId&&!isAdminSource&&!aiMatchStarted){
     const launch=aiDecks?resolveLaunchDeck(aiDecks):null;
     const message=aiSetupError??playError??launch?.reason;
     return <main className="grid min-h-[100dvh] place-content-center bg-black p-6 text-white" data-testid="ai-match-setup" data-state={aiSetupError?'ERROR':message?'BLOCKED':'LOADING'}><section className="max-w-md space-y-4"><h1 className="text-xl text-amber-200">AI 대전</h1><p role="status">{message??(aiStarting?"출전 덱으로 경기를 준비하고 있어요.":aiSetupMessage)}</p>{launch?.deck&&<p>출전 덱 · {launch.deck.name}</p>}<div className="flex flex-wrap gap-3">{message&&<button type="button" disabled={aiStarting} className="min-h-11 border border-amber-500 bg-amber-300 px-4 text-black disabled:opacity-50" onClick={()=>{aiAutoLaunchRef.current=false;setAiDecks(null);setAiMatchData(null);setAiSetupError(null);setPlayError(null);setAiSetupRetry(x=>x+1);}}>다시 시도</button>}<button type="button" className="min-h-11 border border-amber-700 px-4" onClick={()=>navigate(launchDeckEditor(launch?.deck?.id))}>덱 편집기</button><button type="button" className="min-h-11 px-4" onClick={()=>navigate(ROUTES.MAIN_MENU)}>메인 메뉴</button></div></section></main>;
   }
-  if (isAiMatch && !quickMatchId && !isTowerSandbox && !aiMatchStarted) {
+  if (isAiMatch && !quickMatchId && !aiMatchStarted) {
     return (
       <AiMatchSetup
         decks={aiDecks}
@@ -1648,7 +1613,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
             <button
               type="button"
               onClick={() => {
-                if (isTowerSandbox || quickMatchId) { window.location.reload(); return; }
+                if (quickMatchId) { window.location.reload(); return; }
                 setPlayError(null);
                 setMatchReady(false);
                 navigate(isAiMatch ? `${ROUTES.AI_MATCH}${window.location.search}` : ROUTES.MAIN_MENU);
@@ -1683,7 +1648,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
           />
         )
       )}
-    {isAdminTestMatch && !isTowerSandbox && testDeckOpen && <AdminTestDeck initialChampionIds={[gameState.players[0].champion!.id,gameState.players[1].champion!.id]} onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks,champions,championIds)=>{
+    {isAdminTestMatch && testDeckOpen && <AdminTestDeck initialChampionIds={[gameState.players[0].champion!.id,gameState.players[1].champion!.id]} onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks,champions,championIds)=>{
       try {
         setRuntimeCardDefinitions(cards);
         const state=startAdminTestDeckGame(cards,champions,championIds,decks,mediaCatalog);
@@ -1693,9 +1658,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
     }}/>}
     <GameStatePreview adminTestTools={isAdminTestMatch ? <div className="grid gap-2 text-xs text-amber-200">
-        <strong>{isTowerSandbox ? '타워 테스트 도구 · 보상 없음' : '테스트 경기 도구'}</strong>
-        {!isTowerSandbox && <button type="button" onClick={()=>setTestDeckOpen(true)} className="min-h-11 border border-amber-600 bg-amber-950 px-3 text-amber-100">테스트 덱 구성</button>}
-        {isTowerSandbox && <button type="button" onClick={()=>navigate('/admin/tower-test')} className="min-h-11 border border-amber-600 px-3">테스트 설정</button>}
+        <strong>테스트 경기 도구</strong>
+        {<button type="button" onClick={()=>setTestDeckOpen(true)} className="min-h-11 border border-amber-600 bg-amber-950 px-3 text-amber-100">테스트 덱 구성</button>}
         <button type="button" onClick={()=>addTrainingDummy(true)} className="min-h-11 border border-amber-600 px-3">안 죽는 샌드백</button>
         <button type="button" onClick={()=>addTrainingDummy(false)} className="min-h-11 border border-amber-600 px-3">체력 1 샌드백</button>
       </div> : undefined} cosmetics={isAiMatch?aiCosmetics:undefined} localImageEmotes
@@ -1761,7 +1725,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       } : undefined}
     />
      {matchResultVisible && !isTutorial && (
-       <MatchResultOverlay deckRecord={aiMatchQuestContextRef.current ? {id:aiMatchQuestContextRef.current.deckId,name:aiDecks?.find(d=>d.id===aiMatchQuestContextRef.current?.deckId)?.name??"AI 대전 덱"}:undefined} onRematch={isAiMatch&&!isTowerSandbox&&!quickMatchId&&aiMatchQuestContextRef.current ? async()=>{await startAiMatch(aiMatchQuestContextRef.current!.deckId);if(aiRestartErrorRef.current)throw Error(aiRestartErrorRef.current);}:undefined} onChooseDeck={isAiMatch&&!isTowerSandbox?()=>window.location.assign(launchDeckEditor(aiMatchQuestContextRef.current?.deckId)):undefined} cosmetics={isAiMatch ? aiCosmetics : undefined}
+       <MatchResultOverlay deckRecord={aiMatchQuestContextRef.current ? {id:aiMatchQuestContextRef.current.deckId,name:aiDecks?.find(d=>d.id===aiMatchQuestContextRef.current?.deckId)?.name??"AI 대전 덱"}:undefined} onRematch={isAiMatch&&!quickMatchId&&aiMatchQuestContextRef.current ? async()=>{await startAiMatch(aiMatchQuestContextRef.current!.deckId);if(aiRestartErrorRef.current)throw Error(aiRestartErrorRef.current);}:undefined} onChooseDeck={isAiMatch?()=>window.location.assign(launchDeckEditor(aiMatchQuestContextRef.current?.deckId)):undefined} cosmetics={isAiMatch ? aiCosmetics : undefined}
          opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
          state={gameState}
          mediaCatalog={mediaCatalog}

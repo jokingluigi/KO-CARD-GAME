@@ -1,4 +1,4 @@
-import {createContext,useCallback,useContext,useEffect,useRef,useState,type CSSProperties,type RefObject} from 'react';
+import {createContext,useCallback,useContext,useEffect,useRef,useState,type RefObject} from 'react';
 import {effectiveImpact,combatCameraFrames,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
 import {readCombatPreferences,impactMultiplier} from './combat-preferences';
 import {prefersReducedMotion} from './presentation-config';
@@ -75,14 +75,4 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
 export function ScreenShakeSetting(){
  const {mode,setMode}=useScreenImpact();
  return <label className="flex min-h-10 items-center justify-between gap-3 text-xs font-bold text-neutral-300"><span>화면 흔들림</span><select aria-label="화면 흔들림" className="rounded border border-neutral-700 bg-neutral-900 px-2 py-2 text-white" value={mode} onChange={e=>setMode(parseShakeMode(e.target.value))}><option value="FULL">Full · 강하게</option><option value="REDUCED">Reduced · 약하게</option><option value="OFF">Off · 끄기</option></select></label>;
-}
-export function ScreenImpactScene({impact}:{impact:ScreenImpact}){
- const {profile}=impact,heavy=impactRank(profile)>=3;
- const style={'--impact-x':impact.x+'px','--impact-y':impact.y+'px','--impact-duration':profile.duration+'ms','--impact-wave':Math.min(900,Math.max(90,profile.wave*90))+'px','--impact-flash':readCombatPreferences().flash,'--impact-accent':profile.rarity==='CHAMPION'?'#cc5746':profile.rarity==='LEGENDARY'?'#f4c97d':profile.rarity==='EPIC'?'#b0a0d5':'#d9b78c'} as CSSProperties;
- return <div className={`ko-screen-impact ko-screen-impact--${profile.rarity.toLowerCase()} ${heavy?'ko-screen-impact--heavy':''}`} data-screen-impact={profile.tier} data-shake-mode={profile.amplitude===0?'OFF':'ON'} aria-hidden="true" style={style}>
- <div className="ko-screen-impact__wave"/>
- {profile.aftershock&&<div className="ko-screen-impact__wave ko-screen-impact__wave--after"/>}
- {heavy&&<><div className="ko-screen-impact__ink"/>{Array.from({length:readCombatPreferences().quality==='LOW'?2:readCombatPreferences().quality==='MEDIUM'?4:8},(_,i)=><i key={i} className="ko-screen-impact__debris" style={{'--debris-x':Math.cos(i*Math.PI/4)*(i%2?65:115)+'px','--debris-y':Math.sin(i*Math.PI/4)*55-35+'px','--debris-rotation':(i*37)+'deg'} as CSSProperties}/>)}</>}
- {impactRank(profile)>=4&&<div className="ko-screen-impact__edge"/>}
- </div>;
 }

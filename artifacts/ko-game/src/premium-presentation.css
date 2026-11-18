@@ -1,15 +1,5 @@
 /* KO art direction: black / gold, matte ink, character art. Quiet at rest; impact remains event-driven.
    Layout and visual styling only. Registered card art/frame crop settings remain authoritative. */
-body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell,.ko-result-sheet,.ko-mulligan-sheet){
- --ko-ink:#000000;--ko-surface:#101010;--ko-paper:#d6b867;--ko-muted:#a5a29a;--ko-rule:#3e3527;
- --primary:43 58% 62%;--primary-foreground:0 0% 0%;
- color:#ece8df;font-variant-numeric:tabular-nums lining-nums;
-}
-body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-collection,.ko-tower) :is(h1,h2,h3){word-break:keep-all;overflow-wrap:break-word;letter-spacing:-.035em;text-wrap:balance}
-body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower) :is(button,a,input,select){border-radius:2px;transition-property:background-color,color,border-color,transform;transition-duration:140ms}
-body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell) :is(button,a):focus-visible{outline:2px solid #d6b867;outline-offset:3px}
-body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell) button:not(:disabled):active{translate:0 1px}
-body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower) button:disabled{cursor:not-allowed}
 body .ko-main-menu{background:#000000;padding:72px clamp(24px,6vw,100px) 48px;isolation:isolate}
 /* Keep the registered illustration intact; only the decorative fill is cropped. */
 .ko-main-menu .ko-main-menu__art{position:absolute;inset:0 0 auto;height:100dvh;overflow:hidden;opacity:1}
@@ -79,12 +69,6 @@ body .ko-collection{background:#000000}
 .ko-collection header .rounded-full{border:0;border-radius:0;background:transparent;box-shadow:none;color:#c7ac6b;padding:0}
 .ko-collection .bg-amber-400{background:#d6b867}
 .ko-collection .rounded-lg{border-radius:0;box-shadow:none}
-body .ko-tower{background:#000000;padding-top:32px}
-.ko-tower>div{max-width:1040px}
-.ko-tower header{padding-bottom:24px;border-bottom:1px solid #51432c}
-.ko-tower header h1{font-family:var(--app-font-display);font-size:clamp(38px,7vw,72px);line-height:1}
-.ko-tower button{min-height:48px;box-shadow:none;background:#101010;border-color:#776037}
-.ko-tower button.border-primary{background:#d6b867;color:#000000;border-color:#d6b867}
 body .ko-game-shell{background:#000000}
 .ko-game-shell .ko-cinematic-background{background:#000000}
 .ko-game-shell .ko-cinematic-background>div{opacity:.65}
@@ -146,7 +130,6 @@ body .ko-game-shell{background:#000000}
 .ko-cinematic.ko-cinematic--major .ko-cinematic__copy{max-width:43%;left:7%;text-shadow:0 2px #000}
 .ko-cinematic.ko-cinematic--major .ko-cinematic__copy strong{font-family:var(--app-font-sans);font-size:clamp(22px,3.7vw,44px);font-weight:900;letter-spacing:-.04em;word-break:keep-all;overflow-wrap:anywhere;line-height:1.15}
 .ko-cinematic.ko-cinematic--major .ko-cinematic__copy span{letter-spacing:.12em;font-family:var(--app-font-display)}
-.ko-cinematic.ko-cinematic--big_spell .ko-cinematic__spell-seal{display:none}
 .ko-cinematic.ko-cinematic--champion .ko-cinematic__panel{border-left:8px solid #d0c5a6;clip-path:polygon(0 0,100% 0,97% 100%,0 100%)}
 .ko-cinematic.ko-cinematic--legendary .ko-cinematic__panel{border-block-color:#c8ad6b}
 @media(min-width:1024px){.ko-game-shell .ko-game-stage{max-width:1120px}}
@@ -174,7 +157,7 @@ body .ko-game-shell{background:#000000}
  .ko-cinematic.ko-cinematic--major .ko-cinematic__copy{max-width:51%}
  .ko-cinematic.ko-cinematic--major .ko-cinematic__copy strong{font-size:clamp(18px,5.5vw,26px)}
 }
-@media(prefers-reduced-motion:reduce){body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell) button{transition:none}.ko-collection .ko-collection-item:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){.ko-collection .ko-collection-item:hover{transform:none}}
 
 /* Short portrait phones scroll as a single scene instead of cropping field cards. */
 @media(max-width:767px) and (orientation:portrait) and (max-height:680px){

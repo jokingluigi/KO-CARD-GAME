@@ -1,4 +1,4 @@
-import {usePixelFx} from "./pixelfx-scenes";
+
 import {questPortraitForSkin} from './quest-media';
 import {prefersReducedMotion} from "./presentation-config";
 import {ResultTools,type DeckRecord} from "./player-tools/result-tools";
@@ -64,8 +64,8 @@ export function MatchResultOverlay({
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
   const isDefeat = state.loserId === player?.id;
-  usePixelFx(isVictory?78:79,state.gameId,state.status==='FINISHED');
-  usePixelFx(96,`${state.gameId}:${reward?.amount}`,rewardStatus==='success'&&!!reward?.amount);
+
+
   const resultMusic =
     mediaCatalog?.resultMusic?.[isVictory ? "VICTORY_BGM" : "DEFEAT_BGM"];
   useEffect(() => {

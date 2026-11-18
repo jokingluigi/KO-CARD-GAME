@@ -4,7 +4,6 @@ export function handUnavailableReason(
   state: GameState,
   card: CardInstance,
   payable: number,
-  towerAllowed = true,
 ): string | null {
   const me = state.players[0];
   if (state.status !== "IN_PROGRESS") return "지금은 카드를 사용할 수 없어요.";
@@ -13,8 +12,6 @@ export function handUnavailableReason(
     return "먼저 강조된 대상을 선택하거나 선택을 취소하세요.";
   if (me.currentGold < payable)
     return `골드가 ${payable - me.currentGold} 부족해요. 필요 ${payable} · 보유 ${me.currentGold}`;
-  if (card.cardType === "WRESTLER" && !towerAllowed)
-    return "현재 타워의 필드 진입 조건을 충족하지 못했어요.";
   if (card.cardType === "WRESTLER" && me.board.every(Boolean))
     return "필드가 가득 찼어요. 빈 슬롯이 필요해요.";
   return null;

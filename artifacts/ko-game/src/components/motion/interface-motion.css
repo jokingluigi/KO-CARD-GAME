@@ -56,12 +56,6 @@ html[data-ui-reduced="true"]
 html[data-ui-reduced="true"] .collection-action {
   animation: none !important;
 }
-html[data-ui-reduced="true"] .ko-effect-wave {
-  display: none;
-}
-html[data-ui-reduced="true"] .ko-board-preview .ko-cinematic-background::after {
-  animation: none !important;
-}
 .ko-pack-reward-surface {
   animation: ko-ui-reward-surface 180ms ease-out both;
 }

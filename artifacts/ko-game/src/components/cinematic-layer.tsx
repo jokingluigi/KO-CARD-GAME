@@ -2,7 +2,7 @@ import {readCombatPreferences} from "./combat-preferences";
 import {useCosmeticImage} from "./cosmetic-battle";
 import {CardArtwork} from "./card-artwork";
 import {questPortrait} from "./quest-media";
-import {BattleVfxDirector} from './battle-vfx';
+
 import {getCardDefinition,type GameState} from '@/game';
 import type {PresentationCue} from './presentation-feedback';
 import React,{createContext,useCallback,useContext,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
@@ -11,7 +11,7 @@ import {audioManager} from '@/audio/audio-manager';
 import {prefersReducedMotion} from './presentation-config';
 import {cameraLevel,cinematicDuration,emptyCinematicState,finishCinematic,offerCinematic,withoutQuestCompletions,type CinematicRequest,type CinematicEvent} from './cinematic-policy';
 import './cinematic-presentation.css';
-import {ScreenImpactContext,useScreenImpactManager,ScreenImpactScene} from './screen-impact';
+import {ScreenImpactContext,useScreenImpactManager} from './screen-impact';
 import {specialImpact} from './screen-impact-policy';
 const noop=(_event:CinematicRequest)=>{};
 const CinematicContext=createContext<(event:CinematicRequest)=>void>(noop);
@@ -68,21 +68,21 @@ export function CinematicProvider({children,speed='NORMAL',allowQuestCompletion=
   const fallback=window.setTimeout(finish,event.duration+80);
   return()=>{clearTimeout(fallback);if(special!==null)clearTimeout(special);motions.forEach(m=>m.cancel());};
  },[event?.id]);
- return <BattleVfxDirector><ScreenImpactContext.Provider value={screen.api}><CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
- {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}{screen.impact&&createPortal(<ScreenImpactScene key={screen.impact.id} impact={screen.impact}/>,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider></BattleVfxDirector>;
+ return <ScreenImpactContext.Provider value={screen.api}><CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
+ {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider>;
 }
 export function CinematicScene({event}:{event:CinematicEvent}){
  const major=!['ATTACK','SUMMON'].includes(event.kind),level=cameraLevel(event);
  const style={'--cinematic-duration':event.duration+'ms','--cinematic-x':(event.focus?.x??innerWidth/2)+'px','--cinematic-y':(event.focus?.y??innerHeight/2)+'px'} as CSSProperties;
  return <div aria-hidden="true" data-cinematic-kind={event.kind} data-camera-level={level} className={`ko-cinematic ko-cinematic--${event.kind.toLowerCase()} ${major?'ko-cinematic--major':''}`} style={style}>
- <div className="ko-cinematic__environment"/><div className="ko-cinematic__ink"/>
- {event.kind==='FINISHER_CARD'&&<div className="ko-cinematic__finisher-sigil"><i/><i/><b>FINISHER</b></div>}
- {level>=2&&<div className="ko-cinematic__speed"/>}
+
+
+
  {major&&<div className="ko-cinematic__panel"><div className="ko-cinematic__emblem">KO</div>
  {event.art&&<CardArtwork src={event.art} fallbackSrc={event.artFallback} displayOverride={event.artDisplay} imagePositionY={100} alt="" className="ko-cinematic__art"/>}
  <div className="ko-cinematic__copy"><span>{event.subtitle??event.kind.replaceAll('_',' ')}</span><strong>{event.title}</strong></div></div>}
- {event.kind==='BIG_SPELL'&&<div className="ko-cinematic__spell-seal"/>}
- {event.kind==='HIDDEN_BOSS'&&<div className="ko-cinematic__interference"/>}
+
+
  </div>;
 }
 

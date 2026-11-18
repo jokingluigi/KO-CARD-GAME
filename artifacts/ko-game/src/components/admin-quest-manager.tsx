@@ -13,7 +13,7 @@ async function api<T>(path="",body?:unknown,method="POST"):Promise<T>{
  const response=await fetch(base+path,{credentials:"include",method:body===undefined&&method==="POST"?"GET":method,headers:{"Content-Type":"application/json"},...(body===undefined?{}:{body:JSON.stringify(body)})});
  const result=await response.json();if(!response.ok)throw new Error(result.message??"퀘스트 요청 실패");return result;
 }
-const fresh=(questType:"DAILY"|"SEASON"):Definition=>({title:"",description:"",objectiveType:"PLAY_MATCH",cardType:null,targetValue:1,enabled:true,platform:{questType,seasonId:null,weight:100,modes:["AI","PVP","TOWER","DRAFT"],rarity:null,result:"ANY",activationAt:null,archived:false,rewards:[{rewardType:"CURRENCY",rewardAmount:100,rewardTargetId:null}]}});
+const fresh=(questType:"DAILY"|"SEASON"):Definition=>({title:"",description:"",objectiveType:"PLAY_MATCH",cardType:null,targetValue:1,enabled:true,platform:{questType,seasonId:null,weight:100,modes:["AI","PVP","DRAFT"],rarity:null,result:"ANY",activationAt:null,archived:false,rewards:[{rewardType:"CURRENCY",rewardAmount:100,rewardTargetId:null}]}});
 const control="mt-1 min-h-11 w-full border border-neutral-700 bg-black px-3 py-2 text-sm text-white";
 const button="min-h-11 border border-amber-600 px-4 py-2 text-sm font-bold text-amber-200 disabled:opacity-40";
 function localTime(iso:string){const d=new Date(iso);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}

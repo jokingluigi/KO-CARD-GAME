@@ -1,4 +1,4 @@
-import {PixelFxPreview} from "@/components/pixelfx-scenes";
+
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { CombatSettings } from "@/components/combat-settings";
@@ -83,7 +83,7 @@ export default function Settings() {
   return (
     <main className="ko-player-page ko-account-page">
       <div className="ko-page-content">
-        <PixelFxPreview/>
+
         <GamePageHeader
           eyebrow="게임 설정"
           title="설정"

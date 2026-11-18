@@ -1,5 +1,5 @@
+import {hasVacantBoardSlot} from './board-capacity';
 import { damageCanPinfall, isPandoraAbilitySource } from './pinfall';
-import { canEnterTowerField } from "../tower/relics";
 import { MAX_HAND_SIZE } from "../rules/constants";
 import type { GameState } from "../types/game-state";
 import type { CardInstance, CardDefinition } from "../cards/types";
@@ -337,7 +337,7 @@ export function applyBalanceEffect(
       if (
         slot < 0 ||
         !candidates.length ||
-        !canEnterTowerField(state, playerId)
+        !hasVacantBoardSlot(state, playerId)
       )
         return state;
       const card =
@@ -442,7 +442,7 @@ export function applyBalanceEffect(
       if (
         !card ||
         slot < 0 ||
-        !canEnterTowerField(state, playerId) ||
+        !hasVacantBoardSlot(state, playerId) ||
         source.maxHealth + num("health") <= 0
       )
         return state;

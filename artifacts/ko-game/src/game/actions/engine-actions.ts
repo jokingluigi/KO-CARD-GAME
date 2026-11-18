@@ -1,7 +1,6 @@
 import { deferFinisherChoiceResolution, selectPreparedFinisher } from '../champions/finisher-preparation';
 import {normalizePandoraTargeting} from '../champions/pandora-targeting';
 import { hasPendingProgram, hasPendingFinisherCast } from '../engine/program';
-import {resolveConfiguredTowerEffects} from '../tower/configured-effects';
 import { hasCommittedFusion } from '../engine/fusion';
 import { isMinionAAbility } from '../champions/minion-a';
 import type { AttackTarget } from '../engine/combat';
@@ -240,7 +239,7 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
     const initial = executeActionInternal(state, action);
     const result = initial.success && initial.state.pendingComboAttack && !initial.state.targetingState?.active
       ? resumePendingComboAttack(initial.state) : initial;
-    return result.success ? {...result,state:resolveConfiguredTowerEffects(state,resumeDeferredTurnStart(resumeDeferredOpening(result.state)))} : result;
+    return result.success ? {...result,state:resumeDeferredTurnStart(resumeDeferredOpening(result.state))} : result;
   });
   if (!result.success || !(state.pendingFinisherCasts?.length || result.state.pendingFinisherCasts?.length || state.players.some(p=>p.champion?.quest?.finisher || p.champion?.quest?.finisherChoices?.length)) || (action.type==='CANCEL_EFFECT_TARGET' && !hasPendingFinisherCast(state)) ||
       (result.state.targetingState?.phase==='PRE_COMMIT' && result.state.events.length===state.events.length)) return result;

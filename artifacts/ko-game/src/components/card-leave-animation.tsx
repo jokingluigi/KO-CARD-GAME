@@ -7,7 +7,7 @@ import { CardRenderer } from "./card-renderer";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
-import { BattleVfx } from './battle-vfx';
+
 
 export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE" | "FUSION" | "VANISH" | "RETURN_HAND" | "RETURN_DECK" | "GENERATE";
 
@@ -80,12 +80,7 @@ export function CardLeaveAnimation({
 
   return (
     <>
-    {<BattleVfx kind={animation.kind==='DESTROY'?'DESTROY':animation.kind==='RETIRE'?'RETIRE':'MAGIC'}
-      left={animation.geometry.left+animation.geometry.width/2} top={animation.geometry.top+animation.geometry.height/2}
-      effect={({RETIRE:'spawn/soul-rise',DESTROY:'spawn/shatter-death',REMOVE:'spawn/disintegrate',FUSION:'explosions/plasma-explosion',VANISH:'shadow/black-hole',RETURN_HAND:'arcane/blink-out',RETURN_DECK:'scifi/warp-out',GENERATE:'scifi/hologram'} as const)[animation.kind]}
-      area={({RETIRE:30,DESTROY:31,REMOVE:32,FUSION:40,VANISH:32,RETURN_HAND:33,RETURN_DECK:34,GENERATE:36})[animation.kind]}
-      targetWidth={animation.geometry.width} sizeMultiplier={1.45}
-      seed={animation.id} strength={animation.kind==='DESTROY'?8:3} delay={prefersReducedMotion()?0:animation.delay+duration*.25} duration={Math.max(480,duration*.9)} />}
+
     <div
       aria-hidden="true"
       className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}`}

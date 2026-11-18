@@ -57,37 +57,6 @@
 .ko-sprite-visual[data-reduced="true"] .ko-sprite-pose {
   transform: none !important;
 }
-.ko-sprite-ink {
-  position: absolute;
-  inset: 4% 2%;
-  z-index: -1;
-  opacity: 0;
-  background: var(--sprite-accent);
-  mask: url("/vendor/kenney/particle/scratch_01.png") center/100% 100% no-repeat;
-}
-.ko-sprite-sheen {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  overflow: hidden;
-  mask-image: linear-gradient(
-    to top,
-    transparent 42%,
-    white 50%,
-    transparent 58%
-  );
-  mask-size: 100% 300%;
-  filter: brightness(1.8) saturate(0.45);
-}
-.ko-sprite-link {
-  position: fixed;
-  height: 12px;
-  z-index: 215;
-  pointer-events: none;
-  transform-origin: 0 50%;
-  mask: url("/vendor/kenney/particle/scratch_01.png") center/100% 100% no-repeat;
-  animation: ko-sprite-flow 420ms ease-out both;
-}
 @keyframes ko-sprite-breathe {
   0%,
   100% {
@@ -97,26 +66,9 @@
     transform: translateY(var(--sprite-breath-y)) scale(var(--sprite-breath-scale, 1));
   }
 }
-@keyframes ko-sprite-flow {
-  0% {
-    opacity: 0;
-    scale: 0.1 1;
-  }
-  25% {
-    opacity: 0.55;
-    scale: 1 1;
-  }
-  100% {
-    opacity: 0;
-    scale: 1 0.3;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .ko-sprite-breath {
     animation: none !important;
-  }
-  .ko-sprite-link {
-    display: none;
   }
   .ko-sprite-pose {
     transform: none !important;

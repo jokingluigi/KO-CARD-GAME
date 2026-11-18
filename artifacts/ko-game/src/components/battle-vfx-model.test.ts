@@ -3,9 +3,6 @@ import test from "node:test";
 import {
   combatTimeline,
   attackFrames,
-  attackBurstKind,
-  vfxBudget,
-  vfxParticles,
 } from "./battle-vfx-model";
 import {
   techniqueStageGeometry,
@@ -26,28 +23,18 @@ for (const damage of [0, 1, 3, 5, 7, 12])
       [...offsets].sort((a, b) => a - b),
     );
     assert.equal(frames[3].transform, frames[4].transform);
-    assert.equal(attackBurstKind({ damage }), damage ? "IMPACT" : "BLOCK");
   });
-test("reduced motion has a short clock and no particles", () => {
+test("reduced motion has a short clock without travel", () => {
   assert.deepEqual(combatTimeline(12, 12, true, true), {
     duration: 140,
     impact: 70,
     release: 70,
   });
-  assert.equal(vfxBudget(false, true, 12).particles, 0);
   assert.ok(
     attackFrames(100, 200, combatTimeline(12, 12, false, true), true).every(
       (frame) => !String(frame.transform).includes("translate"),
     ),
   );
-});
-test("particle count and retina resolution are capped on mobile and desktop", () => {
-  assert.ok(vfxBudget(true, false, 999).particles <= 20);
-  assert.ok(vfxBudget(false, false, 999).particles <= 36);
-  assert.equal(vfxBudget(true, false, 999).dpr, 1.5);
-  const particles = vfxParticles("same-event", 36);
-  assert.deepEqual(particles, vfxParticles("same-event", 36));
-  assert.ok(particles.every((p) => Object.values(p).every(Number.isFinite)));
 });
 for (const [width, height] of [
   [320, 568],
@@ -73,5 +60,4 @@ test('raw attack changes preparation weight without changing confirmed contact o
  const weak=attackFrames(0,-200,timeline,false,1),heavy=attackFrames(0,-200,timeline,false,10);
  assert.notEqual(weak[2].transform,heavy[2].transform);
  assert.equal(weak[3].offset,heavy[3].offset);assert.equal(weak.at(-1)!.transform,heavy.at(-1)!.transform);
- assert.equal(attackBurstKind({damage:0}),'BLOCK');
 });

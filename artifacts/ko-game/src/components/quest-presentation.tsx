@@ -1,9 +1,9 @@
-import {emitPixelFx} from "./pixelfx-scenes";
+
 import {useCosmeticImage} from "./cosmetic-battle";
 import { questOwner, questPortrait } from './quest-media';
 import { useEffect, useRef, useState } from "react";
 import { useCinematicAvailable, useCinematicEvent } from './cinematic-layer';
-import { BattleVfx } from './battle-vfx';
+
 import { audioManager } from '@/audio/audio-manager';
 import { prefersReducedMotion } from './presentation-config';
 import { CardRenderer } from "./card-renderer";
@@ -53,7 +53,7 @@ function ActiveQuestPresentation({
   useEffect(() => {
     setPhase('BANNER');
     audioManager.duckForPresentation(.5, 500);
-    emitPixelFx(65,undefined,{duration:bannerDuration,width:Math.min(innerWidth*.5,550)});
+
     const bannerTimer = window.setTimeout(() => setPhase("REWARD"), bannerDuration);
     const completeTimer = window.setTimeout(()=>completeRef.current(), bannerDuration + rewardDuration);
     return () => {
@@ -67,7 +67,7 @@ function ActiveQuestPresentation({
   if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
-      <BattleVfx kind="GOLD" effect="pickups/loot-beam" area={66} targetWidth={220} seed={cue.id} left={window.innerWidth/2} top={window.innerHeight*.42} strength={10} duration={bannerDuration} />
+
       {phase === "BANNER" ? (
         <div className="ko-quest-chapter text-center" style={{ animation: `ko-quest-banner ${bannerDuration}ms ease both` }}>
           <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "피니셔 준비 완료!" : "상대의 피니셔 준비 완료!"}</p>

@@ -4,14 +4,12 @@ import { normalizeCardForZone, returnCardFromBoard } from '../cards/zone-state';
 import type { GameState } from '../types/game-state';
 import { resolveHandAdditionListeners } from '../effects/effect-engine';
 import { MAX_HAND_SIZE } from '../rules/constants';
-import { canEnterTowerField } from '../tower/relics';
 import { enterField } from './enter-field';
 
 /** A quest reward owns this choice even when the opponent is taking their turn. */
 export function awaitChampionRewardSpace(state: GameState, playerId: string, championId: string, token: CardInstance): GameState {
   const owner = state.players.find(p => p.id === playerId)!;
-  const validTargetIds = owner.board.flatMap(c => c && canEnterTowerField({ ...state, players: state.players.map(p => p.id !== playerId ? p : { ...p, board: p.board.map(card => card?.instanceId === c.instanceId ? null : card) as typeof p.board }) }, playerId) ? [c.instanceId] : []);
-  // A tower relic can prohibit all entries this turn independently of field space.
+  const validTargetIds = owner.board.flatMap(card => card ? [card.instanceId] : []);
   if (!validTargetIds.length) return addCardsToHand(state,playerId,[{card:normalizeCardForZone(token,'HAND')}]);
   return { ...state, targetingState: {
     active: true, phase: 'POST_COMMIT', playerId, sourceInstanceId: token.instanceId, sourceCard: token,

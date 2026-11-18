@@ -1,4 +1,4 @@
-import {finisherPixelFx} from "./pixelfx-battle-bridge";
+
 import './battle-atmosphere.css';
 import {useCosmeticImage} from './cosmetic-battle';
 import { useEffect, useRef, useState, useId } from "react";
@@ -14,7 +14,7 @@ import {isFinisherSpell} from './card-play-animation-utils';
 import { techniqueRevealRect, techniqueStageGeometry, wrestlerPlayRect, summonShadowFrames } from "./card-play-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { audioManager } from '../audio/audio-manager';
-import { BattleVfx } from './battle-vfx';
+
 import {useScreenImpact} from './screen-impact';
 import {impactRank,summonImpact,summonTimeline,summonFrames,hasBoardWideImpact} from './screen-impact-policy';
 
@@ -155,7 +155,6 @@ export function CardPlayAnimation({
     return()=>{clearTimeout(fallback);if(readTimer!==null)clearTimeout(readTimer);if(spellImpact!==null)clearTimeout(spellImpact);cancelAnimationFrame(frame);shadow?.cancel();if(motion){motion.onfinish=null;motion.cancel();}window.removeEventListener('resize',resized);document.removeEventListener('visibilitychange',hidden);};
   },[animation.card.instanceId,occurrenceId,animation.kind,duration,targetLeft,targetTop,targetScale]);
 
-
   function complete(event: React.AnimationEvent<HTMLDivElement>) {
     if(animation.kind==='TECHNIQUE')return;
     if (event.target !== event.currentTarget ||
@@ -192,13 +191,7 @@ export function CardPlayAnimation({
           </p>
         </>
       )}
-      {(animation.kind==='TECHNIQUE'||landed)&&<BattleVfx kind={animation.kind==='TECHNIQUE'?'MAGIC':rarity==='LEGENDARY'?'GOLD':'IMPACT'}
-        left={targetLeft+source.width*targetScale/2} top={targetTop+source.height*targetScale/2}
-        effect={animation.kind==='TECHNIQUE'?(finisherSpell?finisherPixelFx(definition?.name??''):'arcane/magic-circle-cast'):rarity==='LEGENDARY'?'holy/holy-pillar':'spawn/summon-rise'}
-        area={animation.kind==='TECHNIQUE'?(finisherSpell?68:41):rarity==='LEGENDARY'?26:25}
-        targetWidth={finisherSpell?Math.min(viewport.width*.65,720):source.width*targetScale} sizeMultiplier={finisherSpell?1:rarity==='LEGENDARY'?2:1.5}
-        seed={`play:${animation.card.instanceId}`} strength={animation.kind==='TECHNIQUE'?5:animation.card.currentCost}
-        delay={animation.kind==='TECHNIQUE'&&!reduced?duration*.28:0} duration={animation.kind==='TECHNIQUE'?850:Math.max(520,duration*.7)} />}
+
       <div
         ref={cardRef}
         className="card-play-animation__card"

@@ -11,31 +11,29 @@ const { build } = require('esbuild');
 process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1:1/unused';
 const output = new URL('../../../artifacts/api-server/dist/startup-schema-qa.mjs', import.meta.url);
 await build({ entryPoints: [fileURLToPath(new URL('../../../artifacts/api-server/src/lib/startup-schema.ts', import.meta.url))], outfile: fileURLToPath(output), bundle: true, platform: 'node', format: 'esm', packages: 'external', loader: { '.sql': 'text' } });
-const { ensureTowerStorage } = await import(output.href);
+const { ensureApplicationStorage } = await import(output.href);
 const { pool } = await import('../src/index');
 
-test('built startup installer atomically adds Tower and AI difficulty, preserves existing data and flags on restart', async () => {
+test('built startup installer atomically adds application storage and AI difficulty, preserves existing data and flags on restart', async () => {
  const pg = new PGlite();
  try {
  for(const ddl of await generateMigration(generateDrizzleJson({}),generateDrizzleJson(schema)))await pg.exec(ddl);
  await pg.exec("INSERT INTO users(id,email,nickname,password_hash) VALUES ('preserved','startup@qa.invalid','Startup QA','fixture-only'); INSERT INTO ai_decks(id,name) VALUES ('saved','Existing deck');");
 
-  await ensureTowerStorage(drizzle(pg));
-  assert.equal((await pg.query<{ enabled: boolean }>('SELECT enabled FROM tower_settings')).rows[0].enabled, false);
+  await ensureApplicationStorage(drizzle(pg));
   assert.equal((await pg.query<{ difficulty: string }>('SELECT difficulty FROM ai_decks')).rows[0].difficulty, 'NORMAL');
-  await pg.exec("UPDATE ai_decks SET difficulty='BOSS'; UPDATE tower_settings SET enabled=true;");
-  await ensureTowerStorage(drizzle(pg));
+  await pg.exec("UPDATE ai_decks SET difficulty='BOSS';");
+  await ensureApplicationStorage(drizzle(pg));
   assert.deepEqual((await pg.query('SELECT id,name,difficulty FROM ai_decks WHERE id=\'saved\'')).rows, [{id:'saved', name:'Existing deck', difficulty:'BOSS'}]);
-  assert.equal((await pg.query<{ enabled: boolean }>('SELECT enabled FROM tower_settings')).rows[0].enabled, true);
   assert.deepEqual((await pg.query('SELECT id FROM users')).rows, [{id:'preserved'}]);
-  assert.equal((await pg.query("SELECT to_regclass('tower_unlocks') IS NOT NULL AS present")).rows[0].present, true);
+  assert.equal((await pg.query("SELECT to_regclass('draft_settings') IS NOT NULL AS present")).rows[0].present, true);
  } finally { await pg.close(); }
 });
 test('built startup installer rolls back all new tables if the final migration fails', async () => {
  const pg = new PGlite();
  try {
   await pg.exec('CREATE TABLE users (id text PRIMARY KEY)');
-  await assert.rejects(ensureTowerStorage(drizzle(pg)));
+  await assert.rejects(ensureApplicationStorage(drizzle(pg)));
   assert.equal((await pg.query("SELECT to_regclass('tower_settings') IS NULL AS absent")).rows[0].absent, true);
  } finally { await pg.close(); }
 });
@@ -58,7 +56,7 @@ test('restart never recreates deleted catalog IDs or rewrites administrator-crea
   const beforeCards = (await pg.query('SELECT * FROM cards ORDER BY id')).rows;
   const beforeChampions = (await pg.query('SELECT * FROM champions ORDER BY id')).rows;
   for (let restart = 0; restart < 3; restart++) {
-   await ensureTowerStorage(drizzle(pg));
+   await ensureApplicationStorage(drizzle(pg));
    assert.deepEqual((await pg.query('SELECT * FROM cards ORDER BY id')).rows, beforeCards);
    assert.deepEqual((await pg.query('SELECT * FROM champions ORDER BY id')).rows, beforeChampions);
   }
@@ -69,7 +67,7 @@ test('authorized AI/pack rollout upgrades the previous schema before serving and
   for(const ddl of await generateMigration(generateDrizzleJson({}),generateDrizzleJson(schema)))await pg.exec(ddl);
   await pg.exec("DROP TABLE ai_deck_cosmetics; ALTER TABLE pack_definitions DROP COLUMN emote_rate; ALTER TABLE pack_definitions DROP COLUMN emote_pool; INSERT INTO users(id,email,nickname,password_hash) VALUES ('rollout-user','rollout@qa.invalid','QA','local'); INSERT INTO ai_decks(id,name) VALUES ('rollout-deck','Existing'); INSERT INTO pack_definitions(id,name,normal_rate,skin_chance) VALUES ('rollout-pack','Keep original odds',90,10); INSERT INTO user_pack_inventory(user_id,pack_definition_id,quantity) VALUES ('rollout-user','rollout-pack',7);");
   const before=(await pg.query('SELECT id,normal_rate,epic_rate,legendary_rate,champion_rate,skin_chance FROM pack_definitions')).rows;
-  await ensureTowerStorage(drizzle(pg));await ensureTowerStorage(drizzle(pg));
+  await ensureApplicationStorage(drizzle(pg));await ensureApplicationStorage(drizzle(pg));
   assert.deepEqual((await pg.query('SELECT id,normal_rate,epic_rate,legendary_rate,champion_rate,skin_chance FROM pack_definitions')).rows,before);
   assert.deepEqual((await pg.query('SELECT emote_rate,emote_pool FROM pack_definitions')).rows,[{emote_rate:0,emote_pool:[]}]);
   assert.equal((await pg.query('SELECT quantity FROM user_pack_inventory')).rows[0].quantity,7);
@@ -78,3 +76,14 @@ test('authorized AI/pack rollout upgrades the previous schema before serving and
  }finally{await pg.close();}
 });
 test.after(async () => { await pool.end(); });
+
+test('application startup no longer requires or creates retired mode tables',async()=>{
+ const pg=new PGlite();try{
+  for(const ddl of await generateMigration(generateDrizzleJson({}),generateDrizzleJson(schema)))await pg.exec(ddl);
+  const old=await pg.query<{tablename:string}>("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'tower_%'");
+  for(const {tablename}of old.rows)await pg.exec('DROP TABLE IF EXISTS "'+tablename+'" CASCADE');
+  await ensureApplicationStorage(drizzle(pg));
+  assert.equal((await pg.query("SELECT to_regclass('tower_runs') IS NULL AS absent")).rows[0].absent,true);
+  assert.equal((await pg.query("SELECT to_regclass('ai_quest_matches') IS NOT NULL AS present")).rows[0].present,true);
+ }finally{await pg.close();}
+});

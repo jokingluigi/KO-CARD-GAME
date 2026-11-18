@@ -1,4 +1,4 @@
-import {emitPixelFx} from "@/components/pixelfx-scenes";
+
 import {ClaimAllRewardsButton} from "@/components/claim-all-rewards";
 import { MotionNumber } from "@/components/presentation-motion";
 import { useEffect, useRef, useState } from "react";
@@ -145,7 +145,7 @@ export default function DailyQuestsPage() {
     setBusyId(quest.id);
     try {
       const result = await claimDailyQuest(quest.id);
-      if(mounted.current&&!result.alreadyClaimed)emitPixelFx(quest.platform?.questType==='SEASON'?94:93);
+
       if (!mounted.current) return;
       if (result.reward) setLastBalance(result.reward.balanceAfter);
       setQuests((current) =>
@@ -205,7 +205,7 @@ export default function DailyQuestsPage() {
     setBusyId("completion-bonus");
     try {
       const result = await claimDailyCompletionBonus();
-      if(mounted.current&&!result.alreadyClaimed)emitPixelFx(93);
+
       if (!mounted.current) return;
       setCompletionBonus(result.bonus);
       setMessage(

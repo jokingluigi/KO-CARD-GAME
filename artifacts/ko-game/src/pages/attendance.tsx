@@ -1,4 +1,4 @@
-import {emitPixelFx} from "@/components/pixelfx-scenes";
+
 import {ClaimAllRewardsButton} from "@/components/claim-all-rewards";
 import { useEffect, useRef, useState } from "react";
 import { CalendarCheck2, Check, LockKeyhole } from "lucide-react";
@@ -86,7 +86,7 @@ export default function AttendancePage() {
     ++generation.current;
     try {
       const result = await claimAttendance();
-      if(mounted.current&&!result.alreadyClaimed)emitPixelFx(92);
+
       if (!mounted.current) return;
       setData(result.attendance);
       if (result.reward) setLastBalance(result.reward.balanceAfter);

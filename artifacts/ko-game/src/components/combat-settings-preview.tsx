@@ -9,7 +9,7 @@ import {
   effectiveImpact,
 } from "./screen-impact-policy";
 import { useScreenImpact } from "./screen-impact";
-import { BattleVfx } from "./battle-vfx";
+
 import { impactMultiplier, type CombatPreferences } from "./combat-preferences";
 import { prefersReducedMotion } from "./presentation-config";
 /** Same contact clock/camera policy/assets/audio as battle, isolated from real input and state. */
@@ -159,13 +159,7 @@ export function CombatSettingsPreview({
             className="pointer-events-none absolute inset-0 overflow-hidden"
             style={{ transform: "translateZ(0)" }}
           >
-            <BattleVfx
-              kind="IMPACT"
-              left={hit.x}
-              top={hit.y}
-              strength={damage}
-              seed={hit.id}
-            />
+
           </div>
         )}
         <span

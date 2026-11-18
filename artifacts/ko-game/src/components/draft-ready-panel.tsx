@@ -1,9 +1,9 @@
-import {usePixelFx} from "./pixelfx-scenes";
+
 import { Check, Shield, Swords, UserRound } from "lucide-react";
 import type { DraftView } from "@/lib/draft-client";
 
 export function DraftReadyPanel({ view, busy, onReady }: { view: DraftView; busy: boolean; onReady: () => void }) {
-  usePixelFx(110,view.own.ready,view.own.ready);
+
   const champion = view.champions.find(c => c.id === view.own.championId);
   const cardMap = new Map(view.cards.map(c => [c.id, c]));
   const average = view.own.deck.reduce((sum, id, index) => sum + Math.max(0, (cardMap.get(id)?.cost ?? 0) + (view.own.cards?.[index]?.mutation?.cost ?? 0)), 0) / Math.max(1, view.own.deck.length);

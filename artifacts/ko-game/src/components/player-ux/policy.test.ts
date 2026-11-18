@@ -21,7 +21,6 @@ test("observable hand prerequisites explain blocked input without mutating state
     before = JSON.stringify(s);
   assert.match(handUnavailableReason(s, unit, 4)!, /2 부족/);
   assert.equal(handUnavailableReason(s, unit, 1), null);
-  assert.match(handUnavailableReason(s, unit, 1, false)!, /타워/);
   assert.equal(JSON.stringify(s), before);
   s.players[0].board = [unit, unit, unit, unit];
   assert.match(handUnavailableReason(s, unit, 1)!, /가득/);

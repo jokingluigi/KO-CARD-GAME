@@ -1,3 +1,4 @@
+import {hasVacantBoardSlot, firstVacantBoardSlot} from '../engine/board-capacity';
 import { awaitChampionRewardSpace, findAwakeningRewardFrame, removeRewardFrame } from '../engine/champion-reward-replacement';
 import type { GameState } from "../types/game-state";
 import type { CardInstance } from "../cards/types";
@@ -8,7 +9,6 @@ import type {
 } from "./awakening-types";
 import { generateCard } from "../cards/generation";
 import { enterField } from "../engine/enter-field";
-import { towerOpenSlot, canEnterTowerField } from "../tower/relics";
 import { applyEffect } from "../effects/effect-engine";
 import { processChampionQuestEvents } from "./quests";
 
@@ -154,8 +154,8 @@ export function reconcileAwakeningSequences(state: GameState): GameState {
         };
         next = putSequence(next, p.id, sequence);
       }
-      const slot = towerOpenSlot(next, p.id);
-      if (slot < 0 && (!p.board.every(Boolean) || !canEnterTowerField({ ...next, players: next.players.map(candidate => candidate.id !== p.id ? candidate : { ...candidate, board: [null, ...candidate.board.slice(1)] as typeof candidate.board }) }, p.id))) break;
+      const slot = firstVacantBoardSlot(next, p.id);
+      if (slot < 0 && (!p.board.every(Boolean) || !hasVacantBoardSlot({ ...next, players: next.players.map(candidate => candidate.id !== p.id ? candidate : { ...candidate, board: [null, ...candidate.board.slice(1)] as typeof candidate.board }) }, p.id))) break;
       const rewardFrame = findAwakeningRewardFrame(next.targetingState, sequence.sequenceId, sequence.stage);
       const pendingCard = rewardFrame?.championRewardReplacement?.token ?? rewardFrame?.handAddition?.completion?.token;
       if (rewardFrame?.handAddition?.completion || (slot < 0 && pendingCard)) break;

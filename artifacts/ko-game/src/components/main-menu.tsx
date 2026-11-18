@@ -89,7 +89,6 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   const rewards=useHomeRewardStatus(user?.id);
   const [noticeSeen,setNoticeSeen]=useState<{account:string;version:string}>({account:'',version:''});
   const [allMenusOpen,setAllMenusOpen]=useState(false),[readingOpen,setReadingOpen]=useState(false);
-  const [towerEnabled, setTowerEnabled] = useState(false);
   const [draftEnabled, setDraftEnabled] = useState(false);
   const [notice, setNotice] = useState("");
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
@@ -121,16 +120,6 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
       .then(data => { if (!cancelled) setDraftEnabled(data.enabled === true); })
       .catch(() => {});
     return () => { cancelled = true; controller.abort(); };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    void fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/tower/availability`, { cache: 'no-store', signal: controller.signal })
-      .then(r => r.ok ? r.json() : { enabled: false }).then(data => { if (!cancelled) setTowerEnabled(data.enabled === true); })
-      .catch(() => {}).finally(() => clearTimeout(timer));
-    return () => { cancelled = true; controller.abort(); clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
@@ -297,11 +286,11 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         {Boolean(rewards?.total)&&<aside aria-label="수령 가능한 보상" className="ko-home-reward-links">{Boolean(rewards?.quests)&&<button className="min-h-11" type="button" onClick={()=>navigate('/daily-quests')}>퀘스트 보상 {rewards!.quests}건 받으러 가기 ▸</button>}{Boolean(rewards?.attendance)&&<button className="min-h-11" type="button" onClick={()=>navigate('/attendance')}>출석 보상 받으러 가기 ▸</button>}</aside>}
         <HomePacksShortcut accountId={user?.id}/>
         <section aria-label="메인 메뉴" className="ko-main-menu__groups ko-lobby-all-menus">
-          {([{ title: "기타", labels: ["타워 모드"] },
+          {([
             { title: "덱과 컬렉션", labels: ["덱 편집", "컬렉션", "꾸미기", "내 기록", "튜토리얼", "게임 규칙"] },
             { title: "보상과 상점", labels: ["일일 퀘스트", "출석 보드", "내 팩", "상점"] }]).map(group => <section key={group.title} aria-label={group.title} className="ko-main-menu__group">
           <h2>{group.title}</h2><div className="ko-main-menu__grid">
-          {[...menuItems, {label:"내 기록",description:"덱별 전적과 수집 목표",icon:BookOpen}, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : []), ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].filter(item => group.labels.includes(item.label)).sort((a,b) => group.labels.indexOf(a.label)-group.labels.indexOf(b.label)).map(({ label, description, icon: Icon }, index) => (
+          {[...menuItems, {label:"내 기록",description:"덱별 전적과 수집 목표",icon:BookOpen}, ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].filter(item => group.labels.includes(item.label)).sort((a,b) => group.labels.indexOf(a.label)-group.labels.indexOf(b.label)).map(({ label, description, icon: Icon }, index) => (
             <button
               key={label}
               data-menu-tier={group.title === "대전" ? "battle" : "utility"}
@@ -312,7 +301,6 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
               data-testid={`button-main-menu-${label === "온라인 매치" ? "online" : label === "AI 매치" ? "ai" : label}`}
               onClick={() => {
                 setAllMenusOpen(false);
-                if (label === '타워 모드') { navigate('/tower'); return; }
                 if (label === '드래프트 모드') { navigate('/draft'); return; }
                 if(label==="내 기록"){navigate("/player-notebook");return;}
                 if (label === "꾸미기") { navigate("/cosmetics"); return; }

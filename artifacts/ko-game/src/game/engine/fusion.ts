@@ -4,7 +4,6 @@ import type { GameState } from '../types/game-state';
 import { getActiveCardKeywords } from '../cards/granted-text';
 import { appendEffectContinuation, resolvePendingEffects, resolveTriggeredAbilities, resolveStatChangeListeners } from '../effects/effect-engine';
 import { checkpointAwakening } from '../champions/awakening';
-import { refreshTowerAuras } from '../tower/relics';
 
 export function fusionTargets(state: GameState, playerId: string, sourceId: string): string[] {
   const owner = state.players.find(p => p.id === playerId);
@@ -29,7 +28,7 @@ export function vanishCard(state: GameState, instanceId: string): GameState {
     graveyard: p.graveyard.filter(c => c.instanceId !== instanceId), removedFromGame: p.removedFromGame.filter(c => c.instanceId !== instanceId),
   })), events: [...state.events, { type: 'CARD_VANISHED', playerId: owner.id, cardInstanceId: instanceId, cardDefinitionId: card.definitionId,
     cardType: card.cardType, boardSlot: card.boardSlot ?? undefined, source: { type: 'SYSTEM' }, target: { type: 'CARD', cardInstanceId: instanceId }, reason: 'VANISH' }] };
-  return checkpointAwakening(state, refreshTowerAuras(next));
+  return checkpointAwakening(state, next);
 }
 export function queueHandFusion(state: GameState, rollback: GameState, playerId: string, source: CardInstance): GameState {
   const live = state.players.find(p => p.id === playerId)?.board.find(c => c?.instanceId === source.instanceId);

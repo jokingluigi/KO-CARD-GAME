@@ -1,4 +1,4 @@
-import {usePixelFxBattle,damagePixelFx} from "./pixelfx-battle-bridge";
+
 import {questPortraitForSkin} from './quest-media';
 import {BattleCardChoiceDialog} from './battle-card-choice-dialog';
 import {FinisherProgress,championPreparationProgress} from './finisher-progress';
@@ -25,9 +25,7 @@ import "./player-ux/player-ux.css";
 import {SaveBattleImage} from "./player-tools/result-tools";
 import {PublicCards,usePublicCardIds} from "./player-tools/battle-tools";
 import {BattleZoneVisuals} from "./battle-zone-visuals";
-import {BattleResourceFeedback} from "./battle-resource-feedback";
 import {confirmedCounterDamage} from "./attack-animation-utils";
-import {BattleTurnHandoff} from "./battle-turn-handoff";
 import {ChampionPortraitFrame} from "./champion-portrait-frame";
 import {ChampionBattleActor} from "./champion-battle-actor";
 import { legendaryDialogueDuration } from "./wrestler-dialogue-timing";
@@ -48,11 +46,9 @@ import { BattleCardDrag } from './battle-card-drag';
 import { wrestlerEventLine } from './wrestler-event-line';
 import { wrestlerPlayCost } from '@/game/engine/play-wrestler';
 import { AwakeningStatus } from './awakening-status';
-import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { ChampionEmoteMenu } from './champion-emote-menu';
 import React from 'react';
 import { matchTurnNumber } from '@workspace/game-engine/rules';
-import { canEnterTowerField } from '@/game/tower/relics';
 import { EntranceVolumeControl, SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
 import { CardArtwork } from './card-artwork';
@@ -353,7 +349,7 @@ export function GameStatePreview({
   const opponentHandRef = React.useRef<HTMLDivElement | null>(null);
   const championRef = React.useRef<HTMLDivElement | null>(null);
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
-  usePixelFxBattle(state,{board:boardCardRefs,hand:handCardRefs,self:playerChampionRef,enemy:championRef},selectedAttackerId??selectedCardId,playError,turnSecondsRemaining);
+
   const spellDropTargetRef=React.useRef<{cardId:string;targetId:string;gameId:string;turn:number;createdAt:number}|null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
   const [readableSpells,setReadableSpells]=React.useState<Set<CardPlayAnimationState>>(()=>new Set());
@@ -821,7 +817,7 @@ export function GameStatePreview({
         label: draft.kind === "QUEST_PROGRESS" ? '피니셔 준비 진행' : draft.label,
         ...cuePosition(draft),
         targetWidth:(draft.cardInstanceId?boardCardRefs.current.get(draft.cardInstanceId)??handCardRefs.current.get(draft.cardInstanceId):draft.playerId===state.players[0]?.id?playerChampionRef.current:championRef.current)?.getBoundingClientRect().width,
-        effect:draft.kind==='DAMAGE'&&!draft.combat&&!draft.selfDamage&&draft.sourceCardInstanceId?damagePixelFx((getCardDefinition(currentCardSnapshot.get(draft.sourceCardInstanceId)?.definitionId??previousCards.get(draft.sourceCardInstanceId)?.definitionId??'')?.name??'')):undefined,
+
         ...(rect?.width && rect.height ? { sourceLeft: rect.left + rect.width / 2, sourceTop: rect.top + rect.height / 2 } : {}),
         ...(before && after && before.definitionId !== after.definitionId
           ? { previousArtwork: artwork(before) ?? undefined, nextArtwork: artwork(after) ?? undefined } : {}),
@@ -858,7 +854,7 @@ export function GameStatePreview({
           cardInstanceId,
           duration: 320,
         };
-        cues.push({ ...draft, ...cuePosition(draft),targetWidth:undefined,effect:undefined });
+        cues.push({ ...draft, ...cuePosition(draft),targetWidth:undefined });
       }
     }
     if (cues.length) {
@@ -1205,7 +1201,7 @@ export function GameStatePreview({
           : 1,
       } as React.CSSProperties}>
 
-         {blackGold && <><BattleTurnHandoff state={state}/><BattleResourceFeedback state={state}/><BattleAttention state={state}/></>}
+         {blackGold && <><BattleAttention state={state}/></>}
          <TargetSelectionFocus active={Boolean(effectTargeting&&!cardChoiceDialogOpen&&!state.targetingState?.finisherChoice&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
          <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
@@ -1699,7 +1695,7 @@ export function GameStatePreview({
                 : selectedAttackerId ? '상대 선수나 챔피언을 눌러 공격하세요.'
                 : state.players[0].board.some((card) => card && !card.enteredThisTurn && card.attacksUsedThisTurn === 0)
                   ? '필드의 내 선수를 눌러 공격 대상을 지정해 보세요.'
-                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && (!state.tower || canEnterTowerField(state, state.players[0].id)) && wrestlerPlayCost(state, state.players[0].id, card) <= state.players[0].currentGold)
+                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && wrestlerPlayCost(state, state.players[0].id, card) <= state.players[0].currentGold)
                     ? '손패에서 비용을 낼 수 있는 선수를 눌러 보세요.'
                     : '지금은 턴 종료를 눌러 다음 턴으로 넘어가세요.'}</p>
             </div>
@@ -1786,7 +1782,7 @@ export function GameStatePreview({
                  </Inspectable>
                )}
 
-               {me.champion && me.champion.id !== TOWER_VANILLA_CHAMPION_ID && (
+               {me.champion && (
                  <Inspectable className="ko-player-ability"
                    content={
                      <ChampionAbilityInspectContent
@@ -1834,7 +1830,7 @@ export function GameStatePreview({
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost,!state.tower||card.cardType!=='WRESTLER'||canEnterTowerField(state,me.id));if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
+                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost);if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}

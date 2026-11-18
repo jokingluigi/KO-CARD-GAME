@@ -537,71 +537,6 @@
 .admin-editor-dialog button {
   min-height: 38px;
 }
-.admin-tower-workspace-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  border-bottom: 1px solid #34363c;
-  padding: 18px 0;
-  margin-bottom: 18px;
-}
-.admin-tower-workspace-label strong {
-  font-size: 19px;
-}
-.admin-tower-workspace-label span {
-  font-size: 12px;
-  color: #9699a1;
-}
-.admin-tower-outline {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: 210px minmax(0, 1fr);
-}
-.admin-tower-outline > nav {
-  max-height: 70vh;
-  overflow-y: auto;
-  align-self: start;
-  position: sticky;
-  top: 90px;
-}
-.admin-tower-outline > nav button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border-bottom: 1px solid #292b31;
-  min-height: 46px;
-  padding: 12px;
-  font-size: 13px;
-}
-.admin-tower-outline > nav button[aria-pressed="true"] {
-  color: #ebd895;
-  border-left: 2px solid #cbb263;
-  background: #cbb2630b;
-}
-.admin-tower-card-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
-}
-.admin-tower-card-list button {
-  text-align: left;
-  border: 1px solid #35373c;
-  padding: 16px;
-  min-height: 90px;
-}
-.admin-tower-card-list button[aria-pressed="true"] {
-  border-color: #cbb263;
-}
-.admin-tower-card-list strong {
-  display: block;
-}
-.admin-tower-card-list small {
-  display: block;
-  color: #989ca4;
-  margin-top: 8px;
-}
 .admin-effect-list details,
 .admin-cutscene-lines details {
   border-bottom: 1px solid #37393e;
@@ -661,19 +596,6 @@
   }
   .admin-content {
     padding: 26px 22px 60px;
-  }
-  .admin-tower-outline {
-    grid-template-columns: 1fr;
-  }
-  .admin-tower-outline > nav {
-    position: static;
-    max-height: 200px;
-    display: flex;
-    flex-wrap: wrap;
-  }
-  .admin-tower-outline > nav button {
-    width: auto;
-    flex: 1 0 100px;
   }
   .admin-dirty-status {
     display: none;
@@ -737,9 +659,6 @@
   .admin-editor-tabs button {
     padding: 10px 12px;
     min-height: 44px;
-  }
-  .admin-tower-card-list {
-    grid-template-columns: 1fr;
   }
   .admin-skip-link {
     left: 16px;

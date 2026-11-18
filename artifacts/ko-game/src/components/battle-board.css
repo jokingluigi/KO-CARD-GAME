@@ -47,7 +47,7 @@
 .ko-board-preview .ko-cinematic-background > div:last-child {
   background: none;
 }
-/* Existing Tower/media assets remain in their own cinematic layer. */
+/* Existing media assets remain in their own cinematic layer. */
 .ko-board-preview .ko-opponent-header,
 .ko-board-preview .ko-board-area,
 .ko-board-preview .ko-player-footer {

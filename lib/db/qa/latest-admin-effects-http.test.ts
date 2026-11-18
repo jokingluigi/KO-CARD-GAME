@@ -33,7 +33,6 @@ const cards = JSON.parse(await readFile(new URL("cards.json", folder), "utf8"));
 const champions = JSON.parse(
   await readFile(new URL("champions.json", folder), "utf8"),
 );
-const tower = JSON.parse(await readFile(new URL("tower.json", folder), "utf8"));
 function columns(table: any, rows: any[]) {
   const allowed = Object.keys(getTableColumns(table));
   return rows.map((row) =>
@@ -55,20 +54,6 @@ await database
 await database
   .insert(schema.championsTable)
   .values(columns(schema.championsTable, champions));
-for (const [key, table] of Object.entries({
-  seasons: schema.towerSeasonsTable,
-  starters: schema.towerStartersTable,
-  presets: schema.towerPresetsTable,
-  relics: schema.towerRelicsTable,
-  characters: schema.towerCharactersTable,
-  scenes: schema.towerScenesTable,
-  metadata: schema.towerMetadataTable,
-}))
-  if (tower[key].length)
-    await database.insert(table).values(columns(table, tower[key]) as any);
-await database
-  .insert(schema.towerSettingsTable)
-  .values({ id: "global", enabled: false });
 const { db, pool } = await import("../src/index");
 for (const method of [
   "select",
@@ -284,13 +269,4 @@ test("latest Casto active runs through authenticated PvP HTTP, syncs both client
     runtime.state.players[0].board[0]?.currentAttack,
     caster.attack + 2,
   );
-});
-test("current tower configuration is loaded and validated offline without enabling the production tower", async () => {
-  const { loadTowerSnapshot } =
-    await import("../../../artifacts/api-server/src/lib/tower-catalog");
-  const snapshot = await loadTowerSnapshot(db, tower.seasons[0].id, true);
-  assert.equal(snapshot.catalog.season.v2?.floors.length, 16);
-  assert.equal(snapshot.catalog.relics.length, 24);
-  assert.ok(snapshot.cards.some((c) => c.id === caster.id));
-  assert.equal(tower.enabled, false);
 });

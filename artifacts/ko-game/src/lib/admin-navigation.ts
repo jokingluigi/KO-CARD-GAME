@@ -67,14 +67,6 @@ export const ADMIN_PAGES = [
     keywords: "쉬움 보통 어려움",
   },
   {
-    id: "tower",
-    group: "modes",
-    path: "/admin/tower",
-    label: "타워 모드",
-    description: "타워와 층, 보스, 스타터 덱, 유물, 스토리를 제작합니다.",
-    keywords: "층 일반 적 보스 유물 컷씬 히든 스타터 공개 테스트",
-  },
-  {
     id: "draft",
     group: "modes",
     path: "/admin/draft",
@@ -155,14 +147,6 @@ export const ADMIN_PAGES = [
     keywords: "주문 게임 엔진 AI 테스트",
   },
   {
-    id: "tower-test",
-    group: "tests",
-    path: "/admin/tower-test",
-    label: "타워 전투 샌드박스",
-    description: "기존 타워 전투 진단 도구를 실행합니다.",
-    keywords: "진단 보스 유물",
-  },
-  {
     id: "system",
     group: "system",
     path: "/admin/system",
@@ -177,7 +161,7 @@ export function adminPageForPath(path: string) {
   const clean = original === "/admin/skins" ? "/admin/cosmetics" : original;
   return (
     ADMIN_PAGES.find((p) => p.path === clean) ||
-    (clean === "/admin/dashboard" ? ADMIN_PAGES[0] : undefined)
+    (clean === "/admin/dashboard" ? ADMIN_PAGES.find(page=>page.id==="dashboard") : undefined)
   );
 }
 export function searchAdminPages(query: string) {

@@ -65,7 +65,6 @@ export type CardStatHistoryEntry = {
 };
 
 export type TemporaryStatModifier = {
-  source?: 'TOWER_RELIC';
   stat: 'cost' | 'attack' | 'health';
   amount: number;
   untilTurn: number;
@@ -148,7 +147,6 @@ export interface CardDefinition {
 
 export interface CardInstance {
   championDodgeGranted?:boolean;
-  towerDeckIndex?: number;
   ignoreTauntToChampion?: boolean;
   questExclusive?: boolean;
   awakeningLegacyPassives?: boolean;

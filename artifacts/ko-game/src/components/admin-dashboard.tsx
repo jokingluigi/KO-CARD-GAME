@@ -13,7 +13,7 @@ export function AdminDashboard({ go }: { go: (id: AdminPageId) => void }) {
   useEffect(() => {
     let active = true;
     void Promise.allSettled(
-      ["cards", "champions", "packs", "tower", "server-maintenance"].map(
+      ["cards", "champions", "packs", "server-maintenance"].map(
         async (path) => ({ path, data: await read(path) }),
       ),
     ).then((results) => {
@@ -24,7 +24,7 @@ export function AdminDashboard({ go }: { go: (id: AdminPageId) => void }) {
         r.status === "fulfilled"
           ? (values[r.value.path] = r.value.data)
           : (failures[
-              ["cards", "champions", "packs", "tower", "server-maintenance"][i]
+              ["cards", "champions", "packs", "server-maintenance"][i]
             ] = String(r.reason)),
       );
       setData(values);
@@ -60,7 +60,6 @@ export function AdminDashboard({ go }: { go: (id: AdminPageId) => void }) {
           ["cards", "카드", data.cards?.cards?.length],
           ["champions", "챔피언", data.champions?.champions?.length],
           ["packs", "카드팩", data.packs?.packs?.length],
-          ["tower", "타워", data.tower?.seasons?.length],
         ].map(([id, label, count]) => (
           <button key={String(id)} onClick={() => go(id as AdminPageId)}>
             <span>{label}</span>
@@ -86,16 +85,6 @@ export function AdminDashboard({ go }: { go: (id: AdminPageId) => void }) {
               </dd>
             </div>
             <div>
-              <dt>타워 진입</dt>
-              <dd>
-                {data.tower
-                  ? data.tower.enabled
-                    ? "활성"
-                    : "비활성"
-                  : "조회 중"}
-              </dd>
-            </div>
-            <div>
               <dt>설정 경로</dt>
               <dd>
                 <button onClick={() => go("system")}>점검 설정 열기 →</button>
@@ -115,7 +104,6 @@ export function AdminDashboard({ go }: { go: (id: AdminPageId) => void }) {
               [
                 "cards",
                 "champions",
-                "tower",
                 "quests",
                 "packs",
                 "media",

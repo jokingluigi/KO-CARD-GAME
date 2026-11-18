@@ -20,7 +20,6 @@ import {
 import { processChampionQuestEvents } from '../champions/quests';
 import { checkpointAwakening, hasAwakeningInvulnerability, hasAwakeningPassive, prepareAwakeningCounter, resolveAwakeningCounter } from '../champions/awakening';
 import { findDirectDeployedChampion, isChampionProtectedByToken } from './direct-champion';
-import { towerAttackBlocked, towerCombatAttackBonus, towerIncomingDamage } from '../tower/relics';
 
 export type AttackTarget =
   | {
@@ -92,7 +91,6 @@ export function getAttackLegality(
       message: '기절한 선수는 공격할 수 없습니다.',
     };
   }
-  if (towerAttackBlocked(state, playerId, cardInstanceId)) return { allowed: false, reasonCode: 'SUMMONED_THIS_TURN', message: '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.' };
 
   const maximumAttacks = hasKeyword(entry.card, 'MULTI_STRIKE') ? 2 : 1;
   if (entry.card.attacksUsedThisTurn >= maximumAttacks && !(entry.card.extraWrestlerAttacksThisTurn??0)) {
@@ -244,7 +242,6 @@ function attackInternal(
     );
   }
   let { card: attacker } = attackerEntry;
-  if (towerAttackBlocked(state, attackingPlayerId, attackerInstanceId)) return actionFailure(state, 'SUMMONED_THIS_TURN', '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.');
 
   if (hasKeyword(attacker, "CANNOT_ATTACK")) return actionFailure(state, "CARD_CANNOT_ATTACK", "공격불가 키워드를 가진 선수는 공격을 선언할 수 없습니다.");
   if (attacker.isStunned) {
@@ -543,20 +540,9 @@ function attackInternal(
     !preventedAttackerDamage && defenderPreparedCard.dodgeAvailable && hasKeyword(defenderPreparedCard, 'DODGE');
 
   let attackerDamage = attackerPrepared.currentAttack +
-    getDamageModifierBonus(preDamageState, attackingPlayerId, attackerPrepared) +
-    towerCombatAttackBonus(preDamageState, attackingPlayerId, attackerPrepared, defenderPreparedCard);
+    getDamageModifierBonus(preDamageState, attackingPlayerId, attackerPrepared);
   let defenderDamage = defenderPreparedCard.currentAttack +
     getDamageModifierBonus(preDamageState, target.playerId, defenderPreparedCard);
-  const defendingBoard = preDamageState.players.find(p => p.id === target.playerId)!.board.filter(Boolean);
-  const attackingHighest = defendingBoard.every(c => c!.currentAttack <= defenderPreparedCard.currentAttack);
-  if (!defenderDodges && !preventedAttackerDamage) {
-    const reduced = towerIncomingDamage(preDamageState, target.playerId, defenderPreparedCard, attackerDamage);
-    preDamageState = reduced.state; attackerDamage = reduced.amount;
-  }
-  if (!attackerDodges && !preventedDefenderDamage) {
-    const reduced = towerIncomingDamage(preDamageState, attackingPlayerId, attackerPrepared, defenderDamage, attackingHighest);
-    preDamageState = reduced.state; defenderDamage = reduced.amount;
-  }
   attackerDamage = keywordDamage(defenderPreparedCard, Math.max(0, attackerDamage + (attackerDamage > 0 ? madokawaIncomingBonus(preDamageState, target.playerId, defenderPreparedCard) : 0) - silenceDamageReduction(defenderPreparedCard, attackerPrepared)), preDamageState.turn, 'COMBAT', preDamageState);
   defenderDamage = keywordDamage(attackerPrepared, Math.max(0, defenderDamage + (defenderDamage > 0 ? madokawaIncomingBonus(preDamageState, attackingPlayerId, attackerPrepared) : 0) - silenceDamageReduction(attackerPrepared, defenderPreparedCard)), preDamageState.turn, 'COMBAT', preDamageState);
   const damageEventStartIndex = preDamageState.events.length;

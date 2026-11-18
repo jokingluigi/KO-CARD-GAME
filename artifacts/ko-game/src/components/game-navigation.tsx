@@ -3,7 +3,7 @@ import { prefersReducedMotion } from "./presentation-config";
 import { Link, useLocation } from "wouter";
 import { BookOpen, Home, Layers3, ShoppingBag, Swords, Gift } from "lucide-react";
 
-// Deliberately allowlisted: never mounted over a battle, draft pick, tower run or admin form.
+// Deliberately allowlisted: never mounted over a battle, draft pick or admin form.
 const destinations = [
   { href: "/", label: "메인", icon: Home },
   { href: "/online", label: "대전", icon: Swords },

@@ -1,12 +1,4 @@
 /* Battle presentation only. No selector changes card stats, targeting or board layout. */
-.battle-vfx {
-  position: fixed;
-  z-index: 235;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  width: 360px;
-  height: 360px;
-}
 .attack-animation--cinematic .attack-animation__attacker {
   animation: none;
   will-change: transform;
@@ -197,23 +189,7 @@
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-variant-numeric: tabular-nums;
 }
-.presentation-feedback__effect-hit {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 64px;
-  height: 64px;
-  border: 3px solid #ffb080;
-  border-radius: 50%;
-  box-shadow: 0 0 12px #ff653580;
-  animation: ko-effect-hit 260ms ease-out both;
-}
-@keyframes ko-effect-hit {
-  from { opacity: 1; transform: translate(-50%, -50%) scale(.4); }
-  to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-}
 @media (prefers-reduced-motion: reduce) {
-  .presentation-feedback__effect-hit { display: none; }
 }
 .presentation-feedback--damage[data-impact="heavy"] {
   color: #ffca99;
@@ -244,13 +220,6 @@
 }
 .presentation-feedback--dodge {
   color: #cbebff;
-}
-.presentation-feedback__transfer {
-  width: 7px;
-  height: 7px;
-  box-shadow:
-    0 0 7px currentColor,
-    0 0 18px currentColor;
 }
 @keyframes ko-cinematic-number {
   0% {
@@ -355,7 +324,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .battle-vfx,
   .attack-animation__trail,
   .card-play-animation__sigil {
     display: none;
@@ -427,14 +395,6 @@
 .presentation-feedback--effect { color:#ffe5af; font-size:13px; }
 .presentation-feedback--silence { color:#c9bfe8; font-size:17px; }
 .presentation-feedback--armor { color:#b5e5ff; font-size:17px; }
-.presentation-feedback__shield,.presentation-feedback__silence-ring {
-  position:absolute; inset:-25px -18px; border:2px solid currentColor;
-  border-radius:45%; opacity:0; animation:ko-status-ring var(--presentation-duration) ease-out both;
-}
-.presentation-feedback__shield { border-radius:40% 40% 50% 50%; box-shadow:inset 0 0 12px #8ac7ff55; }
-.presentation-feedback__silence-ring { animation-name:ko-silence-ring; border-style:dashed; }
-@keyframes ko-status-ring { 0%{opacity:0;scale:.75} 25%{opacity:1;scale:1.1} 100%{opacity:0;scale:1.25} }
-@keyframes ko-silence-ring { 0%{opacity:.8;scale:1.25} 65%{opacity:.6;scale:.5} 100%{opacity:0;scale:.1} }
 .ko-hand-card { transition:transform 180ms cubic-bezier(.16,1,.3,1),filter 180ms ease; }
 .ko-hand-card--selected { filter:drop-shadow(0 10px 10px #0009); z-index:30; }
 .ko-game-stage button:not(:disabled) { transition:scale 100ms ease,filter 140ms ease; }
@@ -463,7 +423,6 @@
 @media(prefers-reduced-motion:reduce) {
   .ko-draw-flight { animation-duration:40ms; animation-delay:0ms; }
   .ko-game-stage[class*="attack-screen-shake--"] { animation:none; }
-  .presentation-feedback__shield,.presentation-feedback__silence-ring { animation:none;opacity:.5; }
   .ko-hand-card,.ko-game-stage button { transition:none; }
 }
 
