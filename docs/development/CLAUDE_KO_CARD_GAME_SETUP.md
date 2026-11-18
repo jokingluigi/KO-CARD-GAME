@@ -117,9 +117,12 @@ PORT=5173 BASE_PATH=/ pnpm --filter @workspace/ko-game exec vite --config ../../
 ```bash
 curl --fail http://127.0.0.1:5173/api/healthz
 curl --fail http://127.0.0.1:5173/api/cards
+pnpm run typecheck:libs
 pnpm --filter @workspace/ko-game typecheck
 pnpm --filter @workspace/ko-game build
 ```
+
+신규 설치에서는 공유 라이브러리의 TypeScript 참조 산출물이 없을 수 있으므로 `pnpm run typecheck:libs`를 먼저 실행한다. 전체 검사 명령인 `pnpm run typecheck`는 이 단계를 내부에서 먼저 실행한다.
 
 카드 API가 빈 배열이면 로컬 DB에 카드 데이터가 없는지 확인한다. 상태 200만으로 로그인·실시간 경기까지 검증했다고 하지 않는다.
 
