@@ -1,3 +1,4 @@
+import {reviewedNovember18Champion} from './reviewed-admin-content-20261118';
 import {reviewedNovember11Champion} from './balance-content-20261111';
 import { validFinisherReward, validFinisherChoices } from './finisher-config';
 import {reviewedOctober24Champion} from './balance-patch-20261024';
@@ -75,7 +76,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   record=reviewedNovember11Champion(record);
   const configuredFinisher=record.hasQuest&&validFinisherReward(record.questCondition?.finisher)?record.questCondition.finisher:undefined;
   const configuredChoices = record.hasQuest && validFinisherChoices(record.questCondition?.finisherChoices) ? record.questCondition.finisherChoices : undefined;
-  record = reviewedOctober24Champion(record);
+  record = reviewedNovember18Champion(reviewedOctober24Champion(record));
   // Exact administrator revision, explicitly implemented rather than parsed at runtime.
   if (record.id === 'f7b087d8-3148-43d5-a634-a81d15c81721' &&
       ['상대 선수 카드에게 1 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.','선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.'].includes(record.abilityText) &&

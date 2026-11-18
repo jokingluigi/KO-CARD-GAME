@@ -52,6 +52,7 @@ export type CollectionChampion = {
   hasQuest: boolean;
   questName: string | null;
   questText: string | null;
+  questCondition?: unknown;
   questProgressRequired: number | null;
   questRewardText: string | null;
   upgradedAbilityName: string | null;

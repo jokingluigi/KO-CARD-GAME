@@ -1,3 +1,4 @@
+import {reviewedNovember18Abilities} from './reviewed-admin-content-20261118';
 import {normalizeHelperHealing,helperHealingAbilities} from './helper-healing';
 import {reviewedNovember11Abilities} from './reviewed-admin-content-20261111';
 import {reviewedOctober30Abilities} from './reviewed-admin-content-20261030';
@@ -233,7 +234,8 @@ function normalizeAnywhereTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
-  const balanceAbilities=reviewedNovember11Abilities(card);
+  const balanceAbilities=reviewedNovember18Abilities(card) ?? reviewedNovember11Abilities(card);
+  if(balanceAbilities?.some(a=>'invulnerableWhileOtherAllyTag' in a && a.invulnerableWhileOtherAllyTag))card={...card,keywords:card.keywords.filter(k=>k!=='IMMUNE')};
   const awakening = createAwakeningCards().find(definition => definition.id === card.id);
   if (awakening) {
     // Administrator-chosen names must not select another card's legacy rules.

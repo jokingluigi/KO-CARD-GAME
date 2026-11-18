@@ -13,6 +13,7 @@ import { generateCard } from "../cards/generation";
 import { createDeterministicRandom } from "../random/random";
 import { currentChampionAbility } from "../champions/types";
 export type BalanceOperation =
+  | "BUFF_TAG_ATTACK_PAIR"
   | "BUFF_TOP_WRESTLER_ATTACK"
   | "CONDITIONAL_FIELD_BUFF"
   | "COUNT_TAG_BUFF"
@@ -157,6 +158,7 @@ function pool(state: GameState, source: CardInstance, c: BalanceEffectConfig) {
       (!c.cardType || d.cardType === c.cardType) &&
       (!c.rarity || d.rarity === c.rarity) &&
       (!c.excludeChampionRarity || d.rarity !== "CHAMPION") &&
+      (!c.excludeChampionTokens || !d.isChampionToken) &&
       (!Array.isArray(c.rarities) || c.rarities.includes(d.rarity)) &&
       (!c.excludeSource || d.id !== source.definitionId),
   );
@@ -212,6 +214,11 @@ export function applyBalanceEffect(
         )
       : s;
   switch (c.operation) {
+    case "BUFF_TAG_ATTACK_PAIR": {
+      const attacker=owner.board.find(card=>card?.instanceId===context?.attackerInstanceId);
+      if(!attacker||attacker.instanceId===source.instanceId||!attacker.tags?.includes(String(c.tag)))return state;
+      return buff(chosen(state,"BUFF",{attack:num("attack")},attacker.instanceId),num("attack"));
+    }
     case "BUFF_TOP_WRESTLER_ATTACK": {
       const top = owner.deck.find((d) => d.cardType === "WRESTLER");
       return top
@@ -387,7 +394,7 @@ export function applyBalanceEffect(
         (n.players.find((p) => p.id === playerId)?.hand.length ?? 0) <
           MAX_HAND_SIZE;
       ) {
-        const candidates = pool(n, source, {
+        const candidates = c.randomScope === "FULL" ? (n.minionACardPool ?? n.cardPool ?? []) : pool(n, source, {
           operation: "GENERATE_RANDOM_MATCH",
         });
         if (!candidates.length) break;
@@ -397,7 +404,8 @@ export function applyBalanceEffect(
           n,
           fx("GENERATE", undefined, {
             definitionRef: { id: d.id },
-            generatedModifiers: { cost: -num("costReduction") },
+            generatedModifiers: { cost: -num("costReduction"), attack:-num("attackReduction"), health:-num("healthReduction") },
+            ...(typeof c.minimumCost === "number" ? {generatedMinimumCost:c.minimumCost} : {}),
             count: 1,
           }),
         );

@@ -1,3 +1,4 @@
+import {championPreparationCopy} from '@/lib/champion-preparation-copy';
 import {isTokenCard} from "@/game/cards/types";
 import '@/components/catalog-browsing.css';
 import { RelatedCards } from "@/components/player-tools/related-cards";
@@ -543,6 +544,7 @@ function ChampionDetail({
   onCraft: () => void;
 }) {
   const [tokenDetail, setTokenDetail] = useState<import("@/components/card-detail-dialog").CardDetailRecord | null>(null);
+  const preparation=championPreparationCopy(champion);
   return (
     <>
       <DialogHeader>
@@ -566,8 +568,8 @@ function ChampionDetail({
         <div className="space-y-4">
           <InfoBlock icon={<Swords className="h-4 w-4" />} label={`고유 능력 · 비용 ${champion.abilityCost} 골드`} text={champion.abilityText || champion.description} />
           {champion.gameStartAbilityText && <InfoBlock label="게임 시작 능력" text={champion.gameStartAbilityText} />}
-          {champion.hasQuest && <InfoBlock label="피니셔 준비" text={champion.questText || "준비 조건 정보가 없습니다."} />}
-          {champion.hasQuest && champion.questRewardText && <InfoBlock label="피니셔 획득 / 현재 완료 효과" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 고유 능력\n${champion.upgradedAbilityText}` : ""}`} />}
+          {champion.hasQuest && <InfoBlock label="피니셔 준비" text={preparation.condition} />}
+          {champion.hasQuest && preparation.reward && <InfoBlock label="피니셔 획득 / 현재 완료 효과" text={`${preparation.reward}${!preparation.linked && champion.upgradedAbilityText ? `\n\n강화 고유 능력\n${champion.upgradedAbilityText}` : ""}`} />}
           <RelatedCards id={champion.id} onSelect={setTokenDetail}/>
           <CardDetailDialog card={tokenDetail} open={Boolean(tokenDetail)} onOpenChange={open => {if(!open)setTokenDetail(null);}}/>
           <section className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-4">

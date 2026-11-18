@@ -49,6 +49,8 @@ export type CardEffect =
          adjacentCopyFraction?: number;
          armorGain?: number;
          generatedKeywords?: CardKeyword[];
+         /** Reviewed creation effects can keep generated cost above zero. */
+         generatedMinimumCost?: number;
          buffFromReservedGold?: boolean;
          healToFull?: boolean;
          replacementLowerCostSummon?: boolean;

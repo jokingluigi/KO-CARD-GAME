@@ -1,0 +1,240 @@
+{
+  "champions": [
+    {
+      "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+      "name": "라 칼라베라",
+      "description": "",
+      "maxHealth": 20,
+      "abilityName": "좀비 생성",
+      "abilityCost": 1,
+      "abilityText": "'좀비'를 소환합니다.",
+      "gameStartAbilityName": null,
+      "gameStartAbilityText": null,
+      "gameStartAbilityEffects": null,
+      "abilityEffects": {
+        "effects": [
+          {
+            "action": "SUMMON",
+            "values": {
+              "count": 1,
+              "definitionRef": {
+                "name": "좀비"
+              },
+              "generatedModifiers": {
+                "attack": 0,
+                "health": 0
+              }
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "hasQuest": true,
+      "questName": "사령술 강화",
+      "questText": "자신의 무덤에 '언데드' 태그를 가진 카드가 8장 이상 있어야합니다.",
+      "questCondition": {
+        "event": "",
+        "cardType": "WRESTLER",
+        "finisher": {
+          "delivery": "HAND",
+          "cardDefinitionId": "2f47b929-7035-4bb9-abea-0af6a6f9c72d"
+        },
+        "required": 8,
+        "strictEventCount": true
+      },
+      "questProgressRequired": 8,
+      "questRewardText": "고유 능력이 강화됩니다.",
+      "questRewardEffects": {
+        "effects": [
+          {
+            "action": "UPGRADE_CHAMPION_ABILITY",
+            "trigger": "ENTER_FIELD"
+          }
+        ]
+      },
+      "upgradedAbilityName": "좀비 생성 (강화)",
+      "upgradedAbilityCost": 1,
+      "upgradedAbilityText": "1코스트 2/2 좀비를 소환합니다.",
+      "upgradedAbilityEffects": {
+        "effects": [
+          {
+            "action": "SUMMON",
+            "values": {
+              "count": 1,
+              "definitionRef": {
+                "name": "좀비"
+              },
+              "generatedModifiers": {
+                "attack": 1,
+                "health": 1
+              }
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "championTokenDefinitionId": null,
+      "championTokenEffectText": null,
+      "championTokenEffectEffects": null,
+      "status": "PUBLISHED",
+      "isCraftable": true,
+      "isStarterGrant": false,
+      "version": 40,
+      "createdAt": "2026-09-23T17:01:05.668Z",
+      "updatedAt": "2026-11-12T00:47:43.604Z"
+    },
+    {
+      "id": "champion-minion-a",
+      "name": "로지양",
+      "description": "",
+      "maxHealth": 20,
+      "abilityName": "완전히 무작위",
+      "abilityCost": 1,
+      "abilityText": "완전히 무작위 카드를 비용/체력/공격력을 전부 1씩 깍아서 생성합니다.(비용과 체력은 1이 최소치)",
+      "gameStartAbilityName": null,
+      "gameStartAbilityText": null,
+      "gameStartAbilityEffects": null,
+      "abilityEffects": {
+        "effects": [
+          {
+            "action": "GENERATE",
+            "target": {
+              "zone": "HAND",
+              "count": 1,
+              "owner": "SELF",
+              "selection": "RANDOM",
+              "randomScope": "FULL"
+            },
+            "values": {
+              "generatedModifiers": {
+                "cost": -1
+              }
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "hasQuest": true,
+      "questName": "피니셔 준비",
+      "questText": null,
+      "questCondition": {
+        "event": "CARD_PLAYED",
+        "progress": 1,
+        "required": 1,
+        "finisherChoices": [
+          {
+            "id": "option-1",
+            "name": "어셈블",
+            "condition": {
+              "type": "EVENT",
+              "event": "CARD_PLAYED",
+              "owner": "SELF",
+              "required": 5
+            },
+            "description": "카드 총 12회 생성",
+            "cardDefinitionId": "0785ff4f-ce7c-4ab0-83e7-197249767543"
+          },
+          {
+            "id": "option-2",
+            "name": "흉내내기",
+            "condition": {
+              "type": "EVENT",
+              "event": "CARD_PLAYED",
+              "owner": "SELF",
+              "required": 1
+            },
+            "description": "레전더리 혹은 챔피언 등급 카드를 3장 이상 필드에 내기",
+            "cardDefinitionId": "52528873-0704-4569-9bd8-2c4ff227ce51"
+          }
+        ]
+      },
+      "questProgressRequired": 1,
+      "questRewardText": null,
+      "questRewardEffects": null,
+      "upgradedAbilityName": null,
+      "upgradedAbilityCost": null,
+      "upgradedAbilityText": null,
+      "upgradedAbilityEffects": null,
+      "championTokenDefinitionId": null,
+      "championTokenEffectText": null,
+      "championTokenEffectEffects": null,
+      "status": "PUBLISHED",
+      "isCraftable": false,
+      "isStarterGrant": true,
+      "version": 33,
+      "createdAt": "2026-10-01T01:06:53.594Z",
+      "updatedAt": "2026-11-18T11:48:16.840Z"
+    }
+  ],
+  "cards": [
+    {
+      "id": "2f47b929-7035-4bb9-abea-0af6a6f9c72d",
+      "name": "궁극의 언데드",
+      "cardType": "TECHNIQUE",
+      "cost": 4,
+      "attack": 0,
+      "health": 0,
+      "text": "'오메가 좀비'를 소환한다.",
+      "rarity": "CHAMPION",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [
+        "피니셔"
+      ],
+      "isToken": true,
+      "isChampionToken": true,
+      "effectId": null,
+      "effectConfig": {},
+      "status": "PUBLISHED",
+      "version": 4,
+      "createdAt": "2026-11-11T01:59:35.853Z",
+      "updatedAt": "2026-11-11T06:07:13.835Z"
+    },
+    {
+      "id": "0785ff4f-ce7c-4ab0-83e7-197249767543",
+      "name": "어셈블!!!",
+      "cardType": "TECHNIQUE",
+      "cost": 3,
+      "attack": 0,
+      "health": 0,
+      "text": "등장:자신의 필드를 완전히 무작위 선수 카드들로 채웁니다.",
+      "rarity": "CHAMPION",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [
+        "피니셔"
+      ],
+      "isToken": true,
+      "isChampionToken": true,
+      "effectId": null,
+      "effectConfig": {},
+      "status": "PUBLISHED",
+      "version": 6,
+      "createdAt": "2026-10-03T13:52:58.182Z",
+      "updatedAt": "2026-11-11T02:44:50.900Z"
+    },
+    {
+      "id": "52528873-0704-4569-9bd8-2c4ff227ce51",
+      "name": "흉내내기",
+      "cardType": "TECHNIQUE",
+      "cost": 0,
+      "attack": 0,
+      "health": 0,
+      "text": "이 카드를 제외한 다른 '피니셔' 카드 무작위 3장 중에서 한장을 골라서 가져옵니다.",
+      "rarity": "CHAMPION",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [
+        "피니셔"
+      ],
+      "isToken": true,
+      "isChampionToken": true,
+      "effectId": null,
+      "effectConfig": {},
+      "status": "PUBLISHED",
+      "version": 5,
+      "createdAt": "2026-11-11T01:52:42.553Z",
+      "updatedAt": "2026-11-11T06:12:01.140Z"
+    }
+  ]
+}

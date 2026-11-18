@@ -40,6 +40,7 @@ export type DeckChampion = {
   hasQuest: boolean;
   questName: string | null;
   questText: string | null;
+  questCondition?: unknown;
   questRewardText: string | null;
   upgradedAbilityName: string | null;
   upgradedAbilityText: string | null;

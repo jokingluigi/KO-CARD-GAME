@@ -20,6 +20,7 @@ export function explicitReferences(value: unknown): Set<string> {
     for (const [k, x] of Object.entries(obj)) {
       if (
         [
+          "cardDefinitionId",
           "tokenDefinitionId",
           "championTokenDefinitionId",
           "transformDefinitionId",

@@ -117,9 +117,12 @@ PORT=5173 BASE_PATH=/ pnpm --filter @workspace/ko-game exec vite --config ../../
 ```bash
 curl --fail http://127.0.0.1:5173/api/healthz
 curl --fail http://127.0.0.1:5173/api/cards
+pnpm run typecheck:libs
 pnpm --filter @workspace/ko-game typecheck
 pnpm --filter @workspace/ko-game build
 ```
+
+신규 설치에서는 공유 라이브러리의 TypeScript 참조 산출물이 없을 수 있으므로 `pnpm run typecheck:libs`를 먼저 실행한다. 전체 검사 명령인 `pnpm run typecheck`는 이 단계를 내부에서 먼저 실행한다.
 
 카드 API가 빈 배열이면 로컬 DB에 카드 데이터가 없는지 확인한다. 상태 200만으로 로그인·실시간 경기까지 검증했다고 하지 않는다.
 
@@ -215,6 +218,7 @@ git diff BASE_SHA COMMIT_SHA -- PATH_TO_REVIEW
 
 ## 7. 현재 제품 결정: 반드시 유지
 
+- 카드·챔피언 효과 업데이트는 보통 운영 관리자 화면에서 이루어진다. 최신 저장 데이터를 먼저 확인한다. 설명에 오타·모호함·서로 모순되는 수치가 있으면 의미를 임의로 결정하거나 텍스트를 자동 수정하지 말고 사용자에게 먼저 확인한다. 2026-11-18 조킹루이지 v45의 ‘챔피언 토큰’ 문구와 로지양의 ‘최소치’ 정정은 사용자가 확인한 예외이며 다른 오타까지 일괄 보정할 근거가 아니다.
 - 사용자는 현재 제작한 모든 VFX의 폐기를 요청했다. PixelFX·오리지널 VFX·대체 입자 효과·생성 산출물·게임 연결을 삭제한 상태다. 이전 VFX masterplan을 재개하거나 효과를 복원하지 않는다.
 - 카드 능력의 게임 판정, 피해 숫자, 키워드 UI, 기본 카드 이동은 시각 효과 폐기와 별개다.
 - Tower 모드도 제거 작업이 진행된 상태다. 과거 문서·테스트만 보고 되살리지 않는다.
