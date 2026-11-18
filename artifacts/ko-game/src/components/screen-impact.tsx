@@ -1,5 +1,5 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type RefObject} from 'react';
-import {effectiveImpact,combatCameraFrames,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
+import {boardHop,boardHopFrames,effectiveImpact,combatCameraFrames,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
 import {readCombatPreferences,impactMultiplier} from './combat-preferences';
 import {prefersReducedMotion} from './presentation-config';
 type ImpactApi={request:(impact:ScreenImpact)=>boolean;mode:ShakeMode;setMode:(mode:ShakeMode)=>void;isActive:()=>boolean};
@@ -12,6 +12,8 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
  const [mode,setPreference]=useState<ShakeMode>(readMode),modeRef=useRef(mode);
  const [impact,setImpact]=useState<ScreenImpact|null>(null);
  const current=useRef<{event:ScreenImpact;until:number}|null>(null),motions=useRef<Animation[]>([]);
+ // Board hops outlive the camera shake, so they are tracked apart from it.
+ const hops=useRef<Animation[]>([]);
  const timer=useRef<ReturnType<typeof setTimeout>|null>(null),seen=useRef<string[]>([]);
  const clear=useCallback((update=true)=>{
   motions.current.forEach(a=>a.cancel());motions.current=[];current.current=null;
@@ -48,13 +50,16 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
    }
    animate(background,impactFrames({...profile,amplitude:profile.amplitude*.3,rotation:profile.rotation*.25},event.direction,event.radial),profile.duration);
    if(event.nearby&&profile.amplitude>0){
+    // Heavy landings make every other card on the board hop and drop back, rolling outward.
     const cards=container.current?.querySelectorAll<HTMLElement>('.ko-board-slot-wrapper [data-rarity]')??[];
-    for(const card of Array.from(cards).slice(0,12)){
-     const rect=card.getBoundingClientRect(),dx=rect.left+rect.width/2-event.x,dy=rect.top+rect.height/2-event.y,distance=Math.hypot(dx,dy);
-     if(distance<Math.max(rect.width,rect.height)*.5)continue;
-     const near=distance<220,amount=(near?Math.min(6,profile.amplitude*.4):Math.min(3,profile.amplitude*.18));
-     const direction=dx<0?-1:1;
-     animate(card,[{translate:'0px 0px',rotate:'0deg'},{translate:`${direction*amount}px ${amount*.4}px`,rotate:`${direction*(near?3:1)*(modeRef.current==='REDUCED'?.5:1)}deg`,offset:.22},{translate:`${-direction*amount*.35}px 0px`,rotate:`${-direction*.6}deg`,offset:.55},{translate:'0px 0px',rotate:'0deg'}],Math.min(280,profile.duration));
+    const scale=modeRef.current==='REDUCED'?.5:1;
+    hops.current.forEach(a=>a.cancel());hops.current=[];
+    for(const card of Array.from(cards).slice(0,14)){
+     const rect=card.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2,distance=Math.hypot(cx-event.x,cy-event.y);
+     if(!rect.width||distance<Math.max(rect.width,rect.height)*.5)continue;
+     const hop=boardHop(event.profile,distance);
+     if(hop.height<=0)continue;
+     try{hops.current.push(card.animate(boardHopFrames(hop.height*scale,cx<event.x?-1:1),{duration:520,delay:hop.delay,fill:'backwards'}));}catch{/* Visual only. */}
     }
    }
   }
@@ -67,7 +72,7 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   const stored=(e:StorageEvent)=>{if(e.key===SHAKE_STORAGE_KEY){modeRef.current=parseShakeMode(e.newValue);setPreference(modeRef.current);clear();}};
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
   window.addEventListener('ko-combat-preferences',reset);window.addEventListener('resize',reset);window.addEventListener('storage',stored);document.addEventListener('visibilitychange',hidden);media.addEventListener('change',reset);
-  return()=>{clear(false);window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
+  return()=>{clear(false);hops.current.forEach(a=>a.cancel());hops.current=[];window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[clear]);
  const isActive=useCallback(()=>Boolean(current.current&&performance.now()<current.current.until),[]);
  return {api:{request,mode,setMode,isActive},impact,clear};

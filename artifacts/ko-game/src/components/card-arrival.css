@@ -1,0 +1,58 @@
+/* Legendary / champion arrivals: under the card-play layer (z 300), over the board. */
+.ko-arrival-dim,.ko-arrival-rays,.ko-arrival-halo,.ko-arrival-flash,.ko-arrival-screenflash,.ko-arrival-ring,.ko-arrival-embers,
+.ko-arrival-motes,.ko-arrival-lightning,.ko-arrival-vortex,.ko-arrival-bars,.ko-arrival-pillar,.ko-arrival-whiteout,.ko-arrival-shockwave,.ko-arrival-eruption{position:fixed;pointer-events:none}
+
+.ko-arrival-dim{inset:0;z-index:296;opacity:0}
+.ko-arrival-dim--legendary{background:radial-gradient(circle at var(--x) var(--y),rgba(255,200,90,.16) 0,rgba(255,200,90,.05) 14%,rgba(10,7,2,.45) 36%,rgba(4,3,1,.68) 75%)}
+.ko-arrival-dim--champion{background:radial-gradient(circle at var(--x) var(--y),rgba(150,14,10,.42) 0,rgba(70,4,4,.6) 16%,rgba(6,0,0,.9) 38%,rgba(0,0,0,.96) 70%)}
+
+.ko-arrival-rays{z-index:297;border-radius:50%;opacity:0;mix-blend-mode:screen;
+  background:repeating-conic-gradient(from 0deg,rgba(var(--ray),.85) 0deg,rgba(var(--ray),0) calc(360deg / var(--count) * .35),rgba(var(--ray),0) calc(360deg / var(--count)));
+  -webkit-mask:radial-gradient(circle,#000 0,#000 14%,rgba(0,0,0,.55) 38%,transparent 68%);mask:radial-gradient(circle,#000 0,#000 14%,rgba(0,0,0,.55) 38%,transparent 68%)}
+.ko-arrival-rays--burst{z-index:301}
+.ko-arrival-halo{z-index:298;border-radius:50%;opacity:0;mix-blend-mode:screen;
+  background:radial-gradient(circle,rgba(var(--core),.9) 0,rgba(var(--glow),.55) 22%,rgba(var(--glow),.18) 46%,transparent 70%)}
+.ko-arrival-halo--champion{mix-blend-mode:normal;background:radial-gradient(circle,rgba(var(--core),.55) 0,rgba(var(--glow),.45) 26%,rgba(var(--glow),.12) 50%,transparent 70%)}
+
+/* Champion: a tight spiral of dark red energy being sucked in behind the card. */
+.ko-arrival-vortex{z-index:297;border-radius:50%;opacity:0;
+  background:
+    repeating-conic-gradient(from 0deg,rgba(255,70,40,.0) 0deg,rgba(255,70,40,.55) 6deg,rgba(120,0,0,.0) 16deg,rgba(0,0,0,0) 30deg),
+    radial-gradient(circle,rgba(255,90,50,.5) 0,rgba(140,8,8,.45) 22%,rgba(40,0,0,.5) 44%,transparent 66%);
+  -webkit-mask:radial-gradient(circle,transparent 0,#000 12%,#000 36%,transparent 66%);mask:radial-gradient(circle,transparent 0,#000 12%,#000 36%,transparent 66%)}
+.ko-arrival-lightning{z-index:299}
+
+/* Champion: cinema bars with the card's name. */
+.ko-arrival-bars{inset:0;z-index:304}
+.ko-arrival-bars__top,.ko-arrival-bars__bottom{position:absolute;left:0;right:0;height:max(44px,12vh);background:#000;transform:translateY(-100%)}
+.ko-arrival-bars__top{top:0;box-shadow:0 1px 0 rgba(170,30,20,.8),0 2px 18px rgba(170,20,10,.45)}
+.ko-arrival-bars__bottom{bottom:0;transform:translateY(100%);box-shadow:0 -1px 0 rgba(170,30,20,.8),0 -2px 18px rgba(170,20,10,.45);display:flex;align-items:center;justify-content:center}
+.ko-arrival-bars__label{display:flex;flex-direction:column;align-items:center;line-height:1.05;opacity:0;white-space:nowrap;max-width:92vw}
+.ko-arrival-bars__label span{font-size:clamp(9px,1.5vh,13px);font-weight:800;letter-spacing:.5em;color:#e34a32;text-shadow:0 0 8px rgba(255,60,30,.7)}
+.ko-arrival-bars__label strong{font-size:clamp(17px,3.6vh,32px);font-weight:900;color:#f6d48a;overflow:hidden;text-overflow:ellipsis;max-width:92vw;
+  background:linear-gradient(#fff3c8,#f0b54e 55%,#b86a1c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(255,90,30,.55))}
+
+.ko-arrival-flash{z-index:302;border-radius:50%;mix-blend-mode:screen;
+  background:radial-gradient(circle,rgba(255,255,255,1) 0,rgba(var(--core),.95) 14%,rgba(var(--glow),.6) 34%,rgba(var(--glow),.12) 56%,transparent 72%)}
+.ko-arrival-screenflash{inset:0;z-index:302;mix-blend-mode:screen;
+  background:radial-gradient(circle at var(--x) var(--y),rgba(var(--core),.8) 0,rgba(var(--glow),.35) 30%,rgba(var(--glow),.08) 70%)}
+.ko-arrival-screenflash--champion{mix-blend-mode:normal;background:radial-gradient(circle at var(--x) var(--y),rgba(255,140,80,.55) 0,rgba(190,20,10,.45) 30%,rgba(90,0,0,.55) 75%)}
+.ko-arrival-whiteout{inset:0;z-index:305;background:#fff6ee}
+.ko-arrival-ring{z-index:301;border-radius:50%;border:8px solid rgba(var(--core),.95);
+  box-shadow:0 0 18px 4px rgba(var(--glow),.85),inset 0 0 14px 2px rgba(var(--glow),.7)}
+
+/* Legendary: a pillar of light dropping onto the slot. */
+.ko-arrival-pillar{z-index:302;mix-blend-mode:screen;
+  background:linear-gradient(90deg,transparent,rgba(255,200,90,.35) 22%,rgba(255,246,214,.95) 45%,#fff 50%,rgba(255,246,214,.95) 55%,rgba(255,200,90,.35) 78%,transparent),
+             linear-gradient(transparent,rgba(255,255,255,.2) 30%,#000 100%);
+  background-blend-mode:normal;-webkit-mask:linear-gradient(transparent,#000 35%,#000);mask:linear-gradient(transparent,#000 35%,#000)}
+
+/* Champion: a burning shockwave across the floor and a fire eruption. */
+.ko-arrival-shockwave{z-index:301;border-radius:50%;
+  background:radial-gradient(circle,transparent 46%,rgba(255,170,90,.0) 48%,rgba(255,150,60,.95) 55%,rgba(220,40,20,.8) 62%,rgba(90,0,0,.35) 68%,transparent 72%)}
+.ko-arrival-shockwave--dark{background:radial-gradient(circle,transparent 50%,rgba(30,0,0,.75) 58%,rgba(120,10,0,.45) 64%,transparent 70%)}
+.ko-arrival-eruption{z-index:302;mix-blend-mode:screen;border-radius:50% 50% 10% 10% / 70% 70% 10% 10%;
+  background:radial-gradient(ellipse at 50% 100%,#fff 0,rgba(255,200,120,.95) 14%,rgba(255,90,30,.75) 38%,rgba(170,10,0,.35) 60%,transparent 74%)}
+.ko-arrival-embers,.ko-arrival-motes{z-index:303}
+
+@media (prefers-reduced-motion:reduce){.ko-arrival-rays,.ko-arrival-embers,.ko-arrival-motes,.ko-arrival-lightning,.ko-arrival-vortex{display:none}}

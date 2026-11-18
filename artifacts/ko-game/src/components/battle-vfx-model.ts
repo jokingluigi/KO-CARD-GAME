@@ -31,13 +31,16 @@ export function attackFrames(
   const pullback = Math.min(24, distance * .06 * weight);
   const pose = (x: number, y: number, scale: number, angle = 0) =>
     `translate3d(${x}px,${y}px,0) scale(${scale}) rotate(${angle}deg)`;
+  // Lift toward the camera, hang, then slam: the card rises and grows, decelerating into
+  // the top of the lift, and only the last ~110ms is the accelerating strike.
+  const liftEnd = Math.max(timeline.impact * .45, timeline.impact - 110);
   return [
     { offset: 0, opacity: 0, transform: pose(0, 0, 1) },
-    { offset: 0.1, opacity: 1, transform: pose(0, 0, 1.03) },
+    { offset: 0.04, opacity: 1, transform: pose(0, 0, 1.03), easing: "cubic-bezier(.15,.85,.3,1)" },
     {
-      offset: (timeline.duration >= 700 ? 200 : 100) / timeline.duration,
-      transform: pose(-dx / distance * pullback, -dy / distance * pullback, 1.03+.035*weight, -tilt),
-      easing: "cubic-bezier(.7,0,.95,.65)",
+      offset: liftEnd / timeline.duration,
+      transform: pose(-dx / distance * pullback, -dy / distance * pullback - 8, 1.1+.03*weight, -tilt),
+      easing: "cubic-bezier(.75,0,1,.6)",
     },
     {
       offset: timeline.impact / timeline.duration,

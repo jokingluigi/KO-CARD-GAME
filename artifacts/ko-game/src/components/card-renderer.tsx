@@ -361,6 +361,7 @@ export function CardRenderer({
       onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
       data-card-highlight={highlight}
       data-card-silenced={isSilenced ? "true" : undefined}
+      data-card-stunned={isStunned ? "true" : undefined}
       data-targetable={highlight === "target"}
       style={style}
       ref={containerRef}

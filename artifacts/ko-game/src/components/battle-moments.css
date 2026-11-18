@@ -1,0 +1,100 @@
+/* Hearthstone-style moments: shatter, retire dust, heal glow, turn banner, result stinger. */
+.ko-shatter{position:fixed;z-index:236;pointer-events:none}
+.ko-shatter__piece{position:absolute;inset:0;will-change:transform,opacity}
+.ko-shatter__piece--plain{background:linear-gradient(135deg,#3a3f4c,#1a1c22)}
+.ko-shatter__face{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;animation:none!important;transform:none!important;opacity:1!important;filter:none!important}
+.ko-shatter__flash{position:fixed;z-index:237;pointer-events:none;border-radius:50%;mix-blend-mode:screen;background:radial-gradient(circle,#fff 0,rgba(220,235,255,.7) 18%,rgba(160,190,255,.2) 40%,transparent 62%)}
+.ko-retire-puff{position:fixed;z-index:236;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(170,165,160,.75) 0,rgba(120,115,110,.4) 45%,transparent 70%);filter:blur(1px)}
+.ko-heal-glow{position:fixed;z-index:239;pointer-events:none;mix-blend-mode:screen;transform-origin:50% 100%;
+  background:radial-gradient(ellipse 50% 60% at 50% 70%,rgba(255,250,200,.75) 0,rgba(170,255,170,.45) 30%,rgba(90,220,120,.15) 55%,transparent 72%)}
+.ko-heal-mote{position:fixed;z-index:239;pointer-events:none;border-radius:50%;background:#f4ffd8;box-shadow:0 0 6px 2px rgba(150,255,150,.8)}
+/* HS-style heal number: white figure on a green burst. */
+.presentation-feedback--heal .presentation-feedback__label{
+  padding:.28em .7em;border-radius:999px;font-size:clamp(1rem,2.2vw,1.6rem);color:#fff;
+  background:linear-gradient(#6af584,#24a845 60%,#167a31);border:2px solid #0b3d17;box-shadow:0 0 14px rgba(110,255,140,.55);
+  -webkit-text-stroke:1.5px #0b3d17;text-shadow:0 2px 0 #0b3d17,0 0 8px rgba(0,0,0,.4);
+  animation:ko-heal-pop var(--presentation-duration) cubic-bezier(.2,.8,.3,1) both}
+@keyframes ko-heal-pop{0%{transform:scale(.3);opacity:0}18%{transform:scale(1.15);opacity:1}30%{transform:scale(1)}80%{opacity:1;transform:translateY(-6px)}100%{opacity:0;transform:translateY(-14px)}}
+
+/* The turn banner replaces the small floating "YOUR TURN" label. */
+.presentation-feedback--turn{display:none}
+.ko-turn-banner{position:fixed;left:50%;top:46%;z-index:310;pointer-events:none;transform:translate(-50%,-50%)}
+.ko-turn-banner__plate{position:relative;overflow:hidden;padding:clamp(10px,2.2vh,20px) clamp(36px,8vw,90px);
+  background:linear-gradient(90deg,transparent,rgba(12,10,8,.88) 18%,rgba(18,14,10,.94) 50%,rgba(12,10,8,.88) 82%,transparent);
+  border-top:1px solid rgba(230,190,110,.55);border-bottom:1px solid rgba(230,190,110,.55)}
+.ko-turn-banner__text{font-family:var(--font-display);font-weight:900;letter-spacing:.14em;white-space:nowrap;font-size:clamp(28px,6vw,72px);
+  background:linear-gradient(#fff6d6,#f3c766 55%,#b9792a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 2px 0 #3a2208) drop-shadow(0 0 12px rgba(255,190,80,.45))}
+.ko-turn-banner:not(.ko-turn-banner--mine) .ko-turn-banner__text{font-size:clamp(16px,3vw,28px);background:linear-gradient(#e8e2d8,#a59f96);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 2px 0 #111)}
+.ko-turn-banner__sweep{position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,240,200,.35),transparent);mix-blend-mode:screen}
+
+/* Match-result stinger (Hearthstone-style): framed portrait cracks and explodes, then the ribbon. */
+.ko-result-stinger{position:fixed;inset:0;z-index:320;pointer-events:none;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 45%,rgba(30,22,14,.72) 0,rgba(6,5,4,.92) 70%)}
+.ko-result-stinger--defeat{background:radial-gradient(ellipse at 50% 45%,rgba(28,14,12,.75) 0,rgba(4,2,2,.95) 70%)}
+.ko-result-medallion{position:absolute;left:50%;top:41%;width:min(42vw,240px);aspect-ratio:3/4;transform:translate(-50%,-50%)}
+.ko-result-medallion__frame{position:absolute;inset:0;border-radius:50% 50% 10px 10px / 34% 34% 10px 10px;overflow:hidden;background:#15110c;
+  box-shadow:0 0 0 5px #2a1a08,0 0 0 9px #d8a64a,0 0 0 12px #6b4513,0 0 0 14px #f4d38a,0 10px 30px 10px rgba(0,0,0,.7)}
+.ko-result-medallion--dark .ko-result-medallion__frame{box-shadow:0 0 0 5px #120c0a,0 0 0 9px #6e5f55,0 0 0 12px #2c2420,0 0 0 14px #9c8d82,0 10px 30px 10px rgba(0,0,0,.7)}
+.ko-result-medallion__frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 0%}
+.ko-result-medallion__cracks{position:absolute;inset:0;background-size:100% 100%;opacity:0;mix-blend-mode:screen;filter:drop-shadow(0 0 3px rgba(255,170,80,.9))}
+.ko-result-medallion--winner .ko-result-medallion__frame{box-shadow:0 0 0 5px #2a1a08,0 0 0 9px #e8b552,0 0 0 12px #6b4513,0 0 0 15px #ffe3a0,0 0 40px 18px rgba(255,190,80,.45),0 10px 30px 10px rgba(0,0,0,.6)}
+.ko-result-shards{position:fixed}
+.ko-result-shards .ko-shatter__face{border-radius:50% 50% 10px 10px / 34% 34% 10px 10px}
+.ko-result-blast{position:fixed;border-radius:50%;mix-blend-mode:screen}
+.ko-result-blast--victory{background:radial-gradient(circle,#fff 0,rgba(255,220,150,.95) 14%,rgba(255,140,40,.6) 32%,rgba(200,60,10,.2) 52%,transparent 68%)}
+.ko-result-blast--defeat{mix-blend-mode:normal;background:radial-gradient(circle,rgba(120,110,100,.55) 0,rgba(60,50,45,.35) 30%,transparent 62%)}
+.ko-result-stinger__rays{position:absolute;left:50%;top:42%;width:170vmax;height:170vmax;border-radius:50%;mix-blend-mode:screen;
+  background:repeating-conic-gradient(from 0deg,rgba(255,210,110,.42) 0deg 4deg,transparent 4deg 15deg);
+  -webkit-mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 12%,transparent 42%);mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 12%,transparent 42%)}
+/* The ribbon: a banner with notched tails. */
+.ko-result-ribbon{position:absolute;left:50%;top:calc(41% + min(28vw,160px) - 4px);transform:translate(-50%,-50%);
+  padding:clamp(8px,1.6vh,14px) clamp(56px,10vw,110px);
+  clip-path:polygon(0 0,100% 0,calc(100% - 28px) 50%,100% 100%,0 100%,28px 50%);
+  background:linear-gradient(#f7d27a,#c98a2c 48%,#9a5d17 52%,#d39a3c);box-shadow:inset 0 0 0 3px rgba(80,40,6,.6)}
+.ko-result-ribbon span{display:block;font-family:var(--font-display);font-weight:900;white-space:nowrap;letter-spacing:.06em;
+  font-size:clamp(34px,7.5vw,78px);line-height:1;color:#fffbe9;-webkit-text-stroke:2px #4a2706;text-shadow:0 3px 0 #4a2706,0 0 18px rgba(255,220,140,.6)}
+.ko-result-stinger--defeat .ko-result-ribbon{top:42%;background:linear-gradient(#5c524c,#3a3230 48%,#241d1b 52%,#4a3e3a);box-shadow:inset 0 0 0 3px rgba(150,40,30,.6)}
+.ko-result-stinger--defeat .ko-result-ribbon span{color:#e2d6cf;-webkit-text-stroke:2px #140b09;text-shadow:0 3px 0 #140b09,0 0 18px rgba(170,40,30,.55)}
+.ko-result-stinger__flash{position:fixed;inset:0;pointer-events:none}
+.ko-result-stinger__flash--victory{background:radial-gradient(circle at 50% 42%,#fff 0,rgba(255,220,140,.6) 30%,transparent 70%)}
+.ko-result-stinger__flash--defeat{background:rgba(120,20,10,.55)}
+@media (prefers-reduced-motion:reduce){.ko-result-stinger__rays,.ko-turn-banner__sweep{display:none}}
+
+/* Champion ability flare and portrait cracks. */
+.ko-ability-ring{position:fixed;z-index:245;pointer-events:none;border-radius:50%;border:3px solid rgba(200,230,255,.95);
+  box-shadow:0 0 14px 3px rgba(110,170,255,.8),inset 0 0 10px 2px rgba(110,170,255,.6);transform-origin:50% 50%}
+.ko-ability-column{position:fixed;z-index:244;pointer-events:none;mix-blend-mode:screen;transform-origin:50% 100%;
+  background:radial-gradient(ellipse 50% 60% at 50% 85%,rgba(240,248,255,.85) 0,rgba(130,190,255,.45) 30%,rgba(90,140,255,.12) 55%,transparent 72%)}
+.ko-ability-mote{position:fixed;z-index:245;pointer-events:none;border-radius:50%;background:#eef6ff;box-shadow:0 0 6px 2px rgba(120,180,255,.85)}
+.ko-portrait-cracks{position:fixed;z-index:246;pointer-events:none;background-size:100% 100%;mix-blend-mode:screen;filter:drop-shadow(0 0 2px rgba(255,170,90,.9))}
+
+/* Fatigue: an empty-deck card slams in with the damage it deals. */
+.ko-fatigue{display:flex;flex-direction:column;align-items:center;gap:10px;animation:ko-fatigue-in 1200ms cubic-bezier(.2,.8,.3,1) both}
+.ko-fatigue__card{position:relative;width:120px;height:168px;border-radius:10px;border:3px solid #6e5f55;
+  background:repeating-linear-gradient(45deg,#1d1a1f 0 8px,#2a2530 8px 10px);box-shadow:0 0 0 2px #120c0a,0 10px 30px rgba(0,0,0,.8);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.ko-fatigue__card span{font-weight:900;font-size:22px;color:#d9cfc6;letter-spacing:.2em}
+.ko-fatigue__card b{display:grid;place-items:center;width:56px;height:56px;font-size:28px;font-weight:900;color:#fff;-webkit-text-stroke:1.5px #6e2604;
+  background:radial-gradient(circle,#ffc061 0,#ff8a2a 45%,#e05510 68%,transparent 70%)}
+.ko-fatigue p{margin:0;padding:6px 14px;border-radius:6px;background:#0d0b0ccc;color:#f2e6dc;font-weight:800;font-size:14px}
+@keyframes ko-fatigue-in{0%{opacity:0;transform:scale(1.6) rotate(-6deg)}14%{opacity:1;transform:scale(.94) rotate(1deg)}18%{transform:translate(-4px,2px) scale(1)}22%{transform:translate(4px,-2px)}26%{transform:translate(0,0)}85%{opacity:1}100%{opacity:0;transform:scale(.96)}}
+@media (prefers-reduced-motion:reduce){.ko-fatigue{animation:none}}
+.ko-board-tap{position:fixed;z-index:236;pointer-events:none;border-radius:50%;border:2px solid rgba(255,235,200,.55);box-shadow:0 0 8px rgba(255,220,160,.35)}
+
+/* Coin toss for the first player. */
+.ko-coin-toss{position:fixed;inset:0;z-index:312;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(20,14,6,.35) 0,rgba(4,3,2,.7) 75%);perspective:700px}
+.ko-coin{position:absolute;left:calc(50% - 55px);top:calc(40% - 55px);width:110px;height:110px;transform-style:preserve-3d}
+.ko-coin__face{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;backface-visibility:hidden;
+  font-weight:900;font-size:46px;color:#4a2706;text-shadow:0 1px 0 #ffe9a8;
+  background:radial-gradient(circle at 35% 30%,#fff3c4 0,#f2c457 35%,#c98a2c 70%,#8a5512 100%);box-shadow:inset 0 0 0 6px #a9701e,inset 0 0 0 9px #f7d27a,0 6px 16px rgba(0,0,0,.6)}
+.ko-coin__face--back{transform:rotateY(180deg);background:radial-gradient(circle at 35% 30%,#f4f0ea 0,#c9c2b8 40%,#8d857b 75%,#5a534b 100%);box-shadow:inset 0 0 0 6px #6e675e,inset 0 0 0 9px #e8e2d8,0 6px 16px rgba(0,0,0,.6);color:#2a2622;text-shadow:0 1px 0 #fff}
+.ko-coin-toss__label{position:absolute;left:50%;top:calc(40% + 70px);font-family:var(--font-display);font-weight:900;white-space:nowrap;font-size:clamp(26px,5vw,48px);
+  color:#e8e2d8;-webkit-text-stroke:1.5px #111;text-shadow:0 3px 0 #111,0 0 14px rgba(0,0,0,.6)}
+.ko-coin-toss--first .ko-coin-toss__label{color:#ffe08a;-webkit-text-stroke-color:#4a2706;text-shadow:0 3px 0 #4a2706,0 0 16px rgba(255,190,80,.6)}
+
+/* Low health: the screen edges throb red with each heartbeat. */
+.ko-danger-pulse{position:fixed;inset:0;z-index:150;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(150,10,10,.28) 82%,rgba(120,0,0,.5) 100%);animation:ko-danger-beat 1.6s ease-out infinite}
+.ko-danger-pulse--still{animation:none;opacity:.6}
+@keyframes ko-danger-beat{0%{opacity:.35}8%{opacity:1}16%{opacity:.55}24%{opacity:.9}60%,100%{opacity:.35}}

@@ -30,7 +30,7 @@ export function ChampionEmoteMenu({ anchor, onEmote, onClose }: { anchor: RefObj
       document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', key);
     };
   }, [anchor, onClose]);
-  return createPortal(<div ref={menu} role="menu" aria-label="챔피언 감정표현" style={position} className="fixed z-[400] grid grid-cols-2 gap-1 overflow-y-auto rounded-lg border border-amber-400/70 bg-neutral-950 p-2 shadow-2xl">
-    {CHAMPION_EMOTES.map(emote => <button key={emote} type="button" role="menuitem" onClick={() => { onEmote(emote); onClose(); }} className="min-h-11 rounded bg-neutral-800 px-3 py-2 text-sm text-white hover:bg-amber-700">{CHAMPION_EMOTE_LABELS[emote]}</button>)}
+  return createPortal(<div ref={menu} role="menu" aria-label="챔피언 감정표현" style={position} className="ko-emote-menu fixed z-[400] grid grid-cols-2 gap-1 overflow-y-auto rounded-lg border border-amber-400/70 bg-neutral-950 p-2 shadow-2xl">
+    {CHAMPION_EMOTES.map(emote => <button key={emote} type="button" role="menuitem" onClick={() => { onEmote(emote); onClose(); }} className="ko-emote-btn min-h-11 rounded bg-neutral-800 px-3 py-2 text-sm text-white hover:bg-amber-700">{CHAMPION_EMOTE_LABELS[emote]}</button>)}
   </div>, document.body);
 }

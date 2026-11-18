@@ -14,7 +14,7 @@ test('bundled external assets exist and match pinned provenance hashes',()=>{
  }
 });
 test('default cues use existing external files while admin uploads stay unchanged',()=>{
- for(const name of ['combat-movement','combat-hit-1-2','combat-hit-3-5','combat-hit-6-9','combat-hit-10-plus','combat-finisher','impact-light','impact-normal','impact-heavy','impact-very-heavy','impact-finisher','summon-bass-heavy','summon-bass-massive','champion-glass-shatter']){
+ for(const name of ['combat-movement','combat-hit-1-2','combat-hit-3-5','combat-hit-6-9','combat-hit-10-plus','combat-finisher','impact-light','impact-normal','impact-heavy','impact-very-heavy','impact-finisher','summon-bass-heavy','summon-bass-massive','summon-bass-champion','card-lift','card-draw','spell-cast','spell-impact','turn-start','card-destroy','card-retire','heal','armor','dialogue-pop','legendary-riser','champion-riser','legendary-slam','champion-slam','spell-dissolve','victory-stinger','defeat-stinger','finisher-ready','ability-cast','champion-glass-shatter']){
   const resolved=externalSound('/game/sfx/'+name+'.wav?v=1');
   assert.ok(resolved.startsWith('/game/vendor/kenney/'));
   assert.ok(existsSync(new URL('../../public/'+resolved.slice('/game/'.length),import.meta.url)));
@@ -26,4 +26,11 @@ test('layered external audio retains provenance',()=>{
  const root=new URL('../../public/vendor/',import.meta.url);
  const mixes=JSON.parse(readFileSync(new URL('impact-mixes/manifest.json',root),'utf8'));
  for(const mix of mixes){assert.ok(mix.sourceFiles.length>=3);assert.equal(createHash('sha256').update(readFileSync(new URL('impact-mixes/'+mix.file,root))).digest('hex'),mix.sha256);assert.ok(mix.decodedPeakDbFS<0);}
+});
+
+test('layered hearthstone-weight mixes are CC0, hashed and never clip',()=>{
+ const root=new URL('../../public/vendor/hs-mixes/',import.meta.url);
+ const mixes=JSON.parse(readFileSync(new URL('manifest.json',root),'utf8'));
+ assert.ok(mixes.length>=20);
+ for(const mix of mixes){assert.equal(mix.license,'CC0-1.0');assert.ok(mix.sourceFiles.length>=1);assert.equal(createHash('sha256').update(readFileSync(new URL(mix.file,root))).digest('hex'),mix.sha256);assert.ok(mix.decodedPeakDbFS<0);}
 });

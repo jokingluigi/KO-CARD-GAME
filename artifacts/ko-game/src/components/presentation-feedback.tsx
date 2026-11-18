@@ -3,6 +3,7 @@ import "./effect-readability.css";
 import {audioManager} from '../audio/audio-manager';
 import {useScreenImpact} from './screen-impact';
 import {damageImpact} from './screen-impact-policy';
+import {spawnHealGlow,spawnTurnBanner} from './battle-moments';
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 
@@ -68,8 +69,11 @@ export function PresentationFeedback({
     completedRef.current = false;
     if(!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
     if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;
-      const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'impact/impact_metal_medium_000.ogg',BLOCK:'impact/impact_metal_medium_000.ogg',DESTROY:'impact/impact_glass_heavy_000.ogg',RETIRE:'impact/impact_soft_heavy_000.ogg',GOLD:'rpg/handle_coins.ogg'};
-      if(!cue.quiet&&sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],40,4);
+      const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'../hs-mixes/armor.wav',BLOCK:'../hs-mixes/armor.wav',DESTROY:'../hs-mixes/card-destroy.wav',RETIRE:'../hs-mixes/card-retire.wav',HEAL:'../hs-mixes/heal.wav',BUFF:'../hs-mixes/heal.wav',DRAW:'../hs-mixes/card-draw.wav',TURN:'../hs-mixes/turn-start.wav',GOLD:'rpg/handle_coins.ogg'};
+      const volume:Partial<Record<PresentationCue['kind'],number>>={TURN:46,DESTROY:56,RETIRE:55,DRAW:34,HEAL:40,BUFF:32};
+      if(!cue.quiet&&sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],volume[cue.kind]??40,cue.kind==='TURN'||cue.kind==='DESTROY'?6:4);
+      if(!cue.quiet&&cue.kind==='HEAL')spawnHealGlow({x:cue.left,y:cue.top,size:Math.max(80,Math.min(160,cue.targetWidth??110))});
+      if(!cue.quiet&&cue.kind==='TURN')spawnTurnBanner(cue.label==='YOUR TURN',cue.label==='YOUR TURN'?'YOUR TURN':'상대 턴');
       if(!cue.quiet)onStartRef.current?.(cue);
     }
     const timeoutId = window.setTimeout(() => {

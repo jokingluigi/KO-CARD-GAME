@@ -1,5 +1,8 @@
 
 import './battle-atmosphere.css';
+import {spawnLandingDust,spawnImpactBurst} from './impact-burst';
+import {spawnSpellDissolve,spellBurnFrames} from './spell-dissolve';
+import {spawnArrivalBuildup,spawnArrivalBlast,arrivalAuraFrames,arrivalTremorFrames} from './card-arrival';
 import {useCosmeticImage} from './cosmetic-battle';
 import { useEffect, useRef, useState, useId } from "react";
 import type { CSSProperties } from "react";
@@ -16,7 +19,7 @@ import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config
 import { audioManager } from '../audio/audio-manager';
 
 import {useScreenImpact} from './screen-impact';
-import {impactRank,summonImpact,summonTimeline,summonFrames,hasBoardWideImpact} from './screen-impact-policy';
+import {impactRank,summonImpact,summonTimeline,summonFrames,summonPose,hasBoardWideImpact} from './screen-impact-policy';
 
 export const TECHNIQUE_REVEAL_HOLD_MS = 160;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
@@ -83,7 +86,9 @@ export function CardPlayAnimation({
   const profile=summonImpact(impactCost,animation.card.isChampionToken?'CHAMPION':definition?.rarity);
   const timing=summonTimeline(impactCost,profile.rarity,reduced);
   const duration=animation.kind==='WRESTLER'?timing.duration:animationDuration(animation);
-  useCinematicEvent(animation.kind==='TECHNIQUE'&&animation.card.currentCost<4&&!finisherSpell?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:finisherSpell?'FINISHER_CARD':animation.kind==='TECHNIQUE'?'BIG_SPELL':profile.rarity==='CHAMPION'?'CHAMPION':profile.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name??'KO',subtitle:finisherSpell?'피니셔 발동':undefined,art:cosmeticArtwork.src,artFallback:definition?.imageUrl,artDisplay:cosmeticArtwork.display,strength:finisherSpell?6:impactCost,duration:finisherSpell?1400:profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'?Math.max(200,timing.landing-50):undefined});
+  useCinematicEvent(animation.kind==='TECHNIQUE'?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:'SUMMON',title:definition?.name??'KO',art:cosmeticArtwork.src,artFallback:definition?.imageUrl,artDisplay:cosmeticArtwork.display,strength:impactCost});
+  // Legendary and champion wrestlers get their own arrival instead of the banner panel.
+  const arrival=animation.kind==='WRESTLER'&&(profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION')?profile.rarity:null;
 
   const targetScale = animation.kind === "TECHNIQUE"
     ? reveal.scale
@@ -115,8 +120,27 @@ export function CardPlayAnimation({
 
   useEffect(() => {
     completedRef.current=false;landedRef.current=false;setLanded(false);
-    if(finisherSpell)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-champion.wav',72,9);
+    if(finisherSpell)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/spell-cast.wav',34,6);
+    // A soft whoosh as a card leaves the hand.
+    else if(animation.kind==='WRESTLER'&&!reduced&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/card-lift.wav',arrival?32:26,3);
+    // Spell cards whoosh up and shimmer as they are cast.
+    else if(animation.kind==='TECHNIQUE'&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/spell-cast.wav',30,6);
     let frame=0;let motion:Animation|undefined;const origin=performance.now();
+    // Legendary / champion: a swelling riser that peaks on the slam, a dimmed board,
+    // turning light rays and a glowing card while it hangs over its slot.
+    const pose=summonPose(profile);
+    const hangStart=Math.max(0,timing.landing-pose.slam-pose.hang);
+    let clearBuildup=()=>{},aura:Animation|undefined,tremor:Animation|undefined,riser:number|null=null;
+    if(arrival&&!reduced&&!document.hidden){
+      const riserMs=arrival==='LEGENDARY'?980:1150;
+      riser=window.setTimeout(()=>audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/${arrival.toLowerCase()}-riser.wav`,arrival==='CHAMPION'?60:56,7),Math.max(0,timing.landing-riserMs));
+      audioManager.preloadAttackSounds([`${import.meta.env.BASE_URL}sfx/${arrival.toLowerCase()}-slam.wav`]);
+      audioManager.duckForPresentation(.6,timing.landing+600);
+      const w=source.width*targetScale*pose.boost,h=source.height*targetScale*pose.boost;
+      clearBuildup=spawnArrivalBuildup({x:targetLeft+w/2,y:targetTop-pose.lift+h/2,size:Math.max(w,h),kind:arrival,start:Math.max(0,hangStart-160),landing:timing.landing,title:definition?.name});
+      try{aura=cardRef.current?.animate(arrivalAuraFrames(arrival,hangStart-120,timing.landing,duration),{duration,easing:'linear',fill:'both'});}catch{}
+      if(arrival==='CHAMPION')try{tremor=cardRef.current?.animate(arrivalTremorFrames(hangStart,timing.landing,duration),{duration,easing:'linear',fill:'both'});}catch{}
+    }
     const finish=()=>{
       if(completedRef.current)return;completedRef.current=true;onCompleteRef.current();
     };
@@ -124,12 +148,23 @@ export function CardPlayAnimation({
       if(landedRef.current||document.hidden)return;
       landedRef.current=true;setLanded(true);onLandRef.current?.(animation.card.instanceId);
       const x=targetLeft+source.width*targetScale/2,y=targetTop+source.height*targetScale/2;
+      // Dust rolls out from under the card; heavier cards throw more of it.
+      if(arrival&&!reduced){
+        const w=source.width*targetScale,h=source.height*targetScale;
+        spawnArrivalBlast({x,y,width:w,height:h,kind:arrival});
+        // A champion hits hard enough to crack the floor around its slot.
+        if(arrival==='CHAMPION')spawnImpactBurst({x,y:y+h*.35,dx:0,dy:1,damage:12,finisher:true,crackAt:{x,y}});
+      }
+      if(animation.kind==='WRESTLER'&&!reduced)spawnLandingDust({left:targetLeft,top:targetTop,width:source.width*targetScale,height:source.height*targetScale,weight:profile.rarity==='CHAMPION'||profile.rarity==='LEGENDARY'?5:impactRank(profile)+(impactCost>=3?.5:0)});
       const accepted=screenRef.current.request({id:'landing:'+occurrenceId+':'+animation.card.instanceId,profile,x,y,direction:{x:0,y:1},nearby:impactRank(profile)>=3});
       if(!accepted&&screenRef.current.isActive())return;
       const file=impactRank(profile)>=4?'very-heavy':impactRank(profile)>=3?'heavy':impactRank(profile)>=2?'normal':'light';
       const priority=profile.rarity==='CHAMPION'?8:profile.rarity==='LEGENDARY'?7:impactRank(profile)>=3?6:4;
-      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,profile.rarity==='LEGENDARY'?54:impactRank(profile)>=3?65:36,priority);
-      if(profile.bass)audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`,profile.rarity==='CHAMPION'?78:profile.rarity==='LEGENDARY'?58:60,priority);
+      if(arrival){
+        audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/${arrival.toLowerCase()}-slam.wav`,arrival==='CHAMPION'?82:78,priority);
+        audioManager.duckForPresentation(.45,1400);
+      }else audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,impactRank(profile)>=3?65:36,priority);
+      if(profile.bass&&!arrival)audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`,profile.rarity==='CHAMPION'?78:profile.rarity==='LEGENDARY'?58:60,priority);
       if(impactRank(profile)>=3)audioManager.duckForPresentation(.55,profile.duration+100);
       if(hapticsEnabled&&!reduced&&window.matchMedia('(pointer: coarse)').matches&&typeof navigator.vibrate==='function'&&(impactCost>=5||profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'))navigator.vibrate(impactRank(profile)>=4?55:30);
     };
@@ -145,14 +180,41 @@ export function CardPlayAnimation({
       frame=requestAnimationFrame(tick);
       if(motion)motion.onfinish=()=>{land();finish();};
     }
-    const spellImpact=animation.kind==='TECHNIQUE'&&(finisherSpell||hasBoardWideImpact(definition?.abilities))?window.setTimeout(()=>screenRef.current.request({id:'spell-impact:'+occurrenceId,profile:finisherSpell?summonImpact(6,'CHAMPION'):summonImpact(Math.max(5,impactCost)),x:innerWidth/2,y:innerHeight*.45,radial:true,nearby:true}),Math.min(360,Math.round(duration*.28))):null;
+    const spellImpact=animation.kind==='TECHNIQUE'&&(finisherSpell||hasBoardWideImpact(definition?.abilities))?window.setTimeout(()=>{if(!finisherSpell)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/spell-impact.wav',40,6);screenRef.current.request({id:'spell-impact:'+occurrenceId,profile:finisherSpell?summonImpact(6,'CHAMPION'):summonImpact(Math.max(5,impactCost)),x:innerWidth/2,y:innerHeight*.45,radial:true,nearby:true});},finisherSpell?Math.round(duration*.78):Math.min(360,Math.round(duration*.28))):null;
+    // Spells burn away into arcane dust once they have been read.
+    let burn:Animation|undefined;
+    const burnAt=Math.round(duration*.78);
+    // Finisher spell: the lights go out, FINISHER cinema bars, red lightning and a trembling card,
+    // then the card bursts with a champion-class slam as it burns away.
+    let clearFinisher=()=>{},finisherTremor:Animation|undefined,finisherRiser:number|null=null;
+    if(finisherSpell&&!reduced&&!document.hidden){
+      const w=source.width*targetScale,h=source.height*targetScale;
+      clearFinisher=spawnArrivalBuildup({x:targetLeft+w/2,y:targetTop+h/2,size:Math.max(w,h)*.8,kind:'CHAMPION',start:120,landing:burnAt,title:definition?.name,tag:'FINISHER'});
+      try{finisherTremor=cardRef.current?.animate(arrivalTremorFrames(Math.round(duration*.3),burnAt,duration),{duration,easing:'linear',fill:'both'});}catch{}
+      finisherRiser=window.setTimeout(()=>audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/champion-riser.wav',60,8),Math.max(0,burnAt-1150));
+      audioManager.duckForPresentation(.45,burnAt+900);
+    }
+    const burnTimer=animation.kind==='TECHNIQUE'&&!reduced?window.setTimeout(()=>{
+      const node=cardRef.current;if(!node||document.hidden)return;
+      const r=node.getBoundingClientRect();
+      spawnSpellDissolve({left:r.left,top:r.top,width:r.width,height:r.height,finisher:finisherSpell});
+      node.classList.add('ko-spell-burning');
+      try{burn=node.animate(spellBurnFrames(finisherSpell),{duration:Math.max(200,duration-burnAt-40),easing:'cubic-bezier(.4,0,.8,.6)',fill:'forwards'});}catch{}
+      audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/spell-dissolve.wav',finisherSpell?36:28,5);
+      if(finisherSpell){
+        const cx=r.left+r.width/2,cy=r.top+r.height/2;
+        spawnArrivalBlast({x:cx,y:cy,width:r.width*.8,height:r.height*.8,kind:'CHAMPION'});
+        spawnImpactBurst({x:cx,y:cy+r.height*.3,dx:0,dy:1,damage:15,finisher:true,crackAt:{x:cx,y:cy+r.height*.3}});
+        audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/champion-slam.wav',82,9);
+      }
+    },burnAt):null;
     setReading(false);
     const readTimer=animation.kind==='TECHNIQUE'?window.setTimeout(()=>{setReading(true);readableRef.current?.();},Math.min(360,duration)):null;
     const fallback=window.setTimeout(finish,animation.kind==='TECHNIQUE'?duration:duration+120);
     const resized=()=>{if(animation.kind==='WRESTLER')finish();};
     const hidden=()=>{if(document.hidden)finish();};
     window.addEventListener('resize',resized);document.addEventListener('visibilitychange',hidden);
-    return()=>{clearTimeout(fallback);if(readTimer!==null)clearTimeout(readTimer);if(spellImpact!==null)clearTimeout(spellImpact);cancelAnimationFrame(frame);shadow?.cancel();if(motion){motion.onfinish=null;motion.cancel();}window.removeEventListener('resize',resized);document.removeEventListener('visibilitychange',hidden);};
+    return()=>{clearTimeout(fallback);if(burnTimer!==null)clearTimeout(burnTimer);if(finisherRiser!==null)clearTimeout(finisherRiser);finisherTremor?.cancel();clearFinisher();burn?.cancel();cardRef.current?.classList.remove('ko-spell-burning');if(riser!==null)clearTimeout(riser);aura?.cancel();tremor?.cancel();clearBuildup();if(readTimer!==null)clearTimeout(readTimer);if(spellImpact!==null)clearTimeout(spellImpact);cancelAnimationFrame(frame);shadow?.cancel();if(motion){motion.onfinish=null;motion.cancel();}window.removeEventListener('resize',resized);document.removeEventListener('visibilitychange',hidden);};
   },[animation.card.instanceId,occurrenceId,animation.kind,duration,targetLeft,targetTop,targetScale]);
 
   function complete(event: React.AnimationEvent<HTMLDivElement>) {

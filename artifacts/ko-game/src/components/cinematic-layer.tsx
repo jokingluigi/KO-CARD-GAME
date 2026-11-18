@@ -1,3 +1,4 @@
+import {spawnAbilityFlare,championPortraitAt} from './battle-moments';
 import {readCombatPreferences} from "./combat-preferences";
 import {useCosmeticImage} from "./cosmetic-battle";
 import {CardArtwork} from "./card-artwork";
@@ -96,7 +97,9 @@ export function CinematicCue({cue,state,spriteManaged=false}:{cue:PresentationCu
  const championArt=useCosmeticImage(owner?.id,champion?.id,'CHAMPION_SKIN',questPortrait(champion),champion?.questCompleted?'awakened':'portrait',champion?.selectedFinisherId);
  const cardArt=useCosmeticImage(sourceOwner?.id,definition?.id,'CARD_SKIN',definition?.imageUrl);
  const kind=cue.kind==='EFFECT'&&cue.championId&&!spriteManaged?'ABILITY':cue.kind==='DAMAGE'&&!cue.combat&&!cue.selfDamage&&!(spriteManaged&&cue.playerId&&!cue.cardInstanceId)&&(cue.value??0)>=10?'FINISHER':null;
- useCinematicEvent(kind?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:'챔피언 고유 능력',art:kind==='FINISHER'?cardArt.src:championArt.src,artFallback:kind==='FINISHER'?definition?.imageUrl:questPortrait(champion),artDisplay:kind==='FINISHER'?cardArt.display:championArt.display,focus:{x:cue.left,y:cue.top}}:null);
+ // Champion abilities get a portrait flare on the board instead of the banner panel.
+ useEffect(()=>{if(kind!=='ABILITY')return;spawnAbilityFlare(championPortraitAt(cue.left,cue.top),{x:cue.left,y:cue.top});audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/ability-cast.wav',44,6);},[cue.id]);
+ useCinematicEvent(kind&&kind!=='ABILITY'?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:'챔피언 고유 능력',art:kind==='FINISHER'?cardArt.src:championArt.src,artFallback:kind==='FINISHER'?definition?.imageUrl:questPortrait(champion),artDisplay:kind==='FINISHER'?cardArt.display:championArt.display,focus:{x:cue.left,y:cue.top}}:null);
  return null;
 }
 

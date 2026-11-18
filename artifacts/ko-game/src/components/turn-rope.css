@@ -1,0 +1,12 @@
+/* The burning rope (last 15 seconds of an online turn). */
+.ko-turn-rope{position:fixed;height:10px;z-index:150;pointer-events:none}
+.ko-turn-rope__cord{position:absolute;left:0;top:2px;height:6px;border-radius:3px;transition:width 1s linear;
+  background:repeating-linear-gradient(-55deg,#c9a46a 0 4px,#8a6534 4px 7px,#e2c48c 7px 9px);box-shadow:0 1px 2px rgba(0,0,0,.8)}
+.ko-turn-rope__flame{position:absolute;right:-7px;top:50%;width:16px;height:22px;transform:translate(0,-72%);border-radius:50% 50% 45% 45%;
+  background:radial-gradient(ellipse at 50% 75%,#fff 0,#ffe08a 22%,#ff9a2e 48%,rgba(230,60,20,.6) 68%,transparent 72%);
+  filter:drop-shadow(0 0 6px rgba(255,140,40,.95));animation:ko-rope-flicker .16s steps(2) infinite alternate}
+.ko-turn-rope__flame::after{content:'';position:absolute;left:50%;top:60%;width:3px;height:3px;border-radius:50%;background:#ffd27a;
+  box-shadow:-6px -8px 0 0 #ffb347,5px -12px 0 -1px #ff8a2e,-2px -16px 0 -1px #ffe0a0;animation:ko-rope-sparks .5s linear infinite}
+@keyframes ko-rope-flicker{from{transform:translate(0,-72%) scale(1,1)}to{transform:translate(0,-74%) scale(.85,1.12)}}
+@keyframes ko-rope-sparks{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-10px)}}
+@media (prefers-reduced-motion:reduce){.ko-turn-rope__flame,.ko-turn-rope__flame::after{animation:none}.ko-turn-rope__cord{transition:none}}

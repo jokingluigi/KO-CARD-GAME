@@ -3,7 +3,7 @@ import {combatContact} from './combat-contact';
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {useScreenImpact} from './screen-impact';
-import {damageImpact} from './screen-impact-policy';
+import {damageImpact,impactRank} from './screen-impact-policy';
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
@@ -14,6 +14,10 @@ import { combatTimeline, attackFrames, targetReactionFrames } from './battle-vfx
 
 import { audioManager } from '../audio/audio-manager';
 import { prefersReducedMotion } from "./presentation-config";
+import { spawnDamageBadge, spawnImpactBurst } from './impact-burst';
+import { spawnPortraitCracks } from './battle-moments';
+import { hitForce, kickBoard } from './card-physics';
+import { impactBurstProfile, shudderFrames } from './impact-burst-model';
 
 export function AttackAnimation({
   animation,
@@ -76,6 +80,11 @@ export function AttackAnimation({
     setReleased(false);
     let releasedOnce=false;
     let hush:Animation|undefined;
+    // Card being hit flashes white for the hit-stop, then cools back down.
+    let whiteNode:HTMLElement|null|undefined;
+    let whiteout:Animation|undefined;
+    let shudder:Animation|undefined;
+    let healthPop:Animation|undefined;
     if (animation.finishingBlow) audioManager.duckForPresentation(.4, 500);
     const impact = () => {
       if (impactedRef.current) return;
@@ -84,6 +93,29 @@ export function AttackAnimation({
       if(animation.finishingBlow&&!reduced)try{hush=document.querySelector(".ko-cinematic-background")?.animate([{filter:"brightness(.6)"},{filter:"brightness(1)"}],{duration:220,easing:"ease-out"});}catch{}
 
       if(phaseRef.current)phaseRef.current.dataset.attackPhase='HITSTOP';
+      // Slam layers outlive this portal (dust settles, badge holds) so they are spawned on <body>.
+      if(!document.hidden&&animation.damage>0){
+        spawnImpactBurst({x:contactX,y:contactY,dx,dy,damage:animation.damage,finisher:Boolean(animation.finishingBlow),reduced,crackAt:{x:target.left+target.width/2,y:target.top+target.height/2}});
+        // The struck card's own number sits under this portal's copy of it; show the badge on top.
+        if(animation.targetKind==='CHAMPION'&&!championNode?.querySelector('.ko-sprite-visual'))spawnPortraitCracks(whiteNode??null,animation.damage);
+        if(animation.targetKind==='CARD')spawnDamageBadge({x:target.left+target.width/2,y:target.top+target.height/2,damage:animation.damage,finisher:Boolean(animation.finishingBlow),reduced});
+      }
+      const burst=impactBurstProfile(animation.damage,Boolean(animation.finishingBlow),{flash:readCombatPreferences().flash,reduced});
+      if(burst&&whiteNode)try{
+        const hold=Math.max(40,timeline.release-timeline.impact),total=hold+200;
+        whiteout=whiteNode.animate([
+          {offset:0,filter:`brightness(${burst.whiteout}) saturate(.2) contrast(1.2)`},
+          {offset:hold/total,filter:`brightness(${burst.whiteout}) saturate(.2) contrast(1.2)`},
+          {offset:(hold+60)/total,filter:'brightness(1.5) saturate(.7) contrast(1.05)'},
+          {offset:1,filter:'brightness(1) saturate(1) contrast(1)'},
+        ],{duration:total,easing:'ease-out'});
+        // Fighting-game hit-stop: the struck card shudders in place while time is frozen.
+        // Uses the separate `translate` property so it stacks on the existing recoil transform.
+        // Like a health gem taking a hit: the struck card's health number bulges and flashes.
+        const health=whiteNode.querySelector<HTMLElement>('[data-card-stat="health"]');
+        if(health)healthPop=health.animate([{scale:'1',color:'#fff'},{offset:.12,scale:'1.75',color:'#fff',filter:'drop-shadow(0 0 6px #ff7a1a)'},{offset:.35,scale:'1.25',color:'#ff5a3a'},{scale:'1',filter:'none'}],{duration:hold+520,easing:'ease-out'});
+        if(burst.shake>0)shudder=whiteNode.animate(shudderFrames(burst.shake,Math.max(4,Math.round(hold/16))).map(translate=>({translate,easing:'steps(1,end)'})),{duration:hold+40});
+      }catch{}
       if(hapticsRef.current && animation.damage>0 && !reduced && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') {
         navigator.vibrate(animation.finishingBlow?70:animation.damage>=10?55:animation.damage>=6?35:12);
       }
@@ -91,7 +123,7 @@ export function AttackAnimation({
       onImpactRef.current();
       if (!document.hidden) {
         const profile=damageImpact(animation.damage,Boolean(animation.finishingBlow));
-        screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:{...profile,duration:Math.min(profile.duration,duration-impactDelay-16)},x:contactX,y:contactY,direction:{x:dx,y:dy}});
+        screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:{...profile,duration:Math.min(profile.duration,duration-impactDelay-16)},x:contactX,y:contactY,direction:{x:dx,y:dy},nearby:impactRank(profile)>=4});
       }
     };
     const release = () => {
@@ -104,11 +136,24 @@ export function AttackAnimation({
       impact();
       releasedOnce=true;
       completedRef.current = true;
+      // The real struck card reappears from under the attack copy slightly tipped, then settles.
+      if(animation.targetKind==='CARD'&&animation.damage>0)kickBoard(target.left+target.width/2,target.top+target.height/2,dx,dy,hitForce(animation.damage,Boolean(animation.finishingBlow)),'only');
       onCompleteRef.current();
     };
     const animate=(node:HTMLElement|null,frames:Keyframe[])=>{try{return node?.animate?.(frames,{duration,fill:'both',easing:'linear'});}catch{return undefined;}};
     const element=attackerRef.current;
     const motion=animate(element,attackFrames(dx,dy,timeline,reduced,animation.currentAttack));
+    // Shadow grows while the card lifts toward the camera, then snaps tight on contact.
+    let lift:Animation|undefined;
+    if(!reduced)try{
+      const top=Math.max(timeline.impact*.45,timeline.impact-110)/duration,hit=timeline.impact/duration;
+      lift=element?.animate([
+        {offset:0,filter:'drop-shadow(0 4px 4px rgba(0,0,0,.35))'},
+        {offset:top,filter:'drop-shadow(0 30px 22px rgba(0,0,0,.6))'},
+        {offset:hit,filter:'drop-shadow(0 6px 5px rgba(0,0,0,.55))'},
+        {offset:1,filter:'drop-shadow(0 4px 4px rgba(0,0,0,.35))'},
+      ],{duration,fill:'both'});
+    }catch{}
     // A champion hit moves the actual portrait, not an empty circular proxy.
     const championNode=animation.targetKind==='CHAMPION'
       ? Array.from(document.querySelectorAll<HTMLElement>('.ko-player-champion,.ko-opponent-champion')).find(node=>{
@@ -119,6 +164,7 @@ export function AttackAnimation({
     // Committed attack only: a short visual focus during existing anticipation,
     // without moving hit areas or adding any timing to the battle.
     const focusNode=championNode?.querySelector<HTMLElement>('.ko-portrait-window')??targetRef.current;
+    whiteNode=focusNode;
     let focus:Animation|undefined;
     if(!reduced)try{focus=focusNode?.animate([{filter:'brightness(1)',outline:'1px solid transparent'},{filter:'brightness(1.14)',outline:'2px solid #cbb476'},{filter:'brightness(1)',outline:'1px solid transparent'}],{duration:Math.min(160,impactDelay),easing:'ease-out'});}catch{}
     const origin=performance.now();
@@ -127,9 +173,10 @@ export function AttackAnimation({
     const tick=(now:number)=>{
       // Read the same animation clock used by the moving card, including hit stop.
       const time=Number(motion?.currentTime ?? now-origin);
-      if(!movementPlayed && time>=100 && time<impactDelay && !reduced && !document.hidden) {
+      // The swing whoosh peaks just before contact (it rises over ~200ms), not during the lift.
+      if(!movementPlayed && time>=Math.max(60,impactDelay-200) && time<impactDelay && !reduced && !document.hidden) {
         movementPlayed=true;
-        audioManager.playImpactOverlay(import.meta.env.BASE_URL+"sfx/combat-movement.wav", 20, 4);
+        audioManager.playImpactOverlay(import.meta.env.BASE_URL+"sfx/combat-movement.wav", 22, 4);
       }
       if(time>=impactDelay) impact();
       else if(phaseRef.current)phaseRef.current.dataset.attackPhase=time<100?'ANTICIPATION':'ACCELERATION';
@@ -147,7 +194,7 @@ export function AttackAnimation({
     return () => {
       cancelAnimationFrame(frame);
       if(motion){motion.onfinish=null;motion.cancel();}
-      targetMotion?.cancel();hush?.cancel();focus?.cancel();
+      targetMotion?.cancel();hush?.cancel();focus?.cancel();whiteout?.cancel();shudder?.cancel();lift?.cancel();healthPop?.cancel();
       document.removeEventListener('visibilitychange',hidden);
       window.removeEventListener('resize',complete);
       window.removeEventListener('ko-combat-preferences',complete);
@@ -216,9 +263,7 @@ export function AttackAnimation({
       </div>
       {impacted && animation.target && animation.damage>Math.max(0,animation.target.currentHealth) && <span className="ko-overkill-note" style={{left:contactX,top:contactY-40}}>초과 피해 포함</span>}
       {released && (animation.counterDamage??0)>0 && <span className="ko-counter-contact" style={{left:contactX,top:contactY+24}}>반격</span>}
-      {impacted && <>
 
-      </>}
     </div>, document.body
   );
 }
