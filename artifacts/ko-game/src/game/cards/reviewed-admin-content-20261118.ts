@@ -8,8 +8,8 @@ const fx=(action:Extract<CardEffect,{type:'STRUCTURED'}>['action'],values:Extrac
 /** Match reviewed administrator wording, never apply these rules to later revisions. */
 export function reviewedNovember18Abilities(card:PublishedCardRecord):CardAbility[]|null{
  if(card.effectId)return null;
- if(card.id==='df532c95-0e4d-4b17-8200-a86e6a682341'&&clean(card.text)===clean("등장: 자신의 양 옆에 이 카드와 챔피언 토튼을 제외한 '디 어쏘리티' 카드들 중에서 무작위로 소환하고 자신을 제외한 생성한 그 선수 카드들에게 '기습'을 부여합니다.\n콤보:'디 어쏘리티' 태그를 가진 아군 선수 카드가 상대를 공격하면 그 카드와 이 카드에게 공격력을 +1 부여합니다. 이 카드는 아군 필드에 이 카드를 제외한 '디 어쏘리티' 태그가 있는 카드가 존재하는 동안 '무적'입니다.(이 카드는 '도발'을 보유 할 수 없습니다.)"))return [
-  {trigger:'ENTER_FIELD',effects:[fx('BUFF',{balance:{operation:'SUMMON_RANDOM_ADJACENT',tag:'디 어쏘리티',excludeChampionRarity:true,excludeChampionTokens:true,keyword:'SURPRISE'}})]},
+ if(card.id==='df532c95-0e4d-4b17-8200-a86e6a682341'&&clean(card.text)===clean("등장: 자신의 양 옆에 이 카드와 챔피언 토큰을 제외한 '디 어쏘리티' 카드들 중에서 무작위로 소환하고 자신을 제외한 생성한 그 선수 카드들에게 '기습'을 부여합니다.\n콤보:'디 어쏘리티' 태그를 가진 아군 선수 카드가 상대를 공격하면 그 카드와 이 카드에게 공격력을 +1 부여합니다. 이 카드는 아군 필드에 이 카드를 제외한 '디 어쏘리티' 태그가 있는 카드가 존재하는 동안 '무적'입니다.(이 카드는 '도발'을 보유 할 수 없습니다.)"))return [
+  {trigger:'ENTER_FIELD',effects:[fx('BUFF',{balance:{operation:'SUMMON_RANDOM_ADJACENT',tag:'디 어쏘리티',excludeChampionTokens:true,keyword:'SURPRISE'}})]},
   {trigger:'OTHER_ALLY_ATTACK',effects:[fx('BUFF',{balance:{operation:'BUFF_TAG_ATTACK_PAIR',tag:'디 어쏘리티',attack:1}})]},
   {trigger:'SELF_ENTERED',effects:[],invulnerableWhileOtherAllyTag:'디 어쏘리티',forbiddenKeywords:['TAUNT']},
  ];
