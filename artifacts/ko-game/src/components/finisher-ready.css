@@ -1,0 +1,45 @@
+/* Finisher ready (quest complete): framed champion gathers power, flashes into its awakened form, ribbon lands. */
+.ko-finisher-ready{position:fixed;inset:0;z-index:360;pointer-events:none;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 42%,rgba(40,26,8,.6) 0,rgba(5,4,2,.88) 70%);
+  animation:ko-fr-backdrop var(--fr-duration) ease both}
+.ko-finisher-ready__frame{position:absolute;left:50%;top:41%;width:min(40vw,230px);aspect-ratio:3/4;transform:translate(-50%,-50%);
+  border-radius:50% 50% 10px 10px / 34% 34% 10px 10px;overflow:hidden;background:#15110c;
+  box-shadow:0 0 0 5px #2a1a08,0 0 0 9px #e2ad4c,0 0 0 12px #6b4513,0 0 0 15px #ffe3a0,0 10px 30px 10px rgba(0,0,0,.7);
+  animation:ko-fr-frame var(--fr-duration) cubic-bezier(.2,.7,.3,1) both}
+.ko-finisher-ready__art{position:absolute!important;inset:0;width:100%;height:100%}
+.ko-finisher-ready__art--awakened{animation:ko-fr-awaken var(--fr-duration) linear both}
+.ko-finisher-ready__glow{position:absolute;inset:0;mix-blend-mode:screen;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,250,220,.95) 0,rgba(255,200,90,.6) 35%,transparent 75%);
+  animation:ko-fr-glow var(--fr-duration) linear both}
+.ko-finisher-ready__rays{position:absolute;left:50%;top:41%;width:160vmax;height:160vmax;border-radius:50%;mix-blend-mode:screen;
+  background:repeating-conic-gradient(from 0deg,rgba(255,206,110,.45) 0deg 4deg,transparent 4deg 14deg);
+  -webkit-mask:radial-gradient(circle,#000 0,rgba(0,0,0,.55) 10%,transparent 36%);mask:radial-gradient(circle,#000 0,rgba(0,0,0,.55) 10%,transparent 36%);
+  animation:ko-fr-rays var(--fr-duration) linear both}
+.ko-finisher-ready__ribbon{position:absolute;left:50%;top:calc(41% + min(26.6vw,153px) - 6px);transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;padding:clamp(6px,1.2vh,10px) clamp(48px,9vw,96px);
+  clip-path:polygon(0 0,100% 0,calc(100% - 26px) 50%,100% 100%,0 100%,26px 50%);
+  background:linear-gradient(#f7d27a,#c98a2c 48%,#9a5d17 52%,#d39a3c);box-shadow:inset 0 0 0 3px rgba(80,40,6,.6);
+  animation:ko-fr-ribbon var(--fr-duration) linear both}
+.ko-finisher-ready__ribbon small{font-size:clamp(10px,1.6vh,13px);font-weight:800;letter-spacing:.2em;color:#4a2706}
+.ko-finisher-ready__ribbon span{font-family:var(--font-display);font-weight:900;white-space:nowrap;font-size:clamp(22px,4.6vw,46px);line-height:1.05;
+  color:#fffbe9;-webkit-text-stroke:1.5px #4a2706;text-shadow:0 3px 0 #4a2706,0 0 14px rgba(255,220,140,.6)}
+.ko-finisher-ready--opponent .ko-finisher-ready__ribbon{background:linear-gradient(#e2675a,#a3281e 48%,#7a1610 52%,#b8382b)}
+.ko-finisher-ready--opponent .ko-finisher-ready__ribbon small{color:#ffe2d8}
+.ko-finisher-ready--opponent .ko-finisher-ready__ribbon span{-webkit-text-stroke-color:#3a0804;text-shadow:0 3px 0 #3a0804,0 0 14px rgba(255,120,90,.6)}
+@keyframes ko-fr-backdrop{0%{opacity:0}8%,86%{opacity:1}100%{opacity:0}}
+@keyframes ko-fr-frame{
+  0%{opacity:0;transform:translate(-50%,-30%) scale(.75)}
+  14%{opacity:1;transform:translate(-50%,-52%) scale(1.03)}
+  20%{transform:translate(-50%,-50%) scale(1)}
+  24%{transform:translate(calc(-50% - 1px),-50%) scale(1.005)} 28%{transform:translate(calc(-50% + 2px),calc(-50% - 1px)) scale(1.01)}
+  32%{transform:translate(calc(-50% - 2px),calc(-50% + 1px)) scale(1.015)} 36%{transform:translate(calc(-50% + 3px),-50%) scale(1.02)}
+  39%{transform:translate(calc(-50% - 3px),calc(-50% - 1px)) scale(1.03)}
+  40%{transform:translate(-50%,-50%) scale(1.12)}
+  48%{transform:translate(-50%,-50%) scale(.98)}
+  54%,86%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)}}
+@keyframes ko-fr-awaken{0%,39%{opacity:0}40%,100%{opacity:1}}
+@keyframes ko-fr-glow{0%,16%{opacity:0}38%{opacity:.75}40%{opacity:1}56%,100%{opacity:0}}
+@keyframes ko-fr-rays{0%,14%{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(0)}38%{opacity:.6;transform:translate(-50%,-50%) scale(.8) rotate(10deg)}42%{opacity:1;transform:translate(-50%,-50%) scale(1.05) rotate(14deg)}86%{opacity:.75;transform:translate(-50%,-50%) scale(1.1) rotate(34deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1) rotate(40deg)}}
+@keyframes ko-fr-ribbon{0%,48%{opacity:0;transform:translate(-50%,-50%) scale(2)}54%{opacity:1;transform:translate(-50%,-50%) scale(.95)}58%,86%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.03)}}
+@media (prefers-reduced-motion:reduce){.ko-finisher-ready__rays{display:none}.ko-finisher-ready__frame,.ko-finisher-ready__ribbon{animation:ko-fr-backdrop var(--fr-duration) ease both}.ko-finisher-ready__art--awakened{animation:none;opacity:1}}

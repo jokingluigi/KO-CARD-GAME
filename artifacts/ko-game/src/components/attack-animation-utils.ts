@@ -1,3 +1,4 @@
+import { finisherDamage } from "./finisher-scale";
 import type { CardInstance } from "@/game";
 import type { CardAnimationRect } from "./card-play-animation-utils";
 
@@ -37,7 +38,9 @@ export type AttackAnimationState = {
 
 export function attackScreenShakeLevel(currentAttack: number, damage: number, finishingBlow = false): AttackDamageImpactLevel {
   if (damage <= 0) return "NONE";
-  if (finishingBlow) return "VERY_HEAVY";
+  const scaled = finisherDamage(damage, finishingBlow);
+  if (scaled.top) return "VERY_HEAVY";
+  damage = scaled.damage;
   const attackTier = attackImpactLevel(currentAttack);
   const attackStrength: AttackDamageImpactLevel = attackTier === "LIGHT" ? "VERY_LIGHT"
     : attackTier === "NORMAL" ? "LIGHT"

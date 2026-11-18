@@ -7,6 +7,7 @@ import { CardRenderer } from "./card-renderer";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
+import { spawnCardShatter, spawnRetirePuff } from "./battle-moments";
 
 
 export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE" | "FUSION" | "VANISH" | "RETURN_HAND" | "RETURN_DECK" | "GENERATE";
@@ -50,6 +51,7 @@ export function CardLeaveAnimation({
   onComplete: () => void;
 }) {
   const completedRef = useRef(false);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const card=animation.card,loadouts=useContext(BattleCosmeticsContext);
@@ -70,18 +72,25 @@ export function CardLeaveAnimation({
 
   useEffect(() => {
     completedRef.current = false;
+    // Destroyed cards shatter into pieces of their own face; retired cards crumble into dust.
+    const g=animation.geometry;
+    const moment=(animation.kind==='DESTROY'||animation.kind==='RETIRE')&&!animation.concealed?window.setTimeout(()=>{
+      if(animation.kind==='DESTROY')spawnCardShatter({source:nodeRef.current?.firstElementChild,...g});
+      else spawnRetirePuff(g);
+    },animation.delay+(animation.kind==='DESTROY'?110:150)):null;
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
       onCompleteRef.current();
     }, animation.delay + duration + 80);
-    return () => window.clearTimeout(timeoutId);
+    return () => {window.clearTimeout(timeoutId);if(moment!==null)window.clearTimeout(moment);};
   }, [animation.delay, animation.id, duration]);
 
   return (
     <>
 
     <div
+      ref={nodeRef}
       aria-hidden="true"
       className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}`}
       style={style}

@@ -100,6 +100,8 @@ import { CinematicProvider, CinematicCue, CinematicIntro, CardRevealPresentation
 import { QuestPresentation } from './quest-presentation';
 import { canPresentBattleQuest } from './quest-presentation-policy';
 import { audioManager } from '../audio/audio-manager';
+import { installBoardTaps, spawnCoinToss, startDangerPulse } from './battle-moments';
+import { TargetingArrow } from './targeting-arrow';
 import { combatHitSound } from '../audio/combat-hit-sound';
 import { MatchTutorial } from './match-tutorial';
 import { prefersReducedMotion } from './presentation-config';
@@ -109,6 +111,7 @@ import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
 import "./battle-viewport.css";
 import "./mobile-champion-layout.css";
+import "./hs-board-cues.css";
 
 // CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
@@ -287,6 +290,18 @@ export function GameStatePreview({
     }, 200);
     return () => window.clearInterval(timer);
   }, [state.gameId, state.openingMulligan, state.players[0].mulliganUsed, introActive, Boolean(onMulligan)]);
+  // First player: a coin toss once the opening (intro / mulligan) is out of the way.
+  const mulliganOpen=Boolean(onMulligan)&&canMulligan(state,state.players[0].id);
+  React.useEffect(()=>{
+    if(introActive||mulliganOpen||state.status!=='IN_PROGRESS'||state.turn!==1||!state.activePlayerId)return;
+    spawnCoinToss(state.gameId,state.activePlayerId===state.players[0].id,sound=>audioManager.playImpactOverlay(import.meta.env.BASE_URL+(sound==='flip'?'sfx/coin-flip.wav':'sfx/board-knock.wav'),sound==='flip'?40:46,4));
+  },[state.gameId,state.turn,state.activePlayerId,state.status,introActive,mulliganOpen]);
+  // Low health: the screen edges throb red with a quiet heartbeat.
+  const inDanger=state.status==='IN_PROGRESS'&&state.players[0].health>0&&state.players[0].health<=5;
+  React.useEffect(()=>{
+    if(!inDanger)return;
+    return startDangerPulse(()=>audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/heartbeat.wav',22,1));
+  },[inDanger]);
   const [mulliganSelection, setMulliganSelection] = React.useState<string[]>([]);
   mulliganSelectionRef.current = mulliganSelection;
   const [coachStage, setCoachStage] = React.useState(0);
@@ -376,10 +391,18 @@ export function GameStatePreview({
   const [drawFlights, setDrawFlights] = React.useState<Array<{ id: string; fromX: number; fromY: number; toX: number; toY: number; opponent: boolean }>>([]);
   React.useEffect(() => {
     if (!drawFlights.length) return;
-    const timer = window.setTimeout(() => setDrawFlights([]), 560);
+    const timer = window.setTimeout(() => setDrawFlights([]), 720);
     return () => window.clearTimeout(timer);
   }, [drawFlights]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
+  // Poking bare board: a little thud and puff of dust (only when nothing is selected).
+  const idleBoardRef=React.useRef(true);
+  idleBoardRef.current=!selectedCardId&&!selectedAttackerId&&!state.targetingState?.active;
+  React.useEffect(()=>{
+    const stage=document.querySelector<HTMLElement>('.ko-game-stage');
+    if(!stage)return;
+    return installBoardTaps(stage,()=>{if(!idleBoardRef.current)return false;audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/board-knock.wav',30,1);return true;});
+  },[]);
   const activePresentationCues = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
@@ -1272,7 +1295,7 @@ export function GameStatePreview({
                   <div data-resource="gold" className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
-                      <MotionNumber value={opp.currentGold} /> / {opponentMaxGold}
+                      <MotionNumber palette="gold" value={opp.currentGold} /> / {opponentMaxGold}
                     </div>
                   </div>
                   {!blackGold && <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
@@ -1756,7 +1779,7 @@ export function GameStatePreview({
                 <div data-resource="gold" className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
                   <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
-                      <MotionNumber value={me.currentGold} /> / {myMaxGold}
+                      <MotionNumber palette="gold" value={me.currentGold} /> / {myMaxGold}
                    </div>
                 </div>
                 {!blackGold && <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
@@ -1843,6 +1866,11 @@ export function GameStatePreview({
 
          </div>
       </div>
+      <TargetingArrow
+        sourceId={selectedAttackerId ?? (effectTargeting && state.targetingState?.playerId === me.id ? (typeof document !== 'undefined' && document.querySelector(`[data-card-instance-id="${state.targetingState.sourceInstanceId}"]`) ? state.targetingState.sourceInstanceId : 'champion') : null)}
+        validIds={selectedAttackerId ? legalAttackTargets : validEffectTargetIds}
+        championValid={selectedAttackerId ? legalAttackTargets.has(opp.id) : validEffectTargetIds.has(opp.id)}
+      />
       {playAnimation && (
         <CardPlayAnimation
           animation={playAnimation.playerId?playAnimation:{...playAnimation,playerId:me.id}}

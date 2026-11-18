@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { audioManager } from "../audio/audio-manager";
 import { createPortal } from "react-dom";
 import "./battle-dialogue.css";
 /** Tethered to the actual HUD. Never moves a target or intercepts battle inputs. */
@@ -25,6 +26,10 @@ export function ChampionSpeechBubble({
 }) {
   const bubble = useRef<HTMLDivElement>(null),
     frame = useRef<HTMLDivElement>(null);
+  // A soft pop as the bubble appears (emotes and champion lines alike).
+  useEffect(() => {
+    if (!document.hidden) audioManager.playImpactOverlay(import.meta.env.BASE_URL + "sfx/dialogue-pop.wav", 24, 3);
+  }, [text, playerId]);
   useLayoutEffect(() => {
     let signature = "";
     const place = () => {

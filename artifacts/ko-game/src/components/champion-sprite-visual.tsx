@@ -28,6 +28,10 @@ import {
   expressionLead,
 } from "./champion-sprite-motion";
 import "./champion-sprite-visual.css";
+import { spawnAbilityFlare, spawnHealGlow } from "./battle-moments";
+import { audioManager } from "../audio/audio-manager";
+import { spawnArrivalBlast } from "./card-arrival";
+import { spawnImpactBurst } from "./impact-burst";
 export function ChampionSpriteVisual({
   children,
   cue,
@@ -239,6 +243,18 @@ export function ChampionSpriteVisual({
         { opacity: reduced ? 0.12 : 0.3, maskPosition: "0% 50%", offset: 0.45 },
         { opacity: 0, maskPosition: "0% 0%" },
       ]);
+    if (!preview && !reduced && decorated) {
+      // Hearthstone-style moments on the champion sprite itself.
+      if (cue.kind === "ABILITY") { spawnAbilityFlare(null, at, rect.height * .75); audioManager.playImpactOverlay(import.meta.env.BASE_URL + "sfx/ability-cast.wav", 44, 6); }
+      if (cue.kind === "HEAL") spawnHealGlow({ x: at.x, y: at.y, size: Math.max(90, rect.height * .7) });
+      if (cue.kind === "AWAKEN") spawnArrivalBlast({ x: at.x, y: at.y, width: rect.width * .8, height: rect.height * .8, kind: "LEGENDARY" });
+      if ((cue.kind === "HIT" || cue.kind === "HEAVY_HIT") && !cue.basicAttack) {
+        const damage = cue.damage ?? (cue.kind === "HEAVY_HIT" ? 5 : 1);
+        spawnImpactBurst({ x: at.x, y: at.y, dx: direction?.x ?? 0, dy: direction?.y ?? 1, damage, crackAt: { x: at.x, y: rect.bottom - 10 } });
+      }
+      if (cue.kind === "HIT" || cue.kind === "HEAVY_HIT")
+        animate(anchor, [{ filter: "brightness(1)" }, { filter: "brightness(2.4) saturate(.4)", offset: .08 }, { filter: "brightness(1.3) sepia(.4) hue-rotate(-30deg) saturate(2)", offset: .2 }, { filter: "brightness(1)" }], Math.min(duration, cue.kind === "HEAVY_HIT" ? 420 : 280));
+    }
     if (!preview && !reduced) {
       if (
         (cue.kind === "HIT" || cue.kind === "HEAVY_HIT") &&

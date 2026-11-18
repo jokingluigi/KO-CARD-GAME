@@ -1,0 +1,867 @@
+[
+ {
+  "file": "ability-cast.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "cb4a8ce4297ecf0c05fe668f25548afaefdba345712f2a4ebb12a36742a820bc",
+  "decodedPeakDbFS": -6.02,
+  "sourceFiles": [
+   "synthesised whoosh",
+   "synthesised glitter crackle",
+   "kenney impact_wood_heavy_000"
+  ]
+ },
+ {
+  "file": "armor.wav",
+  "license": "CC0-1.0",
+  "sha256": "53d5f30f7189d149e42c2039db82ad7873405278bf45565db2a45aa4340792a3",
+  "decodedPeakDbFS": -1.94,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "board-knock.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "5d91542d8fdae9365b44d831760f5608095e771e51e0e7786675c151af8d724f",
+  "decodedPeakDbFS": -7.96,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood"
+  ]
+ },
+ {
+  "file": "card-burn.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "67fca9d3ee32b9a17751fda50aa176cd7c7086f08010e1984246c681825ace80",
+  "decodedPeakDbFS": -7.96,
+  "sourceFiles": [
+   "synthesised whoosh",
+   "synthesised crackle"
+  ]
+ },
+ {
+  "file": "card-destroy.wav",
+  "license": "CC0-1.0",
+  "sha256": "4fb44454e6f079d0bb53617904b2101d525f190b1a94c9a1aea7579d0e19cca8",
+  "decodedPeakDbFS": -1.41,
+  "sourceFiles": [
+   "kenney impact_glass_heavy_000",
+   "kenney interface/glass_001",
+   "qubodupImpactMetal",
+   "qubodupPunch04",
+   "qubodupImpactStone",
+   "synthesised glass shards"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "card-draw.wav",
+  "license": "CC0-1.0",
+  "sha256": "c919b17b712ace7dcc093f1790d7591c136094e6c9bc2e2ba8b5aeb4648947e4",
+  "decodedPeakDbFS": -10.46,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "card-lift.wav",
+  "license": "CC0-1.0",
+  "sha256": "44140639b87c6e213694c5591cb54a820a73818ca2149f20f5f3e4be85d0d895",
+  "decodedPeakDbFS": -9.9,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "card-retire.wav",
+  "license": "CC0-1.0",
+  "sourceFiles": [
+   "qubodupPunch03",
+   "kenney impact_wood_heavy_000",
+   "synthesised falling whoosh and dust"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "97277daa45f924752381b74c184d68109f16722cde81f075992744c48abcaf95",
+  "decodedPeakDbFS": -4.44
+ },
+ {
+  "file": "champion-riser.wav",
+  "license": "CC0-1.0",
+  "sourceFiles": [
+   "synthesised heartbeat thumps",
+   "synthesised rising drone",
+   "synthesised electric crackle",
+   "synthesised reverse whoosh"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "057a451db4fed47648df01bbb47b06cc89fd2217fa279c1742e73e3301fd8e5e",
+  "decodedPeakDbFS": -4.15
+ },
+ {
+  "file": "champion-slam.wav",
+  "license": "CC0-1.0",
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4",
+   "synthesised growl",
+   "synthesised thunder rumble",
+   "synthesised crackle"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "f732f9d43395cfae4ced41573e2d620d621c59b9db99858577f67f8dc92f94bf",
+  "decodedPeakDbFS": -0.09
+ },
+ {
+  "file": "coin-flip.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "d37ef6f519900bd9a380d492157de1b8b7b39f785ebc6aa1bcdfc67499569881",
+  "decodedPeakDbFS": -9.12,
+  "sourceFiles": [
+   "synthesised whoosh",
+   "synthesised ticks"
+  ]
+ },
+ {
+  "file": "combat-finisher.wav",
+  "license": "CC0-1.0",
+  "sha256": "85281b762cb97cb0c11c3621789286a75633281efeccd7b6dc16c1db7b1ab55c",
+  "decodedPeakDbFS": -0.09,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials",
+   "independent.nu hit10",
+   "independent.nu hit17",
+   "synthesised hwatu slap crack"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "combat-hit-1-2.wav",
+  "license": "CC0-1.0",
+  "sha256": "edc678d4cc1a27355dde278b725b40724f64dfaaa3ec18a0c6d1e6709b2e7206",
+  "decodedPeakDbFS": -8.87,
+  "sourceFiles": [
+   "qubodupImpactStone",
+   "qubodupImpactWood",
+   "qubodupPunch02",
+   "qubodupPunch03",
+   "kenney impact_punch_heavy_000",
+   "Impacts/Shotgun 2",
+   "Impacts/Impact Gun 2",
+   "Impacts/Impact Gun 4",
+   "wood_impact/crack03",
+   "qubodupImpactMetal",
+   "kenney impact_glass_heavy_000",
+   "independent.nu hit10",
+   "independent.nu hit17",
+   "synthesised hwatu slap crack"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "combat-hit-10-plus.wav",
+  "license": "CC0-1.0",
+  "sha256": "39bd2f5d93e0c747d9e2964acf39c9f034f950a02556eb919ab6c0f9ac42d70a",
+  "decodedPeakDbFS": -0.27,
+  "sourceFiles": [
+   "qubodupImpactStone",
+   "qubodupImpactWood",
+   "qubodupPunch02",
+   "qubodupPunch03",
+   "kenney impact_punch_heavy_000",
+   "Impacts/Shotgun 2",
+   "Impacts/Impact Gun 2",
+   "Impacts/Impact Gun 4",
+   "wood_impact/crack03",
+   "qubodupImpactMetal",
+   "kenney impact_glass_heavy_000",
+   "independent.nu hit10",
+   "independent.nu hit17",
+   "synthesised hwatu slap crack"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "combat-hit-3-5.wav",
+  "license": "CC0-1.0",
+  "sha256": "e1e14ffe108d92d8c5fd273667a6ce0c7e4dc6cd751943d5d4a3444de492f819",
+  "decodedPeakDbFS": -3.61,
+  "sourceFiles": [
+   "qubodupImpactStone",
+   "qubodupImpactWood",
+   "qubodupPunch02",
+   "qubodupPunch03",
+   "kenney impact_punch_heavy_000",
+   "Impacts/Shotgun 2",
+   "Impacts/Impact Gun 2",
+   "Impacts/Impact Gun 4",
+   "wood_impact/crack03",
+   "qubodupImpactMetal",
+   "kenney impact_glass_heavy_000",
+   "independent.nu hit10",
+   "independent.nu hit17",
+   "synthesised hwatu slap crack"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "combat-hit-6-9.wav",
+  "license": "CC0-1.0",
+  "sha256": "691922ec2ec40bce6028557c997e30c7f4ca6c0229b5aa9345f05cf89e8c87d1",
+  "decodedPeakDbFS": -0.92,
+  "sourceFiles": [
+   "qubodupImpactStone",
+   "qubodupImpactWood",
+   "qubodupPunch02",
+   "qubodupPunch03",
+   "kenney impact_punch_heavy_000",
+   "Impacts/Shotgun 2",
+   "Impacts/Impact Gun 2",
+   "Impacts/Impact Gun 4",
+   "wood_impact/crack03",
+   "qubodupImpactMetal",
+   "kenney impact_glass_heavy_000",
+   "independent.nu hit10",
+   "independent.nu hit17",
+   "synthesised hwatu slap crack"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "combat-movement.wav",
+  "license": "CC0-1.0",
+  "sha256": "dbdf94a227b08a75584b7abd8576ac2e96f415e9780eae12d1ec23c4c28d512f",
+  "decodedPeakDbFS": -19.17,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "defeat-stinger.wav",
+  "license": "CC0-1.0",
+  "sha256": "110849611e712b24a98422eff53a6d0eaaaddaa4caffb5e656564a94cf9ca0e2",
+  "decodedPeakDbFS": -0.92,
+  "sourceFiles": [
+   "Impacts/Impact Gun 4",
+   "kenney impact_glass_heavy_000",
+   "synthesised sine drop",
+   "synthesised low drone",
+   "synthesised crackle tension"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "dialogue-pop.wav",
+  "license": "CC0-1.0",
+  "sha256": "b8cb64fc5766fed77d3b9d5515f3fa16341b4d2e8f1eaa320cc5f26b781cacbe",
+  "decodedPeakDbFS": -5.19,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "finisher-ready.wav",
+  "license": "CC0-1.0",
+  "sha256": "d97ce3ab64efaa09756604110811f9d741186de9708544b968fddcf4852974c2",
+  "decodedPeakDbFS": -0.92,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "synthesised whoosh",
+   "synthesised glitter crackle"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "heal.wav",
+  "license": "CC0-1.0",
+  "sha256": "e0f84f0f204820a29a9c0af24661c737361d6c5044d5e18044352214afa7cf5b",
+  "decodedPeakDbFS": -9.9,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "heartbeat.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "4f6d2b072de9a9ccbb638f88b25bb9f5ecef1515822bad698e863d8b9bd2e8e0",
+  "decodedPeakDbFS": -6.02,
+  "sourceFiles": [
+   "synthesised heartbeat thumps"
+  ]
+ },
+ {
+  "file": "impact-finisher.wav",
+  "license": "CC0-1.0",
+  "sha256": "0f6dda8309e8fac7ad5a35baeb27514633b7c882d0a459def27ecc30d0ac11ad",
+  "decodedPeakDbFS": -0.01,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "impact-heavy.wav",
+  "license": "CC0-1.0",
+  "sha256": "19c1de4061e3e8fcc500f1a2a6d4399baeb646529af291b8d039d009eb04a3b8",
+  "decodedPeakDbFS": -3.35,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "impact-light.wav",
+  "license": "CC0-1.0",
+  "sha256": "a3723bdd1230f24c5516ee7c691539d6b75a8274beffdd8a23cc60be351a1718",
+  "decodedPeakDbFS": -13.15,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "impact-normal.wav",
+  "license": "CC0-1.0",
+  "sha256": "ccb4867d6603fc4fb5cf458715201ccb28f87b37d7507f4c1b677753c19405f2",
+  "decodedPeakDbFS": -8.4,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "impact-very-heavy.wav",
+  "license": "CC0-1.0",
+  "sha256": "d6374dc912b055fafcebdffc69b73c020535f62f0a84c28a0297fa1551fdb216",
+  "decodedPeakDbFS": -1.41,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "legendary-riser.wav",
+  "license": "CC0-1.0",
+  "sourceFiles": [
+   "synthesised riser (filtered noise sweep)",
+   "synthesised choir-like chord swell",
+   "synthesised shimmer bells"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "57116066612a4cbf8a0525e831d6998fcdab83731a299cd108502340dfd4af01",
+  "decodedPeakDbFS": -7.54
+ },
+ {
+  "file": "legendary-slam.wav",
+  "license": "CC0-1.0",
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "wood_impact/impactwood02",
+   "Impacts/Shotgun 2",
+   "wood_impact/crack07",
+   "Impacts/Impact Gun 4",
+   "synthesised metallic shing"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "1c614aa878edf57a7d713a42d9720b236de9dc1212097f25621cbbd21555cd2c",
+  "decodedPeakDbFS": -0.09
+ },
+ {
+  "file": "rope-ignite.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "89f4ed65030f38451b117a95d25323a8fbed3f0c3ce0f6de4f81fe49326aada2",
+  "decodedPeakDbFS": -9.12,
+  "sourceFiles": [
+   "synthesised whoosh",
+   "synthesised crackle"
+  ]
+ },
+ {
+  "file": "rope-tick.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "03b954fe3181e6968fc565825ec95fa89ee277a181315aa1ca64426108d28768",
+  "decodedPeakDbFS": -9.12,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000"
+  ]
+ },
+ {
+  "file": "spell-cast.wav",
+  "license": "CC0-1.0",
+  "sha256": "d28eb57c228b82e11b2f60c140d2c92ca291ed939c710520a90dbb9c884dcd12",
+  "decodedPeakDbFS": -13.98,
+  "sourceFiles": [
+   "Earth Element Magic Spell_0",
+   "qubodupImpactStone",
+   "Impacts/Shotgun 2"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "spell-dissolve.wav",
+  "license": "CC0-1.0",
+  "sha256": "d68a5c470587b64585d0637948f91713cfb4e1c2233002626bc4d2ab565c32dd",
+  "decodedPeakDbFS": -14.89,
+  "sourceFiles": [
+   "synthesised airy whoosh",
+   "synthesised glitter crackle"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "spell-impact.wav",
+  "license": "CC0-1.0",
+  "sha256": "212d006732e05375ac2ee341d1f26d70274882d5ea22cc249b1f1e712f0e0809",
+  "decodedPeakDbFS": -10.46,
+  "sourceFiles": [
+   "Earth Element Magic Spell_0",
+   "qubodupImpactStone",
+   "Impacts/Shotgun 2"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "summon-bass-champion.wav",
+  "license": "CC0-1.0",
+  "sha256": "aee1f62cee645d15f057e298bb552d19a321efa1542143a64065e6baeaaed50d",
+  "decodedPeakDbFS": -0.54,
+  "sourceFiles": [
+   "Impacts/Impact Gun 4",
+   "synthesised sine drop"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "summon-bass-heavy.wav",
+  "license": "CC0-1.0",
+  "sha256": "54f58c19d15ee2c062abec9571683b2f31138d874a5c549d737d78fd4d3e1469",
+  "decodedPeakDbFS": -0.54,
+  "sourceFiles": [
+   "Impacts/Impact Gun 4",
+   "synthesised sine drop"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "summon-bass-massive.wav",
+  "license": "CC0-1.0",
+  "sha256": "439e7714242ae672abcc26f6542ca0659503b5847af13552fc39be54da9c48f5",
+  "decodedPeakDbFS": -0.54,
+  "sourceFiles": [
+   "Impacts/Impact Gun 4",
+   "synthesised sine drop"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "turn-start.wav",
+  "license": "CC0-1.0",
+  "sha256": "77d5007ec251b5526b25b9191131809c55e07ca471e9af358cf86076063680e0",
+  "decodedPeakDbFS": -6.94,
+  "sourceFiles": [
+   "synthesised (numpy) from noise, sine and bell partials"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "victory-stinger.wav",
+  "license": "CC0-1.0",
+  "sha256": "e90369caa9a4d5e09c306ea5352f14f8084859f29fd7436af146e20bc1dfc1e6",
+  "decodedPeakDbFS": -0.45,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "Impacts/Shotgun 2",
+   "synthesised crackle tension",
+   "synthesised whoosh"
+  ],
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ]
+ },
+ {
+  "file": "vs-slam.wav",
+  "license": "CC0-1.0",
+  "sources": [
+   "https://opengameart.org/content/impact",
+   "https://opengameart.org/content/punch",
+   "https://opengameart.org/content/37-hitspunches",
+   "https://opengameart.org/content/35-wooden-crackshitsdestructions",
+   "https://opengameart.org/node/158704",
+   "https://opengameart.org/content/earth-element-magic-spell",
+   "vendor/kenney/manifest.json"
+  ],
+  "sha256": "00fb21e7b862564a99207da982d061c956b0a6918a4d3829ac26513ceb350ec2",
+  "decodedPeakDbFS": -0.45,
+  "sourceFiles": [
+   "kenney impact_wood_heavy_000",
+   "qubodupImpactWood",
+   "qubodupPunch04",
+   "Impacts/Shotgun 2",
+   "synthesised whoosh",
+   "synthesised crackle"
+  ]
+ }
+]

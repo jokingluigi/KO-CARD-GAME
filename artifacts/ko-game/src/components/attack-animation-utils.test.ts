@@ -19,7 +19,9 @@ test("같은 피해라도 공격력이 강하면 더 크게 흔들리고 방어�
   assert.equal(attackScreenShakeLevel(1, 1), "VERY_LIGHT");
   assert.equal(attackScreenShakeLevel(7, 1), "VERY_HEAVY");
   assert.equal(attackScreenShakeLevel(7, 0), "NONE");
-  assert.equal(attackScreenShakeLevel(2, 1, true), "VERY_HEAVY");
+  // A finishing blow is one tier up from its damage; only a 10+ finishing blow is the maximum.
+  assert.equal(attackScreenShakeLevel(2, 12, true), "VERY_HEAVY");
+  assert.notEqual(attackScreenShakeLevel(2, 1, true), "VERY_HEAVY");
 });
 
 test("8 이상 공격은 매우 강한 타격의 오디오 피치를 사용한다", () => {

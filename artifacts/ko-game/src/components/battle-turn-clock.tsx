@@ -1,4 +1,7 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import { audioManager } from "../audio/audio-manager";
+import "./turn-rope.css";
 import { nextSecondDelay, secondsUntil } from "../lib/battle-clock";
 
 /** Only this small HUD subtree re-renders when an online second elapses. */
@@ -37,6 +40,7 @@ export function BattleTurnClock({
     };
   }, [deadline, offset]);
   const remaining = secondsUntil(deadline, offset, Date.now(), seconds);
+  const rope=!compact&&deadline!=null&&remaining<=ROPE_SECONDS&&remaining>0;
   if (compact)
     return (
       <span
@@ -62,6 +66,37 @@ export function BattleTurnClock({
     >
       {String(Math.floor(remaining / 60)).padStart(2, "0")}:
       {String(remaining % 60).padStart(2, "0")}
+      {rope&&<TurnRope remaining={remaining}/>}
     </div>
+  );
+}
+
+const ROPE_SECONDS = 15;
+
+/** Hearthstone's burning rope: in the last seconds a fuse burns along the battle controls. Visual only. */
+function TurnRope({ remaining }: { remaining: number }) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const lit = useRef(false);
+  useEffect(() => {
+    const measure = () => setRect(document.querySelector('.ko-game-controls')?.getBoundingClientRect() ?? null);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+  useEffect(() => {
+    if (document.hidden) return;
+    if (!lit.current) { lit.current = true; audioManager.playImpactOverlay(import.meta.env.BASE_URL + 'sfx/rope-ignite.wav', 34, 3); }
+    else if (remaining <= 5) audioManager.playImpactOverlay(import.meta.env.BASE_URL + 'sfx/rope-tick.wav', remaining <= 3 ? 34 : 26, 2);
+  }, [remaining]);
+  if (!rect) return null;
+  // The fuse is the full width at ROPE_SECONDS and burns towards the left edge; one second of burn per tick.
+  const fraction = Math.max(0, (remaining - 1) / ROPE_SECONDS);
+  return createPortal(
+    <div className="ko-turn-rope" aria-hidden="true" style={{ left: rect.left + 8, top: rect.top - 6, width: rect.width - 16 } as CSSProperties}>
+      <div className="ko-turn-rope__cord" style={{ width: `${fraction * 100}%` }}>
+        <span className="ko-turn-rope__flame" />
+      </div>
+    </div>,
+    document.body,
   );
 }

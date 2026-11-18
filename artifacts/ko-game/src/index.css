@@ -402,27 +402,32 @@
     opacity: 0;
     transform: translate(var(--play-from-x), var(--play-from-y)) scale(1);
   }
+  4% {
+    opacity: 1;
+    transform: translate(var(--play-from-x), calc(var(--play-from-y) - 18px)) scale(1.08) rotate(-3deg);
+  }
+  /* Snap to the stage, overshoot a touch, settle: the card is thrown up, not floated. */
   14% {
     opacity: 1;
-    transform: translate(var(--play-from-x), calc(var(--play-from-y) - 12px)) scale(1.08) rotate(-3deg);
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(calc(var(--play-target-scale) * 1.06)) rotate(1deg);
   }
-  28% {
+  20% {
     opacity: 1;
     transform: translate(var(--play-target-x), var(--play-target-y)) scale(var(--play-target-scale)) rotate(0deg);
   }
   82% {
     opacity: 1;
-    transform: translate(var(--play-target-x), var(--play-target-y)) scale(var(--play-target-scale));
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(calc(var(--play-target-scale) * 1.02));
   }
   100% {
     opacity: 0;
-    transform: translate(var(--play-target-x), var(--play-target-y)) scale(calc(var(--play-target-scale) * 0.92));
+    transform: translate(var(--play-target-x), calc(var(--play-target-y) - 10px)) scale(calc(var(--play-target-scale) * 1.04));
   }
 }
 
 @keyframes ko-technique-dim {
-  0%, 10% { opacity: 0; }
-  18%, 84% { opacity: 1; }
+  0%, 3% { opacity: 0; }
+  13%, 84% { opacity: 1; }
   100% { opacity: 0; }
 }
 

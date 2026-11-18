@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { audioManager } from "../audio/audio-manager";
 import { LegendaryDialogueSpotlight } from "./legendary-dialogue-spotlight";
 import { CardArtwork } from "./card-artwork";
 import {
@@ -30,6 +32,10 @@ export function WrestlerDialogue({
   selfId: string;
   onComplete: () => void;
 }) {
+  // A soft pop as a speech bubble appears (once per line, when it is ready to show).
+  useEffect(() => {
+    if (speech.ready && !document.hidden) audioManager.playImpactOverlay(import.meta.env.BASE_URL + "sfx/dialogue-pop.wav", 26, 3);
+  }, [speech.id, speech.ready]);
   const spotlight =
     definition?.rarity === "LEGENDARY";
   if (spotlight && definition)

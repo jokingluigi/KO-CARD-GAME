@@ -1,3 +1,4 @@
+import { audioManager } from "../audio/audio-manager";
 import {cloneRenderedCard} from './rendered-card-clone';
 import {handGestureIntent} from './player-ux/gesture-intent';
 import { useEffect, useRef, type RefObject } from "react";
@@ -7,6 +8,7 @@ import {
   type CardAnimationRect,
 } from "./card-play-animation-utils";
 import { prefersReducedMotion } from "./presentation-config";
+import { createSwing, stepSwing, swingTarget, swingTransform, type SwingState } from "./card-swing-physics";
 
 type Props = {
   state: GameState;
@@ -46,7 +48,16 @@ export function BattleCardDrag(props: Props) {
       slot: number | null;
       started: boolean;
       lastX: number;
-      tilt: number;
+      lastY: number;
+      lastAt: number;
+      /** Smoothed pointer velocity (px/ms) feeding the swing springs. */
+      vx: number;
+      vy: number;
+      x: number;
+      y: number;
+      lift: number;
+      swing: SwingState;
+      frame: number | null;
     };
     let gesture: Gesture | null = null,
       suppressUntil = 0;
@@ -68,6 +79,12 @@ export function BattleCardDrag(props: Props) {
       const g = gesture;
       if (!g) return;
       gesture = null;
+      if (g.frame !== null) cancelAnimationFrame(g.frame);
+      // Settle flat before the return flight so it starts from the card's real position.
+      if (g.ghost && g.started) {
+        g.ghost.style.transformOrigin = "";
+        g.ghost.style.transform = `translate3d(${g.x}px,${g.y}px,0) scale(${prefersReducedMotion()?1:1.04})`;
+      }
       clearMarks();
       delete g.node.dataset.dragging;
       try {
@@ -144,7 +161,15 @@ export function BattleCardDrag(props: Props) {
         startX: e.clientX,
         startY: e.clientY,
         lastX: e.clientX,
-        tilt: 0,
+        lastY: e.clientY,
+        lastAt: performance.now(),
+        vx: 0,
+        vy: 0,
+        x: r.left,
+        y: r.top,
+        lift: 0,
+        swing: createSwing(),
+        frame: null,
         offsetX: e.clientX - r.left,
         offsetY: e.clientY - r.top,
         source: rectSnapshot(r),
@@ -191,9 +216,31 @@ export function BattleCardDrag(props: Props) {
           pointerEvents: "none",
         });
         document.body.appendChild(ghost);
+        // Picking a card up off the hand: a quick paper whoosh.
+        audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/card-lift.wav',34,3);
         try {
           g.node.setPointerCapture(e.pointerId);
         } catch {}
+        if (!prefersReducedMotion()) {
+          // The card hangs from where it was grabbed and swings on springs every frame,
+          // so it keeps wobbling and settles even after the pointer stops.
+          ghost.style.transformOrigin = `${g.offsetX}px ${g.offsetY}px`;
+          let last = performance.now();
+          const tick = () => {
+            if (gesture !== g || !g.ghost) return;
+            const now = performance.now(), dt = now - last;
+            last = now;
+            // Pointer events stop when the hand stops: let the measured speed die away.
+            const idle = now - g.lastAt;
+            if (idle > 24) { const fade = Math.pow(.82, dt / 16); g.vx *= fade; g.vy *= fade; }
+            g.swing = stepSwing(g.swing, swingTarget(g.vx, g.vy), dt);
+            const pose = swingTransform(g.swing);
+            g.ghost.style.transform = `translate3d(${g.x}px,${g.y}px,0) ${pose.transform} scale(1.06)`;
+            g.ghost.style.boxShadow = `${(pose.shadowX).toFixed(1)}px ${(14 + g.lift + pose.shadowY).toFixed(1)}px ${(12 + g.lift * .5).toFixed(1)}px #0009`;
+            g.frame = requestAnimationFrame(tick);
+          };
+          g.frame = requestAnimationFrame(tick);
+        }
         if (latest.current.selectedCardId !== g.id) latest.current.select(g.id);
       }
       e.preventDefault();
@@ -220,22 +267,19 @@ export function BattleCardDrag(props: Props) {
       g.slot = nearest;
       if (nearest !== null)
         latest.current.slots.current.get(nearest)!.dataset.dragHover = "true";
-      const tilt = prefersReducedMotion()
-        ? 0
-        : Math.max(-5, Math.min(5, (e.clientX - g.lastX) * 0.24));
-      g.tilt = prefersReducedMotion() ? 0 : g.tilt * .55 + tilt * .45;
-      const lift = Math.min(24,Math.abs(dy)*.08);
-      g.ghost!.style.boxShadow = `0 ${8+lift}px ${6+lift*.4}px #0008`;
+      const now = performance.now(), elapsed = Math.max(4, now - g.lastAt);
+      g.vx = g.vx * .6 + ((e.clientX - g.lastX) / elapsed) * .4;
+      g.vy = g.vy * .6 + ((e.clientY - g.lastY) / elapsed) * .4;
       g.lastX = e.clientX;
-      const x = Math.max(
-          0,
-          Math.min(innerWidth - g.source.width, e.clientX - g.offsetX),
-        ),
-        y = Math.max(
-          0,
-          Math.min(innerHeight - g.source.height, e.clientY - g.offsetY),
-        );
-      g.ghost!.style.transform = `translate3d(${x}px,${y}px,0) rotate(${g.tilt}deg) scale(${prefersReducedMotion()?1:1.025})`;
+      g.lastY = e.clientY;
+      g.lastAt = now;
+      g.lift = Math.min(24,Math.abs(dy)*.08);
+      g.x = Math.max(0, Math.min(innerWidth - g.source.width, e.clientX - g.offsetX));
+      g.y = Math.max(0, Math.min(innerHeight - g.source.height, e.clientY - g.offsetY));
+      if (prefersReducedMotion() || g.frame === null) {
+        g.ghost!.style.boxShadow = `0 ${8+g.lift}px ${6+g.lift*.4}px #0008`;
+        g.ghost!.style.transform = `translate3d(${g.x}px,${g.y}px,0) scale(${prefersReducedMotion()?1:1.025})`;
+      }
     };
     const up = (e: PointerEvent) => {
       const g = gesture;

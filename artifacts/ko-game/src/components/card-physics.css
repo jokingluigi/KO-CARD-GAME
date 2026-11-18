@@ -1,0 +1,5 @@
+/* Spring tilt written by card-physics.ts. Uses `transform` only, so it stacks with the
+   `translate` / `rotate` properties other board animations use. */
+.ko-game-stage .ko-card-depth {
+  transform: var(--ko-phys, none);
+}

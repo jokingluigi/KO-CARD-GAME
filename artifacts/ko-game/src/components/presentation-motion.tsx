@@ -67,15 +67,24 @@ export function useHandMotion(elements:RefObject<ReadonlyMap<string,HTMLElement>
  },[]);
 }
 
-export function MotionNumber({value,className='',format=(n:number)=>String(n)}:{value:number;className?:string;format?:(n:number)=>string|number}) {
+export function MotionNumber({value,className='',format=(n:number)=>String(n),palette='stat'}:{value:number;className?:string;format?:(n:number)=>string|number;palette?:'stat'|'gold'}) {
  const previous=useRef(value);
  const element=useRef<HTMLSpanElement>(null);
  useLayoutEffect(()=>{
   const previousValue=previous.current,changed=previousValue!==value;previous.current=value;
   if(!changed||prefersReducedMotion()||!Number.isFinite(value))return;
   const animation=animatePresentation(element.current,
-   [{scale:'1',translate:'0px 0px',textShadow:'0 0 0 transparent'},{scale:'1.1',translate:value>previousValue?'0px -2px':'0px 1px',textShadow:value>previousValue?'0 0 6px #efdb9b':'0 0 6px #e89580',offset:.24},{scale:'1.025',translate:'0px 0px',offset:.65},{scale:'1',translate:'0px 0px',textShadow:'0 0 0 transparent'}],
-   {duration:280,easing:MOTION_EASING.recovery});
+   palette==='gold'
+    // Gold refills with a bright coin glint; spending just dips the number.
+    ?value>previousValue
+     ?[{scale:'1',textShadow:'0 0 0 transparent'},{scale:'1.55',color:'#ffe27a',textShadow:'0 0 10px #ffb52e,0 0 2px #3d2a06',offset:.25},{scale:'1',textShadow:'0 0 0 transparent'}]
+     :[{scale:'1',opacity:1},{scale:'.82',opacity:.6,offset:.3},{scale:'1',opacity:1}]
+   // Hearthstone-style: a buff swells green, a loss punches red and shakes.
+   :value>previousValue
+    ?[{scale:'1',translate:'0px 0px',textShadow:'0 0 0 transparent'},{scale:'1.65',translate:'0px -3px',color:'#8dff8a',textShadow:'0 0 8px #3ddc5a,0 0 2px #0a3d14',offset:.22},{scale:'1.15',translate:'0px 0px',color:'#8dff8a',offset:.6},{scale:'1',translate:'0px 0px',textShadow:'0 0 0 transparent'}]
+    :[{scale:'1',translate:'0px 0px',textShadow:'0 0 0 transparent'},{scale:'1.5',translate:'-2px 0px',color:'#ff5a46',textShadow:'0 0 8px #ff2a1a,0 0 2px #3d0a0a',offset:.16},{scale:'1.3',translate:'2px 0px',color:'#ff5a46',offset:.3},{scale:'1.12',translate:'-1px 0px',color:'#ff7a66',offset:.5},{scale:'1',translate:'0px 0px',textShadow:'0 0 0 transparent'}],
+   {duration:palette==='gold'?480:560,easing:MOTION_EASING.recovery});
+  if(palette==='gold'&&value>previousValue)try{element.current?.closest<HTMLElement>('[data-resource=gold]')?.animate([{boxShadow:'0 0 0 0 rgba(255,200,80,0)'},{boxShadow:'0 0 0 2px rgba(255,210,100,.9),0 0 18px 4px rgba(255,180,60,.6)',offset:.25},{boxShadow:'0 0 0 0 rgba(255,200,80,0)'}],{duration:700,easing:'ease-out'});}catch{}
   return()=>animation?.cancel();
  },[value]);
  // Always display authoritative health/resources; never invent intermediate combat values.

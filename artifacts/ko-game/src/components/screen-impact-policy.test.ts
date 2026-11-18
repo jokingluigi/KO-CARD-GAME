@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';import test from 'node:test';import {readFileSync} from 'node:fs';
-import {damageImpact,summonImpact,summonTimeline,summonFrames,impactFrames,effectiveImpact,parseShakeMode,hasBoardWideImpact} from './screen-impact-policy';
+import {boardHop,boardHopFrames,damageImpact,summonImpact,summonTimeline,summonFrames,impactFrames,effectiveImpact,parseShakeMode,hasBoardWideImpact} from './screen-impact-policy';
 test('all six costs get increasing physical amplitude, wave and landing weight',()=>{const profiles=[1,2,3,4,5,6].map(c=>summonImpact(c));assert.deepEqual(profiles.map(p=>p.tier),['LIGHT','LIGHT','MEDIUM','MEDIUM','HEAVY','MASSIVE']);for(let i=1;i<6;i++){assert.ok(profiles[i]!.amplitude>profiles[i-1]!.amplitude);assert.ok(profiles[i]!.wave>profiles[i-1]!.wave);}assert.ok(profiles[4]!.amplitude>=7);assert.ok(profiles[5]!.amplitude>=10);assert.ok(profiles[5]!.aftershock);});
 test('rarity is multiplicative and cheap champion/legendary still land massively',()=>{for(let c=1;c<=6;c++){const p=['NORMAL','EPIC','LEGENDARY','CHAMPION'].map(r=>summonImpact(c,r));for(let i=1;i<4;i++)assert.ok(p[i]!.amplitude>p[i-1]!.amplitude);assert.equal(p[2]!.tier,'MASSIVE');assert.equal(p[3]!.bass,'champion');assert.ok(p[3]!.amplitude<=22);}});
-test('damage tiers distinguish blocked, weak, medium, heavy, massive and exact lethal',()=>{assert.deepEqual([0,1,3,6,10].map(n=>damageImpact(n).tier),['NONE','LIGHT','MEDIUM','HEAVY','MASSIVE']);assert.equal(damageImpact(1,true).tier,'FINISHER');assert.equal(damageImpact(10,false).tier,'MASSIVE');assert.equal(damageImpact(999,true).amplitude,42);});
+test('damage tiers distinguish blocked, weak, medium, heavy, massive and exact lethal',()=>{assert.deepEqual([0,1,3,6,10].map(n=>damageImpact(n).tier),['NONE','LIGHT','MEDIUM','HEAVY','MASSIVE']);assert.equal(damageImpact(12,true).tier,'FINISHER');assert.equal(damageImpact(1,true).tier,'MEDIUM');assert.equal(damageImpact(10,false).tier,'MASSIVE');assert.equal(damageImpact(999,true).amplitude,42);});
 test('directional vertical kick then reverse recoil returns all properties to identity',()=>{for(const direction of [{x:0,y:1},{x:1,y:0},{x:-1,y:.2}]){const frames=impactFrames(summonImpact(6),direction);assert.equal(frames.at(-1)?.translate,'0.000px 0.000px');assert.equal(frames.at(-1)?.rotate,'0.000deg');assert.equal(frames.at(-1)?.scale,'1');assert.ok(frames.some(f=>Number.parseFloat(String(f.rotate))<0));}assert.equal(impactFrames(summonImpact(6))[1]?.translate,'0.000px 13.000px');assert.equal(impactFrames(summonImpact(6),{x:1,y:0})[1]?.translate,'13.000px 0.000px');});
 test('mobile, Reduced and Off scales remain finite and never amplify beyond cap',()=>{const p=summonImpact(6,'CHAMPION');for(const width of [320,390,844,1280]){const full=effectiveImpact(p,{width,height:844},'FULL');const half=effectiveImpact(p,{width,height:844},'REDUCED');assert.ok(full.amplitude<=22);assert.equal(half.amplitude,full.amplitude*.5);assert.equal(effectiveImpact(p,{width,height:844},'OFF').amplitude,0);assert.equal(effectiveImpact(p,{width,height:844},'FULL',true).rotation,0);}assert.equal(parseShakeMode(null),'FULL');assert.equal(parseShakeMode('OFF'),'OFF');});
 test('summon compression and synchronized landing timestamps cover every cost and rarity',()=>{for(const cost of [0,1,2,3,4,5,6,NaN])for(const rarity of ['NORMAL','EPIC','LEGENDARY','CHAMPION']){const t=summonTimeline(cost,rarity);assert.ok(Number.isFinite(t.duration));assert.ok(t.landing>0&&t.landing<t.duration);const p=summonImpact(cost,rarity);const frames=summonFrames({left:10,top:200},{left:100,top:50},.7,p,t.landing,t.duration);assert.ok(frames.some(f=>f.offset===t.landing/t.duration));assert.equal(frames.at(-1)?.transform,'translate3d(100px,50px,0) scale(0.7) rotate(0deg)');}assert.equal(summonTimeline(6,'CHAMPION',true).duration,180);});
@@ -26,7 +26,8 @@ test('actual damage increases camera force inside tiers; five damage is a strong
   const p=effectiveImpact(damageImpact(damage),{width:390,height:844},'FULL');
   assert.ok(p.amplitude>previous);previous=p.amplitude;
   const frames=combatCameraFrames(p,{x:0,y:1});
-  if(damage<5)assert.equal(parseFloat(String(frames[1].translate)),0);else assert.equal(Number(String(frames[1].translate).split(' ')[1].replace('px','')),0);
+  // The first frame kicks straight along the blow.
+  assert.equal(parseFloat(String(frames[1].translate)),0);assert.ok(Number(String(frames[1].translate).split(' ')[1].replace('px',''))>0);
   assert.ok(Math.abs(Number(String(frames[1].translate).split(' ')[1].replace('px','')))<=92);
   assert.equal(frames.at(-1)?.translate,'0.000px 0.000px');
  }
@@ -35,10 +36,33 @@ test('actual damage increases camera force inside tiers; five damage is a strong
  assert.equal(damageImpact(999).amplitude,42);
 });
 
-test('strong whole-board camera uses only fast alternating horizontal recoil',async()=>{
+test('camera kicks, holds through hit-stop, then rattles along the blow with decaying alternation',async()=>{
  const {combatCameraFrames}=await import('./screen-impact-policy');
- const frames=combatCameraFrames(damageImpact(8),{x:.5,y:.9});
- const x=frames.slice(1,-1).map(f=>{const [x,y]=String(f.translate).split(' ').map(parseFloat);assert.equal(y,0);assert.equal(parseFloat(String(f.rotate)),0);return x;});
- for(let i=1;i<x.length;i++){assert.ok(x[i]*x[i-1]<0);assert.ok(Math.abs(x[i])<Math.abs(x[i-1]));}
- assert.equal(frames.at(-1)?.scale,'1');assert.equal(frames.at(-1)?.translate,'0.000px 0.000px');
+ for(const damage of [1,4,8,12]){
+  const direction={x:.5,y:.9},length=Math.hypot(direction.x,direction.y);
+  const frames=combatCameraFrames(damageImpact(damage),direction);
+  const along=frames.map(f=>{const [x,y]=String(f.translate).split(' ').map(parseFloat);return (x*direction.x+y*direction.y)/length;});
+  assert.ok(along[1]>0&&along[2]>0,'kick and hold push along the blow');
+  const rattle=along.slice(3,-1);
+  assert.ok(rattle.length>=6);
+  for(let i=1;i<rattle.length;i++){assert.ok(rattle[i]*rattle[i-1]<0);assert.ok(Math.abs(rattle[i])<Math.abs(rattle[i-1]));}
+  assert.equal(frames.at(-1)?.scale,'1');assert.equal(frames.at(-1)?.translate,'0.000px 0.000px');assert.equal(frames.at(-1)?.rotate,'0.000deg');
+ }
+ assert.ok(combatCameraFrames(damageImpact(12),{x:0,y:1}).length>combatCameraFrames(damageImpact(1),{x:0,y:1}).length,'bigger hits rattle longer');
+});
+
+test('board hop: only heavy landings hop the board, nearer cards jump higher and sooner',()=>{
+ assert.equal(boardHop(summonImpact(2),100).height,0);
+ const heavy=summonImpact(6),near=boardHop(heavy,120),far=boardHop(heavy,600);
+ assert.ok(near.height>far.height&&far.height>0);
+ assert.ok(near.delay<far.delay&&far.delay<=240);
+ assert.ok(boardHop(summonImpact(3,'LEGENDARY'),120).height>near.height);
+ assert.ok(boardHop(damageImpact(12,true),120).height>boardHop(damageImpact(6),120).height);
+});
+test('board hop frames rise, land, bounce once and end at rest',()=>{
+ const frames=boardHopFrames(20,1);
+ const ys=frames.map(f=>parseFloat(String(f.translate).split(' ')[1]!));
+ assert.equal(ys[0],0);assert.equal(ys[1],-20);assert.equal(ys[2],0);assert.ok(ys[3]!<0&&ys[3]!>-20);
+ assert.equal(frames.at(-1)?.translate,'0px 0px');assert.equal(frames.at(-1)?.rotate,'0deg');assert.equal(frames.at(-1)?.scale,'1');
+ assert.ok(boardHopFrames(0,1).every(f=>parseFloat(String(f.translate).split(' ')[1]!)===0),'no height, no hop');
 });

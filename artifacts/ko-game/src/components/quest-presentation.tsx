@@ -12,8 +12,10 @@ import { championQuestRewardText } from "./champion-quest-reward-text";
 import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
 import { canPresentBattleQuest } from './quest-presentation-policy';
+import { spawnArrivalBlast } from './card-arrival';
+import './finisher-ready.css';
 
-export const QUEST_BANNER_DURATION_MS = 700;
+export const QUEST_BANNER_DURATION_MS = 1500;
 export const QUEST_REWARD_DURATION_MS = 1100;
 
 export function QuestPresentation(props: {
@@ -52,34 +54,40 @@ function ActiveQuestPresentation({
 
   useEffect(() => {
     setPhase('BANNER');
-    audioManager.duckForPresentation(.5, 500);
+    audioManager.duckForPresentation(.5, bannerDuration);
+    // Finisher ready: the champion is framed, gathers power and transforms with a burst.
+    if(!reduced&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/finisher-ready.wav',64,8);
+    const burst=reduced?null:window.setTimeout(()=>{
+      const r=document.querySelector('.ko-finisher-ready__frame')?.getBoundingClientRect();
+      if(r)spawnArrivalBlast({x:r.left+r.width/2,y:r.top+r.height/2,width:r.width*.9,height:r.height*.9,kind:'LEGENDARY'});
+    },Math.round(bannerDuration*.4));
 
     const bannerTimer = window.setTimeout(() => setPhase("REWARD"), bannerDuration);
     const completeTimer = window.setTimeout(()=>completeRef.current(), bannerDuration + rewardDuration);
     return () => {
       window.clearTimeout(bannerTimer);
+      if(burst!==null)window.clearTimeout(burst);
       window.clearTimeout(completeTimer);
     };
   }, [cue.id,bannerDuration,rewardDuration]);
 
-  const managed=useCinematicAvailable();
-  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'피니셔 준비 완료',art:awakenedArt.src,artFallback:questPortrait(champion),artDisplay:awakenedArt.display,duration:bannerDuration});
-  if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
+  useCinematicAvailable();
+  useCinematicEvent(null);
+  if(phase==='BANNER')return (
+    <div className={`quest-presentation ko-finisher-ready${isViewer?'':' ko-finisher-ready--opponent'}`} aria-hidden="true" style={{'--fr-duration':`${bannerDuration}ms`} as import('react').CSSProperties}>
+      <div className="ko-finisher-ready__rays"/>
+      <div className="ko-finisher-ready__frame">
+        {normalArt.src&&<CardArtwork src={normalArt.src} fallbackSrc={champion?.imageUrl} displayOverride={normalArt.display} alt="" imageDisplayMode="COVER" imagePositionY={0} className="ko-finisher-ready__art"/>}
+        {(awakenedArt.src??normalArt.src)&&<CardArtwork src={awakenedArt.src??normalArt.src!} fallbackSrc={questPortrait(champion)} displayOverride={awakenedArt.display} alt="" imageDisplayMode="COVER" imagePositionY={0} className="ko-finisher-ready__art ko-finisher-ready__art--awakened"/>}
+        <div className="ko-finisher-ready__glow"/>
+      </div>
+      <div className="ko-finisher-ready__ribbon"><small>{champion?.name??'Champion'}</small><span>{isViewer?'피니셔 준비 완료!':'상대 피니셔 준비 완료!'}</span></div>
+    </div>
+  );
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
 
-      {phase === "BANNER" ? (
-        <div className="ko-quest-chapter text-center" style={{ animation: `ko-quest-banner ${bannerDuration}ms ease both` }}>
-          <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "피니셔 준비 완료!" : "상대의 피니셔 준비 완료!"}</p>
-          {normalArt.src && <div className="ko-quest-chapter__portrait">
-            <CardArtwork src={normalArt.src} fallbackSrc={champion?.imageUrl} displayOverride={normalArt.display} alt="" className="absolute inset-0 h-full w-full" />
-            {awakenedArt.src && awakenedArt.src!==normalArt.src &&
-              <CardArtwork src={awakenedArt.src} fallbackSrc={questPortrait(champion)} displayOverride={awakenedArt.display} alt="" className="ko-quest-chapter__after absolute inset-0 h-full w-full" />}
-          </div>}
-          <h2 className="mt-4 text-4xl font-black text-white drop-shadow-[0_3px_10px_rgba(0,0,0,.95)] sm:text-6xl">{champion?.name ?? "Champion"}</h2>
-          <p className="mt-2 text-[10px] font-black tracking-[.35em] text-amber-300">새로운 국면</p>
-        </div>
-      ) : (
+      {(
         <div data-phase="reward" className="pointer-events-auto w-full max-w-xl max-h-[80dvh] overflow-y-auto rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: `ko-quest-reward ${rewardDuration}ms ease both` }}>
           <p className="text-xs font-black tracking-[0.25em] text-amber-300">피니셔 획득 · 현재 완료 효과</p>
           <p className="mt-2 text-xs text-neutral-400">피니셔 카드 연계 전까지 기존 완료 효과가 적용됩니다.</p>

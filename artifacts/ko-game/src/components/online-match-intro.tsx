@@ -5,6 +5,8 @@ import { cachedPortrait, loadPortrait } from '../game/portrait-loading';
 import { useEffect, useMemo, useState, useRef, useLayoutEffect, type CSSProperties } from "react";
 
 import styles from "./online-match-intro.module.css";
+import { audioManager } from "../audio/audio-manager";
+import { spawnArrivalBlast } from "./card-arrival";
 
 export interface MatchIntroPlayer {
   displayName: string;
@@ -179,6 +181,17 @@ export function MatchIntroOverlay({
     elapsed >= turn.startAt && elapsed < versusAt ? turn.speaker : active
   ), null);
   const skipAvailable = elapsed >= 900;
+  // The VS slam: a heavy hit, embers out of the VS and a jolt through the whole scene.
+  const slammed = useRef(false);
+  useEffect(() => {
+    if (slammed.current || elapsed < versusAt || elapsed > versusAt + 600 || document.hidden) return;
+    slammed.current = true;
+    audioManager.playImpactOverlay(import.meta.env.BASE_URL + "sfx/vs-slam.wav", 66, 7);
+    if (prefersReducedMotion()) return;
+    const vs = introRoot.current?.querySelector<HTMLElement>('[data-testid="text-versus"]')?.getBoundingClientRect();
+    if (vs) window.setTimeout(() => spawnArrivalBlast({ x: vs.left + vs.width / 2, y: vs.top + vs.height / 2, width: vs.width * 1.4, height: vs.height * 1.4, kind: "CHAMPION" }), 90);
+    try { introRoot.current?.querySelector("main")?.animate([{ translate: "0 0" }, { translate: "-10px 6px", offset: .15 }, { translate: "8px -5px", offset: .35 }, { translate: "-4px 2px", offset: .6 }, { translate: "0 0" }], { duration: 420, delay: 90 }); } catch { /* visual only */ }
+  }, [elapsed, versusAt]);
   const sceneStyle = {
     "--intro-duration": `${introDuration}ms`,
     "--intro-elapsed": `${elapsed}ms`,

@@ -8,10 +8,11 @@ import {
 import { parseCombatPreferences, impactMultiplier } from "./combat-preferences";
 test("contact, joint hitstop and directional recovery use one finite clock", () => {
   for (const [damage, finisher, min, max] of [
-    [1, false, 25, 45],
-    [4, false, 50, 80],
-    [8, false, 85, 125],
-    [15, true, 130, 190],
+    // Hit-stop is spread wide on purpose: pokes barely pause, finishers freeze hard.
+    [1, false, 40, 60],
+    [4, false, 75, 95],
+    [8, false, 115, 145],
+    [15, true, 200, 260],
   ] as const) {
     const t = combatTimeline(99, damage, finisher),
       a = attackFrames(160, -200, t),

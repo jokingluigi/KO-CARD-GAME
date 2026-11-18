@@ -23,6 +23,7 @@ import { matchEndReason, matchSummary } from "@/lib/match-summary";
 import { audioManager } from "@/audio/audio-manager";
 import type { GameMediaCatalog } from "@/game/media";
 import "./cinematic-presentation.css";
+import { spawnResultStinger } from "./battle-moments";
 
 export function MatchResultOverlay({
   state, onRematch,onChooseDeck,deckRecord,
@@ -66,6 +67,17 @@ export function MatchResultOverlay({
   const isDefeat = state.loserId === player?.id;
 
 
+  // The verdict lands with a stinger: VICTORY bursts gold, DEFEAT cracks the screen.
+  const stingerRef=useRef('');
+  useEffect(()=>{
+    if(state.status!=="FINISHED"||(!isVictory&&!isDefeat)||stingerRef.current===state.gameId)return;
+    stingerRef.current=state.gameId;
+    const timer=window.setTimeout(()=>{
+      spawnResultStinger(isVictory?"victory":"defeat",isVictory?{loser:opponentPortrait??questPortrait(state.players[1]?.champion),winner:portrait??originalPortrait}:{loser:portrait??originalPortrait});
+      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/${isVictory?"victory":"defeat"}-stinger.wav`,isVictory?70:64,9);
+    },0);
+    return()=>window.clearTimeout(timer);
+  },[state.gameId,state.status,isVictory,isDefeat]);
   const resultMusic =
     mediaCatalog?.resultMusic?.[isVictory ? "VICTORY_BGM" : "DEFEAT_BGM"];
   useEffect(() => {
@@ -153,6 +165,7 @@ export function MatchResultOverlay({
   const champion = player?.champion;
   const originalPortrait = questPortrait(champion);
   const portrait=questPortraitForSkin(champion,cosmetics[player?.id??'']);
+  const opponentPortrait=questPortraitForSkin(state.players[1]?.champion,cosmetics[state.players[1]?.id??'']);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement;

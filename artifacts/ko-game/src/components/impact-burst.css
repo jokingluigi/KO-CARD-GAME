@@ -1,0 +1,175 @@
+/* Slam effect layers, appended to <body>. Above the attack portal (220), below toasts. Never intercepts input. */
+.ko-impact-burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 225;
+}
+
+.ko-impact-burst__particles {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Board cracks live inside the board stage so they shake with it. */
+.ko-impact-cracks {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Big hits: one warm white frame over everything, gone in ~6 frames. */
+.ko-impact-burst__screen {
+  position: fixed;
+  inset: 0;
+  background: #fff3d6;
+  opacity: 0;
+  animation: ko-ib-screen 120ms ease-out both;
+}
+@keyframes ko-ib-screen {
+  0% { opacity: var(--ib-flash); }
+  100% { opacity: 0; }
+}
+
+/* Warm contact flash. */
+.ko-impact-burst__flash {
+  position: fixed;
+  left: var(--ib-x);
+  top: var(--ib-y);
+  width: var(--ib-flash-size);
+  height: var(--ib-flash-size);
+  margin: calc(var(--ib-flash-size) / -2) 0 0 calc(var(--ib-flash-size) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 12%, rgba(255, 238, 190, .95) 26%, rgba(255, 176, 90, .55) 46%, rgba(255, 120, 40, 0) 70%);
+  mix-blend-mode: screen;
+  animation: ko-ib-flash 200ms cubic-bezier(.1, .9, .3, 1) both;
+}
+@keyframes ko-ib-flash {
+  0%   { opacity: 1; transform: scale(.35); }
+  25%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+/* Dusty shock ring rolling across the board. */
+.ko-impact-burst__ring {
+  position: fixed;
+  left: var(--ib-x);
+  top: var(--ib-y);
+  width: calc(var(--ib-flash-size) * 1.5);
+  height: calc(var(--ib-flash-size) * 1.5);
+  margin: calc(var(--ib-flash-size) * -.75) 0 0 calc(var(--ib-flash-size) * -.75);
+  border-radius: 50%;
+  border: 7px solid rgba(255, 214, 160, .8);
+  box-shadow: 0 0 18px rgba(255, 150, 60, .55), inset 0 0 12px rgba(255, 170, 90, .45);
+  animation: ko-ib-ring 320ms cubic-bezier(.1, .8, .3, 1) both;
+}
+@keyframes ko-ib-ring {
+  0%   { opacity: .95; transform: scale(.15); border-width: 12px; }
+  100% { opacity: 0; transform: scale(1); border-width: 1px; }
+}
+
+/* Orange damage splash: slams onto the card, settles, holds, then fades. */
+.ko-damage-badge {
+  position: fixed;
+  z-index: 245;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  animation: ko-damage-badge 1150ms cubic-bezier(.2, .8, .25, 1) both;
+}
+.ko-damage-badge svg {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  overflow: visible;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .55));
+}
+.ko-damage-badge span {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1;
+  font-size: 32px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 4px #1b0d05;
+  paint-order: stroke fill;
+}
+.ko-damage-badge--normal span { font-size: 36px; }
+.ko-damage-badge--heavy span { font-size: 42px; }
+.ko-damage-badge--massive span { font-size: 48px; }
+.ko-damage-badge--finisher span { font-size: 54px; }
+@keyframes ko-damage-badge {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(.4); }
+  6%   { opacity: 1; transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(1.22); }
+  14%  { transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(.94); }
+  22%  { transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(1.03); }
+  30%  { transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(1); }
+  82%  { opacity: 1; transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--badge-tilt)) scale(.9); }
+}
+
+/* Other damage numbers (spells, counter hits) sit on the same orange splash. */
+.presentation-feedback.presentation-feedback--damage {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #fff;
+  font-size: 28px;
+  -webkit-text-stroke: 4px #1b0d05;
+  paint-order: stroke fill;
+  text-shadow: none;
+}
+.presentation-feedback.presentation-feedback--damage .presentation-feedback__label {
+  isolation: isolate;
+  padding: 20px 18px;
+  animation: ko-damage-badge-inline var(--presentation-duration) cubic-bezier(.2, .8, .25, 1) both;
+}
+.presentation-feedback.presentation-feedback--damage .presentation-feedback__label::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.4' cy='.35' r='.75'%3E%3Cstop offset='0' stop-color='%23ffc061'/%3E%3Cstop offset='.55' stop-color='%23ff8a2a'/%3E%3Cstop offset='1' stop-color='%23e05510'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M-3.6,-40.7 Q6.9,-23.0 26.0,-32.9 Q18.6,-13.6 31.8,-12.1 Q23.4,-1.9 42.6,8.5 Q20.3,10.7 24.8,24.3 Q10.1,19.8 5.0,34.0 Q-2.7,23.7 -15.2,39.4 Q-12.4,15.6 -35.5,24.1 Q-21.8,8.7 -39.3,6.4 Q-23.6,-1.5 -33.8,-10.0 Q-20.4,-14.1 -22.2,-29.2 Q-8.3,-21.5 -3.6,-40.7 Z' fill='url%28%23g%29' stroke='%236e2604' stroke-width='3' stroke-linejoin='round'/%3E%3Cellipse cx='-10' cy='-13' rx='16' ry='8' fill='%23fff' opacity='.35' transform='rotate%28-25 -10 -13%29'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .55));
+}
+@keyframes ko-damage-badge-inline {
+  0%   { transform: scale(.4); }
+  20%  { transform: scale(1.2); }
+  40%  { transform: scale(.94); }
+  60%, 100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ko-impact-burst__ring,
+  .ko-impact-burst__screen { display: none; }
+  .ko-damage-badge { animation-duration: 900ms; animation-name: ko-damage-badge-fade; }
+  .presentation-feedback.presentation-feedback--damage .presentation-feedback__label { animation: none; }
+}
+@keyframes ko-damage-badge-fade {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Flat dust ring that rolls across the table when a card lands. */
+.ko-landing-dust__ring {
+  position: fixed;
+  left: var(--ld-x);
+  top: var(--ld-y);
+  width: var(--ld-w);
+  height: calc(var(--ld-w) * .3);
+  margin: calc(var(--ld-w) * -.15) 0 0 calc(var(--ld-w) * -.5);
+  border-radius: 50%;
+  border: 6px solid rgba(225, 205, 170, .55);
+  box-shadow: 0 0 14px rgba(225, 205, 170, .45), inset 0 0 10px rgba(225, 205, 170, .35);
+  animation: ko-ld-ring 420ms cubic-bezier(.1, .8, .3, 1) both;
+}
+@keyframes ko-ld-ring {
+  0%   { opacity: .9; transform: scale(.3); border-width: 10px; }
+  100% { opacity: 0; transform: scale(1); border-width: 1px; }
+}
