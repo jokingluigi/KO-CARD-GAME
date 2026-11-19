@@ -1,0 +1,276 @@
+/*
+ * Menu theme: gives every lobby / menu screen the same "game table" atmosphere as the battle board
+ * (walnut, brass, warm light) instead of flat black boxes. Presentation only.
+ * Selectors are prefixed with `body` so this layer wins over page stylesheets that load later.
+ */
+:root {
+  --ko-brass: #c9a35a;
+  --ko-brass-hi: #f3d896;
+  --ko-brass-lo: #6b4c1f;
+  --ko-leather: rgba(22, 17, 12, .9);
+  --ko-leather-hi: rgba(42, 32, 20, .92);
+  --ko-plate-shadow: 0 1px 0 rgba(255, 230, 170, .08) inset, 0 0 0 1px rgba(0, 0, 0, .55), 0 6px 18px rgba(0, 0, 0, .45);
+}
+
+/* ------------------------------------------------------------------ shared page backdrop */
+body .ko-player-page,
+body .ko-experience-page,
+body main.ko-online-shell,
+body main.ko-decks {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255, 196, 110, .10), transparent 60%),
+    radial-gradient(ellipse at 50% 120%, rgba(0, 0, 0, .9), transparent 60%),
+    linear-gradient(rgba(10, 8, 6, .88), rgba(8, 6, 5, .94)),
+    url("./battle-board-assets/walnut-material-wide.webp") center / cover fixed,
+    #0b0907;
+}
+
+/* Page titles: engraved gold with a small ornament rule. */
+body .ko-player-page .ko-surface-heading h1,
+body .ko-experience-page h1 {
+  background: linear-gradient(#fff3cf, #e8c473 55%, #b07a2c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .9));
+  letter-spacing: -.01em;
+}
+body .ko-player-page .ko-surface-heading,
+body .ko-experience-page > div > header {
+  position: relative;
+  padding-bottom: 14px;
+}
+body .ko-player-page .ko-surface-heading::after,
+body .ko-experience-page > div > header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 9px;
+  background:
+    linear-gradient(90deg, transparent, rgba(201, 163, 90, .7) 18%, rgba(201, 163, 90, .7) 82%, transparent) center / 100% 1px no-repeat,
+    radial-gradient(circle, var(--ko-brass-hi) 0 2px, transparent 3px) center / 9px 9px no-repeat;
+  pointer-events: none;
+}
+
+/* Primary actions: a warm brass plate that lifts on hover and presses on tap. */
+body .ko-player-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500, a.bg-amber-400),
+body .ko-experience-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500, a.bg-amber-400) {
+  background: linear-gradient(#f6d98e, #d9a645 48%, #b9832b 52%, #d7a54a) !important;
+  color: #2a1704 !important;
+  border: 1px solid #6b4513 !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .45) inset, 0 -2px 0 rgba(0, 0, 0, .18) inset, 0 4px 12px rgba(0, 0, 0, .45), 0 0 14px rgba(255, 190, 90, .18);
+  text-shadow: 0 1px 0 rgba(255, 240, 200, .6);
+  font-weight: 900;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+body .ko-player-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500):hover:not(:disabled),
+body .ko-experience-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500):hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 6px 16px rgba(0, 0, 0, .5), 0 0 22px rgba(255, 190, 90, .35);
+}
+body .ko-player-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500):active:not(:disabled),
+body .ko-experience-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500):active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(.94);
+}
+
+/* ------------------------------------------------------------------ home lobby */
+body .ko-home-lobby.ko-main-menu .ko-main-menu__shade {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 52%, rgba(0, 0, 0, .55), rgba(0, 0, 0, .15) 70%),
+    linear-gradient(rgba(0, 0, 0, .25), rgba(0, 0, 0, .1) 30%, rgba(0, 0, 0, .55));
+}
+/* Every panel over the illustration becomes a solid leather plate so text never fights the art. */
+body .ko-home-lobby :is(.ko-main-menu__announcements > button, .ko-home-mode-shortcuts > button, .ko-lobby-shortcuts > button, .ko-home-learning > button, .ko-home-utility-links > button, .ko-lobby-more) {
+  background: linear-gradient(var(--ko-leather-hi), var(--ko-leather)) !important;
+  border: 1px solid rgba(201, 163, 90, .55) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--ko-plate-shadow);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #f4e7cc !important;
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+body .ko-home-lobby :is(.ko-home-mode-shortcuts > button, .ko-lobby-shortcuts > button, .ko-home-learning > button, .ko-home-utility-links > button):hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--ko-brass-hi) !important;
+  box-shadow: var(--ko-plate-shadow), 0 0 16px rgba(255, 200, 100, .25);
+}
+body .ko-home-lobby :is(.ko-home-mode-shortcuts > button, .ko-lobby-shortcuts > button, .ko-home-learning > button, .ko-home-utility-links > button):active:not(:disabled) {
+  transform: translateY(1px);
+}
+body .ko-home-lobby .ko-home-mode-shortcuts > button {
+  font-size: 16px !important;
+  font-weight: 900;
+  min-height: 60px;
+}
+body .ko-home-lobby .ko-home-mode-shortcuts > button span {
+  font-size: 12px !important;
+  color: #c9b48a !important;
+  font-weight: 700;
+}
+body .ko-home-lobby .ko-home-mode-shortcuts > button:disabled {
+  opacity: .55;
+  filter: grayscale(.6);
+}
+body .ko-home-lobby .ko-lobby-shortcuts > button {
+  font-size: 15px !important;
+  font-weight: 800;
+  min-height: 50px;
+}
+body .ko-home-lobby .ko-home-utility-links > button {
+  font-size: 14px !important;
+  min-height: 46px;
+}
+body .ko-home-lobby .ko-home-learning strong { font-size: 16px !important; color: #fbe9c0; }
+body .ko-home-lobby .ko-home-learning small { font-size: 12px !important; color: #c9b48a !important; }
+
+/* The one big PLAY plate: gold double frame, breathing glow, a round play button. */
+body .ko-home-lobby .ko-battle-mode-button {
+  border: 2px solid var(--ko-brass) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(100deg, rgba(14, 10, 6, .94) 0%, rgba(14, 10, 6, .82) 42%, rgba(14, 10, 6, .25) 100%) !important;
+  box-shadow:
+    0 0 0 3px rgba(20, 13, 6, .9),
+    0 0 0 4px rgba(243, 216, 150, .45),
+    0 10px 28px rgba(0, 0, 0, .6),
+    0 0 26px rgba(255, 180, 70, .28);
+  animation: ko-play-breathe 2.6s ease-in-out infinite;
+}
+body .ko-home-lobby .ko-battle-mode-button:hover {
+  filter: brightness(1.1) !important;
+  animation-duration: 1.4s;
+}
+body .ko-home-lobby .ko-battle-mode-button__copy small {
+  font-size: 13px !important;
+  color: #e7cf98 !important;
+  letter-spacing: .12em;
+  font-weight: 800;
+}
+body .ko-home-lobby .ko-battle-mode-button__copy strong {
+  font-size: clamp(38px, 9vw, 64px) !important;
+  line-height: 1.02;
+  background: linear-gradient(#fffbe8, #f3cf72 50%, #c48a2c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  filter: drop-shadow(0 3px 0 #2a1704) drop-shadow(0 0 14px rgba(255, 190, 80, .45));
+}
+body .ko-home-lobby .ko-battle-mode-button__copy span {
+  font-size: 14px !important;
+  color: #f1e3c4 !important;
+  font-weight: 700;
+}
+body .ko-home-lobby .ko-battle-mode-button__arrow {
+  display: grid !important;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  font-size: 20px !important;
+  color: #2a1704 !important;
+  background: radial-gradient(circle at 35% 30%, #fff1c2, #e3b04f 55%, #a8701f);
+  box-shadow: 0 0 0 3px rgba(20, 13, 6, .8), 0 0 18px rgba(255, 190, 80, .6);
+}
+@keyframes ko-play-breathe {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(20, 13, 6, .9), 0 0 0 4px rgba(243, 216, 150, .45), 0 10px 28px rgba(0, 0, 0, .6), 0 0 22px rgba(255, 180, 70, .22); }
+  50% { box-shadow: 0 0 0 3px rgba(20, 13, 6, .9), 0 0 0 4px rgba(255, 230, 170, .8), 0 10px 28px rgba(0, 0, 0, .6), 0 0 38px rgba(255, 180, 70, .5); }
+}
+
+/* Logo glows like a sign over the table. */
+body .ko-home-lobby .ko-main-menu__logo {
+  background: linear-gradient(#fffaf0, #f0d9a4 60%, #b98a3c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none !important;
+  filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 18px rgba(255, 200, 110, .35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .ko-home-lobby .ko-battle-mode-button { animation: none; }
+  body .ko-player-page, body .ko-experience-page { background-attachment: scroll; }
+}
+
+/* ------------------------------------------------------------------ top navigation: a carved brass rail */
+body .ko-game-navigation {
+  background: linear-gradient(#211910, #120d08) !important;
+  border-bottom: 1px solid rgba(201, 163, 90, .45) !important;
+  box-shadow: 0 1px 0 rgba(255, 230, 170, .08) inset, 0 4px 14px rgba(0, 0, 0, .55);
+}
+body .ko-game-navigation a {
+  color: #bfae8c !important;
+  transition: color .15s ease, background .15s ease;
+}
+body .ko-game-navigation a span { font-size: max(12px, .8rem); font-weight: 700; }
+body .ko-game-navigation a[aria-current='page'] {
+  color: #fbe3a6 !important;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 196, 100, .22), transparent 70%) !important;
+  border-bottom-color: var(--ko-brass-hi) !important;
+  text-shadow: 0 0 10px rgba(255, 200, 110, .5);
+}
+body .ko-game-navigation a[aria-current='page'] svg { filter: drop-shadow(0 0 6px rgba(255, 200, 110, .8)); }
+body .ko-game-navigation a:hover { color: #f6e2b4 !important; background: rgba(255, 210, 140, .06) !important; }
+
+/* ------------------------------------------------------------------ tabs and filter chips */
+body .ko-surface-tabs { border-bottom-color: rgba(201, 163, 90, .3) !important; }
+body .ko-surface-tabs > :is(a, button) { color: #bba987; font-weight: 800; font-size: 15px; }
+body .ko-surface-tabs :is([aria-current="page"], [aria-pressed="true"]) {
+  color: #ffe6a8 !important;
+  text-shadow: 0 0 10px rgba(255, 200, 110, .45);
+  border-color: var(--ko-brass-hi) !important;
+}
+
+/* ------------------------------------------------------------------ common panels: leather plates with brass edges */
+body :is(.ko-player-page, .ko-experience-page) :is(.ko-quest-entry, .ko-attendance-day, .ko-market-item, .ko-state-panel, .ko-settings-panel, .ko-notebook-deck, .ko-notebook-summary, .ko-quest-summary, .ko-surface-stat, .ko-reward-display, .ko-catalog-filter-disclosure) {
+  background: linear-gradient(var(--ko-leather-hi), var(--ko-leather)) !important;
+  border: 1px solid rgba(201, 163, 90, .38) !important;
+  border-radius: 10px;
+  box-shadow: var(--ko-plate-shadow);
+}
+body :is(.ko-player-page, .ko-experience-page) :is(.ko-quest-entry, .ko-market-item, .ko-notebook-deck):hover {
+  border-color: rgba(243, 216, 150, .7) !important;
+}
+
+/* Empty states: a dim brass seal instead of a bare "KO". */
+body .ko-surface-empty {
+  border: 1px dashed rgba(201, 163, 90, .35);
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 200, 110, .07), transparent 70%);
+  padding: 32px 20px !important;
+}
+body .ko-surface-empty :is(h2, h3, strong) { color: #f3dfb2; font-size: 18px; }
+body .ko-surface-empty p { color: #b5a586; font-size: 14px; }
+
+/* Inputs and selects: inset leather wells. */
+body :is(.ko-player-page, .ko-experience-page) :is(input:not([type=checkbox]):not([type=radio]), select) {
+  background: rgba(8, 6, 4, .75) !important;
+  border: 1px solid rgba(201, 163, 90, .35) !important;
+  border-radius: 8px;
+  color: #f1e3c4 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5) inset;
+}
+body :is(.ko-player-page, .ko-experience-page) :is(input, select):focus {
+  border-color: var(--ko-brass-hi) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5) inset, 0 0 0 2px rgba(243, 216, 150, .25);
+}
+
+/* Deck builder toolbars and side panels: warm leather instead of cold blue-black. */
+body main.ko-decks :is(.ko-decks__toolbar, .ko-continuous-toolbar) {
+  background: linear-gradient(rgba(34, 26, 17, .96), rgba(20, 15, 10, .96)) !important;
+  border-color: rgba(201, 163, 90, .35) !important;
+}
+
+/* Deck builder on wide screens: give the card library room for four or more columns. */
+@media (min-width: 1200px) {
+  body main.ko-decks .ko-decks__columns { grid-template-columns: 180px minmax(560px, 1.7fr) minmax(320px, .8fr) !important; }
+}
+/* Card tiles in the library: brass edge on hover so it reads as "pick me". */
+body main.ko-decks .ko-decks__card-grid > * { transition: transform .12s ease, filter .12s ease; }
+body main.ko-decks .ko-decks__card-grid > *:hover { transform: translateY(-3px); filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .6)) drop-shadow(0 0 8px rgba(255, 200, 110, .25)); }
