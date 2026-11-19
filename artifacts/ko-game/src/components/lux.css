@@ -1,0 +1,68 @@
+/*
+ * LUX theme — black is the main surface, gold is only for highlights.
+ * Loaded after menu-theme.css; presentation only.
+ */
+:root{
+  --lux-bg:#070605; --lux-bg2:#0d0c0a; --lux-panel:#121110; --lux-panel2:#1a1815; --lux-line:rgba(214,178,104,.28); --lux-line-hi:rgba(232,196,120,.7);
+  --lux-gold:#d9b25e; --lux-gold-hi:#f6dc9a; --lux-gold-lo:#7d6230; --lux-ink:#efe8da; --lux-mut:#9d968a;
+  --ko-leather:rgba(16,15,13,.92); --ko-leather-hi:rgba(28,26,22,.94);
+  --ko-brass:#d9b25e; --ko-brass-hi:#f6dc9a; --ko-brass-lo:#7d6230;
+}
+/* page backdrop: deep black with a faint gold halo at the top */
+body .ko-player-page, body .ko-experience-page, body main.ko-online-shell, body main.ko-decks, body .ko-mode-hub, body main.kdb, body main.lux{
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -8%, rgba(217,178,94,.09), transparent 62%),
+    radial-gradient(ellipse at 50% 120%, rgba(0,0,0,.95), transparent 60%),
+    linear-gradient(180deg,#0b0a09,#060505 70%) !important;
+  color:var(--lux-ink);
+}
+/* nav bar */
+body .ko-game-navigation{background:linear-gradient(#0e0d0b,#080706)!important;border-bottom:1px solid var(--lux-line)!important;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+body .ko-game-navigation a,body .ko-game-navigation button{color:#b9b1a2}
+body .ko-game-navigation [aria-current=page]{color:var(--lux-gold-hi)!important}
+/* generic panels inside menu pages become black glass with a thin gold edge */
+body :is(.ko-player-page,.ko-experience-page) :is(section,article).rounded-xl,
+body :is(.ko-player-page,.ko-experience-page) :is(.ko-surface-panel,.ko-empty-state,.ko-collection-controls){
+  background:linear-gradient(180deg,rgba(24,22,19,.92),rgba(12,11,10,.94))!important;border-color:var(--lux-line)!important}
+body :is(.ko-player-page,.ko-experience-page) :is(.bg-amber-950\/20,.bg-amber-950\/30,.bg-amber-400\/\[0\.06\]){background:rgba(217,178,94,.06)!important}
+
+/* ---------- shared LUX building blocks ---------- */
+.lux{min-height:calc(100dvh - 61px);color:var(--lux-ink)}
+.lux-wrap{max-width:1240px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 64px}
+.lux-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.lux-title{flex:1;min-width:0;font-family:var(--font-display);font-size:clamp(26px,4vw,38px);font-weight:900;line-height:1.1;
+  background:linear-gradient(#fff6dc,#e9c879 55%,#a77a2c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #000)}
+.lux-sub{font-size:14px;color:var(--lux-mut);margin-top:4px}
+.lux-back{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 12px;border-radius:10px;font-weight:800;font-size:14px;color:var(--lux-gold-hi);background:#0e0d0b;border:1px solid var(--lux-line);white-space:nowrap}
+.lux-back:hover{border-color:var(--lux-line-hi)}
+.lux-chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;font-weight:900;font-size:13px;color:var(--lux-gold-hi);background:#0e0d0b;border:1px solid var(--lux-line)}
+.lux-chip--rose{color:#f2b6c0;border-color:rgba(230,140,160,.35)}
+.lux-tabs{display:inline-flex;padding:4px;gap:4px;border-radius:12px;background:#0b0a09;border:1px solid var(--lux-line);margin-bottom:14px;max-width:100%;overflow-x:auto}
+.lux-tabs button{min-height:40px;padding:0 18px;border-radius:9px;font-weight:900;font-size:14px;color:var(--lux-mut);white-space:nowrap}
+.lux-tabs button small{margin-left:5px;font-size:11px;opacity:.7}
+.lux-tabs button[aria-pressed=true]{color:#1c1204;background:linear-gradient(#f7df9f,#d4a546);box-shadow:0 0 12px rgba(217,178,94,.3)}
+.lux-msg{margin-bottom:14px;padding:11px 14px;border-radius:10px;font-size:14px;color:var(--lux-gold-hi);background:rgba(217,178,94,.06);border:1px solid var(--lux-line)}
+.lux-gold{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:10px;font-weight:900;color:#1c1204;
+  background:linear-gradient(#f7df9f,#dcae4f 55%,#b4842e);border:1px solid #fff0c4;box-shadow:0 2px 0 #4a3510,0 0 14px rgba(217,178,94,.22)}
+.lux-gold:not(:disabled):hover{filter:brightness(1.07)}
+.lux-ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;font-weight:800;font-size:14px;color:var(--lux-gold-hi);background:#0e0d0b;border:1px solid var(--lux-line)}
+.lux-ghost:not(:disabled):hover{border-color:var(--lux-line-hi)}
+.lux button:disabled{opacity:.45;cursor:not-allowed}
+/* page header used by shop / packs / quests / attendance / records / cosmetics / settings */
+.lux-pagehead{align-items:center}
+.lux-pagehead__titles{flex:1;min-width:0}
+.lux-pagehead__aside{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lux-tabs a{display:inline-flex;align-items:center;min-height:40px;padding:0 18px;border-radius:9px;font-weight:900;font-size:14px;color:var(--lux-mut);white-space:nowrap}
+.lux-tabs a[aria-current=page]{color:#1c1204;background:linear-gradient(#f7df9f,#d4a546);box-shadow:0 0 12px rgba(217,178,94,.3)}
+body :is(.ko-player-page,.ko-experience-page) .ko-page-content{max-width:1180px;margin-inline:auto;padding-inline:clamp(12px,3vw,32px)}
+body :is(.ko-player-page,.ko-experience-page) .lux-pagehead::after{display:none}
+/* inner sub-tabs that pages render themselves */
+body :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:#0b0a09;border:1px solid var(--lux-line);margin-bottom:14px;max-width:100%;overflow-x:auto}
+body :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs>:is(a,button){min-height:40px;padding:0 16px;border-radius:9px;border:0!important;font-weight:900;color:var(--lux-mut);background:transparent!important;white-space:nowrap}
+body :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs>:is(a,button):is([aria-current=page],[aria-pressed=true],[aria-selected=true],[data-state=active]){color:#1c1204!important;background:linear-gradient(#f7df9f,#d4a546)!important}
+body :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs>:is(a,button)::after{display:none!important}
+@media (max-width:640px){.lux-title{font-size:26px}.lux-sub{font-size:13px}.lux-pagehead__aside{width:100%}}
+body .ko-wardrobe .ko-wardrobe__luxhead{max-width:1180px;margin:0 auto 14px;padding:22px clamp(12px,3vw,32px) 0}
+body .ko-wardrobe .ko-wardrobe__tabs button[aria-pressed=true],body .ko-wardrobe .ko-wardrobe__tabs button[aria-selected=true]{color:var(--lux-gold-hi)}
+body .ko-wardrobe header.ko-wardrobe__luxhead{display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:12px;text-align:left}
+body .ko-wardrobe header.ko-wardrobe__luxhead .lux-title{font-size:clamp(26px,4vw,38px)}

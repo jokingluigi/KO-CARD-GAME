@@ -12,7 +12,9 @@ import {MotionNumber} from "@/components/presentation-motion";
 import {useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
 import { useEffect, useMemo, useState, useRef, type KeyboardEvent, type ReactNode } from "react";
-import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, Star, X } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, SlidersHorizontal, Sparkles, Swords, Star, X } from "lucide-react";
+import "@/components/deck-builder.css";
+import "@/components/lux-quiet.css";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
@@ -339,94 +341,96 @@ export default function CollectionPage() {
   }
 
   return (
-    <main ref={gridRoot} className="ko-experience-page ko-collection ko-player-page ko-page-enter">
-      <div className="ko-page-content">
+    <main ref={gridRoot} className="kdb lux ko-collection" data-view="collection">
+      <div className="lux-wrap">
         <WishlistArrivals kind="card" owned={[...(collection?.cards??[]).filter(c=>c.quantity>0).map(c=>c.id),...(collection?.champions??[]).filter(c=>c.owned).map(c=>c.id)]}/>
-        <GamePageHeader eyebrow="컬렉션" title="내 컬렉션" description="카드를 확인하고 다음 덱을 준비하세요." aside={<div className="ko-collection-wallet">             <div className="flex flex-wrap items-center justify-end gap-2 text-xs font-black">
-               <div data-ui-balance className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-amber-200">
-                 <Sparkles className="h-4 w-4 text-amber-400" />
-                 ◆ {collection.isTestAccount ? "∞" : <MotionNumber value={collection.prismBalance} format={n=>n.toLocaleString()}/>} 일반 프리즘
-               </div>
-               <div className="flex items-center gap-2 rounded-full border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-rose-200">
-                 <Shield className="h-4 w-4 text-rose-300" />
-                 ◈ {collection.isTestAccount ? "∞" : <MotionNumber value={championPrismBalance} format={n=>n.toLocaleString()}/>} 챔피언 프리즘
-               </div>
-           </div><button type="button" className="ko-surface-back" onClick={()=>navigate(ROUTES.DECKS)}>덱 편집으로 →</button></div>}/>
+        <header className="lux-head">
+          <button type="button" className="lux-back" onClick={()=>navigate(ROUTES.MAIN_MENU)}><ArrowLeft className="h-4 w-4" aria-hidden="true" />메인</button>
+          <h1 className="lux-title">컬렉션</h1>
+          <span data-ui-balance className="lux-chip" title="일반 프리즘"><Sparkles className="h-4 w-4" aria-hidden="true" />{collection.isTestAccount ? "∞" : <MotionNumber value={collection.prismBalance} format={n=>n.toLocaleString()}/>}</span>
+          <span className="lux-chip lux-chip--rose" title="챔피언 프리즘"><Shield className="h-4 w-4" aria-hidden="true" />{collection.isTestAccount ? "∞" : <MotionNumber value={championPrismBalance} format={n=>n.toLocaleString()}/>}</span>
+          <button type="button" className="lux-gold" onClick={()=>navigate(ROUTES.DECKS)}><BookOpen className="h-4 w-4" aria-hidden="true" />덱 편집</button>
+        </header>
 
-
-        {tab !== 'champions' && excessCount > 0 && <button type="button" disabled={isMutating} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 disabled:opacity-40">초과 카드 일괄 분해 ({excessCount}장)</button>}
         <Dialog open={bulkConfirm} onOpenChange={open => { if (!isMutating) setBulkConfirm(open); }}>
-          <DialogContent className="border-neutral-800 bg-neutral-950 text-white">
-            <DialogHeader><DialogTitle>일괄 분해 확인</DialogTitle><DialogDescription>일반 3장, 에픽 2장, 레전더리 1장을 남기고 초과분을 분해합니다. 총 {excessCount}장입니다. 검색·필터와 관계없이 전체 분해 가능한 카드에 적용됩니다.</DialogDescription></DialogHeader>
-            <button type="button" disabled={isMutating} onClick={() => setBulkConfirm(false)}>취소</button>
-            <button type="button" disabled={isMutating} onClick={() => void executeBulkDisenchant()}>{isMutating ? '처리 중...' : '일괄 분해'}</button>
+          <DialogContent className="kdb-champ-dialog text-white">
+            <DialogHeader><DialogTitle>남는 카드 한 번에 분해</DialogTitle><DialogDescription>일반 3장, 에픽 2장, 레전더리 1장만 남기고 나머지 {excessCount}장을 프리즘으로 바꿔요.</DialogDescription></DialogHeader>
+            <div className="flex gap-2"><button type="button" className="lux-ghost flex-1" disabled={isMutating} onClick={() => setBulkConfirm(false)}>취소</button>
+            <button type="button" className="lux-gold flex-1" disabled={isMutating} onClick={() => void executeBulkDisenchant()}>{isMutating ? '처리 중...' : `${excessCount}장 분해`}</button></div>
           </DialogContent>
         </Dialog>
-         {message && <p role="status" className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
+        {message && <p role="status" className="lux-msg">{message}</p>}
 
-         <div className="mb-6 grid grid-cols-3 rounded-lg border border-neutral-800 bg-black/30 p-1">
-          <button type="button" onClick={() => setTab("cards")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "cards" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
-             카드 <span className="ml-1 text-xs opacity-70">{collection.cards.length}</span>
-          </button>
-           <button type="button" onClick={() => setTab("crafting")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "crafting" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
-             카드 제작 <span className="ml-1 text-xs opacity-70">{collection.craftableCards.length}</span>
-           </button>
-          <button type="button" onClick={() => setTab("champions")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "champions" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
-             챔피언 <span className="ml-1 text-xs opacity-70">{champions.length}</span>
-          </button>
-        </div>
+        <nav className="lux-tabs" aria-label="컬렉션 보기">
+          <button type="button" aria-pressed={tab==="cards"} onClick={() => setTab("cards")}>카드<small>{collection.cards.length}</small></button>
+          <button type="button" aria-pressed={tab==="crafting"} onClick={() => setTab("crafting")}>제작하기<small>{collection.craftableCards.length}</small></button>
+          <button type="button" aria-pressed={tab==="champions"} onClick={() => setTab("champions")}>챔피언<small>{champions.length}</small></button>
+        </nav>
 
         {tab === "cards" || tab === "crafting" ? (
           <>
-            <section aria-label="카드 검색 및 필터" className="ko-collection-controls ko-continuous-toolbar mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
-              <CatalogDensity value={density} onChange={setDensity}/>
-              <div className="ko-collection-search-row grid gap-3">
-                <div className="relative block">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" aria-label="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-neutral-950 py-2.5 pl-9 pr-9 text-sm text-white outline-none transition focus:border-amber-400" />
-                  {search && <button type="button" aria-label="검색어 지우기" style={{translate:"none",transform:"none"}} onClick={() => setSearch("")} className="absolute right-1 top-0 z-10 flex h-11 w-11 items-center justify-center text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>}
-                </div>
+            <div className="kdb-bar-top kcol-bar">
+              <label className="kdb-search">
+                <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 검색" aria-label="카드 이름 검색" />
+                {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch("")}><X className="h-3.5 w-3.5" /></button>}
+              </label>
+              <div className="kdb-types" role="group" aria-label="카드 종류">
+                {(["ALL","WRESTLER","TECHNIQUE"] as CardTypeFilter[]).map(item=><button key={item} type="button" aria-pressed={cardType===item} onClick={()=>setCardType(item)}>{item==="ALL"?"전체":cardTypeLabel(item)}</button>)}
+                <button type="button" aria-pressed={favoritesOnly} aria-label="즐겨찾기만" onClick={() => setFavoritesOnly((value) => !value)}><Star className="h-3.5 w-3.5" /></button>
               </div>
-              <CardCatalogFilters label={`필터 · 정렬${cardType!=="ALL"?" · "+(cardType==="WRESTLER"?"선수":"기술"):""}${sort!=="COST"?" · "+(sort==="NAME"?"이름순":"희귀도순"):""}`} cards={catalogCards} value={catalogFilters} onChange={setCatalogFilters}>
-                <FilterSelect label="카드 종류" value={cardType} onChange={(value) => setCardType(value as CardTypeFilter)} options={[["ALL", "전체 종류"], ["WRESTLER", "선수"], ["TECHNIQUE", "기술"]]} />
+              <label className="kcol-sort"><span className="sr-only">정렬</span>
+                <select aria-label="정렬" value={sort} onChange={(event)=>setSort(event.target.value as CardSort)}><option value="COST">비용순</option><option value="NAME">이름순</option><option value="RARITY">등급순</option></select>
+              </label>
+              <details className="kdb-morefilter">
+                <summary><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />필터{Object.values(catalogFilters).filter(v=>v!=="ALL").length?` ${Object.values(catalogFilters).filter(v=>v!=="ALL").length}`:''}</summary>
+                <div className="kdb-morefilter__panel"><CardCatalogFilters cards={catalogCards} value={catalogFilters} onChange={setCatalogFilters} /></div>
+              </details>
+            </div>
+            <div className="kdb-costs" role="group" aria-label="비용으로 보기">
+              {[0,1,2,3,4,5,6,7].map(cost=>{const key=String(cost);const on=catalogFilters.cost===key;return(
+                <button key={cost} type="button" className="kdb-gem" aria-pressed={on} aria-label={`비용 ${cost}`} onClick={()=>setCatalogFilters({...catalogFilters,cost:on?"ALL":key})}>{cost}</button>)})}
+              <span className="kdb-costs__count">{listedCards.length}종</span>
+              {excessCount > 0 && <button type="button" className="lux-ghost kcol-bulk" disabled={isMutating} onClick={() => setBulkConfirm(true)}><Hammer className="h-4 w-4" aria-hidden="true" />남는 카드 분해 {excessCount}</button>}
+            </div>
 
-                <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "비용"], ["NAME", "이름"], ["RARITY", "희귀도"]]} />
-              </CardCatalogFilters>
-              <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
-                className={`mt-3 inline-flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-bold ${favoritesOnly ? 'border-amber-400 bg-amber-950/50 text-amber-200' : 'border-neutral-700 text-neutral-300'}`}>
-                <Star className={`h-3.5 w-3.5 ${favoritesOnly ? 'fill-amber-400' : ''}`} /> 즐겨찾기만
-              </button>
-               <p className="mt-3 text-xs text-neutral-500">
-                 <span className="font-bold text-neutral-300">{tab === "cards" ? filteredCards.length : filteredCraftableCards.length}</span>
-                 {tab === "cards" ? "장의 카드 · 공개 카드 및 소유 카드" : "장의 카드 · 제작 가능한 일반·에픽·레전더리"}
-               </p>
-            </section>
-
-             {(tab === "cards" ? filteredCards : filteredCraftableCards).length === 0 ? (
-               <EmptyState title={tab === "cards" ? (catalogCards.length ? "조건에 맞는 카드가 없습니다." : "아직 표시할 카드가 없습니다.") : "조건에 맞는 제작 카드가 없습니다."}>
-                 {(search || cardType!=="ALL" || favoritesOnly || Object.values(catalogFilters).some(value=>value!=="ALL")) && <>
-                   <p className="mt-2 text-neutral-400">검색어와 분류를 초기화해 전체 목록을 확인하세요.</p>
-                   <button type="button" className="ko-empty-reset" onClick={()=>{
-                     setSearch("");setCardType("ALL");setFavoritesOnly(false);setCatalogFilters({...EMPTY_CATALOG_FILTERS});
-                     requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('input[aria-label="카드 이름 검색"]')?.focus());
-                   }}>검색·필터 초기화</button>
-                 </>}
-               </EmptyState>
+            {listedCards.length === 0 ? (
+              <div className="kdb-empty" role="status">
+                <Search className="mx-auto h-7 w-7" aria-hidden="true" />
+                <p>{tab === "cards" ? (catalogCards.length ? "조건에 맞는 카드가 없어요." : "아직 카드가 없어요.") : "조건에 맞는 제작 카드가 없어요."}</p>
+                <button type="button" className="kdb-ghost" onClick={()=>{setSearch("");setCardType("ALL");setFavoritesOnly(false);setCatalogFilters({...EMPTY_CATALOG_FILTERS});}}>검색·필터 초기화</button>
+              </div>
             ) : (
-              <div className="ko-continuous-card-grid" data-density={density} data-testid="collection-card-grid">
-               {listedCards.slice(0,catalog.limit).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
+              <div className="kdb-grid kcol-grid" data-testid="collection-card-grid">
+                {listedCards.slice(0,catalog.limit).map((card) => {
+                  const fav=favorites.includes(card.id);
+                  const owned=collection.isTestAccount||card.quantity>0;
+                  return (
+                    <article key={card.id} data-motion-key={card.id} className="kdb-card" data-unowned={!owned||undefined}>
+                      <button type="button" className="kdb-card__hit" aria-label={`${card.name} 자세히 보기`} onClick={()=>setSelectedCard(card)}>
+                        <CardRenderer cardId={card.id} isToken={card.isToken} isChampionToken={card.isChampionToken} isSilenceImmune={card.isSilenceImmune} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType as "WRESTLER" | "TECHNIQUE"} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} artworkLoading="lazy" rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={{imageDisplayMode: card.imageDisplayMode, imageScale: card.imageScale, imagePositionX: card.imagePositionX, imagePositionY: card.imagePositionY}} size="detail" className="w-full" />
+                      </button>
+                      <button type="button" className="kdb-card__info kcol-fav" aria-pressed={fav} aria-label={`${card.name} ${fav ? '즐겨찾기 해제' : '즐겨찾기'}`} onClick={()=>toggleFavorite(card.id)}><Star className="h-3.5 w-3.5" /></button>
+                      <span className={owned?"kdb-card__tag":"kdb-card__tag kdb-card__tag--craft"}>{collection.isTestAccount ? "∞ 보유" : owned ? <>보유 <b><MotionNumber value={card.quantity} format={n=>`${n}`}/></b>장</> : <><Hammer className="h-3 w-3" aria-hidden="true" />없음 · 눌러서 제작</>}</span>
+                    </article>
+                  );
+                })}
               </div>
             )}
             <CatalogContinuation catalog={catalog} total={listedCards.length}/>
           </>
+        ) : champions.length === 0 ? (
+          <div className="kdb-empty" role="status"><p>현재 공개된 챔피언이 없어요.</p></div>
         ) : (
-           champions.length === 0 ? (
-             <EmptyState title="현재 공개된 챔피언이 없습니다." />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {champions.map((champion) => <ChampionCollectionItem key={champion.id} champion={champion} onOpen={() => setSelectedChampion(champion)} />)}
-            </div>
-          )
+          <div className="kdb-champs kcol-champs">
+            {champions.map((champion) => (
+              <button key={champion.id} type="button" className="kdb-champ" data-unowned={!champion.owned||undefined} onClick={() => setSelectedChampion(champion)}>
+                <span className="kdb-champ__art">{champion.imageUrl ? <CardArtwork src={champion.imageUrl} loading="lazy" alt="" className="h-full w-full" imageDisplayMode={champion.imageDisplayMode} imageScale={champion.imageScale} imagePositionX={champion.imagePositionX} imagePositionY={champion.imagePositionY} /> : <Shield className="h-10 w-10" aria-hidden="true" />}</span>
+                <span className="kdb-champ__plate"><strong>{champion.name}</strong><small>{champion.owned ? `능력 ${champion.abilityCost}골드${champion.hasQuest?' · 피니셔':''}` : '미보유 · 눌러서 제작'}</small></span>
+                <span className="kdb-champ__text">{champion.owned ? (champion.abilityText || champion.description) : "상세 정보를 보고 챔피언 프리즘으로 만들 수 있어요."}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 

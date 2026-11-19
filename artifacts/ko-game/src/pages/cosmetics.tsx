@@ -168,31 +168,11 @@ export default function Cosmetics() {
     ) : null;
   return (
     <main className="ko-experience-page ko-wardrobe">
-      <header className="ko-wardrobe__header">
-        <button
-          type="button"
-          className="ko-wardrobe__back"
-          onClick={() => navigate("/")}
-        >
-          <ArrowLeft size={18} />
-          메인 메뉴
-        </button>
-        <span>KO / COLLECTION</span>
+      <header className="lux-head lux-pagehead ko-wardrobe__luxhead">
+        <button type="button" className="lux-back" onClick={() => navigate("/")}><ArrowLeft size={16} />메인</button>
+        <div className="lux-pagehead__titles"><h1 className="lux-title">꾸미기</h1><p className="lux-sub">마음에 드는 외형을 골라 나만의 챔피언을 완성하세요.</p></div>
+        <span className="lux-chip"><Sparkles size={16} />보유 {data?.owned.length ?? "—"}</span>
       </header>
-      <section className="ko-wardrobe__intro">
-        <div>
-          <p>나만의 전장 스타일</p>
-          <h1>
-            꾸미기<span aria-hidden="true">.</span>
-          </h1>
-          <p>마음에 드는 외형을 골라, 나만의 챔피언을 완성하세요.</p>
-        </div>
-        <div className="ko-wardrobe__total">
-          <Sparkles size={18} />
-          <strong>{data?.owned.length ?? "—"}</strong>
-          <span>보유 아이템</span>
-        </div>
-      </section>
       <nav className="ko-wardrobe__tabs" aria-label="꾸미기 종류">
         {COSMETIC_TYPES.map((t) => (
           <button

@@ -770,7 +770,11 @@ export function GameStatePreview({
       const shouldAnimateOpponentPlay =
         (event.playerId === opp.id || (autoPresentOwnActions && event.playerId === me.id)) &&
         enterFieldEvent.entryCause === "PLAY_FROM_HAND";
-      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay)) continue;
+      // Legendary / champion wrestlers that arrive by an effect (e.g. Star Killer's draw-reveal summon)
+      // still get their full arrival instead of simply appearing.
+      const specialEffectArrival = Boolean(enteredCard) && enterFieldEvent.entryCause !== "PLAY_FROM_HAND" && enterFieldEvent.entryCause !== "CHAMPION_DEPLOY" &&
+        ['LEGENDARY','CHAMPION'].includes(String(getCardDefinition(enteredCard!.definitionId)?.rarity ?? ''));
+      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay && !specialEffectArrival)) continue;
 
       const targetElement = event.playerId === me.id
         ? boardSlotRefs.current.get(event.boardSlot)
@@ -1313,7 +1317,7 @@ export function GameStatePreview({
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
                     {opp.champion.quest.finisherChoices?.length ? <FinisherProgress champion={opp.champion} compact/> : <>피니셔 준비 {opp.champion.questCompleted ? '완료' : <><MotionNumber value={championPreparationProgress(opp.champion).current} />/{championPreparationProgress(opp.champion).required}</>}
-                     <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))})`}} /></span>
+                     <span className="ko-quest-meter" aria-hidden="true" data-near={Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))>=.8?"true":undefined}><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))})`}} /></span>
                     <AwakeningStatus champion={opp.champion} />
                     {!opp.champion.questCompleted && championPreparationProgress(opp.champion).current === championPreparationProgress(opp.champion).required - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}</>}
                   </div>
@@ -1414,6 +1418,7 @@ export function GameStatePreview({
               type="button"
               disabled={!canEndTurn || !endTurnAllowed}
               data-actions-remain={Boolean(remainingActions.length&&isMyTurn)}
+              data-turn-state={!isMyTurn?undefined:(remainingActions.length||legalActions.some(action=>action.type==='PLAY_WRESTLER'||action.type==='PLAY_TECHNIQUE'))?'moves':'done'}
               aria-label={confirmEndTurn?'남은 행동이 있지만 턴 종료 확정':`턴 종료${remainingActions.length&&isMyTurn?' · 사용 가능한 공격 또는 능력 남음':''}`}
               onClick={() => {
                 if(selectedCardId||selectedAttackerId){if(selectedCardId)onSelectCard(selectedCardId);if(selectedAttackerId)onSelectAttacker(selectedAttackerId);setAttackHint('선택을 해제했어요. 턴을 끝내려면 다시 눌러주세요.');return;}
@@ -1795,7 +1800,7 @@ export function GameStatePreview({
                  <Inspectable className="ko-player-quest" content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      {me.champion.quest.finisherChoices?.length ? <FinisherProgress champion={me.champion} compact/> : <>피니셔 준비 {me.champion.questCompleted ? '완료' : <><MotionNumber value={championPreparationProgress(me.champion).current} />/{championPreparationProgress(me.champion).required}</>}
-                     <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))})`}} /></span>
+                     <span className="ko-quest-meter" aria-hidden="true" data-near={Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))>=.8?"true":undefined}><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))})`}} /></span>
                      <AwakeningStatus champion={me.champion} />
                      {!me.champion.questCompleted && championPreparationProgress(me.champion).current === championPreparationProgress(me.champion).required - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}</>}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
