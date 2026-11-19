@@ -85,6 +85,39 @@ class AudioManager {
   } | null = null;
   private packRevealTransitionId = 0;
 
+  private preparedMusic = new Map<string, HTMLAudioElement>();
+
+  /** Warm only imminent music; never download the entire card catalog. */
+  preloadMusic(urls: readonly (string | null | undefined)[], replace = false) {
+    if (!hasBrowserAudio()) return;
+    if (replace) for (const [url, audio] of this.preparedMusic) {
+      if (urls.includes(url)) continue;
+      this.preparedMusic.delete(url);
+      audio.pause();
+      audio.removeAttribute?.('src');
+      audio.load?.();
+    }
+    for (const url of urls) {
+      if (!url || this.preparedMusic.has(url) || this.bgm?.url === url || this.current?.request.url === url) continue;
+      if (this.preparedMusic.size >= 16) break;
+      try {
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        this.preparedMusic.set(url, audio);
+        audio.addEventListener('error', () => {
+          if (this.preparedMusic.get(url) === audio) this.preparedMusic.delete(url);
+        }, { once: true });
+        audio.load?.();
+      } catch { /* Playback can still retry normally. */ }
+    }
+  }
+
+  private musicElement(url: string) {
+    const prepared = this.preparedMusic.get(url);
+    this.preparedMusic.delete(url);
+    return prepared && !prepared.error ? prepared : new Audio(url);
+  }
+
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, kind: "CARD_ENTRANCE" });
   }
@@ -391,6 +424,7 @@ class AudioManager {
       this.pendingBaseMusic.volume = volume;
       return;
     }
+    this.preloadMusic([url]);
     const previous = this.bgm;
     this.pendingBaseMusic = { url, volume, scope };
     const transitionId = ++this.baseTransitionId;
@@ -433,7 +467,7 @@ class AudioManager {
     const request = this.pendingBaseMusic;
     this.pendingBaseMusic = null;
     try {
-      const audio = new Audio(request.url);
+      const audio = this.musicElement(request.url);
       audio.preload = "auto";
       audio.loop = request.scope !== "RESULT";
       audio.muted = this.bgmMuted;
@@ -471,11 +505,11 @@ class AudioManager {
   private enqueue(request: AudioRequest) {
     if (!hasBrowserAudio() || !request.url) return;
     if (this.current?.request.url === request.url) return;
-    if (!this.current) {
-      this.startTemporary(request);
-      return;
-    }
-    this.queue.push(request);
+    // Do not replay historical entrances ten seconds after the card appeared.
+    // Legendary music retains priority over ordinary entrances.
+    if (this.current?.request.kind === "LEGENDARY_ENTRANCE") return;
+    this.queue = [];
+    this.startTemporary(request);
   }
 
   private startTemporary(
@@ -494,7 +528,7 @@ class AudioManager {
       this.fadeBaseOut();
     }
     try {
-      const audio = new Audio(request.url);
+      const audio = this.musicElement(request.url);
       audio.preload = "auto";
       audio.loop = request.kind === "LEGENDARY_ENTRANCE";
       audio.volume = 0;
@@ -753,7 +787,7 @@ class AudioManager {
     transitionId: number,
   ) {
     try {
-      const audio = new Audio(url);
+      const audio = this.musicElement(url);
       audio.preload = "auto";
       audio.volume = 0;
       const reveal = { audio, volume, timeoutId: 0, fadeTimerId: null as number | null };

@@ -1,3 +1,4 @@
+import { useMatchMusicPreload } from '@/audio/use-match-music-preload';
 
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import {createAIDecisionClient} from "@/lib/ai-decision-client";
@@ -247,7 +248,6 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
-  const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
 
   function recordHumanAIMatchAction(action: GameAction) {
     if(isTutorial){tutorialActionsRef.current.push(structuredClone(action));return;}
@@ -843,6 +843,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     })();
   }, [gameState.status, isAdminSource, isAiMatch, aiMatchStarted, aiRewardRetry]);
 
+  useMatchMusicPreload(gameState, mediaCatalog, aiCosmetics);
+
   useEffect(() => {
     if (!matchReady || (isAiMatch && !aiMatchStarted)) {
       audioManager.stopBattleAudio();
@@ -914,14 +916,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
             volume: card.entranceAudioVolume ?? 100,
             isLegendary: getCardDefinition(card.definitionId)?.rarity === 'LEGENDARY',
           };
-          if (playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === event.cardInstanceId) {
-            pendingEntranceAudioRef.current = entranceAudio;
+          if (entranceAudio.isLegendary) {
+            audioManager.playLegendaryEntrance(entranceAudio.url, entranceAudio.volume);
           } else {
-            if (entranceAudio.isLegendary) {
-              audioManager.playLegendaryEntrance(entranceAudio.url, entranceAudio.volume);
-            } else {
-              audioManager.playCardEntrance(entranceAudio.url, entranceAudio.volume);
-            }
+            audioManager.playCardEntrance(entranceAudio.url, entranceAudio.volume);
           }
         }
       }
@@ -930,15 +928,6 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }, [gameState.events, playAnimation]);
 
   function handlePlayAnimationComplete() {
-    const pendingAudio = pendingEntranceAudioRef.current;
-    if (pendingAudio) {
-      if (pendingAudio.isLegendary) {
-        audioManager.playLegendaryEntrance(pendingAudio.url, pendingAudio.volume);
-      } else {
-        audioManager.playCardEntrance(pendingAudio.url, pendingAudio.volume);
-      }
-      pendingEntranceAudioRef.current = null;
-    }
     window.setTimeout(() => setPlayAnimation(null), ENTRANCE_EFFECT_DELAY_MS);
   }
 
@@ -992,7 +981,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       const state=createTutorialLesson(practiceCatalog,id,`tutorial:${Date.now()}:${++tutorialGeneration.current}`);
       aiMatchQuestContextRef.current=null;setAiMatchStarted(false);setIsAdminTestMatch(false);
       setSelectedCardId(null);setSelectedAttackerId(null);setPlayAnimation(null);setAttackAnimation(null);setAttackImpactTriggered(false);
-      pendingEntranceAudioRef.current=null;setPresentationBusy(false);presentationBusyRef.current=false;
+      setPresentationBusy(false);presentationBusyRef.current=false;
       latestGameStateRef.current=state;setGameState(state);setTutorialCancelled(false);setTutorialLesson(id);setPlayError(null);setMatchReady(true);
     }catch(error){setPlayError(error instanceof Error?error.message:'실습을 시작하지 못했어요.');}
   }
@@ -1653,7 +1642,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         setRuntimeCardDefinitions(cards);
         const state=startAdminTestDeckGame(cards,champions,championIds,decks,mediaCatalog);
         setGameState(state);
-        setPlayAnimation(null);setAttackAnimation(null);pendingEntranceAudioRef.current=null;
+        setPlayAnimation(null);setAttackAnimation(null);
         setSelectedCardId(null);setSelectedAttackerId(null);setPlayError(null);setTestDeckOpen(false);
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
     }}/>}

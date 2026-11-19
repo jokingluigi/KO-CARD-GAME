@@ -1,3 +1,4 @@
+import { streamAudio } from './audio-stream';
 import { randomUUID } from "node:crypto";
 import { type File, Storage } from "@google-cloud/storage";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -457,6 +458,15 @@ class SupabaseAssetStorageProvider implements AssetStorageProvider {
 
   async stream(objectPath: string, response: ExpressResponse): Promise<boolean> {
     const folder = objectPath.split("/")[3] ?? "";
+    if (['audio', 'game-bgm', 'game-attack'].includes(folder)) {
+      const { data, error } = await this.client.storage.from(this.bucket)
+        .createSignedUrl(this.objectName(objectPath, folder), 180);
+      if (error || !data?.signedUrl) {
+        if (String(error?.statusCode) === '404' || /not found/i.test(error?.message ?? '')) return false;
+        throw new Error('Could not authorize audio storage stream');
+      }
+      return streamAudio(data.signedUrl, response);
+    }
     const downloaded = await this.download(objectPath, folder);
     if (!downloaded) return false;
     response.setHeader(

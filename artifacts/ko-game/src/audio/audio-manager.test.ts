@@ -95,6 +95,7 @@ function withFakeAudio(testBody: (advance: (milliseconds: number) => void) => vo
     testBody(advance);
   } finally {
     audioManager.stopGameAudio();
+    audioManager.preloadMusic([], true);
     Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
     Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
     Object.defineProperty(Date, "now", { configurable: true, value: previousDateNow });
@@ -603,6 +604,7 @@ test("first-entry cleanup retains blocked menu audio for the first user gesture"
   } finally {
     FakeAudio.rejectPlay = false;
     audioManager.stopGameAudio();
+    audioManager.preloadMusic([], true);
     Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
     Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
   }
@@ -719,3 +721,20 @@ test("Legendary entrance gain is trimmed 15 percent independently of ordinary en
     assert.equal(manager.current?.request.volume,85);
   });
 });
+
+test('prepared entrance and BGM elements are reused, with the next BGM loading during fade-out',()=>{
+ withFakeAudio(advance=>{
+  audioManager.preloadMusic(['/warm-entrance.mp3','/warm-bgm.mp3']);
+  const prepared=(audioManager as unknown as {preparedMusic:Map<string,FakeAudio>}).preparedMusic;
+  const entrance=prepared.get('/warm-entrance.mp3'),bgm=prepared.get('/warm-bgm.mp3');assert.ok(entrance);assert.ok(bgm);
+  audioManager.playLegendaryEntrance('/warm-entrance.mp3',80);
+  assert.equal((audioManager as unknown as {current:{audio:FakeAudio}}).current.audio,entrance);
+  audioManager.stopGameAudio();audioManager.setMusicContext('NON_BATTLE');audioManager.playBgm('/warm-bgm.mp3',80);
+  assert.equal((audioManager as unknown as {bgm:{audio:FakeAudio}}).bgm.audio,bgm);
+  bgm.volume=0.8;advance(600);audioManager.playBgm('/next-warm-bgm.mp3',80);
+  assert.ok(prepared.has('/next-warm-bgm.mp3'),'next track is prepared before the outgoing fade completes');
+ });
+});
+test('preparation is bounded and failed prepared media can be retried',()=>{withFakeAudio(()=>{audioManager.preloadMusic(Array.from({length:30},(_,i)=>'/bounded-'+i+'.mp3'));const prepared=(audioManager as unknown as {preparedMusic:Map<string,FakeAudio>}).preparedMusic;assert.ok(prepared.size<=16);const [url,audio]=prepared.entries().next().value!;audio.emit('error');assert.ok(!prepared.has(url));audioManager.preloadMusic([url]);assert.notEqual(prepared.get(url),audio);});});
+
+test('ordinary entrance follows the newest summon immediately and never queues behind legendary music',()=>{withFakeAudio(()=>{audioManager.playCardEntrance('/first-arrival.mp3',80);const current=()=> (audioManager as unknown as {current:{audio:FakeAudio;request:{url:string}}}).current;const first=current().audio;audioManager.playCardEntrance('/new-arrival.mp3',80);assert.equal(first.paused,true);assert.equal(current().request.url,'/new-arrival.mp3');audioManager.playLegendaryEntrance('/legendary-priority.mp3',80);audioManager.playCardEntrance('/stale-ordinary.mp3',80);assert.equal(current().request.url,'/legendary-priority.mp3');assert.deepEqual((audioManager as unknown as {queue:unknown[]}).queue,[]);});});
