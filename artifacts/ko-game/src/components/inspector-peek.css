@@ -7,3 +7,24 @@
 .ko-quest-inspect:has(.ko-finisher-cards){grid-template-columns:minmax(150px,220px) minmax(0,1fr);align-items:start}
 .ko-finisher-cards{display:grid;gap:10px}
 @media (max-width:560px){.ko-quest-inspect:has(.ko-finisher-cards){grid-template-columns:minmax(110px,40%) minmax(0,1fr);gap:10px}}
+/* phones: no system callout / text selection on press-and-hold over cards and champion plates */
+.ko-game-shell :is(.ko-card-depth,.ko-player-quest,.ko-opponent-quest,.ko-player-champion,.ko-opponent-champion){-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+
+/* Quick look shows the effect text right under the card (it used to sit below the fold). */
+.ko-touch-inspector[data-peek] .ko-inspector-content{display:flex;flex-direction:column;gap:10px}
+.ko-touch-inspector[data-peek] .ko-inspector-content>*{margin:0!important;order:5}
+.ko-touch-inspector[data-peek] .ko-inspector-content>.relative.mx-auto{order:0}
+.ko-touch-inspector[data-peek] [data-inspector-section="효과 설명"]{order:1}
+.ko-touch-inspector[data-peek] [data-inspector-section="키워드"]{order:2}
+.ko-touch-inspector[data-peek] [data-inspector-section="현재 상태"]{order:3}
+.ko-touch-inspector[data-peek] [data-inspector-section="태그"]{display:none}
+.ko-touch-inspector[data-peek] .ko-inspector-content>.grid.grid-cols-3{display:none}
+@media (max-width:700px){
+  /* phones: small card on the left, effect text beside/below it, no title row */
+  .ko-touch-inspector[data-peek]{max-height:86dvh!important;overflow:hidden}
+  .ko-touch-inspector[data-peek] .ko-inspector-content>div:first-child{display:none}
+  .ko-touch-inspector[data-peek] .ko-inspector-content>.relative.mx-auto{max-width:150px!important}
+  .ko-touch-inspector[data-peek] [data-inspector-section]{padding:10px!important}
+  .ko-touch-inspector[data-peek] [data-inspector-section] h4{margin-bottom:4px!important;font-size:12px!important}
+  .ko-touch-inspector[data-peek] .ko-readable-content{font-size:14px!important;line-height:1.5!important}
+}

@@ -351,31 +351,41 @@ export function Inspectable({
       onFocus={(event) => {
         if (Date.now() - lastTouchAt.current > 1000 && event.target instanceof HTMLElement && event.target.matches(':focus-visible')) inspect(event.currentTarget);
       }}
-      onPointerDown={(event) => {
-        if (event.pointerType !== 'touch') return;
+      onPointerDown={(event) => { if (event.pointerType === 'touch') lastTouchAt.current = Date.now(); }}
+      // Hearthstone mobile: press and hold a card to see it big; let go to close.
+      // Raw touch events, not pointer events: phones fire pointercancel as soon as they think a scroll
+      // may start, which used to kill the hold. Small wobbles are fine; only a real drag cancels.
+      onTouchStart={(event) => {
+        if (event.touches.length !== 1) { cancelPress(); return; }
         lastTouchAt.current = Date.now();
-        // Hearthstone mobile: press and hold a card to see it big; let go to close.
         const element = event.currentTarget;
+        const touch = event.touches[0]!;
         cancelPress();
-        press.current.x = event.clientX; press.current.y = event.clientY; press.current.shown = false;
+        press.current.x = touch.clientX; press.current.y = touch.clientY; press.current.shown = false;
         press.current.timer = window.setTimeout(() => {
           press.current.timer = null;
           if (!element.isConnected) return;
           press.current.shown = true;
           if (navigator.vibrate) try { navigator.vibrate(8); } catch { /* ignore */ }
           peek(element);
-        }, 380);
+          const close = () => {
+            document.removeEventListener('touchend', close, true);
+            document.removeEventListener('touchcancel', close, true);
+            if (!press.current.shown) return;
+            press.current.shown = false;
+            press.current.suppressUntil = Date.now() + 600;
+            context.clear();
+          };
+          document.addEventListener('touchend', close, true);
+          document.addEventListener('touchcancel', close, true);
+        }, 360);
       }}
-      onPointerMove={(event) => {
-        if (event.pointerType !== 'touch' || press.current.timer === null) return;
-        if (Math.hypot(event.clientX - press.current.x, event.clientY - press.current.y) > 10) cancelPress();
+      onTouchMove={(event) => {
+        if (press.current.timer === null) return;
+        const touch = event.touches[0];
+        if (touch && Math.hypot(touch.clientX - press.current.x, touch.clientY - press.current.y) > 18) cancelPress();
       }}
-      onPointerUp={(event) => {
-        if (event.pointerType !== 'touch') return;
-        cancelPress();
-        if (press.current.shown) { press.current.shown = false; press.current.suppressUntil = Date.now() + 500; context.clear(); }
-      }}
-      onPointerCancel={() => { cancelPress(); if (press.current.shown) { press.current.shown = false; context.clear(); } }}
+      onTouchEnd={() => { cancelPress(); }}
       onContextMenu={(event) => { if (Date.now() - lastTouchAt.current < 1500) event.preventDefault(); }}
       onBlur={(event) => {
         const next = event.relatedTarget;
@@ -587,7 +597,7 @@ function InspectorSection({
     neutral: 'text-neutral-300',
   }[tone];
   return (
-    <section className="rounded-lg border border-neutral-800 bg-black/20 p-3.5">
+    <section data-inspector-section={title} className="rounded-lg border border-neutral-800 bg-black/20 p-3.5">
       <h4 className={`mb-2 text-[0.95rem] font-black tracking-wide ${titleClass}`}>{title}</h4>
       {children}
     </section>
