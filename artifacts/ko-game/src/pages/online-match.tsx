@@ -1,3 +1,4 @@
+import { useMatchMusicPreload } from '@/audio/use-match-music-preload';
 
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
 import { currentChampionAbility } from '@/game/champions/types';
@@ -182,7 +183,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const processedAudioEventsRef = useRef(new Set<string>());
   const processedAttackSoundsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
-  const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
   const pendingOpponentAttacksRef = useRef<AttackAnimationState[]>([]);
   const opponentConnectionStateRef = useRef<OnlineConnectionStatus | null>(null);
   const recoveringActionRef=useRef(false);
@@ -286,7 +286,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           setAttackImpactTriggered(false);
           pendingPlayRef.current = null;
           pendingAttackRef.current = null;
-          pendingEntranceAudioRef.current = null;
           pendingOpponentAttacksRef.current = [];
           pendingActionIdRef.current = null;
           pendingActionInFlightRef.current = false;
@@ -538,6 +537,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     audioManager.stopGameAudio();
   }, [matchResultVisible]);
 
+  useMatchMusicPreload(state, mediaCatalog, cosmetics);
+
   useEffect(() => {
     if (!canPresentBattleQuest(state)) {
       audioManager.stopBgm();
@@ -593,14 +594,10 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         volume: card.entranceAudioVolume ?? 100,
         isLegendary: getCardDefinition(card.definitionId)?.rarity === "LEGENDARY",
       };
-      if (playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === event.cardInstanceId) {
-        pendingEntranceAudioRef.current = sound;
+      if (sound.isLegendary) {
+        audioManager.playLegendaryEntrance(sound.url, sound.volume);
       } else {
-        if (sound.isLegendary) {
-          audioManager.playLegendaryEntrance(sound.url, sound.volume);
-        } else {
-          audioManager.playCardEntrance(sound.url, sound.volume);
-        }
+        audioManager.playCardEntrance(sound.url, sound.volume);
       }
     });
     lastAudioEventCountRef.current = state.events.length;
@@ -1099,15 +1096,6 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         onUseTechnique={handleUseTechnique}
         playAnimation={playAnimation}
         onPlayAnimationComplete={() => {
-          const pending = pendingEntranceAudioRef.current;
-          if (pending) {
-            if (pending.isLegendary) {
-              audioManager.playLegendaryEntrance(pending.url, pending.volume);
-            } else {
-              audioManager.playCardEntrance(pending.url, pending.volume);
-            }
-            pendingEntranceAudioRef.current = null;
-          }
           setPlayAnimation(null);
         }}
         attackAnimation={attackAnimation}

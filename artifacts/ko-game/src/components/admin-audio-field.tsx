@@ -1,3 +1,5 @@
+import {AudioStartControl} from './audio-start-control';
+import {audioFileUrl,audioStartSeconds,withAudioStart} from '../../../../lib/game-engine/src/audio-start';
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Music2, Square, Trash2, Upload } from "lucide-react";
@@ -122,8 +124,8 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  const previewUrl = localUrl ?? value.url;
-  const displayName = value.fileName ?? (value.url ? value.url.split("/").pop() : null);
+  const previewUrl = localUrl ? withAudioStart(localUrl,audioStartSeconds(value.url)) : value.url;
+  const displayName = value.fileName ?? (value.url ? audioFileUrl(value.url).split("/").pop() : null);
   return (
     <div className="space-y-3 rounded border border-neutral-800 bg-neutral-900/50 p-3 md:col-span-2">
       <div className="flex items-center justify-between gap-3">
@@ -150,6 +152,7 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
         {previewUrl && <button type="button" onClick={() => audioManager.stop()} className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold"><Square className="h-3.5 w-3.5" /> 정지</button>}
         {previewUrl && <button type="button" disabled={uploading} onClick={remove} data-testid="button-remove-audio" className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 disabled:opacity-40"><Trash2 className="h-4 w-4" /> 음악 제거</button>}
       </div>
+      {value.url && <AudioStartControl url={value.url} onChange={url=>onChange({...value,url})} label={title} disabled={uploading}/>}
       {displayName && <div className="truncate text-xs text-neutral-400" title={displayName}>파일: {displayName}</div>}
       <label className="block text-xs text-neutral-400">
         볼륨 <strong className="ml-2 text-neutral-200">{value.volume}%</strong>

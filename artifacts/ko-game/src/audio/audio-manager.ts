@@ -1,3 +1,4 @@
+import {audioStartSeconds} from '../../../../lib/game-engine/src/audio-start';
 import {impactAudioPriority} from "./impact-audio-policy";
 import {externalSound} from './external-assets';
 import type { MusicContext } from './music-route';
@@ -84,6 +85,49 @@ class AudioManager {
     fadeTimerId: number | null;
   } | null = null;
   private packRevealTransitionId = 0;
+
+  private preparedMusic = new Map<string, HTMLAudioElement>();
+
+  /** Warm only imminent music; never download the entire card catalog. */
+  preloadMusic(urls: readonly (string | null | undefined)[], replace = false) {
+    if (!hasBrowserAudio()) return;
+    if (replace) for (const [url, audio] of this.preparedMusic) {
+      if (urls.includes(url)) continue;
+      this.preparedMusic.delete(url);
+      audio.pause();
+      audio.removeAttribute?.('src');
+      audio.load?.();
+    }
+    for (const url of urls) {
+      if (!url || this.preparedMusic.has(url) || this.bgm?.url === url || this.current?.request.url === url) continue;
+      if (this.preparedMusic.size >= 16) break;
+      try {
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        this.preparedMusic.set(url, audio);
+        audio.addEventListener('error', () => {
+          if (this.preparedMusic.get(url) === audio) this.preparedMusic.delete(url);
+        }, { once: true });
+        audio.load?.();
+      } catch { /* Playback can still retry normally. */ }
+    }
+  }
+
+  private musicElement(url: string) {
+    const prepared = this.preparedMusic.get(url);
+    this.preparedMusic.delete(url);
+    const audio = prepared && !prepared.error ? prepared : new Audio(url);
+    const start = audioStartSeconds(url);
+    if (start > 0) {
+      const seek = () => {
+        const target = Number.isFinite(audio.duration) ? Math.min(start, Math.max(0, audio.duration - .01)) : start;
+        try { audio.currentTime = target; } catch { /* The media fragment remains the browser fallback. */ }
+      };
+      if (audio.readyState >= 1) seek();
+      else audio.addEventListener('loadedmetadata', seek, {once:true});
+    }
+    return audio;
+  }
 
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, kind: "CARD_ENTRANCE" });
@@ -368,7 +412,7 @@ class AudioManager {
     if (this.musicContext === "SILENT" || !hasBrowserAudio() || !url) return;
     if (this.bgm?.url === url) {
       if (this.bgm.scope !== scope) this.bgm.finished = false;
-      this.bgm.audio.loop = scope !== "RESULT";
+      this.bgm.audio.loop = scope !== "RESULT" && audioStartSeconds(url) === 0;
       this.bgm.volume = volume;
       this.bgm.scope = scope;
       if (!this.musicScopeAllowed(scope)) {
@@ -391,6 +435,7 @@ class AudioManager {
       this.pendingBaseMusic.volume = volume;
       return;
     }
+    this.preloadMusic([url]);
     const previous = this.bgm;
     this.pendingBaseMusic = { url, volume, scope };
     const transitionId = ++this.baseTransitionId;
@@ -433,9 +478,9 @@ class AudioManager {
     const request = this.pendingBaseMusic;
     this.pendingBaseMusic = null;
     try {
-      const audio = new Audio(request.url);
+      const audio = this.musicElement(request.url);
       audio.preload = "auto";
-      audio.loop = request.scope !== "RESULT";
+      audio.loop = request.scope !== "RESULT" && audioStartSeconds(request.url) === 0;
       audio.muted = this.bgmMuted;
       audio.volume = 0;
       const music: MusicAudio = {
@@ -446,7 +491,12 @@ class AudioManager {
         failedToLoad: false,
         fadeTimerId: null,
       };
-      audio.addEventListener("ended", () => { if (music.scope === "RESULT") music.finished = true; });
+      audio.addEventListener("ended", () => {
+        if (music.scope === "RESULT") { music.finished = true; return; }
+        if (this.bgm !== music || audioStartSeconds(music.url) === 0) return;
+        audio.currentTime = Math.min(audioStartSeconds(music.url), Math.max(0, audio.duration - .01));
+        this.reconcileBgmPlayback();
+      });
       this.bgm = music;
       audio.addEventListener("error", () => {
         if (this.bgm?.audio !== audio) return;
@@ -471,11 +521,11 @@ class AudioManager {
   private enqueue(request: AudioRequest) {
     if (!hasBrowserAudio() || !request.url) return;
     if (this.current?.request.url === request.url) return;
-    if (!this.current) {
-      this.startTemporary(request);
-      return;
-    }
-    this.queue.push(request);
+    // Do not replay historical entrances ten seconds after the card appeared.
+    // Legendary music retains priority over ordinary entrances.
+    if (this.current?.request.kind === "LEGENDARY_ENTRANCE") return;
+    this.queue = [];
+    this.startTemporary(request);
   }
 
   private startTemporary(
@@ -494,9 +544,9 @@ class AudioManager {
       this.fadeBaseOut();
     }
     try {
-      const audio = new Audio(request.url);
+      const audio = this.musicElement(request.url);
       audio.preload = "auto";
-      audio.loop = request.kind === "LEGENDARY_ENTRANCE";
+      audio.loop = request.kind === "LEGENDARY_ENTRANCE" && audioStartSeconds(request.url) === 0;
       audio.volume = 0;
       const current = {
         audio,
@@ -532,8 +582,12 @@ class AudioManager {
       audio.addEventListener("playing", startPlaybackClock, { once: true });
       audio.addEventListener("error", () => this.finishTemporaryFor(audio, true), { once: true });
       audio.addEventListener("ended", () => {
-        if (this.current === current) finish();
-      }, { once: true });
+        if (this.current !== current) return;
+        if (request.kind === "LEGENDARY_ENTRANCE" && audioStartSeconds(request.url) > 0) {
+          audio.currentTime = Math.min(audioStartSeconds(request.url), Math.max(0, audio.duration - .01));
+          void audio.play().catch(() => this.finishTemporaryFor(audio, true));
+        } else finish();
+      });
       current.retryPlayback = () => {
         if (this.current !== current || playPending || started) return;
         playPending = true;
@@ -753,7 +807,7 @@ class AudioManager {
     transitionId: number,
   ) {
     try {
-      const audio = new Audio(url);
+      const audio = this.musicElement(url);
       audio.preload = "auto";
       audio.volume = 0;
       const reveal = { audio, volume, timeoutId: 0, fadeTimerId: null as number | null };
