@@ -5,7 +5,7 @@
 .ko-target-arrow__head{fill:#ffd27a;stroke:#7a2e06;stroke-width:2;filter:drop-shadow(0 0 6px rgba(255,140,40,.9))}
 .ko-target-arrow--locked .ko-target-arrow__body{stroke:#ff5a3a}
 .ko-target-arrow--locked .ko-target-arrow__glow{stroke:rgba(255,60,30,.45)}
-.ko-target-arrow__reticle{fill:none;stroke:#ff5a3a;stroke-width:3.5;filter:drop-shadow(0 0 6px rgba(255,60,30,.95));animation:ko-reticle-spin 1.6s linear infinite}
+.ko-target-arrow__reticle{fill:none;stroke:#ff5a3a;stroke-width:3.5;filter:drop-shadow(0 0 6px rgba(255,60,30,.95));transform-box:view-box;transform-origin:0 0;animation:ko-reticle-spin 1.6s linear infinite}
 @keyframes ko-arrow-flow{to{stroke-dashoffset:-28}}
-@keyframes ko-reticle-spin{to{rotate:90deg}}
+@keyframes ko-reticle-spin{to{transform:rotate(90deg)}}
 @media (prefers-reduced-motion:reduce){.ko-target-arrow__body,.ko-target-arrow__reticle{animation:none}}
