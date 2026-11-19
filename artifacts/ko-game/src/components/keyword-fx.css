@@ -1,52 +1,100 @@
-/* Field-card keyword looks. Root card is .ko-card-depth[data-kfx]. */
+/* Field-card keyword looks. The card root is .ko-card-depth[data-kfx]; .kfx fills it exactly. */
 .ko-card-depth[data-kfx]{isolation:isolate}
-/* text badges that are now shown as looks are hidden on field cards only */
 .ko-card-depth[data-kfx] [data-testid=card-keyword-badges] [data-kw]:is([data-kw=TAUNT],[data-kw=DODGE],[data-kw=DEFENSE],[data-kw=IMMUNE],[data-kw=ARMOR],[data-kw=RUSH],[data-kw=SURPRISE],[data-kw=MULTI_STRIKE],[data-kw=LIFESTEAL],[data-kw=REGEN],[data-kw=CANNOT_ATTACK],[data-kw=WANTED],[data-kw=COUNTDOWN]){display:none}
+.kfx{position:absolute;inset:0;pointer-events:none;z-index:4}
+.kfx>span,.kfx-back{position:absolute;pointer-events:none}
+.kfx-back{z-index:-1}
 
-/* 도발: an iron shield behind the card, its point showing below */
-.kfx-taunt{position:absolute;z-index:-1;left:-7%;right:-7%;top:-3%;bottom:-12%;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7))}
-.kfx-taunt::before,.kfx-taunt i{content:"";position:absolute;inset:0;clip-path:polygon(9% 0,91% 0,100% 7%,100% 66%,50% 100%,0 66%,0 7%)}
-.kfx-taunt::before{background:linear-gradient(90deg,#a9acae,#5d6266 30%,#3c4044 70%,#8a8e91)}
-.kfx-taunt i{inset:3px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 4px),linear-gradient(#4a4f54,#26292c)}
-.kfx-taunt i::after{content:"";position:absolute;left:50%;bottom:9%;width:13%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#d9d3c4,#7b6f58 60%,#3d362a);box-shadow:0 0 0 2px #1d1f21}
+/* 도발 — a heavy steel rim in the card frame's own navy/silver, with a crest on top and a point below */
+.kfx-taunt{inset:-6% -7.5% -9% -7.5%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.75))}
+.kfx-taunt::before,.kfx-taunt i,.kfx-taunt b{content:"";position:absolute;inset:0;
+  clip-path:polygon(0 7%,4% 3.5%,38% 3.5%,50% 0,62% 3.5%,96% 3.5%,100% 7%,100% 88%,96% 91.5%,62% 91.5%,50% 100%,38% 91.5%,4% 91.5%,0 88%)}
+.kfx-taunt::before{background:linear-gradient(90deg,#c9d3df,#7d8da2 18%,#5d6d82 50%,#7d8da2 82%,#c9d3df)}
+.kfx-taunt i{inset:2px;background:linear-gradient(#2f4058,#1a2333 55%,#26344a)}
+.kfx-taunt b{inset:6% 6% 9%;clip-path:none;border-radius:4px;box-shadow:0 0 0 2px #9fb0c4,0 0 0 4px #121a26}
 
-/* 회피: a golden bubble that shimmers around the card */
-.kfx-dodge{position:absolute;z-index:4;inset:-5% -6%;pointer-events:none;border-radius:22%/16%;overflow:hidden;
-  border:2px solid rgba(255,232,160,.85);background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(255,222,140,.22) 82%,rgba(255,240,200,.38));
-  box-shadow:0 0 10px rgba(255,214,120,.55),inset 0 0 14px rgba(255,226,150,.45);animation:kfx-dodge-pulse 2.6s ease-in-out infinite}
-.kfx-dodge i{position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 70%,rgba(255,250,225,.55) 78%,transparent 86%);animation:kfx-spin 3.2s linear infinite}
-@keyframes kfx-dodge-pulse{50%{border-color:rgba(255,246,210,1);box-shadow:0 0 16px rgba(255,214,120,.7),inset 0 0 20px rgba(255,226,150,.55)}}
-@keyframes kfx-spin{to{transform:rotate(360deg)}}
+/* 연타 — an afterimage of the card, a second frame trailing behind */
+.kfx-multi{inset:0;z-index:-2}
+.kfx-multi i{position:absolute;inset:0;border-radius:7%/5%;border:2px solid rgba(255,170,110,.75);background:rgba(255,140,80,.08);animation:kfx-ghost 1.6s ease-in-out infinite}
+.kfx-multi i:nth-child(2){animation-delay:.8s}
+@keyframes kfx-ghost{0%{transform:translate(0,0);opacity:0}30%{opacity:.9}100%{transform:translate(-11%,-6%);opacity:0}}
 
-/* 방어: a blue-grey stone ward with a fine hex lattice */
-.kfx-defense{position:absolute;z-index:4;inset:-3%;pointer-events:none;border-radius:14px;border:2px solid rgba(170,200,230,.8);
-  background:repeating-linear-gradient(60deg,rgba(170,200,230,.12) 0 1px,transparent 1px 9px),repeating-linear-gradient(-60deg,rgba(170,200,230,.12) 0 1px,transparent 1px 9px),rgba(120,150,190,.12);
+/* 러쉬 — golden speed lines streaming off the left edge */
+.kfx-rush{left:-26%;width:30%;top:18%;bottom:30%;overflow:hidden}
+.kfx-rush i{position:absolute;right:0;height:2px;width:70%;border-radius:2px;background:linear-gradient(90deg,transparent,#ffd76a);animation:kfx-streak .9s linear infinite}
+.kfx-rush i:nth-child(1){top:10%}.kfx-rush i:nth-child(2){top:38%;animation-delay:.3s;width:90%}.kfx-rush i:nth-child(3){top:64%;animation-delay:.55s}.kfx-rush i:nth-child(4){top:88%;animation-delay:.15s;width:55%}
+@keyframes kfx-streak{0%{transform:translateX(30%);opacity:0}20%{opacity:1}100%{transform:translateX(-120%);opacity:0}}
+
+/* 기습 — violet shadow smoke at the feet and a blade glint sweeping across the art */
+.kfx-surprise{inset:0;overflow:hidden;border-radius:6%/4%}
+.kfx-surprise i{position:absolute;left:-10%;right:-10%;bottom:-6%;height:34%;background:radial-gradient(ellipse at 25% 100%,rgba(120,40,160,.55),transparent 60%),radial-gradient(ellipse at 75% 100%,rgba(70,20,110,.6),transparent 62%);filter:blur(3px);animation:kfx-smoke 3s ease-in-out infinite alternate}
+.kfx-surprise b{position:absolute;top:-30%;bottom:-30%;width:16%;left:-30%;background:linear-gradient(90deg,transparent,rgba(240,225,255,.8),transparent);transform:rotate(25deg);animation:kfx-glint 3.2s ease-in infinite}
+@keyframes kfx-smoke{to{transform:translateX(5%) scaleY(1.15)}}
+@keyframes kfx-glint{0%,62%{left:-30%}100%{left:130%}}
+
+/* 흡혈 — crimson pulse along the inner frame and drops sinking down */
+.kfx-lifesteal{inset:4%;border-radius:6%/4%;box-shadow:inset 0 0 10px 2px rgba(200,20,40,.55);animation:kfx-vein 1.8s ease-in-out infinite}
+.kfx-lifesteal i{position:absolute;top:8%;width:5%;aspect-ratio:.7;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#c4142c;box-shadow:0 0 4px #ff2d4a;opacity:0;animation:kfx-drop 2.4s ease-in infinite}
+.kfx-lifesteal i:nth-child(1){left:22%}.kfx-lifesteal i:nth-child(2){left:58%;animation-delay:.8s}.kfx-lifesteal i:nth-child(3){left:80%;animation-delay:1.6s}
+@keyframes kfx-vein{50%{box-shadow:inset 0 0 16px 4px rgba(230,30,50,.75)}}
+@keyframes kfx-drop{10%{opacity:.95}100%{transform:translateY(900%);opacity:0}}
+
+/* 치유 — green motes rising */
+.kfx-regen{inset:18% 8% 8%}
+.kfx-regen i{position:absolute;bottom:0;width:6%;aspect-ratio:1;border-radius:50%;background:#9ff5ad;box-shadow:0 0 6px #4fd06a,0 0 2px #fff;opacity:0;animation:kfx-rise 2.4s ease-in infinite}
+.kfx-regen i:nth-child(1){left:14%}.kfx-regen i:nth-child(2){left:42%;animation-delay:.6s}.kfx-regen i:nth-child(3){left:66%;animation-delay:1.2s}.kfx-regen i:nth-child(4){left:86%;animation-delay:1.8s}
+@keyframes kfx-rise{15%{opacity:.95}100%{transform:translateY(-320%);opacity:0}}
+
+/* 수배 — a red rifle-scope reticle slowly turning over the art */
+.kfx-wanted{left:22%;right:22%;top:20%;aspect-ratio:1}
+.kfx-wanted::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(230,50,40,.75);
+  background:linear-gradient(rgba(230,50,40,.75),rgba(230,50,40,.75)) center/2px 100% no-repeat,linear-gradient(90deg,rgba(230,50,40,.75),rgba(230,50,40,.75)) center/100% 2px no-repeat;
+  -webkit-mask:radial-gradient(circle,transparent 0 14%,#000 15%);mask:radial-gradient(circle,transparent 0 14%,#000 15%);animation:kfx-turn 8s linear infinite}
+.kfx-wanted i{position:absolute;inset:-12%;border-radius:50%;border:1px dashed rgba(230,50,40,.55);animation:kfx-turn 12s linear infinite reverse}
+@keyframes kfx-turn{to{transform:rotate(360deg)}}
+
+/* 공격불가 — two iron chains crossed over the card */
+.kfx-chains{inset:0;overflow:hidden;border-radius:6%/4%}
+.kfx-chains i{position:absolute;left:-20%;right:-20%;top:45%;height:9%;transform:rotate(-34deg);
+  background:
+    radial-gradient(ellipse 34% 30% at 25% 50%,transparent 52%,#e2e4e7 56%,#7a7f85 74%,#2a2d31 80%,transparent 84%) 0 0/24% 100% repeat-x,
+    linear-gradient(transparent 42%,#9aa0a6 42% 58%,transparent 58%) 0 0/24% 100% repeat-x;
+  background-position:0 0,12% 0;filter:drop-shadow(0 2px 2px #000) drop-shadow(0 0 1px #000)}
+.kfx-chains i:nth-child(2){transform:rotate(34deg)}
+
+/* 아머 — riveted steel corner plates, value on a plate at the bottom */
+.kfx-armor{inset:-2%}
+.kfx-armor i{position:absolute;width:24%;aspect-ratio:1;border:5px solid transparent;
+  border-image:linear-gradient(135deg,#eef1f4,#8b939b 45%,#4e555c) 1;filter:drop-shadow(0 1px 2px #000)}
+.kfx-armor i::after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:#e9e4d8;box-shadow:0 0 0 1px #333}
+.kfx-armor i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}.kfx-armor i:nth-child(1)::after{left:-4px;top:-4px}
+.kfx-armor i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}.kfx-armor i:nth-child(2)::after{right:-4px;top:-4px}
+.kfx-armor i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}.kfx-armor i:nth-child(3)::after{left:-4px;bottom:-4px}
+.kfx-armor i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}.kfx-armor i:nth-child(4)::after{right:-4px;bottom:-4px}
+.kfx-armor b{position:absolute;z-index:2;left:50%;bottom:-5%;transform:translateX(-50%);min-width:24%;padding:1px 4px;text-align:center;font-weight:900;font-size:clamp(9px,1.2vw,13px);color:#1a1d20;
+  background:linear-gradient(#f0f2f4,#9aa2aa);border:1px solid #3a3f45;clip-path:polygon(12% 0,88% 0,100% 50%,88% 100%,12% 100%,0 50%)}
+
+/* 방어 — a blue-grey ward with a fine lattice */
+.kfx-defense{inset:-3%;border-radius:8%/6%;border:2px solid rgba(170,200,230,.85);
+  background:repeating-linear-gradient(60deg,rgba(170,200,230,.14) 0 1px,transparent 1px 9px),repeating-linear-gradient(-60deg,rgba(170,200,230,.14) 0 1px,transparent 1px 9px),rgba(120,150,190,.12);
   box-shadow:inset 0 0 16px rgba(160,195,235,.45),0 0 8px rgba(120,160,210,.4)}
 
-/* 면역: a faint white haze on the edges (cannot be targeted) */
-.kfx-immune{position:absolute;z-index:4;inset:0;pointer-events:none;border-radius:10px;box-shadow:inset 0 0 14px 5px rgba(235,240,255,.7),0 0 0 1px rgba(235,240,255,.55);animation:kfx-haze 3s ease-in-out infinite}
+/* 면역 — a white haze on the edges */
+.kfx-immune{inset:0;border-radius:7%/5%;box-shadow:inset 0 0 14px 5px rgba(235,240,255,.7),0 0 0 1px rgba(235,240,255,.55);animation:kfx-haze 3s ease-in-out infinite}
 @keyframes kfx-haze{50%{box-shadow:inset 0 0 22px 8px rgba(235,240,255,.85),0 0 0 1px rgba(235,240,255,.8)}}
 
-/* 치유: small green motes rising */
-.kfx-regen{position:absolute;z-index:4;inset:20% 10% 10%;pointer-events:none}
-.kfx-regen i{position:absolute;bottom:0;width:7%;aspect-ratio:1;border-radius:50%;background:#8ff0a0;box-shadow:0 0 6px #4fd06a;opacity:0;animation:kfx-rise 2.4s ease-in infinite}
-.kfx-regen i:nth-child(1){left:18%}.kfx-regen i:nth-child(2){left:52%;animation-delay:.8s}.kfx-regen i:nth-child(3){left:80%;animation-delay:1.6s}
-@keyframes kfx-rise{15%{opacity:.95}100%{transform:translateY(-260%);opacity:0}}
+/* 회피 — a golden bubble shimmering around the card */
+.kfx-dodge{inset:-5% -6%;border-radius:22%/16%;overflow:hidden;
+  border:2px solid rgba(255,232,160,.85);background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(255,222,140,.22) 82%,rgba(255,240,200,.38));
+  box-shadow:0 0 10px rgba(255,214,120,.55),inset 0 0 14px rgba(255,226,150,.45);animation:kfx-dodge-pulse 2.6s ease-in-out infinite}
+.kfx-dodge i{position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 70%,rgba(255,250,225,.55) 78%,transparent 86%);animation:kfx-turn 3.2s linear infinite}
+@keyframes kfx-dodge-pulse{50%{border-color:rgba(255,246,210,1);box-shadow:0 0 16px rgba(255,214,120,.7),inset 0 0 20px rgba(255,226,150,.55)}}
 
-/* emblem column on the left edge for everything else */
-.kfx-emblems{position:absolute;z-index:6;left:-10%;top:22%;width:23%;display:flex;flex-direction:column;gap:3px;pointer-events:none}
-.kfx-emblem{position:relative;display:grid;place-items:center;width:100%;min-width:19px;aspect-ratio:1;border-radius:50%;background:#0d0c0b;border:1.5px solid #c8a865;color:#f1e6cc;box-shadow:0 2px 4px rgba(0,0,0,.7)}
-.kfx-emblem svg{width:62%;height:62%}
-.kfx-emblem b{position:absolute;right:-4px;bottom:-4px;min-width:13px;height:13px;padding:0 2px;border-radius:7px;font-size:10px;line-height:13px;text-align:center;color:#15110a;background:#c8a865}
-.kfx-emblem[data-kw=RUSH]{color:#ffd76a}
-.kfx-emblem[data-kw=SURPRISE]{color:#f0a3ff}
-.kfx-emblem[data-kw=MULTI_STRIKE]{color:#ffb38a}
-.kfx-emblem[data-kw=LIFESTEAL]{color:#ff6d6d}
-.kfx-emblem[data-kw=REGEN]{color:#8ff0a0}
-.kfx-emblem[data-kw=CANNOT_ATTACK]{color:#ff8a7a;border-color:#8a3b31}
-.kfx-emblem[data-kw=WANTED]{color:#f2cf6e}
-.kfx-emblem[data-kw=COUNTDOWN]{color:#cfe0ff}
-.kfx-emblem[data-kw=ARMOR]{color:#d7dadd}
-/* 공격불가: the attack number is dimmed */
-.ko-card-depth[data-kfx~=CANNOT_ATTACK]{--kfx-cant:1}
-@media (prefers-reduced-motion:reduce){.kfx-dodge,.kfx-dodge i,.kfx-immune,.kfx-regen i{animation:none}}
+/* 카운트다운 — a ticking dial over the art with the turns left */
+.kfx-countdown{right:8%;top:24%;width:26%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(rgba(200,225,255,.85) var(--kfx-p,30%),rgba(20,24,32,.85) 0);box-shadow:0 0 0 2px #0d1118,0 2px 4px #000;animation:kfx-tick 1s steps(12) infinite}
+.kfx-countdown b{display:grid;place-items:center;width:74%;aspect-ratio:1;border-radius:50%;background:#0d1118;color:#dbe8ff;font-weight:900;font-size:clamp(9px,1.3vw,14px)}
+@keyframes kfx-tick{from{--kfx-p:0%}to{--kfx-p:100%}}
+@property --kfx-p{syntax:'<percentage>';inherits:false;initial-value:0%}
+
+@media (prefers-reduced-motion:reduce){.kfx *, .kfx>span{animation:none!important}}
