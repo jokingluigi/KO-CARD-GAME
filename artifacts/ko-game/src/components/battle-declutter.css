@@ -1,0 +1,34 @@
+/*
+ * Battle declutter (Hearthstone principle: the board is the hero, details appear on demand).
+ * Presentation only — every hidden piece is still reachable by press-and-hold / hover or the menu.
+ */
+/* 1. no ⓘ buttons on cards: press-and-hold (phone) or rest the mouse (PC) shows the card */
+.ko-game-shell :is(.ko-hand-inspect-button,.ko-board-inspect-button){display:none!important}
+
+/* 2. field cards: no clipped rules text — the keyword names sit in the text box instead */
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-rules]>*{visibility:hidden}
+.ko-game-shell .ko-card-depth[data-kfx] .kfx-names{top:auto;bottom:16%;left:8%;right:8%}
+/* hand cards on phones: the clipped text is unreadable anyway */
+@media (max-width:700px){.ko-game-shell .ko-hand-card [data-card-rules]>*{visibility:hidden}}
+
+/* 4. gold: coin + number only */
+.ko-game-shell [data-resource=gold]>div:first-child{display:none}
+.ko-game-shell [data-resource=gold]{padding-top:4px!important;padding-bottom:4px!important}
+
+/* deck / graveyard: two slim chips instead of two big plates */
+.ko-game-shell .ko-zone-stack{gap:4px!important}
+.ko-game-shell .ko-zone-stack>*{height:auto!important;min-height:0!important}
+@media (max-width:768px){
+  .ko-game-shell .ko-zone-stack>*{min-height:28px!important;padding:2px 8px!important;font-size:11px!important}
+}
+
+/* 5/“손패 없음” placeholder text */
+.ko-game-shell .ko-player-hand span.text-neutral-600,.ko-game-shell .ko-opponent-hand span.text-neutral-600{visibility:hidden}
+
+/* 6. long names: one short line */
+.ko-game-shell .ko-champion-heading{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px!important;color:#cfc6b4!important}
+@media (max-width:768px){.ko-game-shell .ko-champion-heading{font-size:10px!important}}
+
+/* 7. one menu button: the log lives inside the ⚙ menu */
+.ko-game-shell .ko-battle-log-button{display:none!important}
+.ko-game-shell .ko-menu-log{color:#ece6da}

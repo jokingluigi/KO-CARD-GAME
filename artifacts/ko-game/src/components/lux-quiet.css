@@ -120,3 +120,18 @@ body .ko-home-lobby :is(.ko-home-mode-shortcuts,.ko-home-learning) :is(small,spa
 body .kdb-card{isolation:isolate}
 body :is(.kdb-bar-top,.kcol-bar){z-index:40!important;background:#0a0908!important;border-bottom:1px solid var(--q-line);box-shadow:0 6px 12px rgba(0,0,0,.55)}
 @media (max-width:900px){body .kdb-bar-top{margin-left:-12px!important;margin-right:-12px!important;padding-left:12px!important;padding-right:12px!important}}
+
+/* ===== Declutter pass: show what matters, keep the rest one tap away ===== */
+/* Home: one big battle button, three shortcuts, the full menu. Mode tiles, tutorial/rules and
+   quest/attendance/packs links stay in "전체 메뉴" and on the 대전 page. */
+body .ko-home-lobby :is(.ko-home-mode-shortcuts,.ko-home-learning,.ko-home-utility-links,.ko-home-sound-settings){display:none!important}
+body .ko-home-lobby .ko-lobby-more{font-size:14px}
+/* Pages reached from the top menu bar don't need their own "← 메인" button */
+body:has(.ko-game-navigation) :is(.lux-pagehead,.lux-head,.kdb-home__head)>:is(.lux-back,a.lux-back,.kdb-back){display:none!important}
+/* Short pages: the one-line description is noise on phones */
+@media (max-width:640px){
+  body .lux-sub{display:none}
+  body .lux-head{margin-bottom:12px}
+  body .lux-title{font-size:24px}
+  body .kdb-home__head .kdb-ghost{order:0!important;width:auto!important;margin-left:auto;min-height:36px;font-size:13px}
+}

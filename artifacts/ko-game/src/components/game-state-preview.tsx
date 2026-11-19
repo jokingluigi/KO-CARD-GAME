@@ -114,6 +114,7 @@ import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type Champio
 import "./battle-viewport.css";
 import "./mobile-champion-layout.css";
 import "./hs-board-cues.css";
+import "./battle-declutter.css";
 
 // CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
@@ -1468,7 +1469,7 @@ export function GameStatePreview({
                   : !isMyTurn ? '상대가 행동하고 있어요.'
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
-                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : `남은 행동 · 공격 ${new Set(remainingActions.filter(a=>a.type==='ATTACK').map(a=>a.type==='ATTACK'?a.attackerInstanceId:'')).size}명 · 액티브 ${legalActiveCardIds.size} · 고유능력 ${canUseChampion?'가능':'불가'}`)}
+                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : '')}
               </p>)}
               <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
               {!tutorialGuide&&contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
@@ -1645,7 +1646,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
-                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><HandReader state={state} definition={getCardDefinition}/><BattleHelp/><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
+                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><button type="button" data-testid="button-settings-open-log" className="ko-menu-log min-h-11 border border-neutral-700 bg-neutral-950 px-3 text-left text-sm font-bold" onClick={()=>{setSettingsOpen(false);setHistoryOpen(true);}}>경기 기록 보기</button><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><HandReader state={state} definition={getCardDefinition}/><BattleHelp/><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
@@ -1860,7 +1861,7 @@ export function GameStatePreview({
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost);if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
+                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost);if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. 카드를 꾹 누르면(PC는 마우스를 올리면) 효과를 볼 수 있어요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
@@ -2151,7 +2152,6 @@ function BoardSlot({
         onKeyDown={selectable ? (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(slotIndex); }
         } : undefined}>
-         <span className="text-[9px] font-bold tracking-widest text-neutral-600 md:text-[11px]">{slotIndex + 1}구역</span>
       </div>
     );
   }

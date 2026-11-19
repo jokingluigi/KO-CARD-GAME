@@ -77,7 +77,7 @@ export default function PlayerNotebook() {
             유저용 기록이며 공식 순위 전적이 아니에요. 최근 200경기를 보관해요.
           </p>
         </details>
-        {shelf.id&&<div className="ko-journal-sync" role="status"><span>{shelf.syncStatus}</span><button type="button" onClick={()=>void shelf.retrySync()}>동기화 다시 시도</button></div>}
+        {shelf.id&&!/완료/.test(shelf.syncStatus)&&<div className="ko-journal-sync" role="status"><span>{shelf.syncStatus}</span><button type="button" onClick={()=>void shelf.retrySync()}>동기화 다시 시도</button></div>}
         {shelf.error && (
           <p className="ko-surface-message is-error" role="alert">
             {shelf.error}

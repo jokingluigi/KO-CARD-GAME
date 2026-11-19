@@ -178,7 +178,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         {bgmMuted ? "음소거" : "배경음"}
       </button>
       <button type="button" onClick={() => setSoundSettingsOpen((open) => !open)} aria-expanded={soundSettingsOpen}
-        className="relative z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">소리 설정</button>
+        className="ko-home-sound-settings relative z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">소리 설정</button>
         <button type="button" className="ko-home-settings-link" onClick={()=>navigate("/settings")}>설정</button>
       </div>
       {soundSettingsOpen && <div className="absolute right-4 top-16 z-20 w-44 rounded border border-amber-500/50 bg-neutral-950/95 p-3 shadow-xl">
