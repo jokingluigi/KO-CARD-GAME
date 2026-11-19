@@ -20,11 +20,11 @@ export function KeywordFx({ keywords, armor, countdown }: { keywords: string[]; 
     {has("TAUNT") && <span className="kfx-back kfx-taunt" aria-hidden="true"><i /><b /></span>}
     {has("MULTI_STRIKE") && <span className="kfx-back kfx-multi" aria-hidden="true"><i /><i /></span>}
     {has("RUSH") && <span className="kfx-back kfx-rush" aria-hidden="true"><i /><i /><i /><i /></span>}
+    {has("WANTED") && <span className="kfx-back kfx-wanted" aria-hidden="true"><i /><em /><em /><b>현상수배</b></span>}
     <span className="kfx" role="img" aria-label={`키워드 ${shown.map(k => NAMES[k]).join(", ")}`} title={shown.map(k => NAMES[k]).join(" · ")}>
       {has("SURPRISE") && <span className="kfx-surprise"><i /><b /></span>}
       {has("LIFESTEAL") && <span className="kfx-lifesteal"><i /><i /><i /></span>}
       {has("REGEN") && <span className="kfx-regen"><i /><i /><i /><i /><i /></span>}
-      {has("WANTED") && <span className="kfx-wanted"><i /><b>현상수배</b><em /></span>}
       {has("CANNOT_ATTACK") && <span className="kfx-chains"><i /><i /></span>}
       {has("ARMOR") && <span className="kfx-armor"><i /><i /><i /><i />{typeof armor === "number" && <b>{armor}</b>}</span>}
       {has("DEFENSE") && <span className="kfx-defense" />}
