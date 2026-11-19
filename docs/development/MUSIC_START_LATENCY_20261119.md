@@ -12,3 +12,9 @@ Changes:
 - Local and online entrances request music with the ENTER_FIELD event instead of after animation completion. A new ordinary entrance replaces the previous ordinary entrance; ordinary entrances do not interrupt or queue behind legendary music. Legendary priority and volumes remain unchanged.
 
 Validation: 45 focused tests passed, covering progressive first-byte delivery before upstream completion, byte ranges, 416/404 handling, disconnect cancellation, bounded/reused/retryable preparations, private-zone exclusion, latest-entrance behavior and existing autoplay/mute/music-priority/result/quest regressions. Workspace typecheck and frontend/API production builds passed. This change does not alter card rules, card/champion administrator data, or battle animation geometry/timing.
+
+## Verified production release
+
+Source revision: `c45199a8edb42f16284709f52af74d437991fff5`. API `dep-dbv4g249v7es738lbnh0` and frontend `dep-dbv4ga3l550s738mgoog` are live at this revision. Public API health, actual frontend entry JavaScript and version.json all match. The frontend environment approval guard is preserved.
+
+The same 2,789,141-byte production BGM now returns HTTP 206 with exactly 65,536 bytes and `Content-Range: bytes 0-65535/2789141` through both the API origin and the public game origin. Single-request header times were 824 ms / 330 ms respectively; these are verification observations, not a controlled latency benchmark. The previous endpoint returned all 2,789,141 bytes with HTTP 200 despite the range request.
