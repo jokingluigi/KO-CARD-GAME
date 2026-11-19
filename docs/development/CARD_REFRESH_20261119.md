@@ -12,3 +12,9 @@ Implementation adds standard hand-zone destruction (actual destruction events, n
 No production card/champion data was overwritten or published. Three reviewed cards remain DRAFT; Pandora remains PUBLISHED. All 12 administrator champions have unchanged mechanics. Earlier music/offset controls and Claude presentation work remain in the source ancestry.
 
 Validation: 305 selected engine/online regression cases passed, including 16 current-refresh cases. Coverage includes both hand/field wipes, actual +1 kill count, non-wrestler/deck/graveyard exclusion, full fields, source self-destruction, generated arrival, deck-top ordering and next draw, random Edelweiss retargeting, empty enemy fields, token classification/standard-pool exclusion, and no field-only growth for hand destruction. Full workspace typecheck and production frontend/API builds passed.
+
+## Verified production release
+
+Merged release revision: `6e471dafae55966be84bfd4ae64484fc9b0bccb8` (card implementation `1b13a246e11616d41b4293b50063eab628671061` plus current production `e6aa29ca3a50202c6c24272b4a458aea605ad6e6`). All 18 Claude presentation files match that production revision exactly; no presentation rollback occurred.
+
+API `dep-dbv5v467bikc73fm4jf0` and frontend `dep-dbv608u7bikc73fm7odg` are live at the merged revision. Public health, actual frontend JavaScript and version.json all match. Authenticated post-release reads match the four reviewed card texts/stats/keywords/statuses/token flags; the public Pandora record explicitly reports LEGENDARY and isToken=true. The frontend environment approval guard is preserved.
