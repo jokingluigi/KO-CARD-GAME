@@ -1,0 +1,30 @@
+name: Render API keep-alive
+
+on:
+  schedule:
+    # Re-register using the simplest five-minute schedule syntax.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# No repository checkout, credentials, or deployment permissions are needed.
+permissions: {}
+
+concurrency:
+  group: render-api-keepalive
+  cancel-in-progress: false
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Request the game API health endpoint
+        shell: bash
+        run: |
+          curl --fail --silent --show-error \
+            --connect-timeout 15 --max-time 75 \
+            --retry 2 --retry-all-errors --retry-delay 5 --retry-max-time 150 \
+            --user-agent 'KO-CARD-GAME-keepalive' \
+            --header 'Cache-Control: no-cache' \
+            --write-out '\nHTTP %{http_code}; total %{time_total}s\n' \
+            "https://ko-card-game.onrender.com/api/healthz?keepalive=$(date +%s)"
