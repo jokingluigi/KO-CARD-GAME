@@ -52,9 +52,7 @@ export function KeywordFx({ keywords, armor, countdown, messenger }: { keywords:
   if (!shown.length && !messenger) return null;
   return (
     <>
-    {messenger && <span className="kfx-back kfx-wings" data-messenger={messenger} aria-hidden="true"><i /><i /></span>}
-    {messenger && <span className="kfx-top kfx-halo" data-messenger={messenger} aria-hidden="true"><i /></span>}
-    {messenger && <span className="kfx-top kfx-aura" data-messenger={messenger} aria-hidden="true"><i /><i /><i /><i /><i /></span>}
+    {messenger && <span className="kfx-top kfx-blessed" aria-hidden="true"><i /><b /><b /></span>}
     {has("TAUNT") && <span className="kfx-back kfx-taunt" aria-hidden="true"><i /><b /></span>}
     {has("MULTI_STRIKE") && <span className="kfx-back kfx-multi" aria-hidden="true"><i /><i /></span>}
     {has("RUSH") && <span className="kfx-back kfx-rush" aria-hidden="true"><i /><i /><i /><i /></span>}

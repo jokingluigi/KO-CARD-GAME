@@ -96,6 +96,7 @@ import { presentationCueDrafts, presentationEventKey, presentationBlocksActions,
 import { canMulligan } from '../game/engine/mulligan';
 import {CombatSettings} from './combat-settings';
 import { messengerKind } from './keyword-fx';
+import { MessengerRevelation } from './messenger-revelation';
 import {ScreenShakeSetting} from './screen-impact';
 import { CinematicProvider, CinematicCue, CinematicIntro, CardRevealPresentation } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
@@ -1872,6 +1873,7 @@ export function GameStatePreview({
 
          </div>
       </div>
+      <MessengerRevelation state={state} />
       <TargetingArrow
         sourceId={selectedAttackerId ?? (effectTargeting && state.targetingState?.playerId === me.id ? (typeof document !== 'undefined' && document.querySelector(`[data-card-instance-id="${state.targetingState.sourceInstanceId}"]`) ? state.targetingState.sourceInstanceId : 'champion') : null)}
         validIds={selectedAttackerId ? legalAttackTargets : validEffectTargetIds}

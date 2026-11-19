@@ -110,44 +110,16 @@ html[data-kw-names=entry] .kfx-names{animation:kfx-names-fade 4.2s ease forwards
 html[data-kw-names=entry] .ko-card-depth[data-kfx]:hover .kfx-names{animation:none;opacity:1}
 @keyframes kfx-names-fade{0%,80%{opacity:1}100%{opacity:0}}
 
-/* ===== 사자 (angel messengers): wings behind the card, a halo above it, an aura on it ===== */
-.kfx-wings{inset:-4% -34% 14% -34%;z-index:-2}
-.kfx-wings i{position:absolute;top:0;bottom:0;width:50%;filter:drop-shadow(0 0 6px var(--kfx-glow))}
-.kfx-wings i::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(118deg,rgba(255,255,255,.14) 0 1.5px,transparent 1.5px 8px);mix-blend-mode:overlay}
-.kfx-wings i:nth-child(1){left:0;-webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/svg%3E") center/contain no-repeat;transform-origin:100% 25%;animation:kfx-wing-open .8s cubic-bezier(.2,1.3,.4,1) both,kfx-flap-l 3.2s ease-in-out .8s infinite}
-.kfx-wings i:nth-child(1)::after{-webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/svg%3E") center/contain no-repeat}
-.kfx-wings i:nth-child(2){right:0;-webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cg%20transform%3D%27translate%28100%200%29%20scale%28-1%201%29%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cg%20transform%3D%27translate%28100%200%29%20scale%28-1%201%29%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;transform-origin:0 25%;animation:kfx-wing-open-r .8s cubic-bezier(.2,1.3,.4,1) both,kfx-flap-r 3.2s ease-in-out .8s infinite}
-.kfx-wings i:nth-child(2)::after{-webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cg%20transform%3D%27translate%28100%200%29%20scale%28-1%201%29%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20140%27%3E%3Cg%20transform%3D%27translate%28100%200%29%20scale%28-1%201%29%27%3E%3Cpath%20d%3D%27M100%2018%20C78%206%2052%204%2030%2014%20C14%2022%204%2036%200%2052%20C10%2046%2020%2044%2028%2046%20C14%2056%206%2070%204%2086%20C14%2078%2024%2074%2034%2074%20C22%2086%2016%20100%2016%20116%20C26%20106%2036%20100%2046%2098%20C40%20110%2040%20124%2044%20138%20C54%20124%2062%20112%2070%20104%20C78%2096%2088%2090%20100%2086%20Z%27%20fill%3D%27black%27/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;background:repeating-linear-gradient(62deg,rgba(255,255,255,.14) 0 1.5px,transparent 1.5px 8px)}
-@keyframes kfx-wing-open{from{transform:scaleX(0) rotate(20deg);opacity:0}}
-@keyframes kfx-wing-open-r{from{transform:scaleX(0) rotate(-20deg);opacity:0}}
-@keyframes kfx-flap-l{50%{transform:rotate(-7deg)}}
-@keyframes kfx-flap-r{50%{transform:rotate(7deg)}}
-.kfx-wings[data-messenger=DARK]{--kfx-glow:rgba(150,60,220,.75)}
-.kfx-wings[data-messenger=DARK] i{background:linear-gradient(160deg,#5a2a86,#1a0c2a 55%,#05020a)}
-.kfx-wings[data-messenger=DESTRUCTION]{--kfx-glow:rgba(255,80,30,.8)}
-.kfx-wings[data-messenger=DESTRUCTION] i{background:linear-gradient(160deg,#ffcf6a,#e2401a 40%,#5a0c06 85%)}
-.kfx-wings[data-messenger=KNOWLEDGE]{--kfx-glow:rgba(120,190,255,.75)}
-.kfx-wings[data-messenger=KNOWLEDGE] i{background:linear-gradient(160deg,#f4fbff,#8fc6ff 45%,#2f5a9a)}
-
-/* halo floating above the card */
-.kfx-halo{left:26%;right:26%;top:-10%;height:9%;animation:kfx-halo-drop .7s cubic-bezier(.2,1.4,.4,1) .2s both,kfx-halo-bob 2.6s ease-in-out 1s infinite}
-.kfx-halo i{position:absolute;inset:0;border-radius:50%;border:3px solid var(--kfx-ring);box-shadow:0 0 8px var(--kfx-ring),inset 0 0 6px var(--kfx-ring)}
-.kfx-halo[data-messenger=DARK]{--kfx-ring:#b06cff}
-.kfx-halo[data-messenger=DARK] i{border-color:#2a1240;outline:2px solid #b06cff;outline-offset:-4px;clip-path:polygon(0 0,46% 0,40% 100%,0 100%,0 0,54% 0,100% 0,100% 100%,60% 100%)}
-.kfx-halo[data-messenger=DESTRUCTION]{--kfx-ring:#ff6a2a}
-.kfx-halo[data-messenger=DESTRUCTION] i{border-color:#ffb36a;background:radial-gradient(ellipse,transparent 55%,rgba(255,90,30,.35) 75%,transparent 80%)}
-.kfx-halo[data-messenger=KNOWLEDGE]{--kfx-ring:#bfe2ff}
-@keyframes kfx-halo-drop{from{transform:translateY(-120%);opacity:0}}
-@keyframes kfx-halo-bob{50%{transform:translateY(-12%)}}
-
-/* aura on the card: violet shadow motes / rising embers / drifting light */
-.kfx-aura{inset:0;overflow:hidden;border-radius:7%/5%;box-shadow:inset 0 0 14px 2px var(--kfx-in)}
-.kfx-aura i{position:absolute;bottom:-4%;width:5%;aspect-ratio:1;border-radius:50%;background:var(--kfx-mote);box-shadow:0 0 6px var(--kfx-mote);opacity:0;animation:kfx-mote 2.6s ease-in infinite}
-.kfx-aura i:nth-child(1){left:10%}.kfx-aura i:nth-child(2){left:30%;animation-delay:.5s}.kfx-aura i:nth-child(3){left:52%;animation-delay:1s}.kfx-aura i:nth-child(4){left:72%;animation-delay:1.5s}.kfx-aura i:nth-child(5){left:88%;animation-delay:2s}
-@keyframes kfx-mote{15%{opacity:.95}100%{transform:translateY(-1500%) translateX(30%);opacity:0}}
-.kfx-aura[data-messenger=DARK]{--kfx-in:rgba(120,40,190,.55);--kfx-mote:#c58bff}
-.kfx-aura[data-messenger=DESTRUCTION]{--kfx-in:rgba(230,70,20,.5);--kfx-mote:#ffb04a}
-.kfx-aura[data-messenger=KNOWLEDGE]{--kfx-in:rgba(130,190,255,.45);--kfx-mote:#e8f6ff}
-.kfx-names i[data-kw=MSG_DARK]{border-color:#9a5ae0;color:#e4ccff}
-.kfx-names i[data-kw=MSG_DESTRUCTION]{border-color:#ff6a2a;color:#ffd9bf}
-.kfx-names i[data-kw=MSG_KNOWLEDGE]{border-color:#8fc6ff;color:#e3f2ff}
+/* ===== 사자 (angel messengers) — one quiet look for every messenger:
+   a thin white-gold halo, soft light falling from above, two slow motes ===== */
+.kfx-blessed{inset:0}
+.kfx-blessed i{position:absolute;left:30%;right:30%;top:-8.5%;height:6.5%;border-radius:50%;border:1.5px solid rgba(255,244,214,.95);
+  box-shadow:0 0 6px rgba(255,236,190,.85),inset 0 0 4px rgba(255,236,190,.6);animation:kfx-halo-in .7s cubic-bezier(.2,1.2,.4,1) both,kfx-halo-bob 3s ease-in-out .7s infinite}
+.kfx-blessed::before{content:"";position:absolute;inset:0;border-radius:7%/5%;
+  background:linear-gradient(rgba(255,246,222,.26),rgba(255,240,205,.08) 32%,transparent 52%);box-shadow:inset 0 0 0 1px rgba(255,240,205,.45);mix-blend-mode:screen}
+.kfx-blessed b{position:absolute;top:4%;width:3.5%;aspect-ratio:1;border-radius:50%;background:#fff6dc;box-shadow:0 0 5px #ffe9b0;opacity:0;animation:kfx-bless-mote 3.6s ease-in-out infinite}
+.kfx-blessed b:nth-of-type(1){left:22%}.kfx-blessed b:nth-of-type(2){left:70%;animation-delay:1.8s}
+@keyframes kfx-halo-in{from{transform:translateY(-140%);opacity:0}}
+@keyframes kfx-halo-bob{50%{transform:translateY(-14%)}}
+@keyframes kfx-bless-mote{20%{opacity:.9}100%{transform:translateY(900%);opacity:0}}
+.kfx-names i:is([data-kw=MSG_DARK],[data-kw=MSG_DESTRUCTION],[data-kw=MSG_KNOWLEDGE]){border-color:#e9dcb8;color:#fff6e0;box-shadow:0 0 5px rgba(255,236,190,.35),0 1px 3px rgba(0,0,0,.8)}
