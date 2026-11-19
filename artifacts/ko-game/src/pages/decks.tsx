@@ -15,7 +15,8 @@ import {sameDraft} from "@/components/player-ux/policy";
 import {flyBetween,useGridReflow} from "@/components/physical-feedback";
 import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, CirclePlus, Hammer, Minus, Plus, RefreshCw, Search, Shield, Star, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronUp, Hammer, Info, Plus, RefreshCw, Search, Share2, Shield, SlidersHorizontal, Star, Swords, Trash2, X } from "lucide-react";
+import "@/components/deck-builder.css";
 import { Link } from "wouter";
 import { AuthPage, AuthLoading, AuthRecovery } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
@@ -94,115 +95,6 @@ function replaceDeck(list: Deck[], next: Deck) {
 
 function sameCardIdList(left: string[], right: string[]) {
   return left.length === right.length && left.every((id, index) => id === right[index]);
-}
-
-function DeckCardVisual({
-  card,
-  onAdd,
-  onOpenDetails,
-  disabled,
-  disabledReason,
-  selectedCount,
-  unowned,
-  onCraft,
-}: {
-  card: DeckCard;
-  onAdd: () => void;
-  onOpenDetails: () => void;
-  disabled: boolean;
-  disabledReason?: string;
-  selectedCount: number;
-  unowned: boolean;
-  onCraft: () => void;
-}) {
-  const countView = getDeckCardCountView(card, selectedCount);
-  const [blocked,setBlocked]=useState(false);
-  useEffect(()=>setBlocked(false),[disabled,disabledReason]);
-  return (
-    <article data-motion-key={card.id} className="ko-decks__collection-card" aria-disabled={disabled && !unowned} data-unowned={unowned || undefined} data-testid={`card-collection-${card.id}`}>
-      <Inspectable
-        showOnHover
-        content={
-          <div className="space-y-3">
-            <p className="text-[0.62rem] font-black tracking-[0.18em] text-amber-300">
-              {cardTypeLabel(card.cardType)} · {card.rarity}
-            </p>
-            <CardRenderer
-              cardId={card.id}
-              keywords={card.keywords}
-              keywordConfig={card.effectConfig}
-              name={card.name}
-              cardType={card.cardType}
-              cost={card.cost}
-              attack={card.attack}
-              health={card.health}
-              rulesText={card.text}
-              imageUrl={card.imageUrl}
-              rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
-              imageDisplaySettings={cardSettings(card)}
-              size="detail"
-              className="mx-auto w-64 max-w-full"
-            />
-            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300"><CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} /></p>
-          </div>
-        }
-      >
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={unowned ? `${card.name} 미보유 카드 제작 정보` : `${card.name} 카드 상세 보기`}
-          data-testid={`button-card-details-${card.id}`}
-          onClick={unowned ? onCraft : onOpenDetails}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              if (unowned) onCraft();
-              else onOpenDetails();
-            }
-          }}
-        >
-          <CardRenderer
-            cardId={card.id}
-            keywords={card.keywords}
-            keywordConfig={card.effectConfig}
-            name={card.name}
-            cardType={card.cardType}
-            cost={card.cost}
-            attack={card.attack}
-            health={card.health}
-            rulesText={card.text}
-            imageUrl={card.imageUrl}
-            rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
-            imageDisplaySettings={cardSettings(card)}
-            size="admin"
-            showRules={false}
-            showStats
-            className="w-full"
-          />
-        </div>
-      </Inspectable>
-      <button
-        type="button"
-        className="ko-decks__card-action"
-        aria-label={unowned ? `${card.name} 제작 정보` : `${card.name} 추가`}
-        data-testid={`button-add-card-action-${card.id}`}
-        aria-disabled={!unowned && disabled}
-        onClick={()=>{if(!unowned&&disabled){setBlocked(true);return;}if(unowned)onCraft();else onAdd();}}
-      >
-        {unowned ? <Hammer className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
-      </button>
-      <p className="ko-decks__card-label" data-testid={`text-card-name-${card.id}`}>{card.name}</p>
-      <p className="ko-decks__card-type">
-        {cardTypeLabel(card.cardType)} · 비용 {card.cost} · {card.rarity}
-      </p>
-      {card.quantity !== undefined && (
-        <p className="ko-decks__card-type" data-testid={`text-card-ownership-${card.id}`}>
-          보유 {countView.ownedCount} · 덱 {countView.deckCount}
-        </p>
-      )}
-      {blocked&&disabledReason&&<p role="status" className="ko-decks__card-limit">{disabledReason}</p>}
-    </article>
-  );
 }
 
 function ChampionPortrait({ champion }: { champion: DeckChampion }) {
@@ -370,6 +262,7 @@ export default function Decks() {
         setDecks(nextDecks);
         const requested=new URLSearchParams(window.location.search).get('edit');
         const initial = nextDecks.find(deck=>deck.id===requested) ?? nextDecks.find((deck) => deck.isSelected) ?? nextDecks[0];
+        if (requested && initial?.id === requested) setWorkspace('editor');
         if (initial) {
           openDeck(initial);
         } else {
@@ -485,7 +378,14 @@ export default function Decks() {
      return uniqueValidationReasons(reasons);
   }, [authUser?.role, cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
   const [density,setDensity]=useCatalogDensity();
-  const [workspace, setWorkspace] = useState('cards');
+  const [workspace, setWorkspace] = useState<'decks'|'editor'>('decks');
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [costBucket, setCostBucket] = useState<number | null>(null);
+  const [notice, setNoticeText] = useState("");
+  const [noticeKey, setNoticeKey] = useState(0);
+  const setNotice = (text: string) => { setNoticeText(text); setNoticeKey(key => key + 1); };
+  useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNoticeText(""), 1600); return () => clearTimeout(timer); }, [notice, noticeKey]);
+  const activeFilterCount = Object.values(catalogFilters).filter(value => value !== "ALL").length;
   useEffect(()=>{window.dispatchEvent(new Event('ko-close-inspector'));},[workspace]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -494,9 +394,16 @@ export default function Decks() {
       if (!matchesCatalogFilters(card, catalogFilters)) return false;
       if (filter !== "ALL" && card.cardType !== filter) return false;
       if (favoritesOnly && !favorites.includes(card.id)) return false;
+      if (costBucket !== null && (costBucket === 7 ? card.cost < 7 : card.cost !== costBucket)) return false;
       return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
     });
-  }, [filter, options.cards, search, favorites, favoritesOnly, catalogFilters, authUser?.role]);
+  }, [filter, options.cards, search, favorites, favoritesOnly, catalogFilters, authUser?.role, costBucket]);
+  const curve = useMemo(() => {
+    const bins = [0,0,0,0,0,0,0,0];
+    cardIds.forEach(id => { const card = cardById.get(id); if (card) bins[Math.min(7, Math.max(0, card.cost))] += 1; });
+    return bins;
+  }, [cardIds, cardById]);
+  const curveMax = Math.max(0, ...curve);
 
   const selectedRows = useMemo(() => {
     const rows = Array.from(counts.entries()).map(([id, count]) => ({
@@ -548,7 +455,7 @@ export default function Decks() {
 
   const catalogRoot=useRef<HTMLElement>(null);
   const libraryRoot=useRef<HTMLElement>(null);
-  const catalog=useContinuousCatalog('decks',JSON.stringify([search,filter,catalogFilters,favoritesOnly]),filteredCards.length,!isLoading,libraryRoot,workspace);
+  const catalog=useContinuousCatalog('decks',JSON.stringify([search,filter,catalogFilters,favoritesOnly,costBucket]),filteredCards.length,!isLoading,libraryRoot,workspace);
 
   useGridReflow(catalogRoot,filteredCards.map(c=>c.id).join());
 
@@ -560,15 +467,17 @@ export default function Decks() {
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
     if (cardIds.length >= DECK_SIZE || (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || isTokenCard(card) || reason || ownershipReason) {
-      if (cardIds.length >= DECK_SIZE) setErrorMessage(`덱은 정확히 ${DECK_SIZE}장까지 구성할 수 있습니다.`);
-      else if (reason) setErrorMessage(reason);
-      else if (ownershipReason) setErrorMessage(ownershipReason);
+      if (cardIds.length >= DECK_SIZE) setNotice(`덱이 가득 찼어요 (${DECK_SIZE}장).`);
+      else if (reason) setNotice(reason);
+      else if (ownershipReason) setNotice(ownershipReason);
       return;
     }
-    flyBetween(document.querySelector(`[data-testid="card-collection-${CSS.escape(card.id)}"] .ko-card-depth`),document.querySelector('[data-testid="list-selected-cards"], [data-testid="empty-selected-cards"]'));
+    const deckTarget = Array.from(document.querySelectorAll('[data-deck-target]')).find(node => (node as HTMLElement).offsetParent !== null && node.getBoundingClientRect().height > 0);
+    flyBetween(document.querySelector(`[data-testid="card-collection-${CSS.escape(card.id)}"] .kdb-card__hit`),deckTarget);
     setChangedCard({id:card.id,kind:"add"});
     setCardIds((current) => [...current, card.id]);
-    setStatusMessage(`${card.name} 카드를 한 장 추가했습니다.`);
+    setStatusMessage("");
+    setNotice(`+ ${card.name}  (${cardIds.length + 1}/${DECK_SIZE})`);
   }
 
   async function openCraftFlow(card: DeckCard) {
@@ -655,7 +564,7 @@ export default function Decks() {
       if (index < 0) return current;
       return [...current.slice(0, index), ...current.slice(index + 1)];
     });
-    setStatusMessage("카드 한 장을 덱에서 뺐습니다.");
+    setStatusMessage("");
   }
 
   async function handleSave() {
@@ -725,6 +634,7 @@ export default function Decks() {
       setDecks(current => current.filter(deck => deck.id !== target.id));
       recovery.discard();
       createDraft();
+      setWorkspace('decks');
       setStatusMessage("덱을 삭제했습니다. 보유 카드는 그대로 유지돼요.");
       requestAnimationFrame(() => document.getElementById("deck-name")?.focus());
     } catch (error: unknown) {
@@ -753,164 +663,90 @@ export default function Decks() {
 
   return (
     <AltInspectProvider>
-      <main ref={catalogRoot} className="ko-decks" data-workspace={workspace}>
-      <div className="ko-decks__grain" aria-hidden="true" />
-      <div className="ko-decks__wrap">
-        <header className="ko-decks__topline">
-          <div>
-            <p className="ko-decks__eyebrow">덱 준비 / {authUser?.nickname}</p>
-            <h1 className="ko-decks__title" data-testid="text-page-title">덱 편집</h1>
-            <p className="ko-decks__subtitle">
-              챔피언과 카드 25장을 준비하세요. 저장한 덱은 대전에서 선택할 수 있어요.
-            </p>
+      <main ref={catalogRoot} className="kdb" data-view={workspace} data-sheet={sheetOpen?'open':'closed'}>
+      {workspace==='decks' ? (
+        <div className="kdb-home">
+          <header className="kdb-home__head">
+            <Link href="/" className="kdb-back" data-testid="link-main-menu"><ArrowLeft className="h-4 w-4" aria-hidden="true" />메인</Link>
+            <h1 className="kdb-title" data-testid="text-page-title">내 덱</h1>
+            <button type="button" className="kdb-ghost" data-testid="button-import-deck" onClick={() => { setImportCode(''); setShareMode('import'); }}>덱 코드 가져오기</button>
+          </header>
+          {errorMessage && <div ref={errorRegion} tabIndex={-1} className="kdb-alert" role="alert" data-testid="status-decks-error"><span>{errorMessage}</span>{loadFailed && <button type="button" className="kdb-ghost" data-testid="button-retry-decks" onClick={() => {setErrorMessage("");setLoadAttempt(value=>value+1);}}><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />다시 불러오기</button>}</div>}
+          {statusMessage && <p className="kdb-toast-line" role="status" data-testid="status-decks-success">{statusMessage}</p>}
+          {recovery.recovery&&<section className="kdb-recover" role="status"><p>저장하지 않은 덱 편집이 남아 있어요: <b>{recovery.recovery.name}</b></p><div><button type="button" className="kdb-gold" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);recovery.acknowledge();setWorkspace('editor');}}>이어서 편집</button><button type="button" className="kdb-ghost" onClick={recovery.discard}>버리기</button></div></section>}
+          <div className="kdb-decks" data-testid="list-decks">
+            {decks.map((deck) => {
+              const champ = deck.champion ?? (deck.championDefinitionId ? championById.get(deck.championDefinitionId) : undefined);
+              return (
+                <button key={deck.id} type="button" className="kdb-deckcase" data-selected={deck.isSelected||undefined} data-valid={deck.isValid||undefined} data-testid={`button-open-deck-${deck.id}`} onClick={() => {openDeck(deck);setWorkspace("editor");setSheetOpen(false);}}>
+                  <span className="kdb-deckcase__art">{champ?.imageUrl ? <CardArtwork src={champ.imageUrl} alt="" className="h-full w-full" imageDisplayMode={champ.imageDisplayMode} imageScale={champ.imageScale} imagePositionX={champ.imagePositionX} imagePositionY={champ.imagePositionY} /> : <Shield className="h-10 w-10" aria-hidden="true" />}</span>
+                  {deck.isSelected && <span className="kdb-deckcase__badge"><Check className="h-3.5 w-3.5" aria-hidden="true" />출전 덱</span>}
+                  <span className="kdb-deckcase__plate">
+                    <span className="kdb-deckcase__name">{deck.name}</span>
+                    <span className="kdb-deckcase__meta">{champ?.name ?? "챔피언 없음"} · <b data-full={deck.cardDefinitionIds.length===DECK_SIZE||undefined}>{deck.cardDefinitionIds.length}/{DECK_SIZE}</b></span>
+                    {!deck.isValid && <span className="kdb-deckcase__warn"><AlertTriangle className="h-3 w-3" aria-hidden="true" />{deckValidityLabel(deck.isValid)}</span>}
+                  </span>
+                </button>
+              );
+            })}
+            <button type="button" className="kdb-deckcase kdb-deckcase--new" data-testid="button-create-deck" onClick={()=>{createDraft();setWorkspace("editor");setSheetOpen(false);setChampionPickerOpen(true);}}>
+              <span className="kdb-deckcase__plus"><Plus className="h-9 w-9" aria-hidden="true" /></span>
+              <span className="kdb-deckcase__plate"><span className="kdb-deckcase__name">새 덱 만들기</span><span className="kdb-deckcase__meta">챔피언부터 골라요</span></span>
+            </button>
           </div>
-          <Link href="/" className="ko-decks__back" data-testid="link-main-menu">
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            메인 메뉴
-          </Link>
-        </header>
-
-        {errorMessage && (
-          <div ref={errorRegion} tabIndex={-1} className="ko-decks__error mt-4 flex flex-wrap items-center justify-between gap-4" role="alert" data-testid="status-decks-error">
-            <span>{errorMessage}</span>
-            {loadFailed && <button
-              type="button"
-              className="ko-decks__mini-button shrink-0"
-              data-testid="button-retry-decks"
-              onClick={() => {setErrorMessage("");setLoadAttempt(value=>value+1);}}
-            >
-              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-              목록 다시 불러오기
-            </button>}
-          </div>
-        )}
-
-        {recovery.recovery&&<section className="my-3 border border-amber-700 p-3 text-sm" role="status"><p>이 계정의 저장하지 않은 덱 편집이 있어요: {recovery.recovery.name}</p><button disabled={isMutating} className="min-h-11 px-3 underline" onClick={()=>{const d=recovery.recovery!;setEditingId(decks.some(x=>x.id===d.editingId)?d.editingId:null);setDeckName(d.name);setChampionId(d.championId);setCardIds([...d.cards]);setEditorCollapsed(false);recovery.acknowledge();}}>임시 편집 복구</button><button disabled={isMutating} className="min-h-11 px-3" onClick={recovery.discard}>임시 편집 삭제</button></section>}
-        {dirty&&<p className="my-2 text-sm text-amber-200" role="status">저장하지 않은 변경 · {recovery.error?'임시 보관 실패 — 나가기 전에 저장하세요.':recovery.stored?'이 브라우저에 임시 보관됨':'임시 보관 준비 중'}</p>}
-        <fieldset disabled={isMutating} className="contents" aria-label="덱 구성" aria-busy={isMutating}>
-        <button type="button" className="ko-mobile-current-deck" onClick={()=>{setWorkspace(workspace==='editor'?'cards':'editor');setEditorCollapsed(false);}}>{workspace==='editor'?'카드 찾기로 돌아가기':`현재 덱 · ${cardIds.length}/25`}</button>
-        <nav className="ko-workspace-nav" aria-label="덱 편집 작업 이동">
-          <button type="button" aria-pressed={workspace==='decks'} onClick={()=>setWorkspace('decks')}>내 덱</button><button type="button" aria-pressed={workspace==='cards'} onClick={()=>setWorkspace('cards')}>카드 찾기</button><button type="button" aria-pressed={workspace==='editor'} onClick={()=>{setWorkspace('editor');setEditorCollapsed(false);}}>현재 덱 · {cardIds.length}/25</button>
-        </nav>
-        <div className="ko-decks__columns">
-          <aside id="deck-list" className="ko-decks__rail" aria-label="덱 목록">
-            <button type="button" className="ko-decks__secondary-action min-h-11 mb-3 w-full" data-testid="button-import-deck" disabled={isLoading} onClick={() => { setImportCode(''); setShareMode('import'); }}>덱 가져오기</button>
-            <div className="flex items-center justify-between gap-2">
-              <p className="ko-decks__section-label">내 덱</p>
-              <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={()=>changeEditor(()=>{createDraft();setWorkspace("editor");})}>
-                <CirclePlus className="h-3.5 w-3.5" aria-hidden="true" />
-                새 덱
-              </button>
-            </div>
-            <div className="ko-decks__deck-list" data-testid="list-decks">
-              {decks.length === 0 ? (
-                <div className="ko-decks__empty mt-4">
-                  <Shield className="mx-auto h-7 w-7 text-[#a4793a]" aria-hidden="true" />
-                  <h2 className="mt-3">첫 작전을 세우세요</h2>
-                  <p>새 덱을 만들고, 챔피언과 카드를 고릅니다.</p>
-                </div>
-              ) : (
-                decks.map((deck) => (
-                  <button
-                    key={deck.id}
-                    type="button"
-                    className={`ko-decks__deck-item ${editingId === deck.id ? "ko-decks__deck-item--active" : ""}`}
-                    data-testid={`button-open-deck-${deck.id}`}
-                    onClick={() => changeEditor(()=>{openDeck(deck);setWorkspace("editor");})}
-                  >
-                    <span className="min-w-0">
-                      <span className="ko-decks__deck-item-name block">{deck.name}</span>
-                      <span className="ko-decks__deck-item-meta block">
-                         {deck.champion?.name ?? "챔피언 없음"} · {deck.cardDefinitionIds.length}장
-                      </span>
-                      <span className={`ko-decks__deck-item-status ${deck.isValid ? "ko-decks__deck-item-status--valid" : ""}`}>
-                          {deckValidityLabel(deck.isValid)}
-                      </span>
-                    </span>
-                    {deck.isSelected && <Check className="h-4 w-4 shrink-0 text-[#e7b642]" aria-label="출전 덱" />}
-                  </button>
-                ))
-              )}
-            </div>
-          </aside>
-
-          <section ref={libraryRoot} id="deck-library" className="ko-decks__library" aria-label="카드 컬렉션">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="ko-decks__section-label">카드 목록</p>
-                <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-[#e8e0d4]" data-testid="text-collection-title">
-                  카드 찾기
-                </h2>
-              </div>
-              <span className="font-display text-xs tracking-[0.12em] text-[#83786e]" data-testid="text-card-result-count">
-                {filteredCards.length}종
-              </span>
-            </div>
-            <div className="ko-decks__toolbar ko-continuous-toolbar">
-              <CatalogDensity value={density} onChange={setDensity}/>
-              <label className="ko-decks__search">
+        </div>
+      ) : (
+        <fieldset disabled={isMutating} className="kdb-editor" aria-label="덱 구성" aria-busy={isMutating}>
+          <section ref={libraryRoot} id="deck-library" className="kdb-library" aria-label="카드 컬렉션">
+            <div className="kdb-bar-top">
+              <button type="button" className="kdb-back" onClick={()=>{if(!dirty||window.confirm('저장하지 않은 변경이 있어요. 덱 목록으로 나갈까요?')){if(editingDeck)openDeck(editingDeck);setWorkspace('decks');}}}><ArrowLeft className="h-4 w-4" aria-hidden="true" />내 덱</button>
+              <label className="kdb-search">
                 <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="sr-only">카드 검색</span>
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  aria-label="카드 이름으로 검색" placeholder="카드 이름으로 검색"
-                  data-testid="input-card-search"
-                />
+                <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} aria-label="카드 이름으로 검색" placeholder="카드 검색" data-testid="input-card-search" />
+                {search && <button type="button" aria-label="검색어 지우기" onClick={()=>setSearch("")}><X className="h-3.5 w-3.5" /></button>}
               </label>
-              <CardCatalogFilters cards={options.cards} value={catalogFilters} onChange={setCatalogFilters} />
-              <div className="ko-decks__filters" role="group" aria-label="카드 유형 필터">
+              <div className="kdb-types" role="group" aria-label="카드 유형 필터">
                 {(["ALL", "WRESTLER", "TECHNIQUE"] as CardFilter[]).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className={`ko-decks__filter ${filter === item ? "ko-decks__filter--active" : ""}`}
-                    aria-pressed={filter === item}
-                    data-testid={`button-filter-${item.toLowerCase()}`}
-                    onClick={() => setFilter(item)}
-                  >
-                    {item === "ALL" ? "전체" : cardTypeLabel(item)}
-                  </button>
+                  <button key={item} type="button" aria-pressed={filter === item} data-testid={`button-filter-${item.toLowerCase()}`} onClick={() => setFilter(item)}>{item === "ALL" ? "전체" : cardTypeLabel(item)}</button>
                 ))}
+                <button type="button" aria-pressed={favoritesOnly} aria-label="즐겨찾기만" onClick={() => setFavoritesOnly((value) => !value)}><Star className="h-3.5 w-3.5" /></button>
               </div>
-              <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
-                className={`ko-decks__filter flex items-center gap-1 ${favoritesOnly ? 'ko-decks__filter--active' : ''}`}>
-                <Star className="h-3.5 w-3.5" /> 즐겨찾기
-              </button>
+              <details className="kdb-morefilter">
+                <summary><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />필터{activeFilterCount>0?` ${activeFilterCount}`:''}</summary>
+                <div className="kdb-morefilter__panel"><CardCatalogFilters cards={options.cards} value={catalogFilters} onChange={setCatalogFilters} /></div>
+              </details>
+            </div>
+            <div className="kdb-costs" role="group" aria-label="비용으로 보기">
+              {[0,1,2,3,4,5,6,7].map(cost=>(
+                <button key={cost} type="button" className="kdb-gem" aria-pressed={costBucket===cost} aria-label={`비용 ${cost}${cost===7?' 이상':''}`} onClick={()=>setCostBucket(current=>current===cost?null:cost)}>{cost===7?'7+':cost}</button>
+              ))}
+              <span className="kdb-costs__count" data-testid="text-card-result-count">{filteredCards.length}종</span>
             </div>
             {filteredCards.length === 0 ? (
-              <div className="ko-decks__empty mt-5" data-testid="empty-card-results">
-                <Search className="mx-auto h-7 w-7 text-[#8f6d37]" aria-hidden="true" />
-                <h2 className="mt-3">카드가 없습니다</h2>
-                <p>검색어 또는 필터를 바꿔보세요.</p>
-                {(search || filter!=="ALL" || favoritesOnly || Object.values(catalogFilters).some(value=>value!=="ALL")) && <button type="button" className="ko-decks__mini-button mx-auto mt-4" onClick={()=>{setSearch("");setFilter("ALL");setFavoritesOnly(false);setCatalogFilters({...EMPTY_CATALOG_FILTERS});requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('[data-testid="input-card-search"]')?.focus());}}>검색·필터 초기화</button>}
+              <div className="kdb-empty" data-testid="empty-card-results">
+                <Search className="mx-auto h-7 w-7" aria-hidden="true" />
+                <p>조건에 맞는 카드가 없어요.</p>
+                <button type="button" className="kdb-ghost" onClick={()=>{setSearch("");setFilter("ALL");setFavoritesOnly(false);setCostBucket(null);setCatalogFilters({...EMPTY_CATALOG_FILTERS});}}>검색·필터 초기화</button>
               </div>
             ) : (
-              <div className="ko-decks__card-grid ko-continuous-card-grid" data-density={density} data-testid="grid-card-collection">
+              <div className="kdb-grid" data-testid="grid-card-collection">
                 {filteredCards.slice(0,catalog.limit).map((card) => {
-                  const action = getDeckCardAction(card, {
-                    count: counts.get(card.id) ?? 0,
-                    deckCount: cardIds.length,
-                    deckSize: DECK_SIZE,
-                    legendaryCount,
-                    maxLegendaryCards: MAX_LEGENDARY_CARDS,
-                    isTestAccount: options.isTestAccount === true,
-                    isAdmin: authUser?.role === "ADMIN",
-                  });
+                  const count = counts.get(card.id) ?? 0;
+                  const action = getDeckCardAction(card, { count, deckCount: cardIds.length, deckSize: DECK_SIZE, legendaryCount, maxLegendaryCards: MAX_LEGENDARY_CARDS, isTestAccount: options.isTestAccount === true, isAdmin: authUser?.role === "ADMIN" });
                   const unowned = action.kind === "CRAFT";
+                  const limit = card.rarity === "LEGENDARY" ? 1 : maxCardCopies(card.rarity);
                   return (
-                    <DeckCardVisual
-                      key={card.id}
-                      card={card}
-                      selectedCount={counts.get(card.id) ?? 0}
-                      disabled={action.kind === "DISABLED"}
-                      disabledReason={unowned ? "선택하여 카드 제작" : action.kind === "DISABLED" ? action.reason : undefined}
-                      unowned={unowned}
-                      onCraft={() => void openCraftFlow(card)}
-                      onAdd={() => addCard(card)}
-                      onOpenDetails={() => setDetailCard(card)}
-                    />
+                    <article key={card.id} data-motion-key={card.id} className="kdb-card" data-unowned={unowned || undefined} data-maxed={(!unowned && action.kind === "DISABLED") || undefined} data-in-deck={count>0||undefined} data-bump={changedCard?.id===card.id?changedCard.kind:undefined} data-testid={`card-collection-${card.id}`}>
+                      <button type="button" className="kdb-card__hit" data-testid={`button-add-card-action-${card.id}`}
+                        aria-label={unowned ? `${card.name} 제작 정보` : `${card.name} 덱에 넣기`}
+                        onClick={()=>{ if(unowned){void openCraftFlow(card);return;} if(action.kind==="DISABLED"){setNotice(action.reason ?? "더 넣을 수 없어요.");return;} addCard(card); }}
+                        onContextMenu={(event)=>{event.preventDefault();setDetailCard(card);}}>
+                        <CardRenderer cardId={card.id} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={cardSettings(card)} size="detail" className="w-full" />
+                      </button>
+                      <button type="button" className="kdb-card__info" aria-label={`${card.name} 자세히 보기`} data-testid={`button-card-details-${card.id}`} onClick={()=>setDetailCard(card)}><Info className="h-3.5 w-3.5" aria-hidden="true" /></button>
+                      {unowned ? <span className="kdb-card__tag kdb-card__tag--craft"><Hammer className="h-3 w-3" aria-hidden="true" />제작</span>
+                        : <span className="kdb-card__tag" data-testid={`text-card-ownership-${card.id}`}>{count>0?<b>{count}</b>:null}{count>0?' / ':''}{limit}장{card.quantity!==undefined&&!options.isTestAccount?` · 보유 ${card.quantity}`:''}</span>}
+                    </article>
                   );
                 })}
               </div>
@@ -918,211 +754,78 @@ export default function Decks() {
             <CatalogContinuation catalog={catalog} total={filteredCards.length}/>
           </section>
 
-          <section id="deck-workspace" className={`ko-decks__editor ${editorCollapsed ? 'ko-decks__editor--collapsed' : ''}`} aria-label="현재 덱 편집기">
-            <div className="ko-decks__editor-head">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="ko-decks__section-label">현재 편집 중</p>
-                  <label className="sr-only" htmlFor="deck-name">덱 이름</label>
-                  <input
-                    id="deck-name"
-                    className="ko-decks__name-input"
-                    value={deckName}
-                    maxLength={40}
-                    onChange={(event) => setDeckName(event.target.value)}
-                    data-testid="input-deck-name"
-                  />
-                </div>
-                {editingDeck?.isSelected && (
-                  <span className="mt-5 shrink-0 font-display text-[10px] font-bold tracking-[0.12em] text-[#efc65c]" data-testid="status-selected-deck">
-                    현재 출전 덱
-                  </span>
-                )}
-                <button type="button" className="ko-decks__collapse-button" aria-expanded={!editorCollapsed} onClick={() => setEditorCollapsed((collapsed) => !collapsed)}>{editorCollapsed ? '덱 정보 펼치기 ▲' : '덱 정보 접기 ▼'}</button>
-              </div>
-            </div>
-            <div className="ko-decks__editor-scroll">
-              <div className="flex items-center justify-between gap-3">
-                <p className="ko-decks__section-label">챔피언</p>
-                <button
-                  type="button"
-                  className="rounded border border-[#554a3a] px-3 py-1 text-xs font-bold text-[#cdbb94] transition hover:border-[#d9b04b] hover:text-[#f1d47a]"
-                  onClick={() => setChampionPickerOpen(true)}
-                  data-testid="select-champion"
-                >
-                  {selectedChampion?.name ?? "챔피언 선택"}
+          <aside id="deck-workspace" className="kdb-deck" aria-label="현재 덱">
+            <button type="button" className="kdb-peek" data-deck-target onClick={()=>setSheetOpen(open=>!open)} aria-expanded={sheetOpen}>
+              <span className="kdb-peek__champ">{selectedChampion?.imageUrl ? <CardArtwork src={selectedChampion.imageUrl} alt="" className="h-full w-full" imageDisplayMode={selectedChampion.imageDisplayMode} imageScale={selectedChampion.imageScale} imagePositionX={selectedChampion.imagePositionX} imagePositionY={selectedChampion.imagePositionY} /> : <Shield className="h-5 w-5" aria-hidden="true" />}</span>
+              <span className="kdb-peek__text"><b>{deckName || EMPTY_DECK_NAME}</b><small>{dirty ? '저장 안 됨' : editingDeck?.isSelected ? '출전 덱' : '덱 보기'}</small></span>
+              <span key={cardIds.length} className="kdb-peek__count" data-full={cardIds.length===DECK_SIZE||undefined}>{cardIds.length}<small>/{DECK_SIZE}</small></span>
+              <ChevronUp className="kdb-peek__chev h-5 w-5" aria-hidden="true" />
+            </button>
+            <div className="kdb-deck__body">
+              <div className="kdb-hero">
+                <button type="button" className="kdb-hero__art" onClick={() => setChampionPickerOpen(true)} data-testid="panel-selected-champion" aria-label={selectedChampion ? `${selectedChampion.name} 챔피언 변경` : "챔피언 선택"}>
+                  {selectedChampion?.imageUrl ? <CardArtwork src={selectedChampion.imageUrl} alt="" className="h-full w-full" imageDisplayMode={selectedChampion.imageDisplayMode} imageScale={selectedChampion.imageScale} imagePositionX={selectedChampion.imagePositionX} imagePositionY={selectedChampion.imagePositionY} /> : <span className="kdb-hero__pick"><Plus className="h-6 w-6" aria-hidden="true" />챔피언 선택</span>}
                 </button>
-              </div>
-              <button
-                type="button"
-                className="ko-decks__champion-slot mt-3 w-full text-left transition hover:border-[#d9b04b] hover:bg-[#201a14]"
-                onClick={() => setChampionPickerOpen(true)}
-                data-testid="panel-selected-champion"
-                aria-label={selectedChampion ? `${selectedChampion.name} 챔피언 변경` : "챔피언 선택"}
-              >
-                {selectedChampion ? (
-                  <>
-                    <ChampionPortrait champion={selectedChampion} />
-                    <div className="ko-decks__champion-copy min-w-0">
-                      <h3>{selectedChampion.name}</h3>
-                      <p>고유 능력 · 비용 {selectedChampion.abilityCost} 골드</p>
-                      {(selectedChampion.status !== "PUBLISHED" && !(selectedChampion.status === "DRAFT")) && (
-                        <p className="mt-2 flex items-center gap-1 text-[#de8e7f]"><AlertTriangle className="h-3 w-3" /> 공개되지 않은 챔피언</p>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <p className="col-span-2 py-5 text-center text-xs font-bold text-[#736b62]">챔피언을 선택하세요</p>
-                )}
-              </button>
-
-              <div className="ko-decks__meter" data-testid="panel-deck-meter">
-                <div className="ko-decks__meter-line">
-                  <span>FIGHT PLAN / cards</span>
-                  <span className="ko-decks__meter-number" data-testid="text-deck-card-count">{cardIds.length} <small className="font-sans text-[0.62rem] text-[#91877b]">/ {DECK_SIZE}</small></span>
+                <div className="kdb-hero__info">
+                  <label className="sr-only" htmlFor="deck-name">덱 이름</label>
+                  <input id="deck-name" className="kdb-hero__name" value={deckName} maxLength={40} onChange={(event) => setDeckName(event.target.value)} data-testid="input-deck-name" />
+                  <button type="button" className="kdb-hero__champ" onClick={() => setChampionPickerOpen(true)} data-testid="select-champion">{selectedChampion ? <>{selectedChampion.name} · 능력 {selectedChampion.abilityCost}골드 <span>바꾸기</span></> : '챔피언을 골라 주세요'}</button>
                 </div>
-                <div className="ko-decks__meter-track" aria-hidden="true">
-                  <div className="ko-decks__meter-fill" style={{ width: `${Math.min(100, (cardIds.length / DECK_SIZE) * 100)}%` }} />
-                </div>
-                {cardIds.length >= 8 && <div className="mt-3 rounded border border-[#6b5840] px-2 py-2 text-[11px] text-[#ddcfb8]">
-                  <strong>덱 구성 참고</strong> · 초반(0~2) {deckCurve.early}장 · 고비용(5+) {deckCurve.late}장 · 기술 {deckCurve.techniques}장
-                  {deckCurve.early < Math.ceil(cardIds.length * 0.2) && <p className="mt-1 text-amber-300">초반에 낼 카드가 적어 손패가 무거울 수 있어요.</p>}
-                </div>}
-                {cardIds.length !== DECK_SIZE && (
-                  <p className="ko-decks__notice ko-decks__notice--quiet mt-3" data-testid="status-deck-incomplete">
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                     저장은 가능하지만, 출전 덱으로 선택하려면 카드가 정확히 {DECK_SIZE}장 필요합니다.
-                  </p>
-                )}
+                <button type="button" className="kdb-sheet-close" aria-label="덱 닫기" onClick={()=>setSheetOpen(false)}><ChevronDown className="h-5 w-5" /></button>
               </div>
 
-              {validationReasons.length > 0 && (
-                <div className="ko-decks__notice" role="status" data-testid="status-deck-invalid">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <div className="space-y-1">
-                    <p className="font-black">이 덱은 현재 사용할 수 없습니다.</p>
-                    {validationReasons.map((reason, index) => (
-                      <p key={`${reason.reasonCode}-${index}`} data-testid={`deck-validation-${reason.reasonCode}`}>
-                         {formatDeckValidationReason(reason, cardNames)} <button type="button" className="min-h-11 px-2 underline" onClick={()=>{setEditorCollapsed(false);const id=reason.cardDefinitionIds?.[0];if(reason.reasonCode==='CHAMPION_REQUIRED'){setChampionPickerOpen(true);return;}const node=id?document.querySelector<HTMLElement>(`[data-testid="row-selected-card-${CSS.escape(id)}"]`):document.getElementById(reason.reasonCode==='CHAMPION_REQUIRED'?'button-select-champion':'deck-library');const target=node??document.getElementById('deck-library');target?.scrollIntoView({block:'center',behavior:'smooth'});if(target){target.tabIndex=-1;target.focus({preventScroll:true});}}}>확인할 위치로</button>
-                      </p>
-                    ))}
-                  </div>
+              <div className="kdb-count" data-testid="panel-deck-meter">
+                <span className="kdb-count__num" data-testid="text-deck-card-count" data-full={cardIds.length===DECK_SIZE||undefined}>{cardIds.length}<small> / {DECK_SIZE}</small></span>
+                <div className="kdb-curve" aria-label="비용 분포">
+                  {curve.map((value,cost)=>(<span key={cost} className="kdb-curve__col"><i style={{height:`${curveMax?Math.round(value/curveMax*100):0}%`}} /><em>{cost===7?'7+':cost}</em></span>))}
                 </div>
-              )}
-              {missingIds.length > 0 && (
-                <div className="mt-2 text-[0.65rem] font-bold leading-5 text-[#d68b7c]" data-testid="warning-missing-cards">
-                  저장된 카드 참조를 찾을 수 없습니다: {missingIds.join(", ")}
-                </div>
-              )}
-
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <p className="ko-decks__section-label">덱에 넣은 카드</p>
-                  <span className="text-[0.62rem] font-bold text-[#706b65]">노멀 동일 {maxCardCopies("NORMAL")}장 · 에픽 동일 {maxCardCopies("EPIC")}장 · 레전더리 카드별 1장 / 총 {MAX_LEGENDARY_CARDS}장</span>
               </div>
+
               {selectedRows.length === 0 ? (
-                <div className="ko-decks__empty mt-3" data-testid="empty-selected-cards">
-                  <p>왼쪽 카드 보관함에서 작전을 채우세요.</p>
-                </div>
+                <div className="kdb-deck__empty" data-testid="empty-selected-cards" data-deck-target>카드를 눌러서 덱에 넣으세요.<br/><small>덱에 넣은 카드를 누르면 한 장씩 빠져요.</small></div>
               ) : (
-                <div className="ko-decks__compact-list" data-testid="list-selected-cards">
+                <ul className="kdb-list" data-testid="list-selected-cards" data-deck-target>
                   {selectedRows.map(({ id, count, card }) => (
-                    <div
-                      key={id}
-                      className={`ko-decks__compact-row ${problematicCardIds.has(id) ? "ko-decks__compact-row--invalid" : ""}`}
-                      data-testid={`row-selected-card-${id}`}
-                      data-invalid={problematicCardIds.has(id) ? "true" : undefined}
-                      data-rarity={card?.rarity}
-                      data-edit-cue={changedCard?.id===id?changedCard.kind:undefined}
-                      style={prefersReducedMotion()?{animation:"none"}:undefined}
-                    >
-                      <Inspectable
-                        className="flex min-w-0 flex-1"
-                        touchInspectTriggerOnly
-                        showOnHover
-                        content={
-                          card ? (
-                            <div className="space-y-3">
-                              <p className="text-[0.62rem] font-black tracking-[0.18em] text-amber-300">
-                                {cardTypeLabel(card.cardType)} · {card.rarity}
-                              </p>
-                              <CardRenderer
-                                cardId={card.id}
-                                keywords={card.keywords}
-                                keywordConfig={card.effectConfig}
-                                name={card.name}
-                                cardType={card.cardType}
-                                cost={card.cost}
-                                attack={card.attack}
-                                health={card.health}
-                                rulesText={card.text}
-                                imageUrl={card.imageUrl}
-                                rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
-                                imageDisplaySettings={cardSettings(card)}
-                                size="detail"
-                                className="mx-auto w-64 max-w-full"
-                              />
-                              <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300"><CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} /></p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-neutral-400">알 수 없는 카드</p>
-                          )
-                        }
-                      >
-                        <button
-                          type="button"
-                          className="ko-decks__compact-action"
-                          onClick={() => { if (card) setDetailCard(card); }}
-                          aria-label={card ? `${card.name} 상세 보기` : "상세 보기"}
-                        >
-                          <span className="ko-decks__compact-cost">{card?.cost ?? "?"}</span>
-                          <span className="ko-decks__compact-name" title={card?.name ?? `확인할 수 없는 카드 (${id})`}>
-                            {card?.name ?? `확인할 수 없는 카드 (${id})`}
-                            {problematicCardIds.has(id) && <AlertTriangle className="ml-1.5 inline-block h-3 w-3 shrink-0 text-[#e18a79]" aria-label="덱 검증 문제" />}
-                          </span>
-                          <span key={count} className="ko-decks__compact-qty" data-testid={`text-card-count-${id}`}>×{count}</span>
+                    <li key={id} className="kdb-row" data-testid={`row-selected-card-${id}`} data-invalid={problematicCardIds.has(id) ? "true" : undefined} data-rarity={card?.rarity} data-edit-cue={changedCard?.id===id?changedCard.kind:undefined}>
+                      <Inspectable className="flex min-w-0 flex-1" touchInspectTriggerOnly showOnHover content={card ? <CardRenderer cardId={card.id} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={cardSettings(card)} size="detail" className="mx-auto w-60 max-w-full" /> : <p className="text-xs text-neutral-400">알 수 없는 카드</p>}>
+                        <button type="button" className="kdb-row__btn" data-testid={`button-remove-card-${id}`} aria-label={`${card?.name ?? id} 한 장 빼기`} onClick={() => removeCard(id)} onContextMenu={(event)=>{event.preventDefault();if(card)setDetailCard(card);}}>
+                          <span className="kdb-row__cost">{card?.cost ?? "?"}</span>
+                          <span className="kdb-row__name">{card?.name ?? `확인할 수 없는 카드`}{problematicCardIds.has(id) && <AlertTriangle className="ml-1 inline-block h-3 w-3" aria-label="문제 있음" />}</span>
+                          {card?.imageUrl && <span className="kdb-row__art" style={{backgroundImage:`url("${card.imageUrl}")`}} aria-hidden="true" />}
+                          <span key={count} className="kdb-row__qty" data-testid={`text-card-count-${id}`}>{card?.rarity==='LEGENDARY'?'★':count>1?`×${count}`:''}</span>
                         </button>
                       </Inspectable>
-                      <button
-                        type="button"
-                        className="ko-decks__compact-remove"
-                        aria-label={`${card?.name ?? id} 한 장 제거`}
-                        data-testid={`button-remove-card-${id}`}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onPointerUp={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); removeCard(id); }}
-                      >
-                        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
-            </div>
-            <div className="ko-decks__editor-actions">
-              <button type="button" className="ko-decks__secondary-action" data-testid="button-share-deck" disabled={isLoading || isMutating} onClick={() => {
-                try { setShareSnapshot(createDeckSnapshot(deckName, selectedChampion ?? undefined, cardIds, cardById)); setShareMode('share'); setErrorMessage(''); }
-                catch (error) { setErrorMessage(error instanceof Error ? error.message : '덱을 공유하지 못했습니다.'); }
-              }}>덱 공유</button>
-            </div>
-            <div className="ko-decks__editor-actions">
-              <button type="button" className="ko-decks__primary-action" data-testid="button-save-deck" data-ui-motion-state={isMutating?"PENDING":statusMessage==="전략을 저장했습니다."?"SUCCESS":""} aria-busy={isMutating} disabled={isMutating} onClick={handleSave}>
-                <Check className="h-4 w-4" aria-hidden="true" />
-                {isMutating ? "처리 중..." : "전략 저장"}
-              </button>
-              <button type="button" className="ko-decks__secondary-action" data-testid="button-select-deck" title={dirty?"변경 사항을 먼저 저장하세요.":"빠른 대전·AI 대전에 사용할 덱"} disabled={isMutating || !editingId || !isValidForSelection || dirty || editingDeck?.isSelected} onClick={handleSelect}>
-                {editingDeck?.isSelected?"현재 출전 덱":dirty?"저장 후 출전 지정":"출전 덱으로 지정"}
-              </button>
-              {editingId && (
-                <button type="button" className="ko-decks__danger-action" aria-label="덱 삭제" data-testid="button-delete-deck" disabled={isMutating} onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
+
+              {(validationReasons.length > 0 || missingIds.length > 0) && (
+                <details className="kdb-issues" role="status" data-testid="status-deck-invalid">
+                  <summary><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />{cardIds.length!==DECK_SIZE&&validationReasons.length===1?`카드 ${DECK_SIZE - cardIds.length > 0 ? `${DECK_SIZE - cardIds.length}장 더 필요해요` : `${cardIds.length - DECK_SIZE}장 빼야 해요`}`:`출전하려면 고칠 것 ${validationReasons.length}개`}</summary>
+                  {validationReasons.map((reason, index) => (
+                    <p key={`${reason.reasonCode}-${index}`} data-testid={`deck-validation-${reason.reasonCode}`}>{formatDeckValidationReason(reason, cardNames)}{(reason.reasonCode==='CHAMPION_REQUIRED'||reason.cardDefinitionIds?.length)&&<button type="button" onClick={()=>{const id=reason.cardDefinitionIds?.[0];if(reason.reasonCode==='CHAMPION_REQUIRED'){setChampionPickerOpen(true);return;}const node=id?document.querySelector<HTMLElement>(`[data-testid="row-selected-card-${CSS.escape(id)}"]`):null;node?.scrollIntoView({block:'center',behavior:'smooth'});}}>보기</button>}</p>
+                  ))}
+                  {missingIds.length > 0 && <p data-testid="warning-missing-cards">찾을 수 없는 카드: {missingIds.join(", ")}</p>}
+                </details>
               )}
+
+              <div className="kdb-actions">
+                <button type="button" className="kdb-gold kdb-actions__save" data-testid="button-save-deck" aria-busy={isMutating} disabled={isMutating} onClick={handleSave}><Check className="h-4 w-4" aria-hidden="true" />{isMutating ? "저장 중..." : dirty || !editingId ? "저장" : "저장됨"}</button>
+                <button type="button" className="kdb-ghost" data-testid="button-select-deck" title={dirty?"먼저 저장하세요.":"빠른 대전·AI 대전에 쓸 덱"} disabled={isMutating || !editingId || !isValidForSelection || dirty || editingDeck?.isSelected} onClick={handleSelect}><Swords className="h-4 w-4" aria-hidden="true" />{editingDeck?.isSelected?"출전 중":"출전 덱으로"}</button>
+                <button type="button" className="kdb-icon" aria-label="덱 코드 공유" data-testid="button-share-deck" disabled={isMutating} onClick={() => {
+                  try { setShareSnapshot(createDeckSnapshot(deckName, selectedChampion ?? undefined, cardIds, cardById)); setShareMode('share'); setErrorMessage(''); }
+                  catch (error) { setErrorMessage(error instanceof Error ? error.message : '덱을 공유하지 못했습니다.'); }
+                }}><Share2 className="h-4 w-4" aria-hidden="true" /></button>
+                {editingId && <button type="button" className="kdb-icon kdb-icon--danger" aria-label="덱 삭제" data-testid="button-delete-deck" disabled={isMutating} onClick={handleDelete}><Trash2 className="h-4 w-4" aria-hidden="true" /></button>}
+              </div>
+              {(errorMessage||statusMessage) && <p ref={errorRegion} tabIndex={-1} className={errorMessage?'kdb-msg kdb-msg--err':'kdb-msg'} role={errorMessage?'alert':'status'} data-testid={errorMessage?'status-decks-error':'status-decks-success'}>{errorMessage||statusMessage}</p>}
+              {dirty&&recovery.error&&<p className="kdb-msg kdb-msg--err">임시 보관 실패 — 나가기 전에 저장하세요.</p>}
             </div>
-            {statusMessage && <p className="px-[18px] pb-3 text-center text-[0.68rem] font-bold text-[#d5b25b]" role="status" data-testid="status-decks-success" data-ui-mount-motion data-ui-motion-state={`SUCCESS:${statusMessage}`}>{statusMessage}</p>}
-          </section>
-        </div>
+          </aside>
+          {notice && <div className="kdb-notice" role="status" key={notice+noticeKey}>{notice}</div>}
         </fieldset>
-      </div>
+      )}
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={open=>{if(!open)setDeleteTarget(null);}}>
         <AlertDialogContent className="ko-deck-delete-dialog" onCloseAutoFocus={event=>{
           event.preventDefault();
@@ -1267,46 +970,26 @@ export default function Decks() {
         </DialogContent>
       </Dialog>
       <Dialog open={championPickerOpen} onOpenChange={setChampionPickerOpen}>
-        <DialogContent className="max-w-3xl border-neutral-800 bg-[#110f0d] text-white max-h-[88vh] overflow-y-auto">
+        <DialogContent className="kdb-champ-dialog max-w-4xl border-neutral-800 bg-[#110f0d] text-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-left text-xl font-black">챔피언 선택</DialogTitle>
+            <DialogTitle className="text-left text-2xl font-black text-[#ffe6a8]">챔피언 선택</DialogTitle>
             <DialogDescription className="text-left text-sm text-neutral-400">
-              현재 계정에서 사용할 수 있는 공개 챔피언만 표시됩니다.
+              덱의 주인공을 골라 주세요. 나중에 바꿀 수 있어요.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="kdb-champs">
             {Array.from(championById.values())
               .filter((champion) => champion.status === "PUBLISHED" || champion.status === "DRAFT")
               .map((champion) => (
-                <button
-                  key={champion.id}
-                  type="button"
-                  className={`grid grid-cols-[72px_1fr] gap-3 rounded-lg border p-3 text-left transition ${
-                    champion.id === championId
-                      ? "border-amber-400 bg-amber-950/30"
-                      : "border-neutral-800 bg-neutral-950/70 hover:border-amber-700"
-                  }`}
-                  onClick={() => {
-                    setChampionId(champion.id);
-                    setChampionPickerOpen(false);
-                  }}
-                  data-testid={`button-select-champion-${champion.id}`}
-                >
-                  <ChampionPortrait champion={champion} />
-                  <span className="min-w-0">
-                    <strong className="block truncate text-sm text-amber-200">{champion.name}</strong>
-                    <span className="mt-1 block text-xs font-bold text-neutral-300">
-                      고유 능력 · 비용 {champion.abilityCost} 골드
-                    </span>
-                    <span className="mt-2 block line-clamp-3 text-xs leading-5 text-neutral-400">
-                      {champion.abilityText || champion.description || "능력 설명 없음"}
-                    </span>
-                    {champion.hasQuest && (
-                      <span className="mt-2 inline-block rounded border border-emerald-800 px-1.5 py-0.5 text-[10px] font-black text-emerald-300">
-                        QUEST
-                      </span>
-                    )}
+                <button key={champion.id} type="button" className="kdb-champ" data-active={champion.id === championId || undefined}
+                  onClick={() => { setChampionId(champion.id); setChampionPickerOpen(false); }}
+                  data-testid={`button-select-champion-${champion.id}`}>
+                  <span className="kdb-champ__art">{champion.imageUrl ? <CardArtwork src={champion.imageUrl} alt="" className="h-full w-full" imageDisplayMode={champion.imageDisplayMode} imageScale={champion.imageScale} imagePositionX={champion.imagePositionX} imagePositionY={champion.imagePositionY} /> : <Shield className="h-10 w-10" aria-hidden="true" />}</span>
+                  <span className="kdb-champ__plate">
+                    <strong>{champion.name}</strong>
+                    <small>능력 {champion.abilityCost}골드{champion.hasQuest ? ' · 피니셔' : ''}</small>
                   </span>
+                  <span className="kdb-champ__text">{champion.abilityText || champion.description || "능력 설명 없음"}</span>
                 </button>
               ))}
           </div>
