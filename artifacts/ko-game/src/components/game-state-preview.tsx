@@ -97,6 +97,7 @@ import { canMulligan } from '../game/engine/mulligan';
 import {CombatSettings} from './combat-settings';
 import { messengerKind } from './keyword-fx';
 import { MessengerRevelation } from './messenger-revelation';
+import { InspectHint } from './inspect-hint';
 import {ScreenShakeSetting} from './screen-impact';
 import { CinematicProvider, CinematicCue, CinematicIntro, CardRevealPresentation } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
@@ -359,6 +360,15 @@ export function GameStatePreview({
   useHandMotion(handCardRefs, `${state.gameId}:${handSort}:${state.players[0]?.hand.map(card=>card.instanceId+':'+card.currentCost).join(':') ?? ''}`);
   const motion = useBattleMotion();
   const playerHandRef = React.useRef<HTMLDivElement | null>(null);
+  // Hearthstone mobile: the first tap on the hand lifts it up big and readable; the next tap picks a card.
+  const [handZoom, setHandZoom] = React.useState(false);
+  React.useEffect(() => { setHandZoom(false); }, [selectedCardId, state.turn]);
+  React.useEffect(() => {
+    if (!handZoom) return;
+    const away = (event: PointerEvent) => { if (!playerHandRef.current?.contains(event.target as Node)) setHandZoom(false); };
+    document.addEventListener('pointerdown', away, true);
+    return () => document.removeEventListener('pointerdown', away, true);
+  }, [handZoom]);
   const playerDeckRef = React.useRef<HTMLDivElement | null>(null);
   const opponentDeckRef = React.useRef<HTMLDivElement | null>(null);
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
@@ -1839,7 +1849,13 @@ export function GameStatePreview({
             </div>
 
             {/* Player Hand */}
-             <div ref={playerHandRef} role="region" aria-label="손패" tabIndex={0} className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
+             <div ref={playerHandRef} role="region" aria-label="손패" tabIndex={0} data-zoomed={handZoom || undefined}
+               onClickCapture={(event) => {
+                 if (handZoom || effectTargeting || me.hand.length === 0) return;
+                 if (typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches) return;
+                 event.stopPropagation(); event.preventDefault(); setHandZoom(true);
+               }}
+               className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
                 <div className="ko-hand-cards relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
@@ -1875,6 +1891,7 @@ export function GameStatePreview({
          </div>
       </div>
       <MessengerRevelation state={state} />
+      <InspectHint />
       <TargetingArrow
         sourceId={selectedAttackerId ?? (effectTargeting && state.targetingState?.playerId === me.id ? (typeof document !== 'undefined' && document.querySelector(`[data-card-instance-id="${state.targetingState.sourceInstanceId}"]`) ? state.targetingState.sourceInstanceId : 'champion') : null)}
         validIds={selectedAttackerId ? legalAttackTargets : validEffectTargetIds}
