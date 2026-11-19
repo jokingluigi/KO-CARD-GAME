@@ -1,5 +1,6 @@
 import {CardIntroduction} from "./card-introduction";
 import './inspector-peek.css';
+import { KEYWORD_LOOKS } from './keyword-fx';
 import {TagLabel} from './tag-label';
 import {FinisherProgress,championPreparationProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
@@ -471,6 +472,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
               {keywords.map((keyword) => (
                 <p key={`${keyword.key}-description`} className="ko-readable-content text-neutral-300">
                   <strong className="font-bold text-amber-200">{keyword.label}:</strong> {keyword.description}
+                  {KEYWORD_LOOKS[keyword.key] && <span className="mt-0.5 block text-[0.85em] text-neutral-400">필드에서는: {KEYWORD_LOOKS[keyword.key]}</span>}
                 </p>
               ))}
             </div>

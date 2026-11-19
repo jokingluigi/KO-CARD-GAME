@@ -98,3 +98,14 @@
 
 @media (prefers-reduced-motion:reduce){.kfx *, .kfx>span{animation:none!important}}
 @keyframes kfx-turn{to{transform:rotate(360deg)}}
+
+/* keyword names on field cards — always (default) or only for a few seconds after the card lands */
+.kfx-names{left:-4%;right:-4%;top:57%;display:flex;flex-wrap:wrap;justify-content:center;gap:2px}
+.kfx-names i{font-style:normal;font-weight:900;font-size:clamp(8px,.95vw,11px);line-height:1;padding:3px 5px 2px;border-radius:4px;white-space:nowrap;
+  color:#f4e7c6;background:rgba(8,7,6,.88);border:1px solid #6e5c38;box-shadow:0 1px 3px rgba(0,0,0,.8)}
+.kfx-names i[data-kw=TAUNT]{border-color:#9fb0c4}.kfx-names i[data-kw=DODGE]{border-color:#e8c06a}.kfx-names i[data-kw=LIFESTEAL]{border-color:#c4142c}
+.kfx-names i[data-kw=REGEN]{border-color:#4fd06a}.kfx-names i[data-kw=WANTED],.kfx-names i[data-kw=CANNOT_ATTACK]{border-color:#c43a2c}
+.kfx-names i[data-kw=SURPRISE]{border-color:#9a5ac0}.kfx-names i[data-kw=RUSH]{border-color:#ffd76a}.kfx-names i[data-kw=MULTI_STRIKE]{border-color:#ff9a62}
+html[data-kw-names=entry] .kfx-names{animation:kfx-names-fade 4.2s ease forwards}
+html[data-kw-names=entry] .ko-card-depth[data-kfx]:hover .kfx-names{animation:none;opacity:1}
+@keyframes kfx-names-fade{0%,80%{opacity:1}100%{opacity:0}}
