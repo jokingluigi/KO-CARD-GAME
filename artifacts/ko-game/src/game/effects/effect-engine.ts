@@ -3247,6 +3247,14 @@ function applyEffectInternal(
           triggerContext,
           nextState.events.length,
         );
+        const handCard = zones.includes('HAND') && nextState.players.find(player => player.id === targetOwner)?.hand.find(card => card.instanceId === target.instanceId);
+        if (handCard) {
+          const removed: GameState = {...nextState,
+            players:nextState.players.map(player => player.id !== targetOwner ? player : {...player,hand:player.hand.filter(card => card.instanceId !== target.instanceId)}),
+            events:[...nextState.events,{type:'CARD_DESTROYED',cardDefinitionId:target.definitionId,playerId:targetOwner,cardInstanceId:target.instanceId,cardType:target.cardType,source:{type:'CARD',cardInstanceId:sourceCard.instanceId},target:{type:'CARD',cardInstanceId:target.instanceId},reason:'HAND_DESTROY',sourceContext:attribution}],
+          };
+          return resolveCardDestroyedListeners(queueWantedReward(removed,handCard,targetOwner,playerId),targetOwner,handCard);
+        }
         const deckCard=zones.includes('DECK') && nextState.players.find(player=>player.id===targetOwner)?.deck.find(card=>card.instanceId===target.instanceId);
         if(deckCard){
           const removed:GameState={...nextState,players:nextState.players.map(player=>player.id!==targetOwner?player:{...player,deck:player.deck.filter(card=>card.instanceId!==target.instanceId)}),events:[...nextState.events,{type:'CARD_DESTROYED',cardDefinitionId:target.definitionId,playerId:targetOwner,cardInstanceId:target.instanceId,cardType:target.cardType,source:{type:'CARD',cardInstanceId:sourceCard.instanceId},target:{type:'CARD',cardInstanceId:target.instanceId},reason:'DECK_DESTROY',sourceContext:attribution}]};
@@ -4039,6 +4047,7 @@ export function resolveTriggeredAbilities(
       if (condition.type === 'SOURCE_ON_RIGHT_SIDE' && (card.boardSlot === null || card.boardSlot < 2)) return false;
       if (condition.type === 'COMBAT_HIT' && !options.attackerInstanceId)return false;
       if (condition.type === 'REMOVED_TARGET_TAG' && !options.removedTarget?.tags?.includes(condition.tag))return false;
+      if (condition.type === 'REMOVED_TARGET_KEYWORD' && (!options.removedTarget || !getActiveCardKeywords(options.removedTarget).includes(condition.keyword)))return false;
       if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;
       if (condition.type === 'ATTACK_GAIN' && (options.attackDelta ?? 0) <= 0) return false;
       if (condition.type === 'PREVIOUS_OWN_TURN_ANY_HEALED' && !(state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.champion || state.ownTurnHealing?.[`${state.turn-2}:${playerId}`]?.wrestler)) return false;

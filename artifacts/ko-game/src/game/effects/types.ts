@@ -141,6 +141,7 @@ export type CardAbility =
 export type AbilityCondition =
   | {type:'COMBAT_HIT'}
   | {type:'REMOVED_TARGET_TAG';tag:string}
+  | {type:'REMOVED_TARGET_KEYWORD';keyword:CardKeyword}
   | { type: 'BASE_COST_GTE'; amount: number }
   | { type: 'SOURCE_ON_LEFT_SIDE' }
   | { type: 'SOURCE_ON_RIGHT_SIDE' }
