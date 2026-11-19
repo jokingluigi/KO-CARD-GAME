@@ -12,3 +12,9 @@ The owner authorized enabling periodic requests for the single free Render API s
 Validation: workflow YAML and Bash syntax validated locally; the exact curl script returned HTTP 200 from the live API. Initial GitHub manual run `44453795210` completed successfully, including the health-request step: https://github.com/jokingluigi/KO-CARD-GAME/actions/runs/44453795210 . Workflow state is active. GitHub runner log download was unavailable to the current integration, so execution success was verified through the job and step conclusions.
 
 Operational limits: GitHub cron is best-effort and may be delayed; this is not a guaranteed always-on service or a replacement for paid hosting. GitHub may disable scheduled workflows in public repositories after 60 days without repository activity. Enable it again in Actions if that occurs. Keep the workflow on the default branch; a copy is retained on the handoff branch for future merges. Do not merge old application code from main into production merely to install this workflow.
+
+## Follow-up: recurring execution was not established
+
+At 2026-11-19 05:11 UTC the workflow still had zero `schedule` runs; at 08:32 UTC it still only had the original manual success. The original manual check did not verify keep-alive operation. Cron was simplified to `*/5 * * * *` on main (`7fb3ad3`) and the workflow disabled/re-enabled at 05:13:52 UTC, but automatic execution remained unconfirmed. Do not report this GitHub monitor as verified continuous protection.
+
+Warm-server diagnostic requests at 05:15 UTC returned HTTP 200: health 402 ms, cards 385 ms, login 573 ms, session 300 ms. The temporary diagnostic login was logged out. No credentials were logged. The user has no UptimeRobot account and does not want account signup to be a prerequisite. Investigate the existing database scheduler via a fixed-purpose administrator operation instead; direct database network access from the execution workspace is unavailable.

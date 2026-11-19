@@ -2,8 +2,8 @@ name: Render API keep-alive
 
 on:
   schedule:
-    # Five-minute intervals, offset from the busiest top-of-hour schedules.
-    - cron: '2-59/5 * * * *'
+    # Re-register using the simplest five-minute schedule syntax.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 # No repository checkout, credentials, or deployment permissions are needed.
