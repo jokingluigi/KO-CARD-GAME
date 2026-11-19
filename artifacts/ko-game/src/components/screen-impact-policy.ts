@@ -66,10 +66,11 @@ export function summonPose(profile:ImpactProfile){
   slam:special?110:[0,80,85,95,105,110][rank]!,
  };
 }
-export function summonFrames(source:{left:number;top:number},target:{left:number;top:number},scale:number,profile:ImpactProfile,landing:number,duration:number,reduced=false):Keyframe[]{
+export type SummonPose=ReturnType<typeof summonPose>&{dx?:number};
+export function summonFrames(source:{left:number;top:number},target:{left:number;top:number},scale:number,profile:ImpactProfile,landing:number,duration:number,reduced=false,poseOverride?:SummonPose):Keyframe[]{
  const position=(x:number,y:number,size:number,angle=0)=>`translate3d(${x}px,${y}px,0) scale(${size}) rotate(${angle}deg)`;
  if(reduced)return [{opacity:0,transform:position(target.left,target.top,scale)},{opacity:1,transform:position(target.left,target.top,scale)}];
- const pose=summonPose(profile),heavy=impactRank(profile)>=3;
+ const pose:SummonPose=poseOverride??summonPose(profile),heavy=impactRank(profile)>=3,hx=target.left+(pose.dx??0);
  const d=Math.max(1,duration),t=landing/d;
  const hangEnd=Math.max(.2,t-pose.slam/d),hangStart=Math.max(.14,hangEnd-pose.hang/d);
  const lean=source.left<target.left?2.5:-2.5;
@@ -78,9 +79,9 @@ export function summonFrames(source:{left:number;top:number},target:{left:number
   // Picked up off the hand.
   {offset:Math.min(.1,hangStart*.35),transform:position(source.left,source.top-26,1.1,-lean),easing:'cubic-bezier(.2,.8,.3,1)'},
   // Fly in and decelerate into the hover, big and a little tilted.
-  {offset:hangStart,transform:position(target.left,target.top-pose.lift,scale*pose.boost,lean*.6),easing:'cubic-bezier(.4,0,.6,1)'},
+  {offset:hangStart,transform:position(hx,target.top-pose.lift,scale*pose.boost,lean*.6),easing:'cubic-bezier(.4,0,.6,1)'},
   // Hang: drift up a hair so it feels held, then accelerate down.
-  {offset:hangEnd,transform:position(target.left,target.top-pose.lift-6,scale*pose.boost*1.01,0),easing:'cubic-bezier(.75,0,1,.6)'},
+  {offset:hangEnd,transform:position(hx,target.top-pose.lift-6,scale*pose.boost*1.01,0),easing:'cubic-bezier(.75,0,1,.6)'},
   // Slam: lands squashed.
   {offset:t,transform:position(target.left,target.top,scale*(heavy?.94:.96))},
   {offset:t+(1-t)*.3,transform:position(target.left,target.top-2,scale*(heavy?1.025:1.012)),easing:'cubic-bezier(.16,1,.3,1)'},

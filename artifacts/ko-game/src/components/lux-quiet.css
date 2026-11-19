@@ -115,3 +115,8 @@ body .ko-home-lobby :is(.ko-main-menu__announcements > button, .ko-home-mode-sho
 body .ko-home-lobby :is(.ko-home-mode-shortcuts > button, .ko-lobby-shortcuts > button, .ko-home-learning > button, .ko-home-utility-links > button):hover:not(:disabled){border-color:var(--q-gold)!important;box-shadow:none!important;transform:none!important}
 body .ko-home-lobby :is(.ko-home-mode-shortcuts,.ko-home-learning) :is(small,span){color:var(--q-mut)!important}
 
+
+/* sticky search bar must stay above scrolling cards */
+body .kdb-card{isolation:isolate}
+body :is(.kdb-bar-top,.kcol-bar){z-index:40!important;background:#0a0908!important;border-bottom:1px solid var(--q-line);box-shadow:0 6px 12px rgba(0,0,0,.55)}
+@media (max-width:900px){body .kdb-bar-top{margin-left:-12px!important;margin-right:-12px!important;padding-left:12px!important;padding-right:12px!important}}

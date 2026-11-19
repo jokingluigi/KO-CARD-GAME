@@ -19,7 +19,7 @@ import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config
 import { audioManager } from '../audio/audio-manager';
 
 import {useScreenImpact} from './screen-impact';
-import {impactRank,summonImpact,summonTimeline,summonFrames,summonPose,hasBoardWideImpact} from './screen-impact-policy';
+import {impactRank,summonImpact,summonTimeline,summonFrames,summonPose,hasBoardWideImpact,type SummonPose} from './screen-impact-policy';
 
 export const TECHNIQUE_REVEAL_HOLD_MS = 160;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
@@ -128,7 +128,16 @@ export function CardPlayAnimation({
     let frame=0;let motion:Animation|undefined;const origin=performance.now();
     // Legendary / champion: a swelling riser that peaks on the slam, a dimmed board,
     // turning light rays and a glowing card while it hangs over its slot.
-    const pose=summonPose(profile);
+    // On phones a legendary / champion hovers big and centred so its art reads through the effects.
+    let pose:SummonPose=summonPose(profile);
+    if(arrival&&window.innerWidth<700){
+      const tw=source.width*targetScale,th=source.height*targetScale;
+      const boost=Math.max(pose.boost,Math.min(window.innerWidth*.46,window.innerHeight*.34*(tw/Math.max(1,th)))/Math.max(1,tw));
+      const bw=tw*boost,bh=th*boost;
+      const left=Math.min(Math.max(8,targetLeft-(bw-tw)/2),window.innerWidth-bw-8);
+      const top=Math.max(56,Math.min(targetTop-pose.lift,window.innerHeight*.46-bh/2));
+      pose={...pose,boost,lift:targetTop-top,dx:left-targetLeft};
+    }
     const hangStart=Math.max(0,timing.landing-pose.slam-pose.hang);
     let clearBuildup=()=>{},aura:Animation|undefined,tremor:Animation|undefined,riser:number|null=null;
     if(arrival&&!reduced&&!document.hidden){
@@ -137,7 +146,7 @@ export function CardPlayAnimation({
       audioManager.preloadAttackSounds([`${import.meta.env.BASE_URL}sfx/${arrival.toLowerCase()}-slam.wav`]);
       audioManager.duckForPresentation(.6,timing.landing+600);
       const w=source.width*targetScale*pose.boost,h=source.height*targetScale*pose.boost;
-      clearBuildup=spawnArrivalBuildup({x:targetLeft+w/2,y:targetTop-pose.lift+h/2,size:Math.max(w,h),kind:arrival,start:Math.max(0,hangStart-160),landing:timing.landing,title:definition?.name});
+      clearBuildup=spawnArrivalBuildup({x:targetLeft+(pose.dx??0)+w/2,y:targetTop-pose.lift+h/2,size:Math.max(w,h),kind:arrival,start:Math.max(0,hangStart-160),landing:timing.landing,title:definition?.name});
       try{aura=cardRef.current?.animate(arrivalAuraFrames(arrival,hangStart-120,timing.landing,duration),{duration,easing:'linear',fill:'both'});}catch{}
       if(arrival==='CHAMPION')try{tremor=cardRef.current?.animate(arrivalTremorFrames(hangStart,timing.landing,duration),{duration,easing:'linear',fill:'both'});}catch{}
     }
@@ -172,7 +181,7 @@ export function CardPlayAnimation({
     if(animation.kind==='WRESTLER'){
       try {shadow=shadowRef.current?.animate(summonShadowFrames(timing.landing,duration,reduced),{duration,easing:'linear',fill:'both'});}catch{}
       if(profile.bass)audioManager.preloadAttackSounds([`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`]);
-      try{motion=cardRef.current?.animate(summonFrames(source,{left:targetLeft,top:targetTop},targetScale,profile,timing.landing,duration,reduced),{duration,easing:'linear',fill:'both'});}catch{/* Time-based visual fallback only. */}
+      try{motion=cardRef.current?.animate(summonFrames(source,{left:targetLeft,top:targetTop},targetScale,profile,timing.landing,duration,reduced,pose),{duration,easing:'linear',fill:'both'});}catch{/* Time-based visual fallback only. */}
       const tick=(now:number)=>{
         if(Number(motion?.currentTime??now-origin)>=timing.landing)land();
         if(!completedRef.current)frame=requestAnimationFrame(tick);

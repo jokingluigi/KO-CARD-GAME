@@ -20,3 +20,4 @@
   76%{opacity:.32;transform:translate(-50%,-50%) scale(1) rotate(24deg)}
   84%{opacity:.45;transform:translate(-50%,-50%) scale(1.06) rotate(28deg)}
   100%{opacity:0;transform:translate(-50%,-50%) scale(1.4) rotate(80deg)}}
+@media (max-width:700px),(max-height:500px){.ko-spell-dissolve{z-index:299}.ko-spell-dissolve-flash{z-index:299;filter:opacity(.6)}}
