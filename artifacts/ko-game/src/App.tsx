@@ -1,5 +1,6 @@
 import './components/product-experience.css';
 import './components/menu-theme.css';
+import './components/lux.css';
 import {installClientDiagnostics} from '@/lib/client-diagnostics';
 import {InterfaceMotionBridge} from "@/components/motion/interface-motion";
 import {InterfacePressBridge} from "@/components/motion/interface-press";
