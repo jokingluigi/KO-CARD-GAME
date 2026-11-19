@@ -118,6 +118,7 @@ export type CardAbility =
           waiveUpgradeCost?:boolean;
           invulnerableWhileOtherAllyTag?:string;
           absorbDestroyedTargetStats?:boolean;
+          cardGainGrowth?:{attack:number;health:number};
           generatedCardTagBuff?:{tag:string;attack:number;health:number};
           retirementReplacementScope?: 'SOURCE_CAUSED_ENEMY';
           forbiddenKeywords?: CardKeyword[];

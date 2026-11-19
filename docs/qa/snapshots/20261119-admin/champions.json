@@ -1,0 +1,821 @@
+[
+  {
+    "id": "07c65d00-5efb-435d-a4fa-172b9bfcfd20",
+    "name": "나토마토",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "고유 능력",
+    "abilityCost": 1,
+    "abilityText": "챔피언에게 2데미지를 주고 필드에 있는 아군 선수 카드에게 '회피'를 부여합니다.(이 효과는 각 선수 카드마다 1회만 사용 가능합니다.)\n업그레이드:챔피언의 체력을 3 회복시킵니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "피니셔 준비",
+    "questText": "아군 선수 카드의 '회피'가 총 8번 발동합니다.",
+    "questCondition": {
+      "event": "",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "4b69fb92-c8f9-40f6-9df1-f3309d0bf91f"
+      },
+      "progress": 1,
+      "required": 8
+    },
+    "questProgressRequired": 8,
+    "questRewardText": "손패에 피니셔 '라 토마티나'를 추가합니다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "4b69fb92-c8f9-40f6-9df1-f3309d0bf91f",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 12,
+    "createdAt": "2026-11-10T14:20:22.787Z",
+    "updatedAt": "2026-11-11T23:47:10.802Z"
+  },
+  {
+    "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+    "name": "라 칼라베라",
+    "description": "",
+    "maxHealth": 20,
+    "abilityName": "좀비 생성",
+    "abilityCost": 1,
+    "abilityText": "'좀비'를 소환합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            },
+            "generatedModifiers": {
+              "attack": 0,
+              "health": 0
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "사령술 강화",
+    "questText": "자신의 무덤에 '언데드' 태그를 가진 카드가 8장 이상 있어야합니다.",
+    "questCondition": {
+      "event": "",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "2f47b929-7035-4bb9-abea-0af6a6f9c72d"
+      },
+      "required": 8,
+      "strictEventCount": true
+    },
+    "questProgressRequired": 8,
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "좀비 생성 (강화)",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "1코스트 2/2 좀비를 소환합니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            },
+            "generatedModifiers": {
+              "attack": 1,
+              "health": 1
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 40,
+    "createdAt": "2026-09-23T17:01:05.668Z",
+    "updatedAt": "2026-11-12T00:47:43.604Z"
+  },
+  {
+    "id": "champion-minion-a",
+    "name": "로지양",
+    "description": "",
+    "maxHealth": 20,
+    "abilityName": "완전히 무작위",
+    "abilityCost": 1,
+    "abilityText": "완전히 무작위 카드를 비용/체력/공격력을 전부 1씩 깍아서 생성합니다.(비용과 체력은 1이 최소치)",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "values": {
+            "generatedModifiers": {
+              "cost": -1
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "피니셔 준비",
+    "questText": null,
+    "questCondition": {
+      "event": "CARD_PLAYED",
+      "progress": 1,
+      "required": 1,
+      "finisherChoices": [
+        {
+          "id": "option-1",
+          "name": "어셈블",
+          "condition": {
+            "type": "EVENT",
+            "event": "CARD_PLAYED",
+            "owner": "SELF",
+            "required": 5
+          },
+          "description": "카드 총 12회 생성",
+          "cardDefinitionId": "0785ff4f-ce7c-4ab0-83e7-197249767543"
+        },
+        {
+          "id": "option-2",
+          "name": "흉내내기",
+          "condition": {
+            "type": "EVENT",
+            "event": "CARD_PLAYED",
+            "owner": "SELF",
+            "required": 1
+          },
+          "description": "레전더리 혹은 챔피언 등급 카드를 3장 이상 필드에 내기",
+          "cardDefinitionId": "52528873-0704-4569-9bd8-2c4ff227ce51"
+        }
+      ]
+    },
+    "questProgressRequired": 1,
+    "questRewardText": null,
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": false,
+    "isStarterGrant": true,
+    "version": 33,
+    "createdAt": "2026-10-01T01:06:53.594Z",
+    "updatedAt": "2026-11-18T11:48:16.840Z"
+  },
+  {
+    "id": "441260ed-63e5-442c-bdc2-8a22898f7090",
+    "name": "루나",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "업그레이드",
+    "abilityCost": 1,
+    "abilityText": "'파츠' 태그가 달려있는 토큰 카드들 중 무작위 한장을 손패에 넣습니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "filter": {
+              "isToken": true,
+              "tagsAny": [
+                "파츠"
+              ]
+            },
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "values": {
+            "count": 1,
+            "destination": "HAND"
+          }
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "초월을 위한 업그레이드",
+    "questText": "'합체'를 총 5번 이행한다.",
+    "questCondition": {
+      "event": "FUSION",
+      "progress": 1,
+      "required": 5,
+      "strictEventCount": true
+    },
+    "questProgressRequired": 5,
+    "questRewardText": "'룬스달라이트 군주 루나'를 필드에 소환한다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0"
+            }
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "DRAFT",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 23,
+    "createdAt": "2026-10-07T17:26:05.640Z",
+    "updatedAt": "2026-11-11T12:15:00.086Z"
+  },
+  {
+    "id": "f7b087d8-3148-43d5-a634-a81d15c81721",
+    "name": "마왕 벨모르트",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "비열한 파괴",
+    "abilityCost": 1,
+    "abilityText": "선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "파괴 강림",
+    "questText": "이 게임에서 카드가 총 10회 파괴됩니다.",
+    "questCondition": {
+      "finisher": {
+        "delivery": "CAST",
+        "cardDefinitionId": "7c3153f3-4dc6-4a8f-8148-c64e624576c3"
+      },
+      "required": 10
+    },
+    "questProgressRequired": 10,
+    "questRewardText": "'마왕 벨모르트(강림)'을 내 필드에 소환합니다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": "압도적 파괴",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "상대 선수 카드에게 2 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "34ba511c-0479-4fe2-bf7b-48ad1798859d",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 15,
+    "createdAt": "2026-10-14T12:56:08.886Z",
+    "updatedAt": "2026-11-11T12:15:45.498Z"
+  },
+  {
+    "id": "88d106cf-ee5a-4a22-ab0a-47b33589fcac",
+    "name": "블랙마카롱",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "고유 능력",
+    "abilityCost": 2,
+    "abilityText": "선택한 상대 선수 카드에게 2 데미지를 줍니다. 이 효과로 상대 선수 카드가 리타이어했다면 아군 필드에 '로마니 마피아 따까리'를 소환합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": ".",
+    "questText": "고유 능력으로 상대 선수 카드 5번 리타이어",
+    "questCondition": {
+      "event": "CARD_PLAYED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "0672077d-06f0-426c-a925-135862f3f22d"
+      },
+      "progress": 1,
+      "required": 3
+    },
+    "questProgressRequired": 3,
+    "questRewardText": "'뇌진탕 펀치'를 손패에 추가한다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 15,
+    "createdAt": "2026-11-10T14:06:10.105Z",
+    "updatedAt": "2026-11-18T11:27:21.876Z"
+  },
+  {
+    "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+    "name": "여울",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "용돈",
+    "abilityCost": 2,
+    "abilityText": "다음 턴에 골드를 추가로 1 더 받습니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "ADD_NEXT_TURN_GOLD",
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "투자",
+    "questText": "이번 게임에서 골드를 총 30 소모하세요.",
+    "questCondition": {
+      "event": "GOLD_CHANGED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "783685cc-6d45-4a96-a39d-3d02a899f49e"
+      },
+      "required": 30,
+      "goldSpent": true
+    },
+    "questProgressRequired": 30,
+    "questRewardText": null,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": 2,
+    "upgradedAbilityText": "다음 턴에 골드를 1 더 받습니다. 그리고 여울의 보디가드를 소환합니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "ADD_NEXT_TURN_GOLD",
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ACTIVE"
+        },
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "acdbe25d-f066-4c91-ae22-f612749ee20f"
+            }
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 24,
+    "createdAt": "2026-09-21T08:07:26.261Z",
+    "updatedAt": "2026-11-11T23:53:02.094Z"
+  },
+  {
+    "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+    "name": "예거",
+    "description": "1",
+    "maxHealth": 25,
+    "abilityName": "고용",
+    "abilityCost": 1,
+    "abilityText": "'용병'을 하나 소환한다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "ff6f154d-a675-4a6b-bb12-50af8d227d15"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "용병술 훈련",
+    "questText": "선수 카드를 총 10번 생성한다.",
+    "questCondition": {
+      "event": "CARD_GENERATED",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "e44d337c-27ce-4f97-bc83-0ea7cde7d119"
+      },
+      "progress": 1,
+      "required": 10
+    },
+    "questProgressRequired": 10,
+    "questRewardText": null,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "'엘리트 용병'을 하나 소환한다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "f3b46674-c658-4e03-b5b4-ced71547768e"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": true,
+    "version": 30,
+    "createdAt": "2026-09-10T14:19:28.153Z",
+    "updatedAt": "2026-11-11T23:50:49.811Z"
+  },
+  {
+    "id": "c52da37b-5e7a-4223-bcf3-73824c677534",
+    "name": "크루세이더즈",
+    "description": "",
+    "maxHealth": 20,
+    "abilityName": "모험 준비",
+    "abilityCost": 1,
+    "abilityText": "필드에 있는 아군 선수 카드들 중 무작위로 하나의 공격력을 1 증가시키고, 챔피언의 체력을 2 회복한다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "각성",
+    "questText": "자신의 챔피언의 체력이 3 이하가 된다.",
+    "questCondition": {
+      "event": "STATE_CONDITION",
+      "finisher": {
+        "delivery": "CAST",
+        "cardDefinitionId": "57a19ccf-d63d-422a-b30a-07739c28a952"
+      },
+      "required": 1,
+      "condition": {
+        "op": "LTE",
+        "type": "HEALTH",
+        "owner": "SELF",
+        "value": 5
+      }
+    },
+    "questProgressRequired": 1,
+    "questRewardText": null,
+    "questRewardEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": null,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 31,
+    "createdAt": "2026-09-27T16:53:12.053Z",
+    "updatedAt": "2026-11-18T11:25:25.175Z"
+  },
+  {
+    "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+    "name": "판도라",
+    "description": "",
+    "maxHealth": 20,
+    "abilityName": "불안한 일격",
+    "abilityCost": 1,
+    "abilityText": "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ALL",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "폭주의 조짐",
+    "questText": "상대 선수 카드를 핀폴로 8회 리타이어시키기",
+    "questCondition": {
+      "event": "WRESTLER_RETIRED",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "c7862e59-7691-4f5d-a518-81175f956fab"
+      },
+      "required": 8,
+      "sourceActionType": "USE_CHAMPION_ABILITY"
+    },
+    "questProgressRequired": 8,
+    "questRewardText": "고유 능력을 강화시키고, '챔피언 판도라(폭주)'를 필드에 소환합니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "eaefcf6c-575d-4482-aaad-98b54561b49a"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "파멸의 일격",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "자신이 선택한 대상에게 2 데미지를 줍니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "ALL",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 2
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "championTokenDefinitionId": "eaefcf6c-575d-4482-aaad-98b54561b49a",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 47,
+    "createdAt": "2026-09-10T14:28:37.673Z",
+    "updatedAt": "2026-11-12T00:47:43.890Z"
+  },
+  {
+    "id": "0db142af-750e-4929-a464-5daf1bc75452",
+    "name": "퍼플레인",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "의식",
+    "abilityCost": 1,
+    "abilityText": "내 챔피언 또는 아군 선수 1장에게 1 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 1 감소시킵니다. 선수이면 공격력 +1을 부여합니다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1,
+            "purpleRainFollowup": true
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "순례의 길",
+    "questText": "이번 게임에서 내 카드 또는 내 챔피언 효과로 내 챔피언이 피해를 총 10회 받으세요.",
+    "questCondition": {
+      "event": "DAMAGE_DEALT",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "d71f5f92-c6ab-42ef-8e90-ea9f533d29a0"
+      },
+      "required": 10,
+      "selfEffectDamage": true
+    },
+    "questProgressRequired": 10,
+    "questRewardText": null,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": null,
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": null,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 2,
+            "purpleRainFollowup": true
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "version": 26,
+    "createdAt": "2026-09-23T17:01:39.572Z",
+    "updatedAt": "2026-11-11T13:30:24.027Z"
+  },
+  {
+    "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+    "name": "피 스타 세븐",
+    "description": "",
+    "maxHealth": 25,
+    "abilityName": "트레이닝",
+    "abilityCost": 1,
+    "abilityText": "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다.",
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "gameStartAbilityEffects": null,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "RANDOM",
+            "randomScope": "STANDARD"
+          },
+          "values": {
+            "attack": 1,
+            "health": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "트레이닝",
+    "questText": "이번 게임에서 고유 능력을 5번 발동하세요.",
+    "questCondition": {
+      "event": "CHAMPION_ABILITY_USED",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "522876df-ce6c-417c-9b51-451932de9437"
+      },
+      "progress": 1,
+      "required": 7,
+      "sourceActionType": "USE_CHAMPION_ABILITY",
+      "strictEventCount": true
+    },
+    "questProgressRequired": 7,
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "트레이닝 (강화)",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "내 손에 있는 무작위 선수 카드 2장에게 +1/+1을 부여합니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "HAND",
+            "count": 2,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "RANDOM"
+          },
+          "values": {
+            "attack": 1,
+            "health": 1
+          },
+          "trigger": "ACTIVE"
+        }
+      ]
+    },
+    "championTokenDefinitionId": null,
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED",
+    "isCraftable": true,
+    "isStarterGrant": true,
+    "version": 26,
+    "createdAt": "2026-09-10T14:14:51.936Z",
+    "updatedAt": "2026-11-11T13:30:34.907Z"
+  }
+]

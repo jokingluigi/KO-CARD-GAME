@@ -8,12 +8,15 @@ import type {
   CardAbility,
   StructuredTarget,
 } from "../effects/types";
-import { getActiveCardAbilities } from "../cards/granted-text";
+import { getActiveCardAbilities, getActiveCardKeywords } from "../cards/granted-text";
 import { generateCard } from "../cards/generation";
 import { createDeterministicRandom } from "../random/random";
 import { currentChampionAbility } from "../champions/types";
 export type BalanceOperation =
   | "BUFF_TAG_ATTACK_PAIR"
+  | "DRAW_HIGHEST_RARITY"
+  | "SHUFFLE_ENEMY_CARD"
+  | "STAR_KILLER_ARRIVAL"
   | "BUFF_TOP_WRESTLER_ATTACK"
   | "CONDITIONAL_FIELD_BUFF"
   | "COUNT_TAG_BUFF"
@@ -159,6 +162,7 @@ function pool(state: GameState, source: CardInstance, c: BalanceEffectConfig) {
       (!c.rarity || d.rarity === c.rarity) &&
       (!c.excludeChampionRarity || d.rarity !== "CHAMPION") &&
       (!c.excludeChampionTokens || !d.isChampionToken) &&
+      (!c.standardOnly || (d.status??'PUBLISHED')==='PUBLISHED'&&!d.isToken&&!d.isChampionToken&&d.rarity!=='TOKEN') &&
       (!Array.isArray(c.rarities) || c.rarities.includes(d.rarity)) &&
       (!c.excludeSource || d.id !== source.definitionId),
   );
@@ -214,6 +218,48 @@ export function applyBalanceEffect(
         )
       : s;
   switch (c.operation) {
+    case "DRAW_HIGHEST_RARITY": {
+      const ranks:Record<string,number>={TOKEN:0,NORMAL:1,EPIC:2,LEGENDARY:3};
+      const definitions=new Map(catalog(state).map(d=>[d.id,d]));
+      let best=-1,rank=-1;
+      owner.deck.forEach((card,i)=>{const d=definitions.get(card.definitionId);if(!d||d.rarity==='CHAMPION'||d.isChampionToken)return;const value=ranks[d.rarity??'NORMAL']??-1;if(value>rank){best=i;rank=value;}});
+      if(best<0)return state;
+      const next={...state,players:state.players.map(p=>p.id!==playerId?p:{...p,deck:[p.deck[best],...p.deck.filter((_,i)=>i!==best)]})};
+      return apply(next,fx('DRAW',undefined,{amount:1}));
+    }
+    case "SHUFFLE_ENEMY_CARD": {
+      const enemy=state.players.find(p=>p.id!==playerId),definition=catalog(state).find(d=>d.name===c.name);
+      if(!enemy||!definition)return state;
+      const generated=generateCard(definition,{instanceId:`${source.instanceId}:enemy-deck:${state.events.length}`,playerId:enemy.id,source:{type:'CARD',cardInstanceId:source.instanceId},reason:'SHUFFLE_INTO_ENEMY_DECK',sourceContext:context?.sourceContext});
+      const position=randomIndex(state,source,enemy.deck.length+1,'enemy-deck');
+      return {...state,events:[...state.events,generated.event],players:state.players.map(p=>p.id!==enemy.id?p:{...p,deck:[...p.deck.slice(0,position),generated.card,...p.deck.slice(position)]})};
+    }
+    case "STAR_KILLER_ARRIVAL": {
+      if(!owner.hand.some(card=>card.instanceId===source.instanceId))return state;
+      let arrival=-1;for(let i=state.events.length-1;i>=0;i--)if(['CARD_DRAWN','CARD_ADDED_TO_HAND'].includes(state.events[i].type)&&state.events[i].cardInstanceId===source.instanceId){arrival=i;break;}
+      const key=`star-arrival:${source.instanceId}:${arrival}`;
+      if(state.consumedRuleKeys?.includes(key))return state;
+      const definition=catalog(state).find(d=>d.id===source.definitionId);
+      if(!definition)return state;
+      let n:GameState={...state,consumedRuleKeys:[...(state.consumedRuleKeys??[]),key],events:[...state.events,{type:'CARD_REVEALED',playerId,cardInstanceId:source.instanceId,cardDefinitionId:source.definitionId,reason:'STAR_KILLER_ARRIVAL',revealedCard:{definitionId:source.definitionId,name:definition.name,cost:source.currentCost,attack:source.currentAttack,health:source.currentHealth,rulesText:definition.rulesText,imageUrl:definition.imageUrl}}]};
+      const wanted=state.players.flatMap(p=>p.board.filter((card):card is CardInstance=>!!card&&getActiveCardKeywords(card).includes('WANTED')).map(card=>card.instanceId));
+      n=apply(n,fx('DESTROY',{zone:'BOARD',owner:'ALL',selection:'ALL',cardType:'WRESTLER',count:8,filter:{keyword:'WANTED'}}));
+      if(n.status==='FINISHED')return n;
+      const destroyed=new Set(n.events.slice(state.events.length).filter(e=>e.type==='CARD_DESTROYED'&&wanted.includes(e.cardInstanceId??'')).map(e=>e.cardInstanceId));
+      n=apply(n,fx('BUFF',{zone:'HAND',owner:'SELF',selection:'SELF',count:1},{attack:destroyed.size*2}));
+      let enemy=n.players.find(p=>p.id!==playerId);
+      if(!enemy)return n;
+      if(enemy.board.every(Boolean)){
+        const cheapest=enemy.board.filter((card):card is CardInstance=>!!card).reduce((a,b)=>b.currentCost<a.currentCost?b:a);
+        n=chosen(n,'DESTROY',undefined,cheapest.instanceId);
+        if(n.status==='FINISHED')return n;
+        enemy=n.players.find(p=>p.id===enemy!.id)!;
+      }
+      const slot=enemy.board.findIndex(card=>card===null),card=n.players.find(p=>p.id===playerId)?.hand.find(c=>c.instanceId===source.instanceId);
+      if(slot<0||!card)return n;
+      n={...n,players:n.players.map(p=>p.id!==playerId?p:{...p,hand:p.hand.filter(c=>c.instanceId!==source.instanceId)})};
+      return enter(n,enemy.id,card,slot as 0|1|2|3,'SUMMON');
+    }
     case "BUFF_TAG_ATTACK_PAIR": {
       const attacker=owner.board.find(card=>card?.instanceId===context?.attackerInstanceId);
       if(!attacker||attacker.instanceId===source.instanceId||!attacker.tags?.includes(String(c.tag)))return state;
@@ -289,6 +335,7 @@ export function applyBalanceEffect(
         : state;
     }
     case "REPEAT_ENTRY":
+      if(c.requiredRemovedKeyword&&(!context?.removedTarget||!getActiveCardKeywords(context.removedTarget).includes(c.requiredRemovedKeyword as any)))return state;
       return trigger(state, source, "ENTER_FIELD");
     case "DISTRIBUTE_RANDOM": {
       let n = state;
@@ -488,7 +535,7 @@ export function applyBalanceEffect(
       });
       const grant: CardDefinition = {
         id: "granted-messenger:" + String(c.kind),
-        name: c.kind === "DARK" ? "어둠의 사자" : "파괴의 전령",
+        name: c.kind === "DARK" ? "어둠의 사자" : c.kind==='KNOWLEDGE'?'지식의 사자':'파괴의 사자',
         cardType: "WRESTLER",
         isToken: true,
         isChampionToken: false,
@@ -519,7 +566,10 @@ export function applyBalanceEffect(
                   ],
                 },
               ]
-            : [
+            : c.kind==='KNOWLEDGE' ? [
+                {trigger:'SELF_ATTACK',effects:[fx('DRAW',undefined,{amount:1})]},
+                {trigger:'SELF_ENTERED',effects:[],cardGainGrowth:{attack:1,health:1}},
+              ] : [
                 {
                   trigger: "ANY_BEFORE_RETIRE",
                   effects: [],
@@ -750,6 +800,7 @@ export function applyBalanceEffect(
       )!;
     }
     case "GENERATE_RANDOM_MATCH": {
+      if(c.requireNextTurnBonus&&owner.nextTurnGoldBonus<=0)return state;
       const candidates = pool(state, source, c);
       if (!candidates.length) return state;
       const d =
@@ -763,7 +814,9 @@ export function applyBalanceEffect(
           count: 1,
           generatedModifiers: {
             cost: c.cost === 0 ? -d.cost : -num("costReduction"),
+            attack:num('attack'),health:num('health'),
           },
+          ...(c.keyword?{generatedKeywords:[c.keyword as any]}:{}),
         }),
       );
     }

@@ -1375,21 +1375,43 @@ function setLastTargetIds(state: GameState, ids: string[]): GameState {
     : state;
 }
 
-/** Explicit arrivals, excluding draws or movement from the owner's own deck. */
+/** Board grants react only to successful draws or newly generated hand arrivals. */
+export function resolveCardGainGrowth(state:GameState,playerId:string):GameState {
+ let next=state;
+ const ids=state.players.find(p=>p.id===playerId)?.board.flatMap(c=>c?[c.instanceId]:[])??[];
+ for(const id of ids){
+  const live=next.players.find(p=>p.id===playerId)?.board.find(c=>c?.instanceId===id);
+  if(!live||live.isAbilityDisabled||live.currentHealth<=0)continue;
+  for(const ability of getActiveCardAbilities(live))if('cardGainGrowth' in ability&&ability.cardGainGrowth){
+   next=applyEffect(next,playerId,live,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:ability.cardGainGrowth});
+  }
+ }
+ return next;
+}
+/** Distinguish a new creation from an old generated card returning to hand. */
+function isNewGenerationArrival(state:GameState,id:string):boolean{
+ let arrival=-1;
+ for(let i=state.events.length-1;i>=0;i--)if(state.events[i].type==='CARD_ADDED_TO_HAND'&&state.events[i].cardInstanceId===id){arrival=i;break;}
+ for(let i=arrival-1;i>=0;i--){const e=state.events[i];if(e.cardInstanceId!==id)continue;if(e.type==='CARD_GENERATED')return true;if(['CARD_ADDED_TO_HAND','CARD_DRAWN'].includes(e.type))return false;}
+ return false;
+}
+/** Existing wrestler-addition listeners also receive non-generated returns. */
 export function resolveHandAdditionListeners(state:GameState,playerId:string,cards:CardInstance[]):GameState {
  let next=state;
  for(const arriving of cards){
+  const generated=isNewGenerationArrival(next,arriving.instanceId);
+  if(generated)next=resolveCardGainGrowth(next,playerId);
   if(arriving.cardType!=='WRESTLER')continue;
   const sources=next.players.find(player=>player.id===playerId)?.board.filter((card):card is CardInstance=>card!==null) ?? [];
   for(const source of sources){
    const live=next.players.find(player=>player.id===playerId)?.board.find(card=>card?.instanceId===source.instanceId);
    if(live && live.currentHealth>0 && !live.isAbilityDisabled){
-     // These automatic field passives must finish inside the current creation,
-     // without replacing the parent card's serialized targeting continuation.
      for(const ability of getActiveCardAbilities(live).filter(ability=>ability.trigger==='HAND_WRESTLER_ADDED'))
        for(const effect of ability.effects)next=applyEffect(next,playerId,live,effect);
    }
   }
+  const live=next.players.find(p=>p.id===playerId)?.hand.find(c=>c.instanceId===arriving.instanceId);
+  if(generated&&live&&getActiveCardAbilities(live).some(a=>a.trigger==='HAND_WRESTLER_ADDED'&&'sourceZones' in a&&a.sourceZones?.includes('HAND')))next=resolveTriggeredAbilities(next,playerId,live,'HAND_WRESTLER_ADDED');
  }
  return next;
 }
@@ -2390,7 +2412,7 @@ function applyEffectInternal(
            : generated.card;
           return {
             card: effect.action === 'GENERATE'
-              ? normalizeCardForZone(card, effect.values?.destination === 'DECK' ? 'DECK' : 'HAND')
+              ? normalizeCardForZone({...card,keywords:[...new Set([...card.keywords,...(effect.values?.generatedKeywords??[])])]}, effect.values?.destination === 'DECK' ? 'DECK' : 'HAND')
               : card,
             event: generated.event,
           };
@@ -4155,8 +4177,10 @@ export function resolveCardRetiredListeners(
   if(retirementIndex>=0 && !isCounterattackRetirement(state,retirementIndex)){
     const event=state.events[retirementIndex]!;
     const sourceId=event.source?.type==='CARD'?event.source.cardInstanceId:undefined;
-    const killerOwner=state.players.find(p=>p.id!==playerId && p.board.some(c=>c?.instanceId===sourceId));
-    const killer=killerOwner?.board.find(c=>c?.instanceId===sourceId);
+    // Cast techniques are already in the graveyard while their damage resolves.
+    const sourceCards = (p: GameState['players'][number]) => [...p.board, ...p.graveyard.filter(c => c.cardType === 'TECHNIQUE')];
+    const killerOwner=state.players.find(p=>p.id!==playerId && sourceCards(p).some(c=>c?.instanceId===sourceId));
+    const killer=killerOwner && sourceCards(killerOwner).find(c=>c?.instanceId===sourceId);
     const key=`causal-retire:${retirementIndex}:${sourceId}`;
     if(killerOwner&&killer && !state.consumedNewCardEventKeys?.includes(key)){
       state={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),key]};
