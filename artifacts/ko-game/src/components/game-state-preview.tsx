@@ -95,6 +95,7 @@ import { PresentationFeedback, type PresentationCue } from './presentation-feedb
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
 import {CombatSettings} from './combat-settings';
+import { messengerKind } from './keyword-fx';
 import {ScreenShakeSetting} from './screen-impact';
 import { CinematicProvider, CinematicCue, CinematicIntro, CardRevealPresentation } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
@@ -2190,6 +2191,7 @@ function BoardSlot({
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
+         messenger={messengerKind(card)}
          className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
            runtimeKeywords={getActiveCardKeywords(card)}

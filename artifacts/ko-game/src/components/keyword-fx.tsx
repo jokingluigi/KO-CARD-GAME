@@ -1,5 +1,21 @@
 import "./keyword-fx.css";
 
+export type MessengerKind = "DARK" | "DESTRUCTION" | "KNOWLEDGE";
+const MESSENGER_NAMES: Record<MessengerKind, string> = { DARK: "어둠의 사자", DESTRUCTION: "파괴의 사자", KNOWLEDGE: "지식의 사자" };
+/** Angel cards appoint a "사자" by granting card text; find which one a field card carries. */
+export function messengerKind(card: { grantedText?: { donorDefinitionId?: string; abilities?: unknown[] } | null; isSilenced?: boolean } | null | undefined): MessengerKind | undefined {
+  const granted = card?.grantedText;
+  if (!granted || card?.isSilenced) return undefined;
+  const id = String(granted.donorDefinitionId ?? "").toLowerCase();
+  if (/messenger/.test(id)) {
+    if (/dark/.test(id)) return "DARK";
+    if (/destruction/.test(id)) return "DESTRUCTION";
+    if (/knowledge/.test(id)) return "KNOWLEDGE";
+  }
+  if (JSON.stringify(granted.abilities ?? []).includes("drainAttackFraction")) return "DARK";
+  return undefined;
+}
+
 /** Keywords drawn as a look on cards that are on the field (no text badge needed). */
 export const VISUAL_KEYWORDS = new Set([
   "TAUNT", "DODGE", "DEFENSE", "IMMUNE", "ARMOR", "RUSH", "SURPRISE", "MULTI_STRIKE",
@@ -30,18 +46,21 @@ const NAMES: Record<string, string> = {
   MULTI_STRIKE: "연타", LIFESTEAL: "흡혈", REGEN: "치유", CANNOT_ATTACK: "공격불가", WANTED: "수배", COUNTDOWN: "카운트다운",
 };
 
-export function KeywordFx({ keywords, armor, countdown }: { keywords: string[]; armor?: unknown; countdown?: unknown }) {
+export function KeywordFx({ keywords, armor, countdown, messenger }: { keywords: string[]; armor?: unknown; countdown?: unknown; messenger?: MessengerKind }) {
   const has = (k: string) => keywords.includes(k);
   const shown = keywords.filter(k => VISUAL_KEYWORDS.has(k));
-  if (!shown.length) return null;
+  if (!shown.length && !messenger) return null;
   return (
     <>
+    {messenger && <span className="kfx-back kfx-wings" data-messenger={messenger} aria-hidden="true"><i /><i /></span>}
+    {messenger && <span className="kfx-top kfx-halo" data-messenger={messenger} aria-hidden="true"><i /></span>}
+    {messenger && <span className="kfx-top kfx-aura" data-messenger={messenger} aria-hidden="true"><i /><i /><i /><i /><i /></span>}
     {has("TAUNT") && <span className="kfx-back kfx-taunt" aria-hidden="true"><i /><b /></span>}
     {has("MULTI_STRIKE") && <span className="kfx-back kfx-multi" aria-hidden="true"><i /><i /></span>}
     {has("RUSH") && <span className="kfx-back kfx-rush" aria-hidden="true"><i /><i /><i /><i /></span>}
     {has("WANTED") && <span className="kfx-top kfx-wanted" aria-hidden="true"><b>WANTED</b></span>}
-    <span className="kfx-top kfx-names" aria-hidden="true">{shown.map(k => <i key={k} data-kw={k}>{NAMES[k]}</i>)}</span>
-    <span className="kfx" role="img" aria-label={`키워드 ${shown.map(k => NAMES[k]).join(", ")}`} title={shown.map(k => NAMES[k]).join(" · ")}>
+    <span className="kfx-top kfx-names" aria-hidden="true">{messenger && <i data-kw={`MSG_${messenger}`}>{MESSENGER_NAMES[messenger]}</i>}{shown.map(k => <i key={k} data-kw={k}>{NAMES[k]}</i>)}</span>
+    <span className="kfx" role="img" aria-label={`키워드 ${[...(messenger ? [MESSENGER_NAMES[messenger]] : []), ...shown.map(k => NAMES[k])].join(", ")}`} title={[...(messenger ? [MESSENGER_NAMES[messenger]] : []), ...shown.map(k => NAMES[k])].join(" · ")}>
       {has("SURPRISE") && <span className="kfx-surprise"><i /><b /></span>}
       {has("LIFESTEAL") && <span className="kfx-lifesteal"><i /><i /><i /></span>}
       {has("REGEN") && <span className="kfx-regen"><i /><i /><i /><i /><i /></span>}
