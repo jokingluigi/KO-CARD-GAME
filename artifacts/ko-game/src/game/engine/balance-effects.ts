@@ -16,6 +16,7 @@ export type BalanceOperation =
   | "BUFF_TAG_ATTACK_PAIR"
   | "DRAW_HIGHEST_RARITY"
   | "SHUFFLE_ENEMY_CARD"
+  | "PLACE_ENEMY_CARD_ON_TOP"
   | "STAR_KILLER_ARRIVAL"
   | "BUFF_TOP_WRESTLER_ATTACK"
   | "CONDITIONAL_FIELD_BUFF"
@@ -227,11 +228,13 @@ export function applyBalanceEffect(
       const next={...state,players:state.players.map(p=>p.id!==playerId?p:{...p,deck:[p.deck[best],...p.deck.filter((_,i)=>i!==best)]})};
       return apply(next,fx('DRAW',undefined,{amount:1}));
     }
-    case "SHUFFLE_ENEMY_CARD": {
+    case "SHUFFLE_ENEMY_CARD":
+    case "PLACE_ENEMY_CARD_ON_TOP": {
+      const onTop = c.operation === "PLACE_ENEMY_CARD_ON_TOP";
       const enemy=state.players.find(p=>p.id!==playerId),definition=catalog(state).find(d=>d.name===c.name);
       if(!enemy||!definition)return state;
-      const generated=generateCard(definition,{instanceId:`${source.instanceId}:enemy-deck:${state.events.length}`,playerId:enemy.id,source:{type:'CARD',cardInstanceId:source.instanceId},reason:'SHUFFLE_INTO_ENEMY_DECK',sourceContext:context?.sourceContext});
-      const position=randomIndex(state,source,enemy.deck.length+1,'enemy-deck');
+      const generated=generateCard(definition,{instanceId:`${source.instanceId}:enemy-deck:${state.events.length}`,playerId:enemy.id,source:{type:'CARD',cardInstanceId:source.instanceId},reason:onTop?'PLACE_ON_ENEMY_DECK':'SHUFFLE_INTO_ENEMY_DECK',sourceContext:context?.sourceContext});
+      const position=onTop?0:randomIndex(state,source,enemy.deck.length+1,'enemy-deck');
       return {...state,events:[...state.events,generated.event],players:state.players.map(p=>p.id!==enemy.id?p:{...p,deck:[...p.deck.slice(0,position),generated.card,...p.deck.slice(position)]})};
     }
     case "STAR_KILLER_ARRIVAL": {
@@ -242,11 +245,12 @@ export function applyBalanceEffect(
       const definition=catalog(state).find(d=>d.id===source.definitionId);
       if(!definition)return state;
       let n:GameState={...state,consumedRuleKeys:[...(state.consumedRuleKeys??[]),key],events:[...state.events,{type:'CARD_REVEALED',playerId,cardInstanceId:source.instanceId,cardDefinitionId:source.definitionId,reason:'STAR_KILLER_ARRIVAL',revealedCard:{definitionId:source.definitionId,name:definition.name,cost:source.currentCost,attack:source.currentAttack,health:source.currentHealth,rulesText:definition.rulesText,imageUrl:definition.imageUrl}}]};
-      const wanted=state.players.flatMap(p=>p.board.filter((card):card is CardInstance=>!!card&&getActiveCardKeywords(card).includes('WANTED')).map(card=>card.instanceId));
-      n=apply(n,fx('DESTROY',{zone:'BOARD',owner:'ALL',selection:'ALL',cardType:'WRESTLER',count:8,filter:{keyword:'WANTED'}}));
+      const wanted=state.players.flatMap(p=>[...p.board,...(c.includeHand?p.hand:[])].filter((card):card is CardInstance=>!!card&&getActiveCardKeywords(card).includes('WANTED')).map(card=>card.instanceId));
+      n=apply(n,fx('DESTROY',{zone:'BOARD',...(c.includeHand?{zones:['BOARD','HAND'] as const}:{}),owner:'ALL',selection:'ALL',cardType:'WRESTLER',count:c.includeHand?28:8,filter:{keyword:'WANTED'}}));
       if(n.status==='FINISHED')return n;
       const destroyed=new Set(n.events.slice(state.events.length).filter(e=>e.type==='CARD_DESTROYED'&&wanted.includes(e.cardInstanceId??'')).map(e=>e.cardInstanceId));
-      n=apply(n,fx('BUFF',{zone:'HAND',owner:'SELF',selection:'SELF',count:1},{attack:destroyed.size*2}));
+      if(!n.players.find(p=>p.id===playerId)?.hand.some(card=>card.instanceId===source.instanceId))return n;
+      n=apply(n,fx('BUFF',{zone:'HAND',owner:'SELF',selection:'SELF',count:1},{attack:destroyed.size*(c.attackPerDestroyed===undefined?2:num('attackPerDestroyed'))}));
       let enemy=n.players.find(p=>p.id!==playerId);
       if(!enemy)return n;
       if(enemy.board.every(Boolean)){
