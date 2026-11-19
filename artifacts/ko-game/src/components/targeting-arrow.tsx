@@ -50,9 +50,12 @@ export function TargetingArrow({ sourceId, validIds, championValid }: {
       <path className="ko-target-arrow__glow" d={path} />
       <path className="ko-target-arrow__body" d={path} />
       {pointer.valid ? (
-        <g className="ko-target-arrow__reticle" transform={`translate(${ex} ${ey})`}>
-          <circle r="22" /><circle r="9" />
-          <path d="M-32 0H-14M14 0H32M0 -32V-14M0 14V32" />
+        <g transform={`translate(${ex} ${ey})`}>
+          {/* spin lives on an inner group so it turns around the reticle's own centre */}
+          <g className="ko-target-arrow__reticle">
+            <circle r="22" /><circle r="9" />
+            <path d="M-32 0H-14M14 0H32M0 -32V-14M0 14V32" />
+          </g>
         </g>
       ) : (
         <path className="ko-target-arrow__head" d="M0 -15 L26 0 L0 15 L6 0 Z" transform={`translate(${ex} ${ey}) rotate(${angle.toFixed(1)}) translate(-14 0)`} />
