@@ -20,3 +20,9 @@ Validation:
 - Workspace typecheck passed. Frontend/API production builds passed.
 
 Production catalog data is not modified by development or tests. Current cards/champions and Claude presentation work remain in the source ancestry.
+
+## Verified production release
+
+Source revision: `c43a222b1b302a7d0e5c5052ebcf0b3e2bffde7c`. API deployment `dep-dbv57b5g1s2s73e7p2g0` was verified live before frontend deployment `dep-dbv58amtlv9c73frjgb0` began. Both are now live at this exact revision; public API health, the real frontend entry and version.json match.
+
+The live administrator module graph links `audio-start-control-BKWXaoTT.js`, and the served control contains both the start-position input and save action. Existing frontend approval gating was preserved. Production music/card/champion records were not changed as part of deployment.
