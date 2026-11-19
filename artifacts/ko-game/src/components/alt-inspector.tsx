@@ -1,4 +1,5 @@
 import {CardIntroduction} from "./card-introduction";
+import './inspector-peek.css';
 import {TagLabel} from './tag-label';
 import {FinisherProgress,championPreparationProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
@@ -45,6 +46,8 @@ interface InspectTarget {
   rect: DOMRect;
   showOnHover: boolean;
   showOnTouch: boolean;
+  /** Hearthstone-style quick look (mouse hover or touch long-press): no close button, never blocks the board. */
+  peek?: boolean;
 }
 
 interface AltInspectContextValue {
@@ -233,6 +236,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       {isVisible && (
         <aside
           aria-label="상세정보"
+          data-peek={target?.peek && !isTouchInspecting ? "true" : undefined}
           className="ko-touch-inspector pointer-events-auto fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
           onMouseEnter={cancelClear}
@@ -244,14 +248,14 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
             overflowY: 'auto',
           }}
         >
-          <button
+          {!(target?.peek && !isTouchInspecting) && <button
             type="button"
             className="ko-touch-inspector-close ml-auto mb-2 block min-h-11 min-w-11 rounded border border-neutral-700 px-3 text-xs"
             onClick={clear}
             aria-label="상세정보 닫기"
           >
             닫기
-          </button>
+          </button>}
           {target?.content}
         </aside>
       )}
@@ -295,7 +299,17 @@ export function Inspectable({
 }) {
   const context = useContext(AltInspectContext);
   const lastTouchAt = useRef(0);
+  const hoverTimer = useRef<number | null>(null);
+  const press = useRef<{ timer: number | null; x: number; y: number; shown: boolean; suppressUntil: number }>({ timer: null, x: 0, y: 0, shown: false, suppressUntil: 0 });
+  useEffect(() => () => {
+    if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current);
+    if (press.current.timer !== null) window.clearTimeout(press.current.timer);
+  }, []);
   if (!context) return <>{children}</>;
+  const peek = (element: HTMLElement) =>
+    context.inspect({ content, anchor: element, rect: element.getBoundingClientRect(), showOnHover: true, showOnTouch: false, peek: true });
+  const cancelHover = () => { if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current); hoverTimer.current = null; };
+  const cancelPress = () => { if (press.current.timer !== null) window.clearTimeout(press.current.timer); press.current.timer = null; };
 
   const inspect = (element: HTMLElement) =>
     context.inspect({
@@ -318,9 +332,17 @@ export function Inspectable({
     <div
       className={className}
       onMouseEnter={(event) => {
-        if (Date.now() - lastTouchAt.current > 1000 && (context.isAltPressed || (window.matchMedia('(hover: hover) and (pointer: fine)').matches && innerHeight>=600))) inspect(event.currentTarget);
+        if (Date.now() - lastTouchAt.current <= 1000) return;
+        if (context.isAltPressed) { inspect(event.currentTarget); return; }
+        // Hearthstone: just rest the mouse on a card for a moment to see it big.
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        const element = event.currentTarget;
+        cancelHover();
+        hoverTimer.current = window.setTimeout(() => { hoverTimer.current = null; if (element.isConnected) peek(element); }, 320);
       }}
+      onMouseDown={() => { cancelHover(); if (!context.isAltPressed && !context.isTouchInspecting) context.clear(); }}
       onMouseLeave={(event) => {
+        cancelHover();
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
         context.scheduleClear();
@@ -329,14 +351,39 @@ export function Inspectable({
         if (Date.now() - lastTouchAt.current > 1000 && event.target instanceof HTMLElement && event.target.matches(':focus-visible')) inspect(event.currentTarget);
       }}
       onPointerDown={(event) => {
-        if (event.pointerType === 'touch') lastTouchAt.current = Date.now();
+        if (event.pointerType !== 'touch') return;
+        lastTouchAt.current = Date.now();
+        // Hearthstone mobile: press and hold a card to see it big; let go to close.
+        const element = event.currentTarget;
+        cancelPress();
+        press.current.x = event.clientX; press.current.y = event.clientY; press.current.shown = false;
+        press.current.timer = window.setTimeout(() => {
+          press.current.timer = null;
+          if (!element.isConnected) return;
+          press.current.shown = true;
+          if (navigator.vibrate) try { navigator.vibrate(8); } catch { /* ignore */ }
+          peek(element);
+        }, 380);
       }}
+      onPointerMove={(event) => {
+        if (event.pointerType !== 'touch' || press.current.timer === null) return;
+        if (Math.hypot(event.clientX - press.current.x, event.clientY - press.current.y) > 10) cancelPress();
+      }}
+      onPointerUp={(event) => {
+        if (event.pointerType !== 'touch') return;
+        cancelPress();
+        if (press.current.shown) { press.current.shown = false; press.current.suppressUntil = Date.now() + 500; context.clear(); }
+      }}
+      onPointerCancel={() => { cancelPress(); if (press.current.shown) { press.current.shown = false; context.clear(); } }}
+      onContextMenu={(event) => { if (Date.now() - lastTouchAt.current < 1500) event.preventDefault(); }}
       onBlur={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
         if (!context.isTouchInspecting) context.clear();
       }}
       onClickCapture={(event) => {
+        // The click that ends a long-press must not also play / select the card.
+        if (Date.now() < press.current.suppressUntil) { event.preventDefault(); event.stopPropagation(); return; }
         const isInfoButton = Boolean((event.target as Element).closest('[data-touch-inspect-trigger]'));
         const isTouchClick = Date.now() - lastTouchAt.current <= 1000;
         const isActionControl = Boolean((event.target as Element).closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]'));
@@ -576,11 +623,33 @@ export function ChampionAbilityInspectContent({
   );
 }
 
+function FinisherCards({ ids }: { ids: string[] }) {
+  const cards = ids.map((id) => getCardDefinition(id)).filter((card): card is NonNullable<typeof card> => Boolean(card));
+  if (!cards.length) return null;
+  return (
+    <div className="ko-finisher-cards" data-testid="finisher-card-preview">
+      {cards.map((card) => (
+        <CardRenderer key={card.id} cardId={card.id} name={card.name} cardType={card.cardType} cost={card.cost} attack={card.attack} health={card.health}
+          rulesText={card.rulesText ?? "효과 없음"} imageUrl={card.imageUrl} rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} keywords={card.keywords} keywordConfig={card.effectConfig}
+          imageDisplaySettings={{ imageDisplayMode: card.imageDisplayMode, imageScale: card.imageScale, imagePositionX: card.imagePositionX, imagePositionY: card.imagePositionY }}
+          size="detail" className="w-full" />
+      ))}
+    </div>
+  );
+}
+
 export function ChampionQuestInspectContent({ champion }: { champion: ChampionState }) {
   const quest = champion.quest;
   if (!quest) return <div className="text-sm text-neutral-400">피니셔 준비 조건이 없습니다.</div>;
-  if (quest.finisherChoices?.length) return <div><h3 className="mb-3 text-lg font-bold text-amber-200">피니셔 준비 · 선택지</h3><FinisherProgress champion={champion}/><p className="mt-3 text-xs text-neutral-400">하나를 획득하면 나머지는 이번 대전에서 비활성화됩니다. 동시에 달성하면 선택합니다.</p></div>;
+  const finisherIds = [
+    ...(quest.finisherChoices?.map((choice) => choice.cardDefinitionId) ?? []),
+    ...(quest.finisher?.cardDefinitionId ? [quest.finisher.cardDefinitionId] : []),
+    ...(quest.reward?.type === 'FINISHER' && quest.reward.cardDefinitionId ? [quest.reward.cardDefinitionId] : []),
+  ].filter((id, index, all) => id && all.indexOf(id) === index);
+  if (quest.finisherChoices?.length) return <div className="ko-quest-inspect"><FinisherCards ids={finisherIds} /><div><h3 className="mb-3 text-lg font-bold text-amber-200">피니셔 준비 · 선택지</h3><FinisherProgress champion={champion}/><p className="mt-3 text-xs text-neutral-400">하나를 획득하면 나머지는 이번 대전에서 비활성화됩니다. 동시에 달성하면 선택합니다.</p></div></div>;
   return (
+    <div className="ko-quest-inspect">
+    <FinisherCards ids={finisherIds} />
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">피니셔 준비</div>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
@@ -594,6 +663,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">피니셔 획득 / 현재 완료 효과</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>
       <p className="mt-2 text-xs text-neutral-500">피니셔 카드 연계 전까지 기존 완료 효과가 적용됩니다.</p>
+    </div>
     </div>
   );
 }

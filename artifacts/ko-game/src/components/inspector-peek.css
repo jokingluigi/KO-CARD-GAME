@@ -1,0 +1,9 @@
+/* Quick look (hover / long-press): the panel never blocks the board and has no close button. */
+.ko-touch-inspector[data-peek]{pointer-events:none!important;animation:ko-peek-in .14s ease-out both}
+.ko-touch-inspector[data-peek] .ko-touch-inspector-close{display:none}
+@keyframes ko-peek-in{from{opacity:0;transform:scale(.97)}}
+/* finisher panel: card on the left, conditions on the right */
+.ko-quest-inspect{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.ko-quest-inspect:has(.ko-finisher-cards){grid-template-columns:minmax(150px,220px) minmax(0,1fr);align-items:start}
+.ko-finisher-cards{display:grid;gap:10px}
+@media (max-width:560px){.ko-quest-inspect:has(.ko-finisher-cards){grid-template-columns:minmax(110px,40%) minmax(0,1fr);gap:10px}}
