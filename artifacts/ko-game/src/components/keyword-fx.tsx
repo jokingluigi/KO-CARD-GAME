@@ -23,8 +23,8 @@ export function KeywordFx({ keywords, armor, countdown }: { keywords: string[]; 
     <span className="kfx" role="img" aria-label={`키워드 ${shown.map(k => NAMES[k]).join(", ")}`} title={shown.map(k => NAMES[k]).join(" · ")}>
       {has("SURPRISE") && <span className="kfx-surprise"><i /><b /></span>}
       {has("LIFESTEAL") && <span className="kfx-lifesteal"><i /><i /><i /></span>}
-      {has("REGEN") && <span className="kfx-regen"><i /><i /><i /><i /></span>}
-      {has("WANTED") && <span className="kfx-wanted"><i /></span>}
+      {has("REGEN") && <span className="kfx-regen"><i /><i /><i /><i /><i /></span>}
+      {has("WANTED") && <span className="kfx-wanted"><i /><b>현상수배</b><em /></span>}
       {has("CANNOT_ATTACK") && <span className="kfx-chains"><i /><i /></span>}
       {has("ARMOR") && <span className="kfx-armor"><i /><i /><i /><i />{typeof armor === "number" && <b>{armor}</b>}</span>}
       {has("DEFENSE") && <span className="kfx-defense" />}

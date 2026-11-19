@@ -39,19 +39,25 @@
 @keyframes kfx-vein{50%{box-shadow:inset 0 0 16px 4px rgba(230,30,50,.75)}}
 @keyframes kfx-drop{10%{opacity:.95}100%{transform:translateY(900%);opacity:0}}
 
-/* 치유 — green motes rising */
-.kfx-regen{inset:18% 8% 8%}
-.kfx-regen i{position:absolute;bottom:0;width:6%;aspect-ratio:1;border-radius:50%;background:#9ff5ad;box-shadow:0 0 6px #4fd06a,0 0 2px #fff;opacity:0;animation:kfx-rise 2.4s ease-in infinite}
-.kfx-regen i:nth-child(1){left:14%}.kfx-regen i:nth-child(2){left:42%;animation-delay:.6s}.kfx-regen i:nth-child(3){left:66%;animation-delay:1.2s}.kfx-regen i:nth-child(4){left:86%;animation-delay:1.8s}
-@keyframes kfx-rise{15%{opacity:.95}100%{transform:translateY(-320%);opacity:0}}
+/* 치유 — a soft green glow breathing at the base and green "+" crosses floating up */
+.kfx-regen{inset:0;border-radius:7%/5%;overflow:hidden;background:radial-gradient(ellipse at 50% 100%,rgba(80,230,120,.38),transparent 55%);animation:kfx-regen-glow 2.4s ease-in-out infinite}
+.kfx-regen i{position:absolute;bottom:22%;width:12%;aspect-ratio:1;opacity:0;animation:kfx-rise 2.4s ease-out infinite;
+  background:linear-gradient(#7ff09a,#7ff09a) center/34% 100% no-repeat,linear-gradient(#7ff09a,#7ff09a) center/100% 34% no-repeat;filter:drop-shadow(0 0 3px #2fd25a) drop-shadow(0 0 1px #0a3a16)}
+.kfx-regen i:nth-child(1){left:12%}.kfx-regen i:nth-child(2){left:44%;animation-delay:.5s;width:15%}.kfx-regen i:nth-child(3){left:74%;animation-delay:1s}.kfx-regen i:nth-child(4){left:28%;animation-delay:1.5s;width:9%}.kfx-regen i:nth-child(5){left:62%;animation-delay:1.9s;width:10%}
+@keyframes kfx-rise{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:1}100%{transform:translateY(-330%) scale(1);opacity:0}}
+@keyframes kfx-regen-glow{50%{background:radial-gradient(ellipse at 50% 100%,rgba(90,240,130,.55),transparent 62%)}}
 
-/* 수배 — a red rifle-scope reticle slowly turning over the art */
-.kfx-wanted{left:22%;right:22%;top:20%;aspect-ratio:1}
-.kfx-wanted::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(230,50,40,.75);
-  background:linear-gradient(rgba(230,50,40,.75),rgba(230,50,40,.75)) center/2px 100% no-repeat,linear-gradient(90deg,rgba(230,50,40,.75),rgba(230,50,40,.75)) center/100% 2px no-repeat;
-  -webkit-mask:radial-gradient(circle,transparent 0 14%,#000 15%);mask:radial-gradient(circle,transparent 0 14%,#000 15%);animation:kfx-turn 8s linear infinite}
-.kfx-wanted i{position:absolute;inset:-12%;border-radius:50%;border:1px dashed rgba(230,50,40,.55);animation:kfx-turn 12s linear infinite reverse}
-@keyframes kfx-turn{to{transform:rotate(360deg)}}
+/* 수배 — an old bounty poster nailed over the top-right of the art */
+.kfx-wanted{right:4%;top:17%;width:44%;aspect-ratio:.82;transform:rotate(7deg);transform-origin:50% 8%;animation:kfx-sway 3.6s ease-in-out infinite;filter:drop-shadow(1px 3px 3px rgba(0,0,0,.8))}
+.kfx-wanted i{position:absolute;inset:0;background:
+  radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.18),transparent 60%),
+  radial-gradient(circle at 80% 85%,rgba(90,50,10,.35),transparent 40%),
+  linear-gradient(#e9d4a4,#cdb07a);
+  clip-path:polygon(0 3%,8% 0,20% 2%,33% 0,50% 3%,66% 0,80% 2%,92% 0,100% 4%,98% 20%,100% 40%,97% 60%,100% 80%,98% 100%,80% 97%,62% 100%,45% 97%,28% 100%,12% 97%,0 100%,3% 80%,0 60%,2% 40%,0 20%)}
+.kfx-wanted i::after{content:"";position:absolute;left:16%;right:16%;top:34%;bottom:16%;border:1px solid rgba(90,50,15,.55);background:repeating-linear-gradient(rgba(90,50,15,.18) 0 1px,transparent 1px 4px)}
+.kfx-wanted b{position:absolute;left:0;right:0;top:9%;text-align:center;font-weight:900;font-size:clamp(7px,1.05vw,12px);letter-spacing:-.02em;color:#7a160e;white-space:nowrap}
+.kfx-wanted em{position:absolute;left:50%;top:-6%;width:13%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffb0a0,#b3221a 55%,#4a0a06);box-shadow:0 1px 2px #000}
+@keyframes kfx-sway{50%{transform:rotate(4deg)}}
 
 /* 공격불가 — two iron chains crossed over the card */
 .kfx-chains{inset:0;overflow:hidden;border-radius:6%/4%}
@@ -91,10 +97,11 @@
 @keyframes kfx-dodge-pulse{50%{border-color:rgba(255,246,210,1);box-shadow:0 0 16px rgba(255,214,120,.7),inset 0 0 20px rgba(255,226,150,.55)}}
 
 /* 카운트다운 — a ticking dial over the art with the turns left */
-.kfx-countdown{right:8%;top:24%;width:26%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+.kfx-countdown{left:8%;top:24%;width:26%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
   background:conic-gradient(rgba(200,225,255,.85) var(--kfx-p,30%),rgba(20,24,32,.85) 0);box-shadow:0 0 0 2px #0d1118,0 2px 4px #000;animation:kfx-tick 1s steps(12) infinite}
 .kfx-countdown b{display:grid;place-items:center;width:74%;aspect-ratio:1;border-radius:50%;background:#0d1118;color:#dbe8ff;font-weight:900;font-size:clamp(9px,1.3vw,14px)}
 @keyframes kfx-tick{from{--kfx-p:0%}to{--kfx-p:100%}}
 @property --kfx-p{syntax:'<percentage>';inherits:false;initial-value:0%}
 
 @media (prefers-reduced-motion:reduce){.kfx *, .kfx>span{animation:none!important}}
+@keyframes kfx-turn{to{transform:rotate(360deg)}}
