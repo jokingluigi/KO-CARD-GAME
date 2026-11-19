@@ -128,10 +128,11 @@ export function eventTitle(
     case "CARD_DISCARDED": return "손패 카드 버리기 · 묘지로 이동";
     case "CARD_REVEALED": return event.reason==="OVERDRAW" ? "손패 초과 · 공개 후 제외" : "카드 공개";
     case "CHAMPION_ABILITY_CHANGED": return `고유 능력 변경 · ${event.reason??""} (비용 ${event.amount??0})`;
-    case "CARD_DRAWN":
-      return event.playerId === viewerPlayerId
-        ? `${visibleName(event.cardInstanceId)} 드로우`
-        : "카드 드로우";
+    case "CARD_DRAWN": {
+      // Unknown (hidden or since-shuffled) cards read as a plain draw, never "알 수 없는 카드".
+      const known = event.playerId === viewerPlayerId && visibleHistoryCard(state, event.cardInstanceId, viewerPlayerId);
+      return known ? `${visibleName(event.cardInstanceId)} 드로우` : "카드 드로우";
+    }
     case "CHAMPION_GAME_START_ABILITY":
       return "챔피언 게임 시작 능력";
     case "CHAMPION_QUEST_PROGRESS":
