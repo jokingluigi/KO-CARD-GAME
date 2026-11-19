@@ -1,3 +1,4 @@
+import {SavedAudioStartControl} from './audio-start-control';
 import {AdminHomeMenuArt} from "./admin-home-menu-art";
 import {AdminEditorSections} from './admin-editor-sections';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -271,7 +272,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
     }
   }
 
-  async function patchItem(item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "gameEnabled" | "titleEnabled" | "volume">>) {
+  async function patchItem(item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "gameEnabled" | "titleEnabled" | "volume">> & {startSeconds?:number}) {
     const response = await fetch(`${apiBase}/game-media/${encodeURIComponent(item.id)}`, {
       method: "PATCH",
       credentials: "include",
@@ -287,6 +288,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
       return;
     }
     const body = await response.json() as { media: MediaRecord };
+    if (patch.startSeconds !== undefined) setMessage(`재생 시작 지점을 ${patch.startSeconds}초로 저장했습니다.`);
     setMedia((current) => current.map((entry) => entry.id === item.id ? body.media : isResultMusic(item.mediaType) && patch.gameEnabled && entry.mediaType === item.mediaType ? {...entry, gameEnabled:false} : entry));
   }
 
@@ -435,7 +437,7 @@ function MediaSection({
   accept: string;
   uploading: boolean;
   onUpload: (file: File) => void;
-  onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "gameEnabled" | "titleEnabled" | "volume">>) => Promise<void>;
+  onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "gameEnabled" | "titleEnabled" | "volume">> & {startSeconds?:number}) => Promise<void>;
   onDelete: (item: MediaRecord) => Promise<void>;
   ratioWarning: (item: MediaRecord) => boolean | null;
   viewportRatio: number;
@@ -577,6 +579,7 @@ function MediaSection({
                       </label>
                     </div>
                   )}
+                  {isMusic(item.mediaType) && <SavedAudioStartControl url={item.assetUrl} volume={item.volume} label={item.name} onSave={startSeconds=>onPatch(item,{startSeconds})}/>}
                   <button type="button" onClick={() => void onDelete(item)} className="flex items-center gap-1.5 text-[11px] font-bold text-red-400 hover:text-red-300">
                     <Trash2 className="h-3.5 w-3.5" /> 삭제
                   </button>

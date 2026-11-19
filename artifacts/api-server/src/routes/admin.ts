@@ -1,3 +1,4 @@
+import {audioStartSeconds,audioFileUrl,validAudioStartUrl,validAudioStartSeconds,withAudioStart} from '../../../../lib/game-engine/src/audio-start';
 import {championSaveValuesMatch} from '../../../../lib/game-engine/src/champion-save-values';
 import {logger} from '../lib/logger';
 import { validFinisherChoices, validFinisherReward } from '@workspace/game-engine';
@@ -221,8 +222,9 @@ function parseChampionInput(value: unknown, existing: Record<string, unknown> = 
   }
   for (const [assetKey, urlKey] of [['imageAssetId','imageUrl'],['questCompletedPortraitAssetId','questCompletedPortraitUrl'],['questCompleteAudioAssetId','questCompleteAudioUrl']]) {
     const asset = result[assetKey], url = result[urlKey];
-    if (typeof asset === 'string' && asset.startsWith('/objects/uploads/')) result[urlKey] = '/api/storage' + asset;
-    else if (typeof url === 'string' && url.startsWith('/api/storage/objects/')) result[assetKey] = url.slice('/api/storage'.length);
+    if (urlKey === 'questCompleteAudioUrl' && !validAudioStartUrl(typeof url === 'string' ? url : null)) return null;
+    if (typeof asset === 'string' && asset.startsWith('/objects/uploads/')) result[urlKey] = urlKey === 'questCompleteAudioUrl' ? withAudioStart('/api/storage' + asset,audioStartSeconds(typeof url === 'string' ? url : null)) : '/api/storage' + asset;
+    else if (typeof url === 'string' && url.startsWith('/api/storage/objects/')) result[assetKey] = audioFileUrl(url).slice('/api/storage'.length);
   }
   return result as ChampionInput;
 }
@@ -782,7 +784,7 @@ export function parseCardInput(value: unknown): CardInput | null {
     || (entranceAudioAssetId !== null &&
       !entranceAudioAssetId.startsWith("/objects/uploads/audio/"))
     || (entranceAudioUrl !== null &&
-      !entranceAudioUrl.startsWith("/api/storage/objects/"))
+      (!entranceAudioUrl.startsWith("/api/storage/objects/") || !validAudioStartUrl(entranceAudioUrl)))
   ) {
     return null;
   }
@@ -811,7 +813,7 @@ export function parseCardInput(value: unknown): CardInput | null {
     imagePositionY,
     imageUploadToken,
     entranceAudioAssetId,
-    entranceAudioUrl: entranceAudioAssetId ? `/api/storage${entranceAudioAssetId}` : null,
+    entranceAudioUrl: entranceAudioAssetId ? withAudioStart(`/api/storage${entranceAudioAssetId}`,audioStartSeconds(entranceAudioUrl)) : null,
     entranceAudioVolume,
     entranceAudioEnabled,
     entranceAudioUploadToken,
@@ -2808,6 +2810,9 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
   if(existing.mediaType==="HOME_MENU_LAYOUT"){response.status(400).json({message:"홈 메뉴 이미지 관리에서 수정하세요."});return;}
   const body = request.body && typeof request.body === "object"
     ? request.body as Record<string, unknown> : {};
+  if (body.startSeconds !== undefined && (!validAudioStartSeconds(body.startSeconds) || ['BACKGROUND','HOME_MENU_ART'].includes(existing.mediaType))) {
+    response.status(400).json({message:'재생 시작 지점은 0~86400초 사이의 숫자로 입력하세요.'});return;
+  }
   const name = body.name === undefined ? existing.name : typeof body.name === "string" ? body.name.trim() : "";
   const gameEnabled = body.gameEnabled === undefined
     ? body.enabled === undefined ? existing.gameEnabled : body.enabled
@@ -2842,6 +2847,7 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
       titleEnabled,
       enabled:existing.mediaType==="HOME_MENU_ART"?false:gameEnabled,
       volume: existing.mediaType !== "BACKGROUND" ? volume : existing.volume,
+      ...(body.startSeconds !== undefined ? {assetUrl:withAudioStart(`/api/storage${existing.assetId}`,body.startSeconds as number)} : {}),
       mainEnabled: titleEnabled,
       updatedAt: new Date(),
     }).where(eq(gameMediaTable.id, id)).returning();
@@ -2863,7 +2869,7 @@ router.delete("/game-media/:id", async (request, response): Promise<void> => {
   }
   if(existing.mediaType==='BGM'){
     const [champions,skins]=await Promise.all([db.select({lines:championsTable.presentationLines}).from(championsTable),db.select({assets:cosmeticItemsTable.imageAssets}).from(cosmeticItemsTable).where(eq(cosmeticItemsTable.type,'CHAMPION_SKIN'))]);
-    if([...champions.map(c=>c.lines?.BATTLE_SPRITE),...skins.map(s=>s.assets.__battle)].some(raw=>Object.values(parseBattleSprite(raw)?.finishers??{}).some(entry=>entry.music?.assetUrl===existing.assetUrl))){response.status(409).json({message:'피니셔 선택지에서 사용하는 음악입니다. 스프라이트 관리에서 연결을 해제한 후 삭제하세요.'});return;}
+    if([...champions.map(c=>c.lines?.BATTLE_SPRITE),...skins.map(s=>s.assets.__battle)].some(raw=>Object.values(parseBattleSprite(raw)?.finishers??{}).some(entry=>entry.music?.assetUrl && audioFileUrl(entry.music.assetUrl)===audioFileUrl(existing.assetUrl)))){response.status(409).json({message:'피니셔 선택지에서 사용하는 음악입니다. 스프라이트 관리에서 연결을 해제한 후 삭제하세요.'});return;}
   }
   await db.delete(gameMediaTable).where(eq(gameMediaTable.id, id));
   const config = gameMediaConfig(existing.mediaType as (typeof GAME_MEDIA_TYPES)[number]);
