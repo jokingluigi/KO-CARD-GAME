@@ -1,0 +1,52 @@
+/* Field-card keyword looks. Root card is .ko-card-depth[data-kfx]. */
+.ko-card-depth[data-kfx]{isolation:isolate}
+/* text badges that are now shown as looks are hidden on field cards only */
+.ko-card-depth[data-kfx] [data-testid=card-keyword-badges] [data-kw]:is([data-kw=TAUNT],[data-kw=DODGE],[data-kw=DEFENSE],[data-kw=IMMUNE],[data-kw=ARMOR],[data-kw=RUSH],[data-kw=SURPRISE],[data-kw=MULTI_STRIKE],[data-kw=LIFESTEAL],[data-kw=REGEN],[data-kw=CANNOT_ATTACK],[data-kw=WANTED],[data-kw=COUNTDOWN]){display:none}
+
+/* 도발: an iron shield behind the card, its point showing below */
+.kfx-taunt{position:absolute;z-index:-1;left:-7%;right:-7%;top:-3%;bottom:-12%;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7))}
+.kfx-taunt::before,.kfx-taunt i{content:"";position:absolute;inset:0;clip-path:polygon(9% 0,91% 0,100% 7%,100% 66%,50% 100%,0 66%,0 7%)}
+.kfx-taunt::before{background:linear-gradient(90deg,#a9acae,#5d6266 30%,#3c4044 70%,#8a8e91)}
+.kfx-taunt i{inset:3px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 4px),linear-gradient(#4a4f54,#26292c)}
+.kfx-taunt i::after{content:"";position:absolute;left:50%;bottom:9%;width:13%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#d9d3c4,#7b6f58 60%,#3d362a);box-shadow:0 0 0 2px #1d1f21}
+
+/* 회피: a golden bubble that shimmers around the card */
+.kfx-dodge{position:absolute;z-index:4;inset:-5% -6%;pointer-events:none;border-radius:22%/16%;overflow:hidden;
+  border:2px solid rgba(255,232,160,.85);background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(255,222,140,.22) 82%,rgba(255,240,200,.38));
+  box-shadow:0 0 10px rgba(255,214,120,.55),inset 0 0 14px rgba(255,226,150,.45);animation:kfx-dodge-pulse 2.6s ease-in-out infinite}
+.kfx-dodge i{position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 70%,rgba(255,250,225,.55) 78%,transparent 86%);animation:kfx-spin 3.2s linear infinite}
+@keyframes kfx-dodge-pulse{50%{border-color:rgba(255,246,210,1);box-shadow:0 0 16px rgba(255,214,120,.7),inset 0 0 20px rgba(255,226,150,.55)}}
+@keyframes kfx-spin{to{transform:rotate(360deg)}}
+
+/* 방어: a blue-grey stone ward with a fine hex lattice */
+.kfx-defense{position:absolute;z-index:4;inset:-3%;pointer-events:none;border-radius:14px;border:2px solid rgba(170,200,230,.8);
+  background:repeating-linear-gradient(60deg,rgba(170,200,230,.12) 0 1px,transparent 1px 9px),repeating-linear-gradient(-60deg,rgba(170,200,230,.12) 0 1px,transparent 1px 9px),rgba(120,150,190,.12);
+  box-shadow:inset 0 0 16px rgba(160,195,235,.45),0 0 8px rgba(120,160,210,.4)}
+
+/* 면역: a faint white haze on the edges (cannot be targeted) */
+.kfx-immune{position:absolute;z-index:4;inset:0;pointer-events:none;border-radius:10px;box-shadow:inset 0 0 14px 5px rgba(235,240,255,.7),0 0 0 1px rgba(235,240,255,.55);animation:kfx-haze 3s ease-in-out infinite}
+@keyframes kfx-haze{50%{box-shadow:inset 0 0 22px 8px rgba(235,240,255,.85),0 0 0 1px rgba(235,240,255,.8)}}
+
+/* 치유: small green motes rising */
+.kfx-regen{position:absolute;z-index:4;inset:20% 10% 10%;pointer-events:none}
+.kfx-regen i{position:absolute;bottom:0;width:7%;aspect-ratio:1;border-radius:50%;background:#8ff0a0;box-shadow:0 0 6px #4fd06a;opacity:0;animation:kfx-rise 2.4s ease-in infinite}
+.kfx-regen i:nth-child(1){left:18%}.kfx-regen i:nth-child(2){left:52%;animation-delay:.8s}.kfx-regen i:nth-child(3){left:80%;animation-delay:1.6s}
+@keyframes kfx-rise{15%{opacity:.95}100%{transform:translateY(-260%);opacity:0}}
+
+/* emblem column on the left edge for everything else */
+.kfx-emblems{position:absolute;z-index:6;left:-10%;top:22%;width:23%;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.kfx-emblem{position:relative;display:grid;place-items:center;width:100%;min-width:19px;aspect-ratio:1;border-radius:50%;background:#0d0c0b;border:1.5px solid #c8a865;color:#f1e6cc;box-shadow:0 2px 4px rgba(0,0,0,.7)}
+.kfx-emblem svg{width:62%;height:62%}
+.kfx-emblem b{position:absolute;right:-4px;bottom:-4px;min-width:13px;height:13px;padding:0 2px;border-radius:7px;font-size:10px;line-height:13px;text-align:center;color:#15110a;background:#c8a865}
+.kfx-emblem[data-kw=RUSH]{color:#ffd76a}
+.kfx-emblem[data-kw=SURPRISE]{color:#f0a3ff}
+.kfx-emblem[data-kw=MULTI_STRIKE]{color:#ffb38a}
+.kfx-emblem[data-kw=LIFESTEAL]{color:#ff6d6d}
+.kfx-emblem[data-kw=REGEN]{color:#8ff0a0}
+.kfx-emblem[data-kw=CANNOT_ATTACK]{color:#ff8a7a;border-color:#8a3b31}
+.kfx-emblem[data-kw=WANTED]{color:#f2cf6e}
+.kfx-emblem[data-kw=COUNTDOWN]{color:#cfe0ff}
+.kfx-emblem[data-kw=ARMOR]{color:#d7dadd}
+/* 공격불가: the attack number is dimmed */
+.ko-card-depth[data-kfx~=CANNOT_ATTACK]{--kfx-cant:1}
+@media (prefers-reduced-motion:reduce){.kfx-dodge,.kfx-dodge i,.kfx-immune,.kfx-regen i{animation:none}}

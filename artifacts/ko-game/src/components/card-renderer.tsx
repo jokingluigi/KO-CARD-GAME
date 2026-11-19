@@ -14,6 +14,7 @@ import { CardRulesText } from './card-rules-text';
 import { FittedCardRules, FittedCardRulesContext } from './fitted-card-rules';
 import { useContext, useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
+import { KeywordFx } from "./keyword-fx";
 import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
 import {
   getVisibleCardKeywords,
@@ -292,6 +293,7 @@ export function CardRenderer({
     ...(isStunned ? ["STUN" as CardKeyword] : []),
     ...(isAbilityDisabled ? ["DISABLED" as CardKeyword] : []),
   ].filter((keyword, index, all) => all.indexOf(keyword) === index);
+  const fieldFx = size === "board" && runtimeKeywords !== undefined;
   const keywordLabels: Record<string, string> = {
     PROGRAM: "업그레이드",
     ...KEYWORD_RULE_LABELS,
@@ -358,6 +360,7 @@ export function CardRenderer({
       data-rarity={normalizedRarity}
       data-frame-layout={windows?"registered":"default"}
       data-card-definition={cardId}
+      data-kfx={fieldFx ? (keywordBadges.join(" ") || " ") : undefined}
       onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
       data-card-highlight={highlight}
       data-card-silenced={isSilenced ? "true" : undefined}
@@ -372,6 +375,7 @@ export function CardRenderer({
       role={onClick ? 'button' : undefined}
       aria-label={onClick ? name : undefined}
     >
+      {fieldFx && <KeywordFx keywords={keywordBadges} armor={armorValue} countdown={countdownValue} />}
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
           src={cosmetic.src} fallbackSrc={fallbackImageUrl ?? imageUrl}
@@ -504,6 +508,7 @@ export function CardRenderer({
             {keywordBadges.map((keyword) => (
               <span
                 key={keyword}
+                data-kw={keyword}
                 data-testid={keyword === "SILENCE_IMMUNE" ? "card-silence-immunity-badge" : undefined}
                  className={`max-w-full rounded border px-0.5 py-0.5 text-[clamp(0.45rem,0.7vw,0.65rem)] font-extrabold leading-none shadow-lg ${keyword === "SILENCE_IMMUNE" ? "ko-card-silence-immunity-badge" : ""} ${
                   keyword === "SILENCE_IMMUNE" ? "border-amber-200 bg-neutral-950/95 text-amber-100" :
