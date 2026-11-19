@@ -78,6 +78,14 @@ export interface PlayerState {
 }
 
 export interface GameState {
+  /** Synchronous multi-target removal scope; cleared before applyEffect returns. */
+  removalBatch?: { entryBuffs: Array<{
+    playerId: string;
+    sourceCard: CardInstance;
+    effect: Extract<CardEffect, {type: 'STRUCTURED'}>;
+    entryEventIndex: number;
+    triggerContext?: NonNullable<GameState['targetingState']>['triggerContext'];
+  }> };
   pendingFinisherCasts?: Array<{playerId:string;card:CardInstance}>;
   consumedNewCardEventKeys?: string[];
   overhealByTurn?: Record<string, number>;

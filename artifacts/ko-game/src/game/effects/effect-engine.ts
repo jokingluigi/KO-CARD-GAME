@@ -2140,7 +2140,39 @@ export function applyEffect(
   state: GameState, playerId: string, sourceCard: CardInstance, effect: CardEffect,
   chosenTargetInstanceIds?: string[], triggerContext?: TriggerContext,
 ): GameState {
-  const result = applyEffectWithPresentation(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext);
+  // Area removals currently visit targets in board order. Entry buffs that
+  // count those removals must wait for the complete hit, not observe a prefix.
+  if (state.removalBatch && effect.type === 'STRUCTURED' && effect.action === 'BUFF' &&
+      effect.target?.zone === 'BOARD' && effect.target.selection === 'SELF' &&
+      effect.values?.attack === undefined && effect.values?.attackReference === 'ALLIED_REMOVED_WRESTLER_COUNT') {
+    const entryEventIndex = state.events.findLastIndex(event => event.type === 'ENTER_FIELD' && event.cardInstanceId === sourceCard.instanceId);
+    return {...state, removalBatch: {entryBuffs: [...state.removalBatch.entryBuffs,
+      {playerId, sourceCard, effect, entryEventIndex, triggerContext}]}};
+  }
+  const opensRemovalBatch = !state.removalBatch && effect.type === 'STRUCTURED' &&
+    ['DAMAGE', 'RETIRE', 'DESTROY'].includes(effect.action) &&
+    (effect.target?.selection === 'ALL' || (effect.target?.count ?? 1) > 1);
+  const input = opensRemovalBatch ? {...state, removalBatch: {entryBuffs: []}} : state;
+  let result = applyEffectWithPresentation(input, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext);
+  if (opensRemovalBatch && result === input) return state;
+  if (opensRemovalBatch) {
+    const pending = result.removalBatch?.entryBuffs ?? [];
+    const {removalBatch: _batch, ...cleared} = result;
+    result = cleared;
+    // Freeze the completed batch's count before any resulting stat listeners.
+    const buffs = pending.map(entry => {
+      const divisor = Number.isSafeInteger(entry.effect.values?.referenceDivisor) && (entry.effect.values?.referenceDivisor ?? 0) > 0
+        ? entry.effect.values!.referenceDivisor! : 1;
+      return {...entry, attack: Math.floor(dynamicValue(result, entry.playerId, 'ALLIED_REMOVED_WRESTLER_COUNT') / divisor)};
+    });
+    for (const entry of buffs) {
+      const live = result.players.find(player => player.id === entry.playerId)?.board.find(card => card?.instanceId === entry.sourceCard.instanceId);
+      const latestEntry = result.events.findLastIndex(event => event.type === 'ENTER_FIELD' && event.cardInstanceId === entry.sourceCard.instanceId);
+      if (!live || latestEntry !== entry.entryEventIndex) continue;
+      result = applyEffect(result, entry.playerId, entry.sourceCard,
+        {...entry.effect, values: {...entry.effect.values, attack: entry.attack}}, undefined, entry.triggerContext);
+    }
+  }
   const id = (state.targetingState?.sourceInstanceId === sourceCard.instanceId
     ? state.targetingState.presentationResolutionId : undefined) ?? `effect:${playerId}:${state.events.length}`;
   const fresh = result.events.slice(state.events.length);
