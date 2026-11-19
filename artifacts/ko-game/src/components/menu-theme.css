@@ -274,3 +274,23 @@ body main.ko-decks :is(.ko-decks__toolbar, .ko-continuous-toolbar) {
 /* Card tiles in the library: brass edge on hover so it reads as "pick me". */
 body main.ko-decks .ko-decks__card-grid > * { transition: transform .12s ease, filter .12s ease; }
 body main.ko-decks .ko-decks__card-grid > *:hover { transform: translateY(-3px); filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .6)) drop-shadow(0 0 8px rgba(255, 200, 110, .25)); }
+
+/* ------------------------------------------------------------------ deck builder on phones */
+@media (max-width: 820px) {
+  /* The search/filter box no longer sticks to the top and eats a third of the screen while scrolling. */
+  body main.ko-decks .ko-decks__toolbar.ko-continuous-toolbar { position: static !important; padding: 10px !important; gap: 8px !important; }
+  body main.ko-decks .ko-decks__toolbar :is(label, legend) { font-size: 11px !important; }
+  body main.ko-decks .ko-decks__toolbar select { min-height: 40px; }
+  /* "Current deck" becomes a slim bar along the bottom edge instead of a pill over the cards. */
+  body .ko-mobile-current-deck {
+    left: 0 !important; right: 0; translate: none !important; bottom: 0 !important; max-width: none !important; width: 100%;
+    min-height: 52px !important; border-radius: 14px 14px 0 0 !important; border-width: 1px 0 0 !important;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important;
+    background: linear-gradient(#2a1f12f7, #140e08fa) !important; color: #ffe2a0 !important;
+    font-size: 16px; font-weight: 900 !important; letter-spacing: .02em; box-shadow: 0 -6px 20px rgba(0, 0, 0, .6) !important;
+  }
+  body .ko-mobile-current-deck::after { content: "  ▲"; font-size: 12px; color: #c9a35a; }
+  body main.ko-decks .ko-decks__wrap { padding-bottom: 96px !important; }
+  /* Card names and ownership lines: one readable line each. */
+  body main.ko-decks .ko-decks__card-grid :is(strong, h3, h4) { font-size: 12px !important; }
+}

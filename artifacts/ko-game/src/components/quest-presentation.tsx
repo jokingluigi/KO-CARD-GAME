@@ -16,7 +16,7 @@ import { spawnArrivalBlast } from './card-arrival';
 import './finisher-ready.css';
 
 export const QUEST_BANNER_DURATION_MS = 1500;
-export const QUEST_REWARD_DURATION_MS = 1100;
+export const QUEST_REWARD_DURATION_MS = 2600;
 
 export function QuestPresentation(props: {
   cue: PresentationCue; state: GameState; onComplete: () => void; viewerPlayerId: string;
@@ -36,8 +36,9 @@ function ActiveQuestPresentation({
   viewerPlayerId: string;
 }) {
   const [phase, setPhase] = useState<"BANNER" | "REWARD">("BANNER");
-  const completeRef=useRef(onComplete);
-  completeRef.current=onComplete;
+  const finished=useRef(false);
+  const completeRef=useRef(()=>{});
+  completeRef.current=()=>{if(finished.current)return;finished.current=true;onComplete();};
   const reduced=prefersReducedMotion();
   const bannerDuration=reduced?180:QUEST_BANNER_DURATION_MS;
   const rewardDuration=reduced?900:QUEST_REWARD_DURATION_MS;
@@ -85,19 +86,19 @@ function ActiveQuestPresentation({
     </div>
   );
   return (
-    <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
+    <div className={`quest-presentation ko-finisher-reward${isViewer?'':' ko-finisher-reward--opponent'}`} style={{'--fr-reward':`${rewardDuration}ms`} as import('react').CSSProperties} onClick={()=>completeRef.current()}>
 
       {(
-        <div data-phase="reward" className="pointer-events-auto w-full max-w-xl max-h-[80dvh] overflow-y-auto rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: `ko-quest-reward ${rewardDuration}ms ease both` }}>
-          <p className="text-xs font-black tracking-[0.25em] text-amber-300">피니셔 획득 · 현재 완료 효과</p>
-          <p className="mt-2 text-xs text-neutral-400">피니셔 카드 연계 전까지 기존 완료 효과가 적용됩니다.</p>
-          <h2 className="mt-2 text-2xl font-black">{champion?.name ?? "Champion"}</h2>
-          <p className="mt-4 whitespace-pre-wrap text-base leading-6 text-amber-100">{champion ? championQuestRewardText(champion) : "피니셔 준비를 완료했습니다."}</p>
+        <div data-phase="reward" className="ko-finisher-reward__plaque">
+          <div className="ko-finisher-reward__ribbon"><span>{isViewer?'피니셔 획득!':'상대 피니셔 획득'}</span></div>
+          <h2 className="ko-finisher-reward__name">{champion?.name ?? "Champion"}</h2>
+          <p className="ko-finisher-reward__note">피니셔 카드 연계 전까지 아래 완료 효과가 적용돼요.</p>
+          <p className="ko-finisher-reward__text">{champion ? championQuestRewardText(champion) : "피니셔 준비를 완료했습니다."}</p>
           {reward?.type === "UPGRADE_ABILITY" && champion?.upgradedAbility ? (
-            <div className="mt-5 rounded-xl border border-violet-800/70 bg-violet-950/30 p-4 text-left">
-              <p className="text-xs font-black text-violet-300">강화된 고유 능력</p>
+            <div className="ko-finisher-reward__upgrade">
+              <p className="ko-finisher-reward__upgrade-title">강화된 고유 능력</p>
               {champion.upgradedAbility.cost !== undefined && <p className="mt-1 text-sm text-amber-300">비용 {champion.upgradedAbility.cost} 골드</p>}
-              <p className="mt-3 text-sm leading-6 text-neutral-300">{champion.upgradedAbility.description}</p>
+              <p className="ko-finisher-reward__upgrade-text">{champion.upgradedAbility.description}</p>
             </div>
           ) : reward?.type === "DIRECT_DEPLOY_CHAMPION_TOKEN" && token ? (
             <div className="mx-auto mt-5 w-40">
@@ -119,6 +120,7 @@ function ActiveQuestPresentation({
           ) : reward?.type === "GAIN_GOLD" ? (
             <p className="mt-5 text-xl font-black text-amber-300">골드 +{reward.amount}</p>
           ) : null}
+          <p className="ko-finisher-reward__skip">눌러서 계속</p>
         </div>
       )}
     </div>

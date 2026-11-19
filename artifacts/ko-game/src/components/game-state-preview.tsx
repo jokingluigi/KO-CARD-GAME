@@ -770,7 +770,11 @@ export function GameStatePreview({
       const shouldAnimateOpponentPlay =
         (event.playerId === opp.id || (autoPresentOwnActions && event.playerId === me.id)) &&
         enterFieldEvent.entryCause === "PLAY_FROM_HAND";
-      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay)) continue;
+      // Legendary / champion wrestlers that arrive by an effect (e.g. Star Killer's draw-reveal summon)
+      // still get their full arrival instead of simply appearing.
+      const specialEffectArrival = Boolean(enteredCard) && enterFieldEvent.entryCause !== "PLAY_FROM_HAND" && enterFieldEvent.entryCause !== "CHAMPION_DEPLOY" &&
+        ['LEGENDARY','CHAMPION'].includes(String(getCardDefinition(enteredCard!.definitionId)?.rarity ?? ''));
+      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay && !specialEffectArrival)) continue;
 
       const targetElement = event.playerId === me.id
         ? boardSlotRefs.current.get(event.boardSlot)

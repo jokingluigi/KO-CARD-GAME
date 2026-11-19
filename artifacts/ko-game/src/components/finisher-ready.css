@@ -43,3 +43,33 @@
 @keyframes ko-fr-rays{0%,14%{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(0)}38%{opacity:.6;transform:translate(-50%,-50%) scale(.8) rotate(10deg)}42%{opacity:1;transform:translate(-50%,-50%) scale(1.05) rotate(14deg)}86%{opacity:.75;transform:translate(-50%,-50%) scale(1.1) rotate(34deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1) rotate(40deg)}}
 @keyframes ko-fr-ribbon{0%,48%{opacity:0;transform:translate(-50%,-50%) scale(2)}54%{opacity:1;transform:translate(-50%,-50%) scale(.95)}58%,86%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.03)}}
 @media (prefers-reduced-motion:reduce){.ko-finisher-ready__rays{display:none}.ko-finisher-ready__frame,.ko-finisher-ready__ribbon{animation:ko-fr-backdrop var(--fr-duration) ease both}.ko-finisher-ready__art--awakened{animation:none;opacity:1}}
+
+/* Finisher reward: a gold-framed plaque with a ribbon, readable text and the reward card; tap to continue. */
+.ko-finisher-reward{position:fixed;inset:0;z-index:360;display:flex;align-items:center;justify-content:center;padding:16px;cursor:pointer;
+  background:radial-gradient(ellipse at 50% 45%,rgba(40,26,8,.55),rgba(4,3,2,.88) 70%);animation:ko-frw-backdrop var(--fr-reward) ease both}
+.ko-finisher-reward__plaque{position:relative;width:min(560px,100%);max-height:82dvh;overflow-y:auto;text-align:center;
+  padding:72px clamp(18px,4vw,34px) 22px;border-radius:14px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,200,110,.12),transparent 60%),linear-gradient(#1f170e,#0e0a06);
+  border:2px solid #d8aa52;box-shadow:0 0 0 4px #1a1006,0 0 0 5px rgba(255,226,160,.45),0 18px 50px rgba(0,0,0,.75),0 0 40px rgba(255,180,70,.25);
+  animation:ko-frw-plaque var(--fr-reward) cubic-bezier(.2,.8,.3,1) both}
+.ko-finisher-reward__ribbon{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:8px 52px;white-space:nowrap;
+  clip-path:polygon(0 0,100% 0,calc(100% - 22px) 50%,100% 100%,0 100%,22px 50%);
+  background:linear-gradient(#f7d27a,#c98a2c 48%,#9a5d17 52%,#d39a3c);box-shadow:inset 0 0 0 2px rgba(80,40,6,.6)}
+.ko-finisher-reward__ribbon span{font-family:var(--font-display);font-weight:900;font-size:clamp(20px,4.6vw,30px);color:#fffbe9;-webkit-text-stroke:1.2px #4a2706;text-shadow:0 2px 0 #4a2706}
+.ko-finisher-reward--opponent .ko-finisher-reward__ribbon{background:linear-gradient(#e2675a,#a3281e 48%,#7a1610 52%,#b8382b)}
+.ko-finisher-reward__name{margin:0;font-size:clamp(22px,5vw,30px);font-weight:900;
+  background:linear-gradient(#fff3cf,#e8c473 55%,#b07a2c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 0 #000)}
+.ko-finisher-reward__note{margin:6px 0 0;font-size:12px;color:#b9a684}
+.ko-finisher-reward__text{margin:14px 0 0;padding:14px 16px;border-radius:10px;white-space:pre-wrap;text-align:left;
+  font-size:clamp(15px,3.6vw,17px);line-height:1.6;color:#fbe9c4;background:rgba(0,0,0,.35);border:1px solid rgba(216,170,82,.35)}
+.ko-finisher-reward__plaque .w-40{filter:drop-shadow(0 0 14px rgba(255,190,80,.55));animation:ko-frw-card 900ms 250ms cubic-bezier(.2,1.3,.4,1) both}
+.ko-finisher-reward__skip{margin:16px 0 0;font-size:12px;color:#8f7f63;letter-spacing:.2em;animation:ko-frw-blink 1.4s ease-in-out infinite}
+@keyframes ko-frw-backdrop{0%{opacity:0}8%,90%{opacity:1}100%{opacity:0}}
+@keyframes ko-frw-plaque{0%{opacity:0;transform:translateY(24px) scale(.92)}12%{opacity:1;transform:translateY(-3px) scale(1.01)}18%{transform:none}90%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-8px)}}
+@keyframes ko-frw-card{from{opacity:0;transform:translateY(16px) rotateY(80deg) scale(.8)}to{opacity:1;transform:none}}
+@keyframes ko-frw-blink{0%,100%{opacity:.4}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ko-finisher-reward,.ko-finisher-reward__plaque,.ko-finisher-reward__plaque .w-40,.ko-finisher-reward__skip{animation:none}}
+
+.ko-finisher-reward__upgrade{margin-top:14px;padding:12px 14px;text-align:left;border:1px solid rgba(232,192,106,.55);border-radius:10px;background:linear-gradient(180deg,rgba(44,33,18,.85),rgba(19,13,7,.9));box-shadow:inset 0 0 18px rgba(232,192,106,.12)}
+.ko-finisher-reward__upgrade-title{margin:0;font-size:12px;font-weight:900;color:#ffd77a;letter-spacing:.06em}
+.ko-finisher-reward__upgrade-text{margin:6px 0 0;font-size:14px;line-height:1.55;color:#f3e6c8}

@@ -4,6 +4,7 @@ import {audioManager} from '../audio/audio-manager';
 import {useScreenImpact} from './screen-impact';
 import {damageImpact} from './screen-impact-policy';
 import {spawnHealGlow,spawnTurnBanner} from './battle-moments';
+import {spawnImpactBurst} from './impact-burst';
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 
@@ -68,6 +69,8 @@ export function PresentationFeedback({
   useEffect(() => {
     completedRef.current = false;
     if(!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
+    // Effect damage gets the same hit burst as combat, scaled by damage (finisher-class at 10+).
+    if(!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!cue.selfDamage&&(cue.value??0)>0&&!document.hidden)spawnImpactBurst({x:cue.left,y:cue.top,dx:0,dy:1,damage:cue.value??0,finisher:(cue.value??0)>=10,crackAt:(cue.value??0)>=6?{x:cue.left,y:cue.top}:undefined});
     if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;
       const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'../hs-mixes/armor.wav',BLOCK:'../hs-mixes/armor.wav',DESTROY:'../hs-mixes/card-destroy.wav',RETIRE:'../hs-mixes/card-retire.wav',HEAL:'../hs-mixes/heal.wav',BUFF:'../hs-mixes/heal.wav',DRAW:'../hs-mixes/card-draw.wav',TURN:'../hs-mixes/turn-start.wav',GOLD:'rpg/handle_coins.ogg'};
       const volume:Partial<Record<PresentationCue['kind'],number>>={TURN:46,DESTROY:56,RETIRE:55,DRAW:34,HEAL:40,BUFF:32};

@@ -19,7 +19,11 @@ export type LandingImpactLevel = "LIGHT" | "NORMAL" | "HEAVY" | "VERY_HEAVY";
 
 /** Keep public spell art and rules fully inside narrow and landscape viewports. */
 export function techniqueStageGeometry(source: CardAnimationRect, viewport: {width:number;height:number}) {
-  const scale=Math.max(.2,Math.min(1.8,(viewport.width-40)/Math.max(1,source.width),(viewport.height*.66)/Math.max(1,source.height)));
+  // Big enough to read, small enough to leave the board visible (phones get a smaller stage).
+  const compact=viewport.width<700;
+  const maxWidth=Math.min(viewport.width-40,compact?viewport.width*.58:420);
+  const maxHeight=viewport.height*(compact?.44:.6);
+  const scale=Math.max(.2,Math.min(1.8,maxWidth/Math.max(1,source.width),maxHeight/Math.max(1,source.height)));
   return {scale,left:(viewport.width-source.width*scale)/2,top:(viewport.height-source.height*scale)/2};
 }
 

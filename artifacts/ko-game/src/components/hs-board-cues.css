@@ -84,14 +84,14 @@
 .ko-game-shell .ko-player-hand .ko-hand-cards > span{color:rgba(230,210,170,.45)!important;font-size:13px!important;letter-spacing:.2em}
 
 /* Finisher gauge: a thicker molten bar with a travelling sheen; it throbs when the finisher is close. */
-.ko-game-shell .ko-quest-meter{height:6px!important;border-radius:3px!important;background:linear-gradient(#1a0f08,#2c1a0c)!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.8),0 0 0 1px rgba(160,110,50,.35);overflow:hidden;position:relative}
-.ko-game-shell .ko-quest-meter i{background:linear-gradient(90deg,#b4410f,#f08a2a 55%,#ffd36b)!important;box-shadow:0 0 6px rgba(255,150,50,.7)}
+.ko-game-shell .ko-quest-meter{display:block;height:9px!important;margin-top:4px;border-radius:3px!important;background:linear-gradient(#1a0f08,#2c1a0c)!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.9),0 0 0 1px rgba(232,192,106,.75);overflow:hidden;position:relative}
+.ko-game-shell .ko-quest-meter i{display:block;height:100%;transform-origin:left center;background:linear-gradient(90deg,#d4561a,#ffa63a 50%,#ffe28a)!important;box-shadow:0 0 8px rgba(255,170,60,.9)}
 .ko-game-shell .ko-quest-meter::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,240,200,.55) 45%,transparent 60%);background-size:220% 100%;animation:ko-meter-sheen 2.4s linear infinite;mix-blend-mode:screen;pointer-events:none}
 .ko-game-shell .ko-quest-meter[data-near=true]{animation:ko-meter-near 1s ease-in-out infinite}
 @keyframes ko-meter-sheen{from{background-position:120% 0}to{background-position:-120% 0}}
 @keyframes ko-meter-near{0%,100%{box-shadow:inset 0 1px 2px rgba(0,0,0,.8),0 0 0 1px rgba(255,170,70,.5),0 0 4px rgba(255,140,40,.4)}50%{box-shadow:inset 0 1px 2px rgba(0,0,0,.8),0 0 0 1px rgba(255,210,120,.9),0 0 12px rgba(255,140,40,.9)}}
 @media (prefers-reduced-motion:reduce){.ko-game-shell .ko-quest-meter::after,.ko-game-shell .ko-quest-meter[data-near=true]{animation:none}}
-@media (max-width:768px){.ko-game-shell .ko-quest-meter{height:4px!important}}
+@media (max-width:768px){.ko-game-shell .ko-quest-meter{height:6px!important;margin-top:2px}}
 
 /* Whose turn: the active side's field edge glows (gold for you, red for the opponent) and the turn label reads big. */
 .ko-game-shell .ko-game-stage :is(.ko-player-board-row,.ko-opponent-board-row){transition:box-shadow .5s ease;border-radius:12px}
@@ -127,10 +127,14 @@
 /* Champion ability: a round-cornered brass "hero power" plate that lights up when usable. */
 .ko-game-shell .ko-champion-ability{border-radius:10px!important;transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
 .ko-game-shell .ko-champion-ability[aria-disabled=false]{
-  background:linear-gradient(#3a5fa8,#1f3a74 55%,#152a58)!important;border:1px solid #9cc2ff!important;color:#eef5ff!important;
-  box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 14px rgba(120,170,255,.5)!important}
+  background:linear-gradient(#2c2112,#130d07)!important;border:1px solid #e8c06a!important;color:#ffe6a8!important;
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 1px 0 rgba(255,230,170,.15) inset,0 0 14px rgba(255,190,80,.45)!important;text-shadow:0 0 8px rgba(255,200,110,.5)}
 .ko-game-shell .ko-champion-ability[aria-disabled=false]:hover{transform:translateY(-1px);filter:brightness(1.12)}
 .ko-game-shell .ko-champion-ability[aria-disabled=false]:active{transform:translateY(1px)}
 .ko-game-shell .ko-champion-ability[aria-disabled=true]{background:linear-gradient(#1d1812,#120e0a)!important;border-color:rgba(120,100,70,.4)!important;color:#7d7262!important}
 /* Deck and graveyard stacks share the same plates. */
 .ko-game-shell .ko-zone-stack > button{background:linear-gradient(#24190f,#120c07)!important;border-color:rgba(160,120,60,.5)!important;border-radius:8px!important}
+
+/* Finisher box text: gold and readable. */
+.ko-game-shell :is(.ko-player-quest,.ko-opponent-quest) > div{font-size:12px!important;color:#ffdf9e!important;font-weight:800;letter-spacing:.02em}
+@media (max-width:768px){.ko-game-shell :is(.ko-player-quest,.ko-opponent-quest) > div{font-size:10px!important}}
