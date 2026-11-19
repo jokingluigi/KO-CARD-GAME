@@ -47,12 +47,15 @@
 @keyframes kfx-rise{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:1}100%{transform:translateY(-330%) scale(1);opacity:0}}
 @keyframes kfx-regen-glow{50%{background:radial-gradient(ellipse at 50% 100%,rgba(90,240,130,.55),transparent 62%)}}
 
-/* 수배 — a red bounty mark: the frame edge pulses blood-red and gold bounty coins glint at the corners (stays inside the card) */
-.kfx-wanted{inset:0;border-radius:7%/5%;box-shadow:inset 0 0 0 2px rgba(200,30,25,.85),inset 0 0 12px rgba(200,30,25,.45);animation:kfx-bounty 2s ease-in-out infinite}
-.kfx-wanted i{position:absolute;width:13%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c0,#e8b544 45%,#8a5a12 80%);box-shadow:0 0 0 1px #4a2f08,0 0 6px rgba(255,200,80,.7);animation:kfx-coin 2.4s ease-in-out infinite}
-.kfx-wanted i:nth-child(1){left:6%;top:42%}.kfx-wanted i:nth-child(2){right:6%;top:30%;animation-delay:.8s}.kfx-wanted i:nth-child(3){right:10%;top:50%;width:10%;animation-delay:1.6s}
-@keyframes kfx-bounty{50%{box-shadow:inset 0 0 0 2px rgba(240,50,40,1),inset 0 0 18px rgba(220,40,30,.6)}}
-@keyframes kfx-coin{0%,100%{transform:scaleX(1);opacity:.95}50%{transform:scaleX(.15);opacity:.75}}
+/* 수배 — a red rubber "WANTED" stamp pressed onto the text box (never over the art) */
+.kfx-top{position:absolute;pointer-events:none;z-index:25}
+.kfx-wanted{left:10%;right:10%;top:67%;height:15%;display:grid;place-items:center}
+.kfx-wanted b{display:block;padding:1px 6%;transform:rotate(-7deg);border:2px solid #d1281d;outline:1px solid #d1281d;outline-offset:2px;border-radius:3px;
+  font-family:Georgia,"Times New Roman",serif;font-weight:900;font-size:clamp(10px,1.5vw,17px);letter-spacing:.12em;line-height:1.15;color:#e0352a;
+  background:rgba(20,8,6,.72);text-shadow:0 0 1px #d1281d;
+  -webkit-mask:repeating-linear-gradient(35deg,#000 0 6px,rgba(0,0,0,.82) 6px 8px);mask:repeating-linear-gradient(35deg,#000 0 6px,rgba(0,0,0,.82) 6px 8px);
+  animation:kfx-stamp .35s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes kfx-stamp{from{transform:rotate(-7deg) scale(1.8);opacity:0}to{transform:rotate(-7deg) scale(1);opacity:1}}
 
 /* 공격불가 — two iron chains crossed over the card */
 .kfx-chains{inset:0;overflow:hidden;border-radius:6%/4%}
