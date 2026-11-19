@@ -56,3 +56,15 @@
 .ko-arrival-embers,.ko-arrival-motes{z-index:303}
 
 @media (prefers-reduced-motion:reduce){.ko-arrival-rays,.ko-arrival-embers,.ko-arrival-motes,.ko-arrival-lightning,.ko-arrival-vortex{display:none}}
+
+/* Phones: the card must stay readable. Everything the blast throws goes UNDER the card (z 300),
+   the screen-wide flashes are softened, and the cinema bars are slimmer. */
+@media (max-width:700px),(max-height:500px){
+  .ko-arrival-rays--burst,.ko-arrival-ring,.ko-arrival-shockwave,.ko-arrival-pillar,.ko-arrival-eruption,.ko-arrival-flash,.ko-arrival-embers,.ko-arrival-motes{z-index:299}
+  .ko-arrival-screenflash{z-index:299;filter:opacity(.55)}
+  .ko-arrival-whiteout{z-index:299;filter:opacity(.45)}
+  .ko-arrival-rays,.ko-arrival-halo,.ko-arrival-vortex,.ko-arrival-lightning{filter:opacity(.6)}
+  .ko-arrival-flash,.ko-arrival-eruption,.ko-arrival-pillar{filter:opacity(.7)}
+  .ko-arrival-dim--champion{background:radial-gradient(circle at var(--x) var(--y),rgba(150,14,10,.3) 0,rgba(70,4,4,.5) 20%,rgba(6,0,0,.82) 45%,rgba(0,0,0,.9) 75%)}
+  .ko-arrival-bars__top,.ko-arrival-bars__bottom{height:max(38px,7vh)}
+}
