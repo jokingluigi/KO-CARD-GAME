@@ -1,4 +1,5 @@
 import "@/components/play-hub.css";
+import "@/components/lux-quiet.css";
 import { ArrowLeft, Bot, Layers, LoaderCircle, Shield, Swords, Users } from "lucide-react";
 import { CardArtwork } from "@/components/card-artwork";
 import { fetchDecks, type Deck } from "@/lib/decks-client";

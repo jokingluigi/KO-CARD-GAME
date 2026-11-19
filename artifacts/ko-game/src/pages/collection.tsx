@@ -14,6 +14,7 @@ import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from
 import { useEffect, useMemo, useState, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, SlidersHorizontal, Sparkles, Swords, Star, X } from "lucide-react";
 import "@/components/deck-builder.css";
+import "@/components/lux-quiet.css";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";

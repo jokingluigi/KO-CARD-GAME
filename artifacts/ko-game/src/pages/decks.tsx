@@ -17,6 +17,7 @@ import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronUp, Hammer, Info, Plus, RefreshCw, Search, Share2, Shield, SlidersHorizontal, Star, Swords, Trash2, X } from "lucide-react";
 import "@/components/deck-builder.css";
+import "@/components/lux-quiet.css";
 import { Link } from "wouter";
 import { AuthPage, AuthLoading, AuthRecovery } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";

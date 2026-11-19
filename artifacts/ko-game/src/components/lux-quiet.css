@@ -1,0 +1,117 @@
+/*
+ * Quiet gold — black is the surface, gold is a hairline or a single brushed-brass button.
+ * No glow, no shine gradients, no gradient-filled text, no breathing pulses.
+ * Loaded last on every screen (App.tsx + page imports); presentation only.
+ */
+:root{
+  --q-gold:#c8a865; --q-gold-dim:#6e5c38; --q-line:#2a2722; --q-line2:#3a352c; --q-ink:#ece6da; --q-mut:#8f897d;
+  --q-black:#0a0908; --q-black2:#121110; --q-black3:#1a1815;
+  --q-brass:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,rgba(0,0,0,.06) 1px 3px),linear-gradient(#ae8f58,#8b7043);
+  --q-brass-hi:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.05) 1px 3px),linear-gradient(#bb9c63,#957949);
+  --q-brass-edge:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.35);
+}
+
+/* ===== titles: ivory, with a short gold rule ===== */
+body .lux-title, body .kdb-title{background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;color:var(--q-ink)!important;-webkit-text-fill-color:var(--q-ink)!important;filter:none!important;text-shadow:none!important;letter-spacing:.02em}
+body .lux-title::after, body .kdb-title::after{content:"";display:block;width:32px;height:2px;margin-top:8px;background:var(--q-gold)}
+body .ko-player-page h1, body .ko-experience-page h1{background:none!important;-webkit-text-fill-color:currentColor!important;color:var(--q-ink)!important;filter:none!important}
+
+/* ===== primary action = brushed brass, no glow ===== */
+body :is(.lux-gold,.kdb-gold),
+body .ko-player-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500, a.bg-amber-400),
+body .ko-experience-page :is(.ko-surface-primary, button.bg-amber-400, button.bg-amber-500, a.bg-amber-400){
+  background:var(--q-brass)!important;color:#15110a!important;border:1px solid #5c4a28!important;box-shadow:var(--q-brass-edge)!important;text-shadow:none!important;filter:none!important}
+body :is(.lux-gold,.kdb-gold):not(:disabled):hover,
+body :is(.ko-player-page,.ko-experience-page) :is(.ko-surface-primary,button.bg-amber-400,button.bg-amber-500):not(:disabled):hover{background:var(--q-brass-hi)!important;transform:none!important;filter:none!important}
+
+/* ===== secondary = black with a hairline; gold only on hover / text accents ===== */
+body :is(.lux-ghost,.kdb-ghost,.kdb-icon,.lux-back,.kdb-back,.lux-chip){background:var(--q-black)!important;border:1px solid var(--q-line2)!important;color:#d8cfbd!important;box-shadow:none!important}
+body :is(.lux-ghost,.kdb-ghost,.kdb-icon,.lux-back,.kdb-back):not(:disabled):hover{border-color:var(--q-gold)!important;color:var(--q-gold)!important}
+body .lux-chip{color:var(--q-gold)!important}
+body .lux-chip--rose{color:#d9a7ae!important}
+body .kdb-icon--danger{color:#d98c7d!important}
+
+/* ===== tabs: underline, not filled pills ===== */
+body :is(.lux-tabs, :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs){background:none!important;border:0!important;border-bottom:1px solid var(--q-line)!important;border-radius:0!important;padding:0!important;gap:22px!important;display:flex!important}
+body :is(.lux-tabs button,.lux-tabs a, :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs>:is(a,button)){background:none!important;box-shadow:none!important;border-radius:0!important;padding:0 2px!important;min-height:44px;color:var(--q-mut)!important}
+body :is(.lux-tabs button[aria-pressed=true],.lux-tabs a[aria-current=page], :is(.ko-player-page,.ko-experience-page) .ko-surface-tabs>:is(a,button):is([aria-current=page],[aria-pressed=true],[aria-selected=true],[data-state=active])){
+  color:var(--q-ink)!important;background:none!important;box-shadow:inset 0 -2px 0 var(--q-gold)!important}
+
+/* segmented filters (전체/선수/기술) */
+body .kdb-types{border:1px solid var(--q-line2)!important;border-radius:8px!important}
+body .kdb-types button{background:var(--q-black)!important;color:var(--q-mut)!important}
+body .kdb-types button+button{border-left-color:var(--q-line)!important}
+body .kdb-types button[aria-pressed=true]{background:var(--q-black3)!important;color:var(--q-ink)!important;box-shadow:inset 0 -2px 0 var(--q-gold)}
+body :is(.kdb-search,.kdb-morefilter summary,.kcol-sort select){background:var(--q-black)!important;border-color:var(--q-line2)!important;color:var(--q-ink)!important}
+body .kdb-search:focus-within{border-color:var(--q-gold)!important}
+body .kdb-morefilter__panel{background:var(--q-black2)!important;border-color:var(--q-line2)!important}
+
+/* cost buttons: small squares, gold only when picked */
+body .kdb-gem{clip-path:none!important;isolation:auto!important;border-radius:6px!important;background:var(--q-black)!important;border:1px solid var(--q-line2)!important;box-shadow:none!important;color:var(--q-mut)!important;font-family:inherit!important;font-size:14px!important}
+body .kdb-gem::before{display:none!important}
+body .kdb-gem[aria-pressed=true]{border-color:var(--q-gold)!important;color:var(--q-gold)!important;background:var(--q-black3)!important}
+
+/* cards in grids: lift, no halo */
+body .kdb-card__hit:hover{filter:none!important;transform:translateY(-3px)!important}
+body .kdb-card__info{background:var(--q-black)!important;border-color:var(--q-line2)!important;color:var(--q-mut)!important;opacity:1!important}
+body .kcol-fav[aria-pressed=true]{background:var(--q-black)!important;border-color:var(--q-gold)!important;color:var(--q-gold)!important}
+body .kdb-card__tag b{color:var(--q-gold)!important}
+body .kdb-card[data-in-deck] .kdb-card__tag{color:var(--q-gold)!important}
+
+/* deck cases / champion cases: one thin gold line + an offset hairline */
+body :is(.kdb-deckcase,.kdb-champ,.kplay-deckcase){border:1px solid var(--q-line2)!important;box-shadow:none!important;outline:1px solid transparent;outline-offset:3px;transition:transform .15s,border-color .15s,outline-color .15s}
+body :is(.kdb-deckcase,.kdb-champ,.kplay-deckcase):hover{border-color:var(--q-gold)!important;box-shadow:none!important}
+body :is(.kdb-deckcase[data-selected],.kdb-champ[data-active],.kplay-deckcase[data-ready]){border-color:var(--q-gold)!important;outline-color:var(--q-gold-dim)!important;box-shadow:none!important}
+body .kdb-deckcase--new{border-style:dashed!important}
+body .kdb-deckcase__plus svg{border-color:var(--q-line2)!important;background:none!important;color:var(--q-gold)}
+body .kdb-deckcase__badge{background:var(--q-black)!important;color:var(--q-gold)!important;border:1px solid var(--q-gold)}
+body .kdb-champ-dialog{border:1px solid var(--q-line2)!important}
+
+/* deck panel */
+body .kdb-deck{border-left:1px solid var(--q-line)!important;box-shadow:none!important;background:var(--q-black)!important}
+body .kdb-hero{border-bottom:1px solid var(--q-line)!important}
+body .kdb-row__btn{background:var(--q-black2)!important;border:1px solid var(--q-line)!important;box-shadow:none!important}
+body .kdb-row__btn:hover{border-color:var(--q-gold-dim)!important;filter:none!important}
+body .kdb-row__cost{background:var(--q-black)!important;color:var(--q-gold)!important;border-right:1px solid var(--q-line)!important;font-family:inherit!important;font-weight:900}
+body .kdb-row__qty{background:var(--q-black)!important;color:var(--q-ink)!important;border-left-color:var(--q-line)!important}
+body .kdb-row[data-rarity=LEGENDARY] .kdb-row__btn{border-color:var(--q-gold-dim)!important;box-shadow:none!important}
+body .kdb-row[data-rarity=LEGENDARY] .kdb-row__qty{color:var(--q-gold)!important}
+body .kdb-row[data-rarity=EPIC] .kdb-row__btn{border-color:#3a3048!important}
+@keyframes kdb-row-flash{0%{border-color:var(--q-gold)}}
+body .kdb-row[data-edit-cue=add] .kdb-row__btn{animation:kdb-row-flash .6s ease-out}
+body .kdb-count__num,body .kdb-peek__count{color:#c98b7a!important;text-shadow:none!important;font-family:inherit!important}
+body .kdb-count__num[data-full],body .kdb-peek__count[data-full]{color:var(--q-gold)!important}
+body .kdb-curve__col i{background:var(--q-gold-dim)!important}
+body .kdb-notice{background:var(--q-black)!important;border-color:var(--q-line2)!important;box-shadow:0 8px 20px rgba(0,0,0,.6)!important}
+@media (max-width:900px){body .kdb-deck{border-top:1px solid var(--q-gold-dim)!important}body .kdb-peek__champ{border:1px solid var(--q-gold-dim)!important}body .kdb-sheet-close{background:var(--q-black)!important;border-color:var(--q-line2)!important}}
+
+/* play hub */
+body .kplay-main{background:var(--q-black2)!important;border:1px solid var(--q-line2)!important;box-shadow:none!important}
+body .kplay-main:not(:disabled):hover{border-color:var(--q-gold)!important;box-shadow:none!important}
+body .kplay-main__icon{border-color:var(--q-line2)!important;color:var(--q-gold)!important}
+body .kplay-main__go{background:var(--q-brass)!important;color:#15110a!important;border:1px solid #5c4a28!important;box-shadow:var(--q-brass-edge)!important;animation:none!important}
+body .kplay-main:not(:disabled):hover .kplay-main__go{background:var(--q-brass-hi)!important}
+body .kplay-tile{background:var(--q-black)!important;border-color:var(--q-line)!important;color:var(--q-gold)!important}
+body .kplay-tile:not(:disabled):hover{border-color:var(--q-gold-dim)!important}
+body .kplay-resume{background:var(--q-black2)!important;border:1px solid var(--q-line2)!important;border-left:2px solid var(--q-gold)!important;border-radius:0 10px 10px 0!important}
+body .kplay-label{color:var(--q-mut)!important}
+
+/* misc page bits */
+body .lux-msg{background:var(--q-black2)!important;border:1px solid var(--q-line)!important;border-left:2px solid var(--q-gold)!important;border-radius:0 10px 10px 0!important;color:var(--q-ink)!important}
+body :is(.ko-player-page,.ko-experience-page,.lux) :is(.border-amber-400,.border-amber-500){border-color:var(--q-gold)!important;box-shadow:none!important}
+body :is(.ko-player-page,.ko-experience-page) :is(section,article).rounded-xl{box-shadow:none!important}
+body .ko-game-navigation{box-shadow:none!important}
+body .ko-game-navigation [aria-current=page]{color:var(--q-ink)!important}
+
+/* ===== home lobby ===== */
+body .ko-home-lobby .ko-battle-mode-button{animation:none!important;border:1px solid var(--q-gold)!important;outline:1px solid rgba(200,168,101,.35);outline-offset:3px;box-shadow:0 10px 28px rgba(0,0,0,.6)!important;filter:none!important}
+body .ko-home-lobby .ko-battle-mode-button:hover{filter:none!important;border-color:#dcc289!important}
+body .ko-home-lobby .ko-battle-mode-button__copy strong{background:none!important;-webkit-text-fill-color:var(--q-ink)!important;color:var(--q-ink)!important;filter:drop-shadow(0 2px 0 #000)!important}
+body .ko-home-lobby .ko-battle-mode-button__copy small{color:var(--q-gold)!important}
+body .ko-home-lobby .ko-battle-mode-button__arrow{background:var(--q-brass)!important;color:#15110a!important;box-shadow:var(--q-brass-edge),0 0 0 3px rgba(0,0,0,.6)!important}
+body .ko-home-lobby .ko-main-menu__logo{filter:drop-shadow(0 3px 0 #000)!important}
+body .ko-home-lobby :is(.ko-main-menu__announcements > button, .ko-home-mode-shortcuts > button, .ko-lobby-shortcuts > button, .ko-home-learning > button, .ko-home-utility-links > button, .ko-lobby-more){
+  background:rgba(10,9,8,.88)!important;border:1px solid var(--q-line2)!important;border-radius:8px!important;box-shadow:none!important}
+body .ko-home-lobby :is(.ko-home-mode-shortcuts > button, .ko-lobby-shortcuts > button, .ko-home-learning > button, .ko-home-utility-links > button):hover:not(:disabled){border-color:var(--q-gold)!important;box-shadow:none!important;transform:none!important}
+body .ko-home-lobby :is(.ko-home-mode-shortcuts,.ko-home-learning) :is(small,span){color:var(--q-mut)!important}
+
