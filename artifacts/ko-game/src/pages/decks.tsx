@@ -386,7 +386,7 @@ export default function Decks() {
   const [noticeKey, setNoticeKey] = useState(0);
   const setNotice = (text: string) => { setNoticeText(text); setNoticeKey(key => key + 1); };
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNoticeText(""), 1600); return () => clearTimeout(timer); }, [notice, noticeKey]);
-  const activeFilterCount = Object.values(catalogFilters).filter(value => value !== "ALL").length;
+  const activeFilterCount = Object.values(catalogFilters).filter(value => value && value !== "ALL").length;
   useEffect(()=>{window.dispatchEvent(new Event('ko-close-inspector'));},[workspace]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
