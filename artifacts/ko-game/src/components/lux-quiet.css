@@ -135,3 +135,6 @@ body:has(.ko-game-navigation) :is(.lux-pagehead,.lux-head,.kdb-home__head)>:is(.
   body .lux-title{font-size:24px}
   body .kdb-home__head .kdb-ghost{order:0!important;width:auto!important;margin-left:auto;min-height:36px;font-size:13px}
 }
+
+/* player cards: the rarity is already shown by the frame — no "NORMAL / EPIC" text tag */
+.ko-card-depth[data-card-type=WRESTLER] .ko-card-rarity{display:none!important}

@@ -247,11 +247,24 @@ export function ChampionBattleActor({
       original,
     ],
   );
-  const selected = candidates.find((c) => !failed.has(c.url));
-  const [loaded, setLoaded] = useState({ id: "", url: "" });
+  // A sprite that failed to load is retried a few times (slow phone networks drop images); it must not
+  // leave the champion on its portrait for the rest of the match.
+  const retries = useRef(new Map<string, number>());
+  useEffect(() => { retries.current.clear(); }, [state.gameId, identity]);
+
+  const selectedRaw = candidates.find((c) => !failed.has(c.url));
+  const [loaded, setLoaded] = useState({ id: "", url: "", sprite: false });
   const loadIdentity = `${state.gameId}:${playerId}:${setIdentity}`;
   const ready = loaded.id === loadIdentity ? loaded.url : "";
-  const setReady = (url: string) => setLoaded({ id: loadIdentity, url });
+  // Once a real sprite has shown, a sprite that is still loading/retrying never downgrades to the portrait:
+  // keep the last sprite that did load (idle preferred) until the retry lands.
+  const decoded = useRef(new Set<string>());
+  const isSprite = (c?: { frame?: unknown }) => Boolean(c?.frame && c.frame !== appearance.portraitFrame);
+  const fallbackSprite = selectedRaw && !isSprite(selectedRaw)
+    ? candidates.filter(isSprite).reverse().find(c => decoded.current.has(c.url))
+    : undefined;
+  const selected = fallbackSprite ?? selectedRaw;
+  const setReady = (url: string, sprite: boolean) => setLoaded({ id: loadIdentity, url, sprite });
   const displayUrl = ready || selected?.url;
   const currentSet =
     displayAwakened && config?.awakening === "REPLACE"
@@ -269,13 +282,19 @@ export function ChampionBattleActor({
     if (selected) {
       const image = new Image();
       image.src = selected.url;
+      const url = selected.url, sprite = Boolean(selected.frame && selected.frame !== appearance.portraitFrame);
       image
         .decode()
         .then(() => {
-          if (!cancelled) setReady(selected.url);
+          decoded.current.add(url);
+          if (!cancelled) setReady(url, sprite);
         })
         .catch(() => {
-          if (!cancelled) setFailed((old) => new Set([...old, selected.url]));
+          if (cancelled) return;
+          setFailed((old) => new Set([...old, url]));
+          const tries = (retries.current.get(url) ?? 0) + 1;
+          retries.current.set(url, tries);
+          if (tries <= 4) window.setTimeout(() => setFailed((old) => { if (!old.has(url)) return old; const next = new Set(old); next.delete(url); return next; }), 800 * tries * tries);
         });
     }
     return () => {

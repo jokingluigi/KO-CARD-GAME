@@ -361,6 +361,7 @@ export function CardRenderer({
     <div
       className={`ko-card-depth relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
+      data-card-type={cardType}
       data-frame-layout={windows?"registered":"default"}
       data-card-definition={cardId}
       data-kfx={fieldFx ? ([...keywordBadges, ...(messenger ? [`MSG_${messenger}`] : [])].join(" ") || " ") : undefined}

@@ -68,3 +68,22 @@
 .ko-touch-inspector[data-peek]{background:linear-gradient(180deg,#1b1915,#0f0e0b)!important;border:1px solid #3a352c!important;border-radius:8px!important;box-shadow:0 18px 40px rgba(0,0,0,.7)!important}
 /* phones: the notes under a held card can be scrolled (touching them doesn't close the card) */
 @media (hover:none){.ko-touch-inspector[data-peek] .kpk-notes{pointer-events:auto;overscroll-behavior:contain;touch-action:pan-y}}
+/* lots to show: PC splits the notes into two columns; the effect note spans both */
+.kpk-note[data-tone=text]::before{background:#8f887b}
+.kpk-note[data-tone=text] p{color:#ece6da;font-size:14px}
+@media (min-width:701px){
+  .kpk[data-many] .kpk-notes{width:470px;display:grid;grid-template-columns:1fr 1fr;align-items:start}
+  .kpk[data-many] .kpk-note[data-tone=text]{grid-column:1/-1}
+  .kpk-notes{max-height:calc(100dvh - 40px);overflow:hidden}
+}
+/* phones: a smaller card when there is a lot to read; notes scroll with a fade that hints at more */
+@media (max-width:700px){
+  .kpk[data-many] .kpk-card{width:min(46vw,190px)}
+  .kpk[data-many] .kpk-notes{max-height:44dvh}
+  .kpk-notes{-webkit-mask:linear-gradient(#000 calc(100% - 26px),transparent);mask:linear-gradient(#000 calc(100% - 26px),transparent);padding-bottom:22px}
+}
+@media (max-width:700px){
+  .kpk[data-many] .kpk-notes{display:grid;grid-template-columns:1fr 1fr;align-content:start}
+  .kpk[data-many] .kpk-note[data-tone=text],.kpk[data-many] .kpk-note[data-tone=change]{grid-column:1/-1}
+  .kpk[data-many] .kpk-note{padding:8px 9px 9px}
+}

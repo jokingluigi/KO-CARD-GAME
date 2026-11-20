@@ -464,13 +464,17 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
   const peekView = useContext(PeekViewContext);
   if (peekView) {
     const silence = cardSilenceProtection(card,definition);
-    const notes: { key: string; title: string; text: string; tone: 'kw' | 'status' | 'change' }[] = [
+    const fullText = getCardRuntimeRulesText(card, definition?.rulesText ?? '');
+    // Long effects are hard to read in the card's text box: the full text also gets its own note, first.
+    const longText = fullText.replace(/\s+/g, '').length > 60;
+    const notes: { key: string; title: string; text: string; tone: 'kw' | 'status' | 'change' | 'text' }[] = [
+      ...(longText ? [{ key: 'text', title: '효과', text: fullText, tone: 'text' as const }] : []),
       ...keywords.map(k => ({ key: 'k'+k.key, title: k.label, text: k.description, tone: 'kw' as const })),
       ...statuses.map(st => ({ key: 's'+st.key, title: st.label, text: st.description, tone: 'status' as const })),
     ];
     const changed = numericChanges.filter(c => c.stat !== 'maxHealth' || numericChanges.every(o => o.stat !== 'health'));
     return (
-      <div className="kpk" data-testid="card-peek">
+      <div className="kpk" data-testid="card-peek" data-many={notes.length + (changed.length ? 1 : 0) > 3 || undefined}>
         <div className="kpk-card">
           <CardRenderer
             cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
@@ -488,8 +492,8 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           />
         </div>
         {(notes.length > 0 || changed.length > 0 || silence.immune) && <div className="kpk-notes">
-          {notes.map(n => <div key={n.key} className="kpk-note" data-tone={n.tone}><b>{n.title}</b><p>{n.text}</p></div>)}
-          {changed.length > 0 && <div className="kpk-note" data-tone="change"><b>수치 변화</b><p>{changed.slice(-4).map((c,i) => <span key={i} className="kpk-change">{STAT_LABELS[c.stat]} {c.before}→<em data-up={c.after >= c.before || undefined}>{c.after}</em>{c.sourceName && c.sourceName !== '기본 수치' ? <small> · {c.sourceName}</small> : null}</span>)}</p></div>}
+          {notes.map(n => <div key={n.key} className="kpk-note" data-tone={n.tone}><b>{n.title}</b><p>{n.tone === 'text' ? <CardRulesText text={n.text}/> : n.text}</p></div>)}
+          {changed.length > 0 && <div className="kpk-note" data-tone="change"><b>수치 변화</b><p>{changed.slice(-3).map((c,i) => <span key={i} className="kpk-change">{STAT_LABELS[c.stat]} {c.before}→<em data-up={c.after >= c.before || undefined}>{c.after}</em>{c.sourceName && c.sourceName !== '기본 수치' ? <small> · {c.sourceName}</small> : null}</span>)}</p></div>}
           <SilenceImmunityNotice {...silence}/>
         </div>}
       </div>
