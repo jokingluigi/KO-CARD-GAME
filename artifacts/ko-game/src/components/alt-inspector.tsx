@@ -68,6 +68,9 @@ const PeekViewContext = createContext(false);
 
 /** After a long-press peek is released: the next touch outside the panel closes it and is swallowed. */
 let releaseHeldPeek: (() => void) | null = null;
+let longPressReleasedAt = 0;
+/** True right after a press-and-hold quick look ended: the click that follows is not a tap. */
+export function justLongPressed() { return Date.now() - longPressReleasedAt < 700; }
 const SWALLOWED = ['click', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'] as const;
 function keepPeekUntilNextTap(close: () => void) {
   releaseHeldPeek?.();
@@ -412,6 +415,7 @@ export function Inspectable({
             if (!press.current.shown) return;
             press.current.shown = false;
             press.current.suppressUntil = Date.now() + 600;
+            longPressReleasedAt = Date.now();
             keepPeekUntilNextTap(() => context.clear());
           };
           document.addEventListener('touchend', release, true);

@@ -87,6 +87,7 @@ import {
   ChampionAbilityInspectContent,
   ChampionQuestInspectContent,
   Inspectable,
+  justLongPressed,
 } from './alt-inspector';
 import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
 import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
@@ -1880,7 +1881,7 @@ export function GameStatePreview({
             {/* Player Hand */}
              <div ref={playerHandRef} role="region" aria-label="손패" tabIndex={0} data-zoomed={handZoom || undefined}
                onClickCapture={(event) => {
-                 if (handZoom || effectTargeting || me.hand.length === 0) return;
+                 if (handZoom || effectTargeting || me.hand.length === 0 || justLongPressed()) return;
                  if (typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches) return;
                  event.stopPropagation(); event.preventDefault(); setHandZoom(true);
                }}
