@@ -436,19 +436,32 @@ export function GameStatePreview({
     if(defeatPhase==='WAITING'&&!playAnimation&&!attackAnimation&&!generatedPlayAnimations.length&&!cardLeaveAnimations.length&&!presentationQueue.length&&!pendingEffectFinisher&&!effectFinisher)setDefeatPhase('FREEZE');
   },[defeatPhase,playAnimation,attackAnimation,generatedPlayAnimations.length,cardLeaveAnimations.length,presentationQueue.length,pendingEffectFinisher,effectFinisher]);
 
-  // Final blow (Hearthstone-style): the board freezes and the camera leans in on the beaten champion, then it shatters.
+  // Final blow (Hearthstone-style): the lethal hit plays in slow motion while the camera leans in on the
+  // beaten champion and the rest of the board stops; the zoom holds through the shatter.
   const shellRef=React.useRef<HTMLDivElement>(null);
-  const [finalLens,setFinalLens]=React.useState<{x:number;y:number}|null>(null);
+  const [finalLens,setFinalLens]=React.useState<{x:number;y:number;strike:boolean}|null>(null);
+  const lethalStrike=Boolean(attackAnimation&&attackAnimation.targetKind==='CHAMPION'&&state.status==='FINISHED'&&attackAnimation.damage>0&&(attackAnimation.targetPlayerId===undefined||attackAnimation.targetPlayerId===state.loserId));
+  const aimFinalCamera=React.useCallback((x:number,y:number,strike:boolean)=>{
+    const shell=shellRef.current;
+    if(shell){const b=shell.getBoundingClientRect();shell.style.setProperty('--fb-x',`${x-b.left}px`);shell.style.setProperty('--fb-y',`${y-b.top}px`);}
+    document.documentElement.style.setProperty('--fbv-x',`${x}px`);document.documentElement.style.setProperty('--fbv-y',`${y}px`);
+    setFinalLens({x,y,strike});
+  },[]);
+  React.useLayoutEffect(()=>{
+    if(!lethalStrike||!attackAnimation)return;
+    const t=attackAnimation.geometry.target;aimFinalCamera(t.left+t.width/2,t.top+t.height/2,true);
+    document.documentElement.dataset.finalStrike='';
+    return()=>{delete document.documentElement.dataset.finalStrike;};
+  },[lethalStrike,attackAnimation?.soundKey]);
   React.useEffect(()=>{
     if(defeatPhase!=='FREEZE')return;
-    const anchor=(state.loserId===me.id?playerChampionRef:championRef).current,shell=shellRef.current;
-    if(anchor&&shell){const a=anchor.getBoundingClientRect(),b=shell.getBoundingClientRect();
-      shell.style.setProperty('--fb-x',`${a.left+a.width/2-b.left}px`);shell.style.setProperty('--fb-y',`${a.top+a.height/2-b.top}px`);
-      setFinalLens({x:a.left+a.width/2,y:a.top+a.height/2});}
-    const t=window.setTimeout(()=>setDefeatPhase('PLAYING'),1300);
+    if(!finalLens){const anchor=(state.loserId===me.id?playerChampionRef:championRef).current;
+      if(anchor){const a=anchor.getBoundingClientRect();aimFinalCamera(a.left+a.width/2,a.top+a.height/2,false);}}
+    const t=window.setTimeout(()=>setDefeatPhase('PLAYING'),finalLens?.strike?450:1100);
     return()=>window.clearTimeout(t);
   },[defeatPhase]);
-  React.useEffect(()=>{if(defeatPhase==='NONE')setFinalLens(null);if(defeatPhase==='DONE'){const t=window.setTimeout(()=>setFinalLens(null),700);return()=>window.clearTimeout(t);}return undefined;},[defeatPhase]);
+  React.useEffect(()=>{if(defeatPhase==='NONE'&&!lethalStrike)setFinalLens(null);if(defeatPhase==='DONE'){const t=window.setTimeout(()=>setFinalLens(null),700);return()=>window.clearTimeout(t);}return undefined;},[defeatPhase,lethalStrike]);
+  const finalCamera=lethalStrike?'strike':finalLens&&(defeatPhase==='WAITING'||defeatPhase==='FREEZE')?'freeze':finalLens&&defeatPhase==='PLAYING'?'burst':undefined;
 
   const processedEventCountRef = React.useRef<number | null>(null);
   React.useEffect(()=>{setSpokenLine(null);setWrestlerSpeech([]);if(spokenTimerRef.current!==null)window.clearTimeout(spokenTimerRef.current);processedEventCountRef.current=null;},[state.gameId]);
@@ -1221,7 +1234,7 @@ export function GameStatePreview({
 
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
-     <div ref={shellRef} data-final-blow={defeatPhase==="FREEZE"||defeatPhase==="PLAYING"?(defeatPhase==="FREEZE"?"freeze":"burst"):undefined} data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+     <div ref={shellRef} data-final-blow={finalCamera} data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
@@ -1954,12 +1967,13 @@ export function GameStatePreview({
       {attackAnimation && (
         <AttackAnimation
           animation={attackAnimation}
+          slowMotion={lethalStrike}
           onImpact={onAttackImpact}
           hapticsEnabled={hapticsEnabled}
           onComplete={onAttackAnimationComplete}
         />
       )}
-      {finalLens && <FinalBlowLens x={finalLens.x} y={finalLens.y} fading={defeatPhase==='DONE'} />}
+      {finalLens && <FinalBlowLens x={finalLens.x} y={finalLens.y} strike={finalLens.strike} flash={!finalLens.strike||attackImpactTriggered||!lethalStrike} fading={defeatPhase==='DONE'} />}
       {(defeatPhase==='PLAYING'||defeatPhase==='DONE') && <ChampionDefeatBurst
         id={state.gameId+':'+state.loserId} anchor={state.loserId===me.id?playerChampionRef:championRef}
         onBurst={() => {

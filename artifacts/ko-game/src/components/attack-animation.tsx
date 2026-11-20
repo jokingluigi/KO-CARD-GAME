@@ -22,11 +22,14 @@ import { impactBurstProfile, shudderFrames } from './impact-burst-model';
 export function AttackAnimation({
   animation,
   onImpact,
+  slowMotion = false,
   onComplete,
   hapticsEnabled = false,
 }: {
   animation: AttackAnimationState;
   onImpact: () => void;
+  /** Lethal blow: the whole strike plays in slow motion with a longer hit-stop. */
+  slowMotion?: boolean;
   onComplete: () => void;
   hapticsEnabled?: boolean;
 }) {
@@ -50,7 +53,11 @@ export function AttackAnimation({
   if(geometryRef.current.id!==animation.soundKey)geometryRef.current={id:animation.soundKey,value:animation.geometry};
   const { source, target } = geometryRef.current.value;
   const reduced = prefersReducedMotion();
-  const timeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
+  const baseTimeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
+  const slow = slowMotion && !reduced;
+  const timeline = slow
+    ? { duration: Math.round(baseTimeline.duration*2.4 + 260), impact: Math.round(baseTimeline.impact*2.4), release: Math.round(baseTimeline.impact*2.4 + (baseTimeline.release-baseTimeline.impact)*2 + 260) }
+    : baseTimeline;
   const {duration,impact:impactDelay} = timeline;
   const {dx,dy,x:contactX,y:contactY} = combatContact(source,target);
   const style = {
