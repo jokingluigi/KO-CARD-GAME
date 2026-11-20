@@ -116,6 +116,7 @@ import "./battle-viewport.css";
 import "./mobile-champion-layout.css";
 import "./hs-board-cues.css";
 import "./battle-declutter.css";
+import "./field-frame.css";
 
 // CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
