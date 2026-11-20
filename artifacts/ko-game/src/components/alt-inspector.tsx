@@ -381,9 +381,11 @@ export function Inspectable({
         }, 360);
       }}
       onTouchMove={(event) => {
-        if (press.current.timer === null) return;
         const touch = event.touches[0];
-        if (touch && Math.hypot(touch.clientX - press.current.x, touch.clientY - press.current.y) > 18) cancelPress();
+        if (!touch || Math.hypot(touch.clientX - press.current.x, touch.clientY - press.current.y) <= 18) return;
+        cancelPress();
+        // Held, then started dragging the card: the card is being played, so the quick look gets out of the way.
+        if (press.current.shown) { press.current.shown = false; context.clear(); }
       }}
       onTouchEnd={() => { cancelPress(); }}
       onContextMenu={(event) => { if (Date.now() - lastTouchAt.current < 1500) event.preventDefault(); }}
