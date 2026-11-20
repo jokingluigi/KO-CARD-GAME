@@ -13,6 +13,8 @@ import type { CardDefinition } from '../game/cards/types';
 const escapeRe=(s:string)=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 /** Other spellings card texts use for a keyword. */
 const KEYWORD_ALIASES:Record<string,string>={'연격':'MULTI_STRIKE','공격 불가':'CANNOT_ATTACK'};
+/** Game terms that are not card keywords but appear in effect text. */
+const GLOSSARY:Record<string,string>={'무적':'피해를 전혀 받지 않으며, 파괴되거나 리타이어되지 않습니다.'};
 
 /** Uses real catalog entries, never invented cards, for references in effect text. */
 export function CardRulesText({text,interactive=true}:{text:string;interactive?:boolean}) {
@@ -49,7 +51,7 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
    const awake=card.name.match(/^(.+)\(각성\)$/);
    if(awake&&!byName.has(`각성 ${awake[1]}`))byName.set(`각성 ${awake[1]}`,card);
   }
-  const names=[...new Set([...[...byName.keys()].filter(n=>n.length>1),...labels.map(([,label])=>label),...Object.keys(KEYWORD_ALIASES)])].sort((a,b)=>b.length-a.length);
+  const names=[...new Set([...[...byName.keys()].filter(n=>n.length>1),...labels.map(([,label])=>label),...Object.keys(KEYWORD_ALIASES),...Object.keys(GLOSSARY)])].sort((a,b)=>b.length-a.length);
   indexRef.current={cards,pattern:null,names,byName};
  }
  const matcher=indexRef.current!;
@@ -71,7 +73,7 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
   if(isDefLine)return <span key={index}>{part}</span>;
   const card=isTagRef?undefined:matcher.byName.get(part);
   const keyword=labels.find(([,label])=>label===part)??(KEYWORD_ALIASES[part]?labels.find(([key])=>key===KEYWORD_ALIASES[part]):undefined);
-  const def=localDefs.get(part);
+  const def=localDefs.get(part)??GLOSSARY[part];
   if(!isTagRef&&!card&&!keyword&&!def)return <span key={index}>{part}</span>;
   const open=()=>setDetail(isTagRef?{title:`'${part}' 태그`,text:'',tag:part,tagCards:tagCards(part)}:def&&!card?{title:part,text:def}:card?{title:card.name,text:card.rulesText,card}:{title:keyword![1],text:keyword![0] === 'ARMOR' && /아머\s*\(\d+\)/.test(text) ? `공격과 반격으로 받는 피해를 ${text.match(/아머\s*\((\d+)\)/)?.[1]} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : keyword![0] === 'COUNTDOWN' && /카운트다운\s*\(\d+\)/.test(text) ? `남은 카운트다운: ${text.match(/카운트다운\s*\((\d+)\)/)?.[1]}. 다음 자기 턴 시작마다 1씩 감소하며 0이 되면 한 번 발동합니다. 침묵하면 해제되고, 재등장하면 처음부터 시작합니다.` : KEYWORD_DESCRIPTIONS[keyword![0]]!});
   return <span key={index} role="button" tabIndex={0} className="pointer-events-auto cursor-help text-amber-200 underline decoration-dotted" aria-label={`${part} 정보 보기`}
