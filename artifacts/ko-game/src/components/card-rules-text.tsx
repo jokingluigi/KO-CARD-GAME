@@ -10,12 +10,16 @@ import { fetchPublicCardTagCatalog } from '../game/cards/published-cards';
 import { KEYWORD_DESCRIPTIONS, KEYWORD_LABELS } from './alt-inspector-utils';
 import type { CardDefinition } from '../game/cards/types';
 
+const escapeRe=(s:string)=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+/** Other spellings card texts use for a keyword. */
+const KEYWORD_ALIASES:Record<string,string>={'연격':'MULTI_STRIKE','공격 불가':'CANNOT_ATTACK'};
+
 /** Uses real catalog entries, never invented cards, for references in effect text. */
 export function CardRulesText({text,interactive=true}:{text:string;interactive?:boolean}) {
  const tagLabels=useTagLabels();
  text=displayTagReferences(upgradeDisplayText(text),tagLabels);
- const indexRef=useRef<{cards:CardDefinition[];pattern:RegExp|null;byName:Map<string,CardDefinition>}|null>(null);
- const [detail,setDetail]=useState<{title:string;text:string;card?:CardDefinition}|null>(null);
+ const indexRef=useRef<{cards:CardDefinition[];pattern:RegExp|null;names:string[];byName:Map<string,CardDefinition>}|null>(null);
+ const [detail,setDetail]=useState<{title:string;text:string;card?:CardDefinition;tag?:string;tagCards?:CardDefinition[]}|null>(null);
  const [publicCards,setPublicCards]=useState<CardDefinition[]>([]);
  useEffect(()=>{
   if(!interactive)return;
@@ -37,16 +41,39 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
  const cards=[...new Map([...publicCards,...getCardDefinitions()].map(card=>[card.id,card])).values()];
  const labels=Object.entries(KEYWORD_LABELS).filter(([key])=>KEYWORD_DESCRIPTIONS[key]);
  if(!indexRef.current || indexRef.current.cards.length!==cards.length || cards.some((card,i)=>indexRef.current!.cards[i]!==card)){
-  const names=[...new Set([...cards.map(c=>c.name).filter(n=>n.length>1),...labels.map(([,label])=>label)])].sort((a,b)=>b.length-a.length);
-  const escape=(s:string)=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  indexRef.current={cards,pattern:names.length?new RegExp(`(${names.map(escape).join('|')})`,'g'):null,byName:new Map([...cards].reverse().map(card=>[card.name,card]))};
+  const byName=new Map<string,CardDefinition>([...cards].reverse().map(card=>[card.name,card]));
+  // Spellings the card texts actually use for the same card: spaces dropped ("밀크메이드"), "각성 리온" for "리온(각성)".
+  for(const card of [...cards].reverse()){
+   const tight=card.name.replace(/\s+/g,'');
+   if(tight!==card.name&&tight.length>1&&!byName.has(tight))byName.set(tight,card);
+   const awake=card.name.match(/^(.+)\(각성\)$/);
+   if(awake&&!byName.has(`각성 ${awake[1]}`))byName.set(`각성 ${awake[1]}`,card);
+  }
+  const names=[...new Set([...[...byName.keys()].filter(n=>n.length>1),...labels.map(([,label])=>label),...Object.keys(KEYWORD_ALIASES)])].sort((a,b)=>b.length-a.length);
+  indexRef.current={cards,pattern:null,names,byName};
  }
  const matcher=indexRef.current!;
- const parts=matcher.pattern?text.split(matcher.pattern):[text];
- return <>{parts.map((part,index)=>{
-  const card=matcher.byName.get(part),keyword=labels.find(([,label])=>label===part);
-  if(!card&&!keyword)return <span key={index}>{part}</span>;
-  const open=()=>setDetail(card?{title:card.name,text:card.rulesText,card}:{title:part,text:keyword![0] === 'ARMOR' && /아머\s*\(\d+\)/.test(text) ? `공격과 반격으로 받는 피해를 ${text.match(/아머\s*\((\d+)\)/)?.[1]} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : keyword![0] === 'COUNTDOWN' && /카운트다운\s*\(\d+\)/.test(text) ? `남은 카운트다운: ${text.match(/카운트다운\s*\((\d+)\)/)?.[1]}. 다음 자기 턴 시작마다 1씩 감소하며 0이 되면 한 번 발동합니다. 침묵하면 해제되고, 재등장하면 처음부터 시작합니다.` : KEYWORD_DESCRIPTIONS[keyword![0]]!});
+ // Terms this text defines itself ("어둠의 사자:...") and tag references ('마피아' 태그).
+ const localDefs=new Map<string,string>();
+ for(const line of text.split('\n')){const m=line.match(/^\s*([^:：\n]{2,14})\s*[:：]\s*(.+)$/);if(m&&!/^(등장|퇴장|턴 종료|턴 시작|콤보|업그레이드|조건|공격 시|반격|유언|각성)$/.test(m[1]!.trim())&&new RegExp(`['‘“"]${escapeRe(m[1]!.trim())}['’”"]`).test(text))localDefs.set(m[1]!.trim(),m[2]!.trim());}
+ const tagNames=[...new Set([...Object.values(tagLabels),...Object.keys(tagLabels)])].filter(t=>t.length>1);
+ const sources=[...new Set([...localDefs.keys(),...matcher.names,...tagNames])].sort((a,b)=>b.length-a.length).map(escapeRe);
+ const pattern=sources.length?new RegExp(`(${sources.join('|')})`,'g'):null;
+ const pieces:Array<{text:string;at:number}>=[];
+ if(pattern){let last=0;for(const m of text.matchAll(pattern)){const at=m.index!;if(at>last)pieces.push({text:text.slice(last,at),at:-1});pieces.push({text:m[0],at});last=at+m[0].length;}if(last<text.length)pieces.push({text:text.slice(last),at:-1});}else pieces.push({text,at:-1});
+ const tagCards=(tag:string)=>{const keys=new Set([tag,...Object.entries(tagLabels).filter(([,l])=>l===tag).map(([k])=>k)]);return cards.filter(c=>!c.isToken&&(c.tags??[]).some(t=>keys.has(t)));};
+ return <>{pieces.map((piece,index)=>{
+  const part=piece.text;
+  if(piece.at<0)return <span key={index}>{part}</span>;
+  const before=text.slice(Math.max(0,piece.at-1),piece.at),after=text.slice(piece.at+part.length,piece.at+part.length+6);
+  const isTagRef=tagNames.includes(part)&&(/^['’"”]?\s*태그/.test(after)||(!matcher.byName.has(part)&&/['‘“"]/.test(before)&&/^['’"”]/.test(after)));
+  const isDefLine=localDefs.has(part)&&!/['‘“"]/.test(before);
+  if(isDefLine)return <span key={index}>{part}</span>;
+  const card=isTagRef?undefined:matcher.byName.get(part);
+  const keyword=labels.find(([,label])=>label===part)??(KEYWORD_ALIASES[part]?labels.find(([key])=>key===KEYWORD_ALIASES[part]):undefined);
+  const def=localDefs.get(part);
+  if(!isTagRef&&!card&&!keyword&&!def)return <span key={index}>{part}</span>;
+  const open=()=>setDetail(isTagRef?{title:`'${part}' 태그`,text:'',tag:part,tagCards:tagCards(part)}:def&&!card?{title:part,text:def}:card?{title:card.name,text:card.rulesText,card}:{title:keyword![1],text:keyword![0] === 'ARMOR' && /아머\s*\(\d+\)/.test(text) ? `공격과 반격으로 받는 피해를 ${text.match(/아머\s*\((\d+)\)/)?.[1]} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : keyword![0] === 'COUNTDOWN' && /카운트다운\s*\(\d+\)/.test(text) ? `남은 카운트다운: ${text.match(/카운트다운\s*\((\d+)\)/)?.[1]}. 다음 자기 턴 시작마다 1씩 감소하며 0이 되면 한 번 발동합니다. 침묵하면 해제되고, 재등장하면 처음부터 시작합니다.` : KEYWORD_DESCRIPTIONS[keyword![0]]!});
   return <span key={index} role="button" tabIndex={0} className="pointer-events-auto cursor-help text-amber-200 underline decoration-dotted" aria-label={`${part} 정보 보기`}
    onPointerDown={e=>{trigger.current=e.currentTarget;clear();holdOrigin.current={x:e.clientX,y:e.clientY};if(e.pointerType==='touch')hold.current=setTimeout(open,500);}}
    onPointerUp={e=>{e.stopPropagation();clear();}} onPointerCancel={clear} onPointerMove={e=>{if(Math.hypot(e.clientX-holdOrigin.current.x,e.clientY-holdOrigin.current.y)>10)clear();}}
@@ -60,7 +87,9 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
    <DialogTitle className="pr-6 text-lg font-bold">{detail.title}</DialogTitle>
    {detail.card&&<SilenceImmunityNotice {...cardSilenceProtection(detail.card)}/>}
    {detail.card&&<>{detail.card.imageUrl&&<RecoverableArtwork src={detail.card.imageUrl} alt={detail.title} className="mx-auto my-3 max-h-[40dvh] object-contain"/>}<p className="my-3">비용 {detail.card.cost}{detail.card.cardType!=='TECHNIQUE'&&` · 공격 ${detail.card.attack} · 체력 ${detail.card.health}`}</p></>}
-   <DialogDescription className="ko-readable-content whitespace-pre-wrap break-words text-white">{detail.text||'효과 없음'}</DialogDescription>
+   {detail.tag?<><DialogDescription className="text-sm text-neutral-400">이 태그를 가진 카드 {detail.tagCards?.length??0}장</DialogDescription>
+    <div className="mt-3 grid grid-cols-2 gap-1.5">{(detail.tagCards??[]).map(c=><button key={c.id} type="button" className="min-h-10 rounded border border-neutral-700 bg-neutral-900 px-2 text-left text-sm text-neutral-100" onClick={()=>setDetail({title:c.name,text:c.rulesText,card:c})}>{c.name}</button>)}</div></>
+   :<DialogDescription className="ko-readable-content whitespace-pre-wrap break-words text-white">{detail.text||'효과 없음'}</DialogDescription>}
    <button type="button" className="mt-4 min-h-12 w-full rounded border border-neutral-500" onClick={()=>setDetail(null)}>닫기</button>
   </DialogContent>}
  </Dialog></>;
