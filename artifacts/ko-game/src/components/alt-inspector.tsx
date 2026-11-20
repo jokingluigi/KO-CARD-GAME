@@ -63,6 +63,41 @@ interface AltInspectContextValue {
 }
 
 const AltInspectContext = createContext<AltInspectContextValue | null>(null);
+/** True inside the quick look (hover / press-and-hold): content renders as a big card plus small notes. */
+const PeekViewContext = createContext(false);
+
+/** After a long-press peek is released: the next touch outside the panel closes it and is swallowed. */
+let releaseHeldPeek: (() => void) | null = null;
+const SWALLOWED = ['click', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'] as const;
+function keepPeekUntilNextTap(close: () => void) {
+  releaseHeldPeek?.();
+  const inPanel = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('[aria-label="상세정보"]'));
+  let swallowUntil = 0;
+  const swallow = (event: Event) => { if (Date.now() < swallowUntil && !inPanel(event.target)) { event.preventDefault(); event.stopPropagation(); } };
+  const onStart = (event: Event) => {
+    if (inPanel(event.target)) return;
+    // Already closed some other way: let this tap through untouched.
+    if (!document.querySelector('[aria-label="상세정보"]')) { done(); return; }
+    swallowUntil = Date.now() + 400;
+    event.stopPropagation();
+    if (event.cancelable) event.preventDefault();
+    done();
+    window.setTimeout(() => { for (const type of SWALLOWED) document.removeEventListener(type, swallow, true); }, 400);
+  };
+  const done = () => {
+    document.removeEventListener('touchstart', onStart, true);
+    document.removeEventListener('pointerdown', onStart, true);
+    window.removeEventListener('ko-close-inspector', done);
+    if (releaseHeldPeek === done) releaseHeldPeek = null;
+    if (!swallowUntil) for (const type of SWALLOWED) document.removeEventListener(type, swallow, true);
+    close();
+  };
+  document.addEventListener('touchstart', onStart, { capture: true, passive: false });
+  document.addEventListener('pointerdown', onStart, true);
+  for (const type of SWALLOWED) document.addEventListener(type, swallow, { capture: true, passive: false });
+  window.addEventListener('ko-close-inspector', done);
+  releaseHeldPeek = done;
+}
 
 export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [isAltPressed, setIsAltPressed] = useState(false);
@@ -241,7 +276,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           className="ko-touch-inspector pointer-events-auto fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
           onMouseEnter={cancelClear}
-          onMouseLeave={isTouchInspecting ? undefined : clear}
+          onMouseLeave={isTouchInspecting ? undefined : () => { if (!releaseHeldPeek) clear(); }}
           style={{
             left: panelPosition.left,
             top: panelPosition.top,
@@ -257,7 +292,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           >
             닫기
           </button>}
-          {target?.content}
+          <PeekViewContext.Provider value={Boolean(target?.peek)}>{target?.content}</PeekViewContext.Provider>
         </aside>
       )}
       <CardTagExplorerDialog
@@ -341,9 +376,10 @@ export function Inspectable({
         cancelHover();
         hoverTimer.current = window.setTimeout(() => { hoverTimer.current = null; if (element.isConnected) peek(element); }, 320);
       }}
-      onMouseDown={() => { cancelHover(); if (!context.isAltPressed && !context.isTouchInspecting) context.clear(); }}
+      onMouseDown={() => { cancelHover(); if (releaseHeldPeek || press.current.shown || Date.now() < press.current.suppressUntil) return; if (!context.isAltPressed && !context.isTouchInspecting) context.clear(); }}
       onMouseLeave={(event) => {
         cancelHover();
+        if (releaseHeldPeek || press.current.shown) return;
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
         context.scheduleClear();
@@ -352,7 +388,7 @@ export function Inspectable({
         if (Date.now() - lastTouchAt.current > 1000 && event.target instanceof HTMLElement && event.target.matches(':focus-visible')) inspect(event.currentTarget);
       }}
       onPointerDown={(event) => { if (event.pointerType === 'touch') lastTouchAt.current = Date.now(); }}
-      // Hearthstone mobile: press and hold a card to see it big; let go to close.
+      // Press and hold a card to see it big; it stays up after letting go until the next tap.
       // Raw touch events, not pointer events: phones fire pointercancel as soon as they think a scroll
       // may start, which used to kill the hold. Small wobbles are fine; only a real drag cancels.
       onTouchStart={(event) => {
@@ -368,16 +404,18 @@ export function Inspectable({
           press.current.shown = true;
           if (navigator.vibrate) try { navigator.vibrate(8); } catch { /* ignore */ }
           peek(element);
-          const close = () => {
-            document.removeEventListener('touchend', close, true);
-            document.removeEventListener('touchcancel', close, true);
+          // Letting go keeps the card up so it can be read; the next tap anywhere else closes it
+          // (and that tap does nothing else, so it can't play or select a card by accident).
+          const release = () => {
+            document.removeEventListener('touchend', release, true);
+            document.removeEventListener('touchcancel', release, true);
             if (!press.current.shown) return;
             press.current.shown = false;
             press.current.suppressUntil = Date.now() + 600;
-            context.clear();
+            keepPeekUntilNextTap(() => context.clear());
           };
-          document.addEventListener('touchend', close, true);
-          document.addEventListener('touchcancel', close, true);
+          document.addEventListener('touchend', release, true);
+          document.addEventListener('touchcancel', release, true);
         }, 360);
       }}
       onTouchMove={(event) => {
@@ -392,7 +430,7 @@ export function Inspectable({
       onBlur={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
-        if (!context.isTouchInspecting) context.clear();
+        if (!context.isTouchInspecting && !releaseHeldPeek && !press.current.shown) context.clear();
       }}
       onClickCapture={(event) => {
         // The click that ends a long-press must not also play / select the card.
@@ -423,6 +461,40 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
   const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card,override);
   const cosmetic=useCosmeticImage((!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined,card.definitionId,'CARD_SKIN',definition?.imageUrl);
   const numericChanges = getNumericChanges(card);
+  const peekView = useContext(PeekViewContext);
+  if (peekView) {
+    const silence = cardSilenceProtection(card,definition);
+    const notes: { key: string; title: string; text: string; tone: 'kw' | 'status' | 'change' }[] = [
+      ...keywords.map(k => ({ key: 'k'+k.key, title: k.label, text: k.description, tone: 'kw' as const })),
+      ...statuses.map(st => ({ key: 's'+st.key, title: st.label, text: st.description, tone: 'status' as const })),
+    ];
+    const changed = numericChanges.filter(c => c.stat !== 'maxHealth' || numericChanges.every(o => o.stat !== 'health'));
+    return (
+      <div className="kpk" data-testid="card-peek">
+        <div className="kpk-card">
+          <CardRenderer
+            cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
+            name={definition?.name ?? '알 수 없는 카드'} cardType={card.cardType}
+            cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth}
+            rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '효과 없음')}
+            imageUrl={definition?.imageUrl} rarity={definition?.rarity} size="detail" className="w-full"
+            imageDisplaySettings={definition}
+            keywordConfig={{ ...definition?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
+            isSilenced={card.isSilenced} isStunned={card.isStunned} isAbilityDisabled={card.isAbilityDisabled}
+            dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+            countdownTurns={card.grantedText?.countdownTurns ?? card.countdownTurns}
+            countdownRemaining={card.countdownRemaining} countdownResolved={card.countdownResolved}
+            isChampionToken={card.isChampionToken} isToken={card.isToken} isSilenceImmune={card.isSilenceImmune}
+          />
+        </div>
+        {(notes.length > 0 || changed.length > 0 || silence.immune) && <div className="kpk-notes">
+          {notes.map(n => <div key={n.key} className="kpk-note" data-tone={n.tone}><b>{n.title}</b><p>{n.text}</p></div>)}
+          {changed.length > 0 && <div className="kpk-note" data-tone="change"><b>수치 변화</b><p>{changed.slice(-4).map((c,i) => <span key={i} className="kpk-change">{STAT_LABELS[c.stat]} {c.before}→<em data-up={c.after >= c.before || undefined}>{c.after}</em>{c.sourceName && c.sourceName !== '기본 수치' ? <small> · {c.sourceName}</small> : null}</span>)}</p></div>}
+          <SilenceImmunityNotice {...silence}/>
+        </div>}
+      </div>
+    );
+  }
   return (
     <div className="ko-inspector-content space-y-4">
       <div className="border-b border-neutral-800 pb-3">

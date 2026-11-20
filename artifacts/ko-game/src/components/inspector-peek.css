@@ -28,3 +28,43 @@
   .ko-touch-inspector[data-peek] [data-inspector-section] h4{margin-bottom:4px!important;font-size:12px!important}
   .ko-touch-inspector[data-peek] .ko-readable-content{font-size:14px!important;line-height:1.5!important}
 }
+
+/* phones: the held card stays up after letting go — say how to close it */
+@media (hover:none){
+  .ko-touch-inspector[data-peek]::after{content:"아무 곳이나 누르면 닫혀요";display:block;margin-top:8px;text-align:center;font-size:11px;color:#8f887b}
+}
+
+/* ── Card quick look v2 (Hearthstone-style): the card itself, big, with small notes beside it. No box. ── */
+.ko-touch-inspector[data-peek]:has(.kpk){width:auto!important;max-width:calc(100vw - 16px);padding:0!important;background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;overflow:visible!important;max-height:none!important}
+.ko-touch-inspector[data-peek]:has(.kpk)::after{display:none}
+.kpk{display:flex;align-items:flex-start;gap:12px}
+.kpk-card{width:250px;flex:none;filter:drop-shadow(0 18px 28px rgba(0,0,0,.75)) drop-shadow(0 0 1px rgba(0,0,0,.9))}
+.kpk-notes{width:230px;display:flex;flex-direction:column;gap:8px;padding-top:6px}
+.kpk-note{position:relative;padding:9px 11px 10px;border-radius:6px;background:linear-gradient(180deg,#1b1915,#11100d);border:1px solid #3a352c;box-shadow:0 10px 22px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04)}
+.kpk-note::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;border-radius:2px;background:#c8a865}
+.kpk-note[data-tone=status]::before{background:#c25a4c}
+.kpk-note[data-tone=change]::before{background:#6f8f6a}
+.kpk-note b{display:block;font-size:14px;font-weight:900;color:#ece6da;letter-spacing:.02em}
+.kpk-note p{margin:3px 0 0;font-size:13px;line-height:1.45;color:#bdb5a6}
+.kpk-change{display:block}
+.kpk-change em{font-style:normal;font-weight:900;color:#e58b7c}
+.kpk-change em[data-up]{color:#9fd18f}
+.kpk-change small{color:#8f887b;font-size:11px}
+.kpk-notes .ko-silence-immunity-notice{margin:0;padding:9px 11px;border-radius:6px;background:#11100d;border:1px solid #3a352c;font-size:12px;color:#bdb5a6}
+.kpk-notes .ko-silence-immunity-notice strong{color:#ece6da}
+
+/* phones: the card in the middle of the screen, notes underneath, the board dimmed behind */
+@media (max-width:700px){
+  .ko-touch-inspector[data-peek]:has(.kpk){left:50%!important;top:50%!important;translate:-50% -50%;width:min(92vw,360px)!important}
+  .kpk{flex-direction:column;align-items:center;gap:10px}
+  .kpk-card{width:min(64vw,250px)}
+  .kpk-notes{width:100%;padding-top:0;max-height:34dvh;overflow-y:auto}
+  .kpk-note b{font-size:13px}.kpk-note p{font-size:12.5px}
+  body:has(.ko-touch-inspector[data-peek] .kpk)::before{content:"";position:fixed;inset:0;z-index:199;background:rgba(6,5,4,.62);pointer-events:none;animation:ko-peek-in .14s ease-out both}
+  body:has(.ko-touch-inspector[data-peek] .kpk)::after{content:"아무 곳이나 누르면 닫혀요";position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));z-index:201;text-align:center;font-size:12px;color:#a39c8f;pointer-events:none}
+}
+@media (max-width:700px) and (hover:hover){body:has(.ko-touch-inspector[data-peek] .kpk)::after{display:none}}
+/* other quick looks (champion, finisher, ability): same quiet dark plate as the card notes */
+.ko-touch-inspector[data-peek]{background:linear-gradient(180deg,#1b1915,#0f0e0b)!important;border:1px solid #3a352c!important;border-radius:8px!important;box-shadow:0 18px 40px rgba(0,0,0,.7)!important}
+/* phones: the notes under a held card can be scrolled (touching them doesn't close the card) */
+@media (hover:none){.ko-touch-inspector[data-peek] .kpk-notes{pointer-events:auto;overscroll-behavior:contain;touch-action:pan-y}}
