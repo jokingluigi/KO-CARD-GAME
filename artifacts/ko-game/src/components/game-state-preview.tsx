@@ -187,6 +187,12 @@ interface GameStatePreviewProps {
 }
 
 const RenderCardCatalog=React.createContext(defaultCardDefinition);
+/** Keywords as they work on the field right now: '방어' only lasts until its owner's next turn. */
+function fieldKeywords(card: CardInstance) {
+  const keywords = getActiveCardKeywords(card);
+  return card.entryDefenseActive === false ? keywords.filter((keyword) => keyword !== 'DEFENSE') : keywords;
+}
+
 export function GameStatePreview({
   boardTheme,
   localImageEmotes=false,cosmetics:providedCosmetics,imageEmotes:providedImageEmotes,onImageEmote:providedOnImageEmote,
@@ -2245,7 +2251,7 @@ function BoardSlot({
          messenger={messengerKind(card)}
          className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
-           runtimeKeywords={getActiveCardKeywords(card)}
+           runtimeKeywords={fieldKeywords(card)}
           keywordConfig={{ ...def?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
           isSilenced={card.isSilenced}
           isStunned={card.isStunned}
@@ -2391,7 +2397,7 @@ function GraveyardModal({
                       imageUrl={definition?.imageUrl}
                       rarity={definition?.rarity}
                       imageDisplaySettings={definition}
-                      runtimeKeywords={getActiveCardKeywords(card)}
+                      runtimeKeywords={fieldKeywords(card)}
                       keywordConfig={{ ...definition?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
                       isSilenced={card.isSilenced}
                       isStunned={card.isStunned}
