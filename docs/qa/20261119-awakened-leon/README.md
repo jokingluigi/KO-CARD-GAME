@@ -17,3 +17,11 @@ A synchronous removal scope now defers self entry buffs based on allied removal 
 - Existing card/champion data, battle presentation and Claude's frontend deployment guard are preserved.
 
 Deployment results are recorded after live revision verification. Already running AI matches use their loaded JavaScript; reload before starting a new match after release.
+
+## Live release
+
+Both services now serve `9a4bcd0ba388e418ee611c37227d37fd6e9ef7dc` (HTTP 200 and exact public revision verified on 2026-11-19, approximately 22:31 KST).
+
+- Frontend: `dep-dbvfjft6e07s73bm7he0`; existing `APPROVED_PRODUCTION_COMMIT` build guard preserved; approval advanced to this release.
+- API: `dep-dbvfjhks728c73e25lp0`; existing guarded release workflow used.
+- Both deployments are forward from their previous live revisions. Claude's targeting-reticle correction and all prior card updates are included. No paid hosting changes or game-data writes were performed for this fix.

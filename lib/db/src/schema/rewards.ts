@@ -90,6 +90,7 @@ export const attendanceRewardDefinitionsTable = pgTable("attendance_reward_defin
 });
 
 export const attendanceClaimsTable = pgTable("attendance_claims", {
+  cycle: integer("cycle").notNull().default(1),
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   claimDate: text("claim_date").notNull(),
@@ -100,7 +101,7 @@ export const attendanceClaimsTable = pgTable("attendance_claims", {
   claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userDateIdx: uniqueIndex("attendance_claims_user_date_idx").on(table.userId, table.claimDate),
-  userDayIdx: uniqueIndex("attendance_claims_user_day_idx").on(table.userId, table.dayIndex),
+  userCycleDayIdx: uniqueIndex("attendance_claims_user_cycle_day_idx").on(table.userId, table.cycle, table.dayIndex),
 }));
 
 export type RewardSettingRecord = typeof rewardSettingsTable.$inferSelect;

@@ -175,3 +175,43 @@ for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
     assert.equal(replayAIMatch(started, transcript, userId, aiId, difficulty).winnerId, aiId);
   });
 }
+
+test('rapid duplicate attacks cannot record a second attack from a stale React snapshot', async () => {
+  const {dispatchLocalGameAction}=await import('../../../ko-game/src/game/actions/local-game-action');
+  const {attack}=await import('../../../ko-game/src/game/engine/combat');
+  const unit:CardDefinition={id:'rapid-body',name:'Rapid body',cardType:'WRESTLER',cost:0,attack:1,health:1,keywords:[],abilities:[],rulesText:'',isToken:false,isChampionToken:false};
+  const initial=createInitialGameState(undefined,[unit]);
+  Object.assign(initial,{gameId:'rapid-replay',status:'IN_PROGRESS',turn:3,activePlayerId:'player-1',openingMulligan:undefined,events:[]});
+  for(const p of initial.players){p.board=[null,null,null,null];p.hand=[];p.deck=[];p.champion!.quest=null;p.health=20;}
+  initial.players[0].board[0]={...generateCardInstance(unit,{instanceId:'rapid-attacker'}),boardSlot:0,enteredThisTurn:false};
+  initial.players[1].board[0]={...generateCardInstance(unit,{instanceId:'rapid-defender'}),boardSlot:0,enteredThisTurn:false};
+  const action:GameAction={type:'ATTACK',playerId:'player-1',attackerInstanceId:'rapid-attacker',target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'rapid-defender'}};
+  // Before the fix, two callbacks could both validate against this same render.
+  assert.ok(attack(structuredClone(initial),'player-1','rapid-attacker',action.target).success);
+  assert.ok(attack(structuredClone(initial),'player-1','rapid-attacker',action.target).success);
+  const once=executeAction(structuredClone(initial),action);assert.ok(once.success);
+  const twice=executeAction(once.state,action);assert.ok(!twice.success);assert.match(twice.message,/공격할 수 없는 선수/);
+  const recovered=replayAIMatch(structuredClone(initial),[action,action,{type:'SURRENDER'}],'player-1','player-2');
+  const single=replayAIMatch(structuredClone(initial),[action,{type:'SURRENDER'}],'player-1','player-2');
+  assert.deepEqual(recovered.events,single.events);
+  const aiGreeting={type:'EMOTE',actor:'AI',emote:'HELLO'};
+  const modernRecovered=replayAIMatch(structuredClone(initial),[aiGreeting,action,action,{type:'SURRENDER'}],'player-1','player-2');
+  const modernSingle=replayAIMatch(structuredClone(initial),[aiGreeting,action,{type:'SURRENDER'}],'player-1','player-2');
+  assert.deepEqual(modernRecovered.events,modernSingle.events);
+  const multi=structuredClone(initial);Object.assign(multi.players[0].board[0]!,{keywords:['MULTI_STRIKE'],currentHealth:5,maxHealth:5});
+  Object.assign(multi.players[1].board[0]!,{currentAttack:0,currentHealth:10,maxHealth:10});
+  const twiceLegal=replayAIMatch(multi,[aiGreeting,action,action,{type:'SURRENDER'}],'player-1','player-2');
+  assert.equal(twiceLegal.players[1].board[0]!.currentHealth,8);
+  assert.equal(twiceLegal.events.filter(e=>e.type==='ATTACK_DECLARED').length,2);
+  assert.throws(()=>replayAIMatch(structuredClone(initial),[action,{type:'EMOTE',emote:'HELLO'},action,{type:'SURRENDER'}],'player-1','player-2'),/공격할 수 없는 선수/);
+  assert.throws(()=>replayAIMatch(structuredClone(initial),[{...action,attackerInstanceId:'forged'},{type:'SURRENDER'}],'player-1','player-2'),/공격할 수 없는 선수/);
+  const ref={current:structuredClone(initial)},transcript:GameAction[]=[];
+  for(const input of [action,action,{type:'SURRENDER',playerId:'player-1'} as GameAction]){
+    const r=dispatchLocalGameAction(ref,input);if(r.success)transcript.push(input);
+  }
+  assert.equal(transcript.filter(a=>a.type==='ATTACK').length,1);
+  const replayed=replayAIMatch(structuredClone(initial),transcript,'player-1','player-2');
+  assert.deepEqual(replayed.players,ref.current.players);
+  assert.deepEqual(replayed.events,ref.current.events);
+  assert.equal(replayed.status,'FINISHED');
+});

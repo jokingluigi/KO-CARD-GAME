@@ -6,7 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { verifyRelease, verifyHostedRelease } from "./verify-release.mjs";
-import { assertForwardRelease } from "./release.mjs";
+import {
+  assertForwardRelease,
+  approveProductionRelease,
+  SERVICES,
+} from "./release.mjs";
 function fixture(run) {
   const cwd = mkdtempSync(join(tmpdir(), "ko-release-"));
   const git = (...args) =>
@@ -101,10 +105,10 @@ test("Render settings use production and an externally pinned advancing floor", 
     assert.equal(config.autoDeploy, "no");
     assert.ok(
       protectedBuildCommand(role, floor).includes(
-        `RENDER_GIT_COMMIT!=='${floor}'`,
+        "RENDER_GIT_COMMIT!==process.env.APPROVED_PRODUCTION_COMMIT",
       ),
     );
-    assert.notEqual(
+    assert.equal(
       protectedBuildCommand(role, floor),
       protectedBuildCommand(role, next),
     );
@@ -175,14 +179,73 @@ test("external build approval stops every different commit before source scripts
   const approved = "a".repeat(40);
   const command = protectedBuildCommand("api", approved).split(" && ")[0];
   const rejected = spawnSync("/bin/sh", ["-c", command], {
-    env: { ...process.env, RENDER_GIT_COMMIT: "b".repeat(40) },
+    env: {
+      ...process.env,
+      APPROVED_PRODUCTION_COMMIT: approved,
+      RENDER_GIT_COMMIT: "b".repeat(40),
+    },
     encoding: "utf8",
   });
   assert.notEqual(rejected.status, 0);
   assert.match(rejected.stderr, /UNAPPROVED/);
   const accepted = spawnSync("/bin/sh", ["-c", command], {
-    env: { ...process.env, RENDER_GIT_COMMIT: approved },
+    env: {
+      ...process.env,
+      APPROVED_PRODUCTION_COMMIT: approved,
+      RENDER_GIT_COMMIT: approved,
+    },
     encoding: "utf8",
   });
   assert.equal(accepted.status, 0);
+});
+
+test("missing approval cannot approve an unset revision", () => {
+  const command = protectedBuildCommand("front", "a".repeat(40)).split(
+    " && ",
+  )[0];
+  const env = { ...process.env };
+  delete env.APPROVED_PRODUCTION_COMMIT;
+  delete env.RENDER_GIT_COMMIT;
+  const result = spawnSync("/bin/sh", ["-c", command], {
+    env,
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /UNAPPROVED/);
+});
+
+test("both services approve the environment variable before updating their static command", async () => {
+  const commit = "c".repeat(40);
+  for (const role of ["api", "front"]) {
+    const calls = [];
+    await approveProductionRelease(role, commit, async (path, options) => {
+      calls.push({ path, ...options });
+    });
+    assert.deepEqual(calls[0], {
+      path: `services/${SERVICES[role]}/env-vars/APPROVED_PRODUCTION_COMMIT`,
+      method: "PUT",
+      body: { value: commit },
+    });
+    assert.equal(calls[1].method, "PATCH");
+    assert.equal(calls[1].path, `services/${SERVICES[role]}`);
+    assert.ok(!JSON.stringify(calls[1].body).includes(commit));
+  }
+});
+
+test("approval validation and failed environment updates stop before changing service settings", async () => {
+  const calls = [];
+  const request = async (...args) => {
+    calls.push(args);
+    throw Error("approval failed");
+  };
+  await assert.rejects(
+    approveProductionRelease("api", "HEAD", request),
+    /Invalid/,
+  );
+  assert.equal(calls.length, 0);
+  await assert.rejects(
+    approveProductionRelease("api", "d".repeat(40), request),
+    /approval failed/,
+  );
+  assert.equal(calls.length, 1);
 });

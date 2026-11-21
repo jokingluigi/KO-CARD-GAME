@@ -1,3 +1,4 @@
+import { dispatchLocalGameAction } from "@/game/actions/local-game-action";
 import { useMatchMusicPreload } from '@/audio/use-match-music-preload';
 
 import {acceptsEffectSelection} from '@/lib/online-target-actions';
@@ -23,11 +24,7 @@ import { generateCardInstance, canonicalCardCatalog } from '@/game/cards/generat
 import { prepareAdminCardTest } from '@/game/engine/admin-card-test';
 import { enterField } from '@/game/engine/enter-field';
 import {
-  attack,
   createInitialGameState,
-  endTurn,
-  surrender,
-  playWrestlerFromHand,
   startGame,
   type BoardSlot,
   type AttackTarget,
@@ -49,7 +46,6 @@ import {
   fetchGameMedia,
   emptyGameMediaCatalog,
   processChampionQuestEvents,
-  executeAction,
   type GameMediaCatalog,
   preloadMatchAssets,
   createDeterministicRandom,
@@ -259,6 +255,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const matchReadyRef = useRef(matchReady);
   matchReadyRef.current = matchReady;
   latestGameStateRef.current = gameState;
+  const executeLocalAction = (action: GameAction) => dispatchLocalGameAction(latestGameStateRef, action);
 
   useEffect(() => {
     if (!aiOpeningActive || !aiOpening) return;
@@ -996,7 +993,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     const current = latestGameStateRef.current;
     const action: GameAction = { type: 'MULLIGAN', playerId: current.players[0].id, cardInstanceIds };
     if(!allowPractice(action))return;
-    const result = executeAction(current, action);
+    const result = executeLocalAction(action);
     if (!result.success) { setPlayError(result.message); return; }
     recordHumanAIMatchAction(action);
     latestGameStateRef.current = result.state;
@@ -1014,7 +1011,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       ? currentState.activePlayerId
       : currentState.players[0]?.id;
     if (!actingPlayerId) return;
-    const result = endTurn(currentState, actingPlayerId);
+    const result = executeLocalAction({type:'END_TURN', playerId:actingPlayerId});
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1054,7 +1051,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
 
     // 관리자 테스트 게임에서는 상대 턴을 즉시 종료해 플레이어 1의 다음 턴으로 돌아온다.
     const opponentId = currentState.players[1].id;
-    const opponentTurnResult = endTurn(result.state, opponentId);
+    const opponentTurnResult = executeLocalAction({type:'END_TURN', playerId:opponentId});
     if (!opponentTurnResult.success) {
       setPlayError(opponentTurnResult.message);
       return;
@@ -1073,7 +1070,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
 
   function handleSurrender() {
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
-    const result = surrender(gameState, gameState.players[0].id);
+    const result = executeLocalAction({type:'SURRENDER', playerId:gameState.players[0].id});
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1151,16 +1148,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     }
 
     if(!allowPractice({type:'ATTACK',playerId:gameState.players[0].id,attackerInstanceId:selectedAttackerId!,target:{type:'WRESTLER',playerId:gameState.players[1].id,cardInstanceId:targetCardInstanceId}}))return;
-    const result = attack(
-      gameState,
-      gameState.players[0].id,
-      selectedAttackerId,
-      {
-        type: 'WRESTLER',
-        playerId: gameState.players[1].id,
-        cardInstanceId: targetCardInstanceId,
-      },
-    );
+    const result = executeLocalAction({type:'ATTACK', playerId:gameState.players[0].id,
+      attackerInstanceId:selectedAttackerId, target:{type:'WRESTLER',playerId:gameState.players[1].id,cardInstanceId:targetCardInstanceId}});
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1245,7 +1234,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       const action: GameAction = before.targetingState?.phase === 'PRE_COMMIT'
         ? { type: 'CONFIRM_PRECOMMIT_TARGET', playerId: before.players[0].id, targetId }
         : { type: 'SELECT_EFFECT_TARGET', playerId: before.players[0].id, targetId };
-      const result = executeAction(before, action);
+      const result = executeLocalAction(action);
       if (!result.success) {
         setPlayError(result.message);
         return;
@@ -1255,7 +1244,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       setPlayError(null);
       return;
     }
-    const selected=executeAction(before,before.targetingState?.phase==='PRE_COMMIT'
+    const selected=executeLocalAction(before.targetingState?.phase==='PRE_COMMIT'
       ?{type:'CONFIRM_PRECOMMIT_TARGET',playerId:before.players[0].id,targetId}
       :{type:'SELECT_EFFECT_TARGET',playerId:before.players[0].id,targetId});
     if(!selected.success){setPlayError(selected.message);return;}
@@ -1272,7 +1261,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS') return;
     if (isAiMatch && aiMatchStarted && !isAdminSource) {
       const action: GameAction = { type: 'CANCEL_EFFECT_TARGET', playerId: gameState.players[0].id };
-      const result = executeAction(gameState, action);
+      const result = executeLocalAction(action);
       if (!result.success) {
         setPlayError(result.message);
         return;
@@ -1282,7 +1271,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       setPlayError(null);
       return;
     }
-    const cancelled=executeAction(gameState,{type:"CANCEL_EFFECT_TARGET",playerId:gameState.players[0].id});
+    const cancelled=executeLocalAction({type:"CANCEL_EFFECT_TARGET",playerId:gameState.players[0].id});
     if(!cancelled.success){setPlayError(cancelled.message);return;}
     if(isTutorial)recordHumanAIMatchAction({type:"CANCEL_EFFECT_TARGET",playerId:gameState.players[0].id});
     const next = cancelled.state;
@@ -1308,12 +1297,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       playerId: gameState.players[1].id,
     };
     if(!allowPractice({type:'ATTACK',playerId:gameState.players[0].id,attackerInstanceId:selectedAttackerId!,target:{type:'PLAYER',playerId:gameState.players[1].id}}))return;
-    const result = attack(
-      gameState,
-      gameState.players[0].id,
-      selectedAttackerId,
-      attackTarget,
-    );
+    const result = executeLocalAction({type:'ATTACK',playerId:gameState.players[0].id,attackerInstanceId:selectedAttackerId,target:attackTarget});
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1410,12 +1394,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       return;
     }
     if(!allowPractice({type:'PLAY_WRESTLER',playerId:gameState.players[0].id,cardInstanceId:selectedCardId,boardSlot:slot}))return;
-    const result = playWrestlerFromHand(
-      gameState,
-      gameState.players[0].id,
-      selectedCardId,
-      slot,
-    );
+    const result = executeLocalAction({type:'PLAY_WRESTLER',playerId:gameState.players[0].id,cardInstanceId:selectedCardId,boardSlot:slot});
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1448,7 +1427,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
-    const result = executeAction(gameState, {
+    const result = executeLocalAction({
       type: 'BEGIN_TARGETED_ACTION',
       playerId: gameState.players[0].id,
       action: { type: 'PLAY_TECHNIQUE', cardInstanceId },
@@ -1472,7 +1451,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
     if (!targetCardInstanceId) return;
     if(!allowPractice({type:'USE_ACTIVE',playerId:gameState.players[0].id,cardInstanceId:targetCardInstanceId}))return;
-    const result = executeAction(gameState, {
+    const result = executeLocalAction({
       type: 'BEGIN_TARGETED_ACTION',
       playerId: gameState.players[0].id,
       action: { type: 'USE_ACTIVE', cardInstanceId: targetCardInstanceId },
@@ -1493,7 +1472,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   function handleUseChampionAbility() {
     if(!allowPractice({type:'USE_CHAMPION_ABILITY',playerId:gameState.players[0].id}))return;
     if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
-    const result = executeAction(gameState, {
+    const result = executeLocalAction({
       type: 'BEGIN_TARGETED_ACTION',
       playerId: gameState.players[0].id,
       action: { type: 'USE_CHAMPION_ABILITY' },
@@ -1686,7 +1665,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       onEmote={(emote) => {
         const current = latestGameStateRef.current;
         const action: GameAction = { type: 'EMOTE', playerId: current.players[0].id, emote };
-        const result = executeAction(current, action);
+        const result = executeLocalAction(action);
         if (result.success) {
           recordHumanAIMatchAction(action);
           latestGameStateRef.current = result.state;

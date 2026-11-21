@@ -245,7 +245,7 @@ export default function AttendancePage() {
             </section>
             <div className="ko-reward-section-title">
               <h2>이어지는 출석 여정</h2>
-              <span>보상은 등록된 순서대로 표시돼요</span>
+              <span>{data.repeats ? `${data.cycle ?? 1}회차 · 마지막 보상 다음 날 1일차부터 다시 시작해요` : '보상은 등록된 순서대로 표시돼요'}</span>
             </div>
             <div className="ko-attendance-track">
               {data.definitions.map((day) => (

@@ -2147,7 +2147,7 @@ export function applyEffect(
   if (state.removalBatch && effect.type === 'STRUCTURED' && effect.action === 'BUFF' &&
       effect.target?.zone === 'BOARD' && effect.target.selection === 'SELF' &&
       effect.values?.attack === undefined && effect.values?.attackReference === 'ALLIED_REMOVED_WRESTLER_COUNT') {
-    const entryEventIndex = state.events.findLastIndex(event => event.type === 'ENTER_FIELD' && event.cardInstanceId === sourceCard.instanceId);
+    const entryEventIndex = state.events.reduce((last, event, index) => event.type === 'ENTER_FIELD' && event.cardInstanceId === sourceCard.instanceId ? index : last, -1);
     return {...state, removalBatch: {entryBuffs: [...state.removalBatch.entryBuffs,
       {playerId, sourceCard, effect, entryEventIndex, triggerContext}]}};
   }
@@ -2169,7 +2169,7 @@ export function applyEffect(
     });
     for (const entry of buffs) {
       const live = result.players.find(player => player.id === entry.playerId)?.board.find(card => card?.instanceId === entry.sourceCard.instanceId);
-      const latestEntry = result.events.findLastIndex(event => event.type === 'ENTER_FIELD' && event.cardInstanceId === entry.sourceCard.instanceId);
+      const latestEntry = result.events.reduce((last, event, index) => event.type === 'ENTER_FIELD' && event.cardInstanceId === entry.sourceCard.instanceId ? index : last, -1);
       if (!live || latestEntry !== entry.entryEventIndex) continue;
       result = applyEffect(result, entry.playerId, entry.sourceCard,
         {...entry.effect, values: {...entry.effect.values, attack: entry.attack}}, undefined, entry.triggerContext);
