@@ -326,7 +326,7 @@ export function MatchResultOverlay({
           <div className="ko-result-notices">
             {questError && (
               <div role="alert" data-testid="quest-progress-error">
-                <p>일반 퀘스트 진행도를 저장하지 못했습니다. {questError}</p>
+                <p>{questError}</p>
                 {onRetryQuest && (
                   <button type="button" onClick={onRetryQuest}>
                     퀘스트 다시 저장

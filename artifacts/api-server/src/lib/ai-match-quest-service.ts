@@ -18,6 +18,7 @@ import {
   situationalAiEmote,
   selectAIOpponentDeck,
   type GameState,
+  type GameAction,
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { listAIDecks } from "./ai-deck-service";
@@ -102,6 +103,17 @@ export function advanceAIOpponent(state: GameState, aiPlayerId: string, difficul
   return next;
 }
 
+/** Legacy clients could append the same accepted attack twice before a React render.
+ * Recover only an adjacent, exactly identical retry of a validated attack, and
+ * only after the engine rejects it as removed/used. Never skip a new action. */
+function isCommittedAttackRetry(previous: GameAction | undefined, action: GameAction, errorCode: string) {
+  if (previous?.type !== 'ATTACK' || action.type !== 'ATTACK' ||
+      !['INVALID_ATTACK_TARGET','ATTACK_ALREADY_USED'].includes(errorCode)) return false;
+  return previous.playerId === action.playerId && previous.attackerInstanceId === action.attackerInstanceId &&
+    previous.target.type === action.target.type && previous.target.playerId === action.target.playerId &&
+    (previous.target.type === 'PLAYER' || action.target.type === 'WRESTLER' && previous.target.cardInstanceId === action.target.cardInstanceId);
+}
+
 export function replayAIMatch(
   initialState: GameState,
   userActions: unknown[],
@@ -109,6 +121,7 @@ export function replayAIMatch(
   aiPlayerId: string,
   difficulty?: "NORMAL" | "HARD" | "BOSS",
 ): GameState {
+  let previous: GameAction | undefined;
   if (userActions.some((action) => isRecord(action) && action.actor === "AI")) {
     let state = initialState;
     for (const rawAction of userActions) {
@@ -123,7 +136,11 @@ export function replayAIMatch(
       // Replay the legal actions that actually occurred. Re-running AI scoring
       // is not a rule of the match and may differ across builds/catalog order.
       const result = executeAction(state, action);
-      if (!result.success) throw new Error(result.message);
+      if (!result.success) {
+        if (isCommittedAttackRetry(previous, action, result.errorCode)) continue;
+        throw new Error(result.message);
+      }
+      previous = action;
       state = result.state;
     }
     if (state.status !== "FINISHED") throw new Error("완료된 AI 경기 기록이 아닙니다.");
@@ -148,8 +165,10 @@ export function replayAIMatch(
     }
     const result = executeAction(state, action);
     if (!result.success) {
+      if (isCommittedAttackRetry(previous, action, result.errorCode)) continue;
       throw new Error(result.message);
     }
+    previous = action;
     state = result.state;
   }
 

@@ -50,7 +50,9 @@ export type AttendanceDay = {
 
 export type AttendanceData = {
   today: string;
-  nextDayIndex: number;
+  nextDayIndex: number | null;
+  cycle?: number;
+  repeats?: boolean;
   definitions: AttendanceDay[];
   claims: Array<{
     id: string;
