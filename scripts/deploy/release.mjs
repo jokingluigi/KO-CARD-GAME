@@ -29,6 +29,15 @@ export async function render(path, { method = "GET", body } = {}) {
     throw Error("Render request failed with status " + response.status);
   return response.json();
 }
+export async function approveProductionRelease(role, commit, request = render) {
+  const settings = productionSettings(role, commit); // Validate before any write.
+  const sid = SERVICES[role];
+  await request(`services/${sid}/env-vars/APPROVED_PRODUCTION_COMMIT`, {
+    method: "PUT",
+    body: { value: commit },
+  });
+  await request(`services/${sid}`, { method: "PATCH", body: settings });
+}
 export async function deploy(role, commit) {
   const sid = SERVICES[role];
   if (!sid) throw Error("Choose api or front.");
@@ -61,10 +70,7 @@ export async function deploy(role, commit) {
     throw Error("Cannot establish the current live revision.");
   assertForwardRelease(process.cwd(), live.commit.id, commit);
   // Approve exactly this locally verified, fast-forward commit before building.
-  await render("services/" + sid, {
-    method: "PATCH",
-    body: productionSettings(role, commit),
-  });
+  await approveProductionRelease(role, commit);
   const started = await render("services/" + sid + "/deploys", {
     method: "POST",
     body: { commitId: commit, clearCache: "do_not_clear" },
@@ -118,10 +124,7 @@ export async function deploy(role, commit) {
         throw Error(
           "Public serving revision does not match the live deployment.",
         );
-      await render("services/" + sid, {
-        method: "PATCH",
-        body: productionSettings(role, commit),
-      });
+      // Do not overwrite an approval set by a subsequent release after going live.
       console.log(
         JSON.stringify({
           role,

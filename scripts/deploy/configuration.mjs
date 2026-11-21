@@ -6,7 +6,7 @@ export function protectedBuildCommand(role, approvedCommit) {
     role
   ];
   if (!target) throw Error("Unknown production service.");
-  return `node -e "if(process.env.RENDER_GIT_COMMIT!=='${approvedCommit}'){console.error('UNAPPROVED PRODUCTION REVISION');process.exit(1)}" && pnpm install --frozen-lockfile && pnpm --filter ${target} build`;
+  return `node -e "if(!process.env.APPROVED_PRODUCTION_COMMIT||process.env.RENDER_GIT_COMMIT!==process.env.APPROVED_PRODUCTION_COMMIT){console.error('UNAPPROVED PRODUCTION REVISION');process.exit(1)}" && pnpm install --frozen-lockfile && pnpm --filter ${target} build`;
 }
 export function productionSettings(role, approvedCommit) {
   const buildCommand = protectedBuildCommand(role, approvedCommit);
