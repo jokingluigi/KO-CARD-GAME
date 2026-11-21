@@ -387,9 +387,20 @@ function scoreTransition(
           ? 6
           : 0
       : 0;
+  // Breaking an enemy awakening stage is the only way through to the champion: count each stage
+  // cleared as real progress, even when the next stage arrives with fresh stats.
+  const stageRank = (stage: string | undefined) =>
+    stage === "TANK" ? 0 : stage === "HEALER" ? 1 : stage === "DEALER" ? 2 : stage === "FINISHED" ? 3 : -1;
+  const enemyBefore = visible.players.find((p) => p.id !== playerId)?.champion?.awakening;
+  const enemyAfter = afterState.players.find((p) => p.id !== playerId)?.champion?.awakening;
+  const awakeningProgress =
+    enemyBefore && enemyAfter && enemyBefore.sequenceId === enemyAfter.sequenceId
+      ? Math.max(0, stageRank(enemyAfter.stage) - stageRank(enemyBefore.stage)) * 14
+      : 0;
   return (
     after -
     before +
+    awakeningProgress +
     questBonus +
     drawBonus -
     spent * 0.25 +

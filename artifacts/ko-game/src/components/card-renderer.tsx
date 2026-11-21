@@ -14,7 +14,7 @@ import { CardRulesText } from './card-rules-text';
 import { FittedCardRules, FittedCardRulesContext } from './fitted-card-rules';
 import { useContext, useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
-import { KeywordFx } from "./keyword-fx";
+import { KeywordFx, type MessengerKind } from "./keyword-fx";
 import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
 import {
   getVisibleCardKeywords,
@@ -176,6 +176,7 @@ export function CardRenderer({
   overlay,
   highlight,
   runtimeKeywords,
+  messenger,
   keywords = [],
   keywordConfig,
   isSilenced = false,
@@ -222,6 +223,8 @@ export function CardRenderer({
   overlay?: ReactNode;
   highlight?: CardHighlight;
   runtimeKeywords?: CardKeyword[];
+  /** Angel "사자" appointment carried by a field card. */
+  messenger?: MessengerKind;
   keywords?: CardKeyword[];
   keywordConfig?: Record<string, unknown> | null;
   isSilenced?: boolean;
@@ -358,9 +361,10 @@ export function CardRenderer({
     <div
       className={`ko-card-depth relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
+      data-card-type={cardType}
       data-frame-layout={windows?"registered":"default"}
       data-card-definition={cardId}
-      data-kfx={fieldFx ? (keywordBadges.join(" ") || " ") : undefined}
+      data-kfx={fieldFx ? ([...keywordBadges, ...(messenger ? [`MSG_${messenger}`] : [])].join(" ") || " ") : undefined}
       onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
       data-card-highlight={highlight}
       data-card-silenced={isSilenced ? "true" : undefined}
@@ -375,7 +379,7 @@ export function CardRenderer({
       role={onClick ? 'button' : undefined}
       aria-label={onClick ? name : undefined}
     >
-      {fieldFx && <KeywordFx keywords={keywordBadges} armor={armorValue} countdown={countdownValue} />}
+      {fieldFx && <KeywordFx keywords={keywordBadges} armor={armorValue} countdown={countdownValue} messenger={messenger} />}
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
           src={cosmetic.src} fallbackSrc={fallbackImageUrl ?? imageUrl}

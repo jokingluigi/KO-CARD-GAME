@@ -1,0 +1,39 @@
+/* Battle log — black sheet, gold hairlines, newest first, grouped by turn. */
+.ko-history-sheet{background:#0b0a09!important;border:1px solid #3a352c!important;border-radius:14px!important;padding:0!important;gap:0!important}
+.ko-history-sheet>button[class*="absolute"]{display:none}
+.ko-log-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:#0b0a09;border-bottom:1px solid #2a2722}
+.ko-log-head__title{flex:1;font-size:18px!important;font-weight:900!important;color:#ece6da!important}
+.ko-log-head__toggle{min-height:36px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:800;color:#c8a865;border:1px solid #3a352c;background:#0e0d0b}
+.ko-log-head__close{width:40px;height:40px;border-radius:8px;font-size:16px;color:#ece6da;border:1px solid #3a352c;background:#0e0d0b}
+.ko-log{list-style:none;margin:0;padding:6px 10px 14px;display:flex;flex-direction:column;gap:6px}
+.ko-log__empty{padding:28px 0;text-align:center;color:#8f897d}
+.ko-log__turn{position:relative;margin:10px 0 2px;text-align:center;font-size:12px;font-weight:900;letter-spacing:.06em;color:#8f897d}
+.ko-log__turn::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid #2a2722}
+.ko-log__turn span{position:relative;padding:0 10px;background:#0b0a09}
+.ko-log__turn[data-mine] span{color:#c8a865}
+.ko-log__row{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:#121110;border:1px solid #23201c;border-left:3px solid #6e5c38}
+.ko-log__row[data-side=opp]{border-left-color:#8a3b31}
+.ko-log__row--quiet{background:transparent;border-color:transparent;border-left-color:#2a2722;padding:4px 10px}
+.ko-log__thumb{width:46px;height:62px;flex:none;border-radius:6px;overflow:hidden;border:1px solid #3a352c;background:#050404;cursor:pointer}
+.ko-log__thumb-art{width:100%;height:100%}
+.ko-log__thumb-art img{object-position:50% 20%}
+.ko-log__icon{width:46px;flex:none;display:grid;place-items:center;font-size:18px;color:#6b665d}
+.ko-log__row--quiet .ko-log__icon{height:22px;font-size:14px}
+.ko-log__body{flex:1;min-width:0}
+.ko-log__title{margin:0;font-size:14px;line-height:1.45;color:#ece6da;font-weight:700}
+.ko-log__title b{margin-right:4px;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:900;vertical-align:1px;color:#c8a865;border:1px solid #6e5c38}
+.ko-log__row[data-side=opp] .ko-log__title b{color:#e08b7d;border-color:#8a3b31}
+.ko-log__row--quiet .ko-log__title{font-size:13px;color:#a39c8f;font-weight:600}
+.ko-log__sub{margin:2px 0 0;font-size:12px;color:#8f897d}
+.ko-log__lines{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.ko-log__lines li{position:relative;padding-left:12px;font-size:13px;line-height:1.45;color:#bdb5a6}
+.ko-log__lines li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:#5a554c}
+.ko-log__lines li[data-tone=damage]{color:#f0a196}.ko-log__lines li[data-tone=damage]::before{background:#d9534a}
+.ko-log__lines li[data-tone=destroy]{color:#9d968a}.ko-log__lines li[data-tone=destroy]::before{background:#777}
+.ko-log__lines li[data-tone=heal],.ko-log__lines li[data-tone=buff]{color:#9fe0ad}.ko-log__lines li:is([data-tone=heal],[data-tone=buff])::before{background:#4fb866}
+.ko-log__lines li[data-tone=debuff]{color:#e9b38a}.ko-log__lines li[data-tone=debuff]::before{background:#c77b3e}
+.ko-log__lines li[data-tone=quest]{color:#d9c08a}.ko-log__lines li[data-tone=quest]::before{background:#c8a865}
+.ko-log__lines li[data-tone=summon]{color:#c9d6e8}.ko-log__lines li[data-tone=summon]::before{background:#7f98b8}
+.ko-log__lines li[data-tone=dodge]{color:#f3dfa0}.ko-log__lines li[data-tone=dodge]::before{background:#d9b25e}
+.ko-log__more{margin-top:4px;font-size:12px;font-weight:800;color:#c8a865;text-decoration:underline}
+.ko-log__back{display:block;width:14px;height:19px;border-radius:2px;border:1px solid #6e5c38;background:repeating-linear-gradient(45deg,#1a1815 0 3px,#24211c 3px 6px)}

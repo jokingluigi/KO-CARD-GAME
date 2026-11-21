@@ -1,3 +1,4 @@
+import { CARD_TEXT_REVISIONS_20261120 } from './card-text-revisions-20261120';
 import {reviewedNovember19Abilities} from './reviewed-admin-content-20261119';
 import {reviewedNovember18Abilities} from './reviewed-admin-content-20261118';
 import {normalizeHelperHealing,helperHealingAbilities} from './helper-healing';
@@ -235,6 +236,16 @@ function normalizeAnywhereTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  const revision = CARD_TEXT_REVISIONS_20261120[card.id];
+  if (revision && card.text === revision.to) {
+    // Reworded for readability only: resolve effects from the reviewed wording, show the new one.
+    const definition = cardRecordToDefinitionFromText({ ...card, text: revision.from });
+    return { ...definition, rulesText: card.text, ...('text' in definition ? { text: card.text } : {}) } as CardDefinition;
+  }
+  return cardRecordToDefinitionFromText(card);
+}
+
+export function cardRecordToDefinitionFromText(card: PublishedCardRecord): CardDefinition {
   const balanceAbilities=reviewedNovember19Abilities(card) ?? reviewedNovember18Abilities(card) ?? reviewedNovember11Abilities(card);
   if(balanceAbilities?.some(a=>'invulnerableWhileOtherAllyTag' in a && a.invulnerableWhileOtherAllyTag))card={...card,keywords:card.keywords.filter(k=>k!=='IMMUNE')};
   const awakening = createAwakeningCards().find(definition => definition.id === card.id);

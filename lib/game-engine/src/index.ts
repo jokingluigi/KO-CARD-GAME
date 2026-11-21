@@ -68,6 +68,7 @@ export {
   abilitiesFor,
   type PublishedCardRecord,
 } from "../../../artifacts/ko-game/src/game/cards/published-cards";
+export { CARD_TEXT_REVISION_SET } from "../../../artifacts/ko-game/src/game/cards/card-text-revisions-20261120";
 export { generateCardInstance, canonicalCardCatalog } from "../../../artifacts/ko-game/src/game/cards/generation";
 export { normalizeCardRarityForType, allowedCardRarities, isTokenCard } from "../../../artifacts/ko-game/src/game/cards/types";
 export { enterField } from "../../../artifacts/ko-game/src/game/engine/enter-field";

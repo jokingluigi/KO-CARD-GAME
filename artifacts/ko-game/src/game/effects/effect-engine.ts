@@ -2,7 +2,7 @@ import {hasVacantBoardSlot, firstVacantBoardSlot} from '../engine/board-capacity
 import { effectCanPinfall } from '../engine/pinfall';
 import { UPGRADE_GOLD_COST } from "@workspace/effect-registry";
 import {validProgramValues} from '@workspace/effect-registry';
-import {applyBalanceEffect,upgradeGoldCost,exactZeroDamage,applyGeneratedTagAuras,reviewedUpgradeValues,balanceUpgradeEligible} from '../engine/balance-effects';
+import {fieldInvulnerable,applyBalanceEffect,upgradeGoldCost,exactZeroDamage,applyGeneratedTagAuras,reviewedUpgradeValues,balanceUpgradeEligible} from '../engine/balance-effects';
 import {hasPendingProgram,hasPendingFinisherCast} from '../engine/program';
 import { validAbilityReplacement } from '@workspace/effect-registry';
 import { addCardsToHand, resumeHandAddition, selectHandDiscard } from '../engine/hand-addition';
@@ -130,6 +130,8 @@ export function getValidTargets(
         effect.action === 'RETIRE' ||
         effect.action === 'REMOVE_FROM_GAME'
       )) return false;
+      // '무적': no damage, and cannot be destroyed or retired.
+      if ((effect.action === 'DESTROY' || effect.action === 'RETIRE') && !card.isAbilityDisabled && fieldInvulnerable(state, card)) return false;
       return true;
     });
     const sourceBoardSlot = sourceCard.boardSlot;

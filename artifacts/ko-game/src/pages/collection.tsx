@@ -383,7 +383,7 @@ export default function CollectionPage() {
                 <select aria-label="정렬" value={sort} onChange={(event)=>setSort(event.target.value as CardSort)}><option value="COST">비용순</option><option value="NAME">이름순</option><option value="RARITY">등급순</option></select>
               </label>
               <details className="kdb-morefilter">
-                <summary><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />필터{Object.values(catalogFilters).filter(v=>v!=="ALL").length?` ${Object.values(catalogFilters).filter(v=>v!=="ALL").length}`:''}</summary>
+                <summary><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />필터{Object.values(catalogFilters).filter(v=>v&&v!=="ALL").length?` ${Object.values(catalogFilters).filter(v=>v&&v!=="ALL").length}`:''}</summary>
                 <div className="kdb-morefilter__panel"><CardCatalogFilters cards={catalogCards} value={catalogFilters} onChange={setCatalogFilters} /></div>
               </details>
             </div>
@@ -391,7 +391,7 @@ export default function CollectionPage() {
               {[0,1,2,3,4,5,6,7].map(cost=>{const key=String(cost);const on=catalogFilters.cost===key;return(
                 <button key={cost} type="button" className="kdb-gem" aria-pressed={on} aria-label={`비용 ${cost}`} onClick={()=>setCatalogFilters({...catalogFilters,cost:on?"ALL":key})}>{cost}</button>)})}
               <span className="kdb-costs__count">{listedCards.length}종</span>
-              {excessCount > 0 && <button type="button" className="lux-ghost kcol-bulk" disabled={isMutating} onClick={() => setBulkConfirm(true)}><Hammer className="h-4 w-4" aria-hidden="true" />남는 카드 분해 {excessCount}</button>}
+              {excessCount > 0 && <button type="button" className="lux-ghost kcol-bulk" disabled={isMutating} onClick={() => setBulkConfirm(true)}><Hammer className="h-4 w-4" aria-hidden="true" />남는 카드 분해 {excessCount.toLocaleString("ko-KR")}장</button>}
             </div>
 
             {listedCards.length === 0 ? (

@@ -1,4 +1,5 @@
 import { resolveBoardDestructionListeners } from '../effects/effect-engine';
+import { fieldInvulnerable } from './balance-effects';
 import { queueWantedReward, wantedSourceOwner } from './wanted';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -34,6 +35,14 @@ export function destroyCard(
       state,
       'DIRECT_CHAMPION_CANNOT_BE_DESTROYED',
       '챔피언 등급 선수는 효과로 파괴할 수 없습니다.',
+    );
+  }
+
+  if (!card.isAbilityDisabled && fieldInvulnerable(state, card)) {
+    return actionFailure(
+      state,
+      'INVALID_ATTACK_TARGET',
+      '무적인 선수는 파괴할 수 없습니다.',
     );
   }
 

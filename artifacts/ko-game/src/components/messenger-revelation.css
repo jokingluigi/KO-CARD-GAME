@@ -1,0 +1,25 @@
+/* Revelation: soft, white-gold, quiet. Body-level, never blocks input. */
+.ko-revelation{position:fixed;inset:0;z-index:240;pointer-events:none}
+.ko-revelation>i{position:absolute;display:block}
+.ko-revelation__veil{inset:0;background:radial-gradient(ellipse 60% 70% at var(--x) calc(var(--top) + var(--h)*.5),transparent 30%,rgba(6,6,10,.42));animation:rv-veil 2.4s ease both}
+.ko-revelation__sky{left:calc(var(--x) - var(--w)*2.2);width:calc(var(--w)*4.4);top:-12vh;height:30vh;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,250,235,.85),rgba(255,236,190,.35) 40%,transparent 70%);filter:blur(6px);animation:rv-sky 2.4s ease both}
+.ko-revelation__beam{left:calc(var(--x) - var(--w)*.75);width:calc(var(--w)*1.5);top:0;height:calc(var(--top) + var(--h)*.95);-webkit-mask:linear-gradient(transparent,#000 18%,#000 72%,transparent);mask:linear-gradient(transparent,#000 18%,#000 72%,transparent);transform-origin:50% 0;
+  clip-path:polygon(40% 0,60% 0,96% 100%,4% 100%);
+  background:linear-gradient(rgba(255,252,240,.1),rgba(255,244,214,.3) 55%,rgba(255,250,235,.55));filter:blur(3px);mix-blend-mode:screen;animation:rv-beam 2.4s cubic-bezier(.2,.7,.2,1) both}
+.ko-revelation__beam::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9%,rgba(255,255,255,.18) 10%,transparent 12%);animation:rv-rays 2.4s linear both}
+.ko-revelation__glow{left:calc(var(--x) - var(--w)*.95);width:calc(var(--w)*1.9);top:calc(var(--top) - var(--h)*.2);height:calc(var(--h)*1.4);border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,250,235,.55),rgba(255,236,190,.18) 45%,transparent 70%);mix-blend-mode:screen;animation:rv-glow 2.4s ease both}
+.ko-revelation__ring{left:calc(var(--x) - var(--w)*.26);width:calc(var(--w)*.52);top:calc(var(--top) - var(--h)*.1);height:calc(var(--h)*.07);border-radius:50%;
+  border:2px solid rgba(255,246,220,.95);box-shadow:0 0 10px rgba(255,236,190,.9);animation:rv-ring 2.4s cubic-bezier(.2,.8,.3,1) both}
+.ko-revelation__feather{left:calc(var(--x) + var(--fx) - 5px);top:0;width:10px;height:30px;background:rgba(255,252,242,.92);
+  -webkit-mask:var(--feather) center/contain no-repeat;mask:var(--feather) center/contain no-repeat;filter:drop-shadow(0 0 3px rgba(255,240,200,.8));opacity:0;
+  animation:rv-feather 2s ease-in var(--fd) both}
+@keyframes rv-veil{0%{opacity:0}20%,70%{opacity:1}100%{opacity:0}}
+@keyframes rv-sky{0%{opacity:0;transform:scale(.6)}25%,70%{opacity:1;transform:scale(1)}100%{opacity:0}}
+@keyframes rv-beam{0%{opacity:0;transform:scaleY(0)}22%{opacity:1;transform:scaleY(1)}68%{opacity:1}100%{opacity:0}}
+@keyframes rv-rays{from{background-position:0 0}to{background-position:40px 0}}
+@keyframes rv-glow{0%,20%{opacity:0;transform:scale(.7)}40%{opacity:1;transform:scale(1.05)}75%{opacity:.8}100%{opacity:0;transform:scale(1)}}
+@keyframes rv-ring{0%{opacity:0;transform:translateY(calc(-1 * var(--top) - 20px)) scale(1.6)}15%{opacity:1}45%{transform:translateY(0) scale(1)}80%{opacity:1}100%{opacity:0}}
+@keyframes rv-feather{0%{opacity:0;transform:translateY(-20px) rotate(0)}15%{opacity:.95}100%{opacity:0;transform:translateY(calc(var(--top) + var(--h)*.4)) rotate(var(--fr))}}
+@media (prefers-reduced-motion:reduce){.ko-revelation>i{animation-duration:.8s!important}.ko-revelation__feather{display:none}}

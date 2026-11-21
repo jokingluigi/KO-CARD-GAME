@@ -51,6 +51,6 @@ test('턴/드로우/퀘스트 진행은 기존 이벤트에서 표시하며 상�
  state.events=[{type:'TURN_STARTED',playerId:state.players[0].id},drawn,{type:'CHAMPION_QUEST_PROGRESS',playerId:state.players[0].id,amount:1},{type:'TURN_ENDED',playerId:state.players[0].id}];
  assert.equal(historyEvents(state).length,4);
  assert.match(eventTitle(state,state.events[0]),/턴 시작/);
- assert.match(eventTitle(state,state.events[2]),/퀘스트 진행/);
+ assert.match(eventTitle(state,state.events[2]),/피니셔 준비 진행/);
  assert.match(eventTitle(state,state.events[3]),/턴 종료/);
 });

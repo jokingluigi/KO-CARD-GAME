@@ -1,0 +1,38 @@
+/*
+ * Field frame: cards on the board show no rules text, so they drop the printed
+ * text-box frame for a clean art-first frame (Hearthstone-style board pieces).
+ * Hand cards, zoom, peek and the deck builder keep the full printed frame.
+ */
+.ko-game-shell .ko-card-depth[data-kfx]{border-radius:9px}
+.ko-game-shell .ko-card-depth[data-kfx] .ko-card-frame,
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-rules],
+.ko-game-shell .ko-card-depth[data-kfx] .ko-card-rarity,
+.ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=cost]){display:none!important}
+/* art fills the card; clipped to the rounded frame */
+.ko-game-shell .ko-card-depth[data-kfx]>.absolute.inset-0{border-radius:9px;overflow:hidden!important;background:#0b0a09}
+/* the frame itself: dark metal edge + quiet inner line */
+.ko-game-shell .ko-card-depth[data-kfx]>.absolute.inset-0::after{content:"";position:absolute;inset:0;z-index:15;pointer-events:none;border-radius:9px;
+  box-shadow:inset 0 0 0 1.5px #4a4336,inset 0 0 0 3px #0b0a09,inset 0 0 0 3.6px rgba(200,168,101,.28);
+  background:linear-gradient(180deg,transparent 58%,rgba(8,7,6,.55) 74%,rgba(8,7,6,.94) 100%)}
+.ko-game-shell .ko-card-depth[data-kfx][data-rarity=LEGENDARY]>.absolute.inset-0::after,
+.ko-game-shell .ko-card-depth[data-kfx][data-rarity=CHAMPION]>.absolute.inset-0::after{
+  box-shadow:inset 0 0 0 1.5px #a88a4f,inset 0 0 0 3px #0b0a09,inset 0 0 0 3.6px rgba(200,168,101,.55)}
+.ko-game-shell .ko-card-depth[data-kfx][data-rarity=EPIC]>.absolute.inset-0::after{
+  box-shadow:inset 0 0 0 1.5px #5b4a78,inset 0 0 0 3px #0b0a09,inset 0 0 0 3.6px rgba(160,130,210,.35)}
+/* name: one line on the bottom shade, between the two stat gems */
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-name]{top:auto!important;bottom:4%!important;left:28%!important;right:28%!important;height:12%!important;z-index:21}
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-name] *{color:#ece6da!important}
+/* attack / health gems drawn in CSS since the printed frame is gone */
+.ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=attack]),
+.ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=health]){
+  left:auto!important;right:auto!important;top:auto!important;bottom:3%!important;transform:none!important;translate:none!important;width:26%!important;
+  border-radius:50%;z-index:22;box-shadow:0 2px 4px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18)}
+.ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=attack]){left:3%!important;background:radial-gradient(circle at 35% 30%,#6b5a35,#2a2214 70%);border:1.5px solid #c8a865}
+.ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=health]){right:3%!important;background:radial-gradient(circle at 35% 30%,#7a2a24,#2d0d0b 70%);border:1.5px solid #c25a4c}
+/* keyword names sit just above the name */
+.ko-game-shell .ko-card-depth[data-kfx] .kfx-names{bottom:17%!important}
+/* art: always fill the whole card (no letterbox) */
+.ko-game-shell .ko-card-depth[data-kfx]>.absolute.inset-0>div>img{object-fit:cover!important;transform:none!important;object-position:50% 18%!important}
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-stat=attack] *{color:#f3dfa8!important}
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-stat=health] *{color:#ffd9d2!important}
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-stat]{font-weight:900;text-shadow:0 1px 2px #000}

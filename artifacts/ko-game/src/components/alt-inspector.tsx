@@ -1,4 +1,6 @@
 import {CardIntroduction} from "./card-introduction";
+import './inspector-peek.css';
+import { KEYWORD_LOOKS } from './keyword-fx';
 import {TagLabel} from './tag-label';
 import {FinisherProgress,championPreparationProgress} from './finisher-progress';
 import { currentChampionAbility } from '@/game/champions/types';
@@ -45,6 +47,8 @@ interface InspectTarget {
   rect: DOMRect;
   showOnHover: boolean;
   showOnTouch: boolean;
+  /** Hearthstone-style quick look (mouse hover or touch long-press): no close button, never blocks the board. */
+  peek?: boolean;
 }
 
 interface AltInspectContextValue {
@@ -59,6 +63,44 @@ interface AltInspectContextValue {
 }
 
 const AltInspectContext = createContext<AltInspectContextValue | null>(null);
+/** True inside the quick look (hover / press-and-hold): content renders as a big card plus small notes. */
+const PeekViewContext = createContext(false);
+
+/** After a long-press peek is released: the next touch outside the panel closes it and is swallowed. */
+let releaseHeldPeek: (() => void) | null = null;
+let longPressReleasedAt = 0;
+/** True right after a press-and-hold quick look ended: the click that follows is not a tap. */
+export function justLongPressed() { return Date.now() - longPressReleasedAt < 700; }
+const SWALLOWED = ['click', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'] as const;
+function keepPeekUntilNextTap(close: () => void) {
+  releaseHeldPeek?.();
+  const inPanel = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('[aria-label="상세정보"]'));
+  let swallowUntil = 0;
+  const swallow = (event: Event) => { if (Date.now() < swallowUntil && !inPanel(event.target)) { event.preventDefault(); event.stopPropagation(); } };
+  const onStart = (event: Event) => {
+    if (inPanel(event.target)) return;
+    // Already closed some other way: let this tap through untouched.
+    if (!document.querySelector('[aria-label="상세정보"]')) { done(); return; }
+    swallowUntil = Date.now() + 400;
+    event.stopPropagation();
+    if (event.cancelable) event.preventDefault();
+    done();
+    window.setTimeout(() => { for (const type of SWALLOWED) document.removeEventListener(type, swallow, true); }, 400);
+  };
+  const done = () => {
+    document.removeEventListener('touchstart', onStart, true);
+    document.removeEventListener('pointerdown', onStart, true);
+    window.removeEventListener('ko-close-inspector', done);
+    if (releaseHeldPeek === done) releaseHeldPeek = null;
+    if (!swallowUntil) for (const type of SWALLOWED) document.removeEventListener(type, swallow, true);
+    close();
+  };
+  document.addEventListener('touchstart', onStart, { capture: true, passive: false });
+  document.addEventListener('pointerdown', onStart, true);
+  for (const type of SWALLOWED) document.addEventListener(type, swallow, { capture: true, passive: false });
+  window.addEventListener('ko-close-inspector', done);
+  releaseHeldPeek = done;
+}
 
 export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [isAltPressed, setIsAltPressed] = useState(false);
@@ -233,10 +275,11 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       {isVisible && (
         <aside
           aria-label="상세정보"
+          data-peek={target?.peek && !isTouchInspecting ? "true" : undefined}
           className="ko-touch-inspector pointer-events-auto fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
           onMouseEnter={cancelClear}
-          onMouseLeave={isTouchInspecting ? undefined : clear}
+          onMouseLeave={isTouchInspecting ? undefined : () => { if (!releaseHeldPeek) clear(); }}
           style={{
             left: panelPosition.left,
             top: panelPosition.top,
@@ -244,15 +287,15 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
             overflowY: 'auto',
           }}
         >
-          <button
+          {!(target?.peek && !isTouchInspecting) && <button
             type="button"
             className="ko-touch-inspector-close ml-auto mb-2 block min-h-11 min-w-11 rounded border border-neutral-700 px-3 text-xs"
             onClick={clear}
             aria-label="상세정보 닫기"
           >
             닫기
-          </button>
-          {target?.content}
+          </button>}
+          <PeekViewContext.Provider value={Boolean(target?.peek)}>{target?.content}</PeekViewContext.Provider>
         </aside>
       )}
       <CardTagExplorerDialog
@@ -295,7 +338,17 @@ export function Inspectable({
 }) {
   const context = useContext(AltInspectContext);
   const lastTouchAt = useRef(0);
+  const hoverTimer = useRef<number | null>(null);
+  const press = useRef<{ timer: number | null; x: number; y: number; shown: boolean; suppressUntil: number }>({ timer: null, x: 0, y: 0, shown: false, suppressUntil: 0 });
+  useEffect(() => () => {
+    if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current);
+    if (press.current.timer !== null) window.clearTimeout(press.current.timer);
+  }, []);
   if (!context) return <>{children}</>;
+  const peek = (element: HTMLElement) =>
+    context.inspect({ content, anchor: element, rect: element.getBoundingClientRect(), showOnHover: true, showOnTouch: false, peek: true });
+  const cancelHover = () => { if (hoverTimer.current !== null) window.clearTimeout(hoverTimer.current); hoverTimer.current = null; };
+  const cancelPress = () => { if (press.current.timer !== null) window.clearTimeout(press.current.timer); press.current.timer = null; };
 
   const inspect = (element: HTMLElement) =>
     context.inspect({
@@ -318,9 +371,18 @@ export function Inspectable({
     <div
       className={className}
       onMouseEnter={(event) => {
-        if (Date.now() - lastTouchAt.current > 1000 && (context.isAltPressed || (window.matchMedia('(hover: hover) and (pointer: fine)').matches && innerHeight>=600))) inspect(event.currentTarget);
+        if (Date.now() - lastTouchAt.current <= 1000) return;
+        if (context.isAltPressed) { inspect(event.currentTarget); return; }
+        // Hearthstone: just rest the mouse on a card for a moment to see it big.
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        const element = event.currentTarget;
+        cancelHover();
+        hoverTimer.current = window.setTimeout(() => { hoverTimer.current = null; if (element.isConnected) peek(element); }, 320);
       }}
+      onMouseDown={() => { cancelHover(); if (releaseHeldPeek || press.current.shown || Date.now() < press.current.suppressUntil) return; if (!context.isAltPressed && !context.isTouchInspecting) context.clear(); }}
       onMouseLeave={(event) => {
+        cancelHover();
+        if (releaseHeldPeek || press.current.shown) return;
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
         context.scheduleClear();
@@ -328,15 +390,55 @@ export function Inspectable({
       onFocus={(event) => {
         if (Date.now() - lastTouchAt.current > 1000 && event.target instanceof HTMLElement && event.target.matches(':focus-visible')) inspect(event.currentTarget);
       }}
-      onPointerDown={(event) => {
-        if (event.pointerType === 'touch') lastTouchAt.current = Date.now();
+      onPointerDown={(event) => { if (event.pointerType === 'touch') lastTouchAt.current = Date.now(); }}
+      // Press and hold a card to see it big; it stays up after letting go until the next tap.
+      // Raw touch events, not pointer events: phones fire pointercancel as soon as they think a scroll
+      // may start, which used to kill the hold. Small wobbles are fine; only a real drag cancels.
+      onTouchStart={(event) => {
+        if (event.touches.length !== 1) { cancelPress(); return; }
+        lastTouchAt.current = Date.now();
+        const element = event.currentTarget;
+        const touch = event.touches[0]!;
+        cancelPress();
+        press.current.x = touch.clientX; press.current.y = touch.clientY; press.current.shown = false;
+        press.current.timer = window.setTimeout(() => {
+          press.current.timer = null;
+          if (!element.isConnected) return;
+          press.current.shown = true;
+          if (navigator.vibrate) try { navigator.vibrate(8); } catch { /* ignore */ }
+          peek(element);
+          // Letting go keeps the card up so it can be read; the next tap anywhere else closes it
+          // (and that tap does nothing else, so it can't play or select a card by accident).
+          const release = () => {
+            document.removeEventListener('touchend', release, true);
+            document.removeEventListener('touchcancel', release, true);
+            if (!press.current.shown) return;
+            press.current.shown = false;
+            press.current.suppressUntil = Date.now() + 600;
+            longPressReleasedAt = Date.now();
+            keepPeekUntilNextTap(() => context.clear());
+          };
+          document.addEventListener('touchend', release, true);
+          document.addEventListener('touchcancel', release, true);
+        }, 360);
       }}
+      onTouchMove={(event) => {
+        const touch = event.touches[0];
+        if (!touch || Math.hypot(touch.clientX - press.current.x, touch.clientY - press.current.y) <= 18) return;
+        cancelPress();
+        // Held, then started dragging the card: the card is being played, so the quick look gets out of the way.
+        if (press.current.shown) { press.current.shown = false; context.clear(); }
+      }}
+      onTouchEnd={() => { cancelPress(); }}
+      onContextMenu={(event) => { if (Date.now() - lastTouchAt.current < 1500) event.preventDefault(); }}
       onBlur={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
-        if (!context.isTouchInspecting) context.clear();
+        if (!context.isTouchInspecting && !releaseHeldPeek && !press.current.shown) context.clear();
       }}
       onClickCapture={(event) => {
+        // The click that ends a long-press must not also play / select the card.
+        if (Date.now() < press.current.suppressUntil) { event.preventDefault(); event.stopPropagation(); return; }
         const isInfoButton = Boolean((event.target as Element).closest('[data-touch-inspect-trigger]'));
         const isTouchClick = Date.now() - lastTouchAt.current <= 1000;
         const isActionControl = Boolean((event.target as Element).closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]'));
@@ -363,6 +465,44 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
   const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card,override);
   const cosmetic=useCosmeticImage((!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined,card.definitionId,'CARD_SKIN',definition?.imageUrl);
   const numericChanges = getNumericChanges(card);
+  const peekView = useContext(PeekViewContext);
+  if (peekView) {
+    const silence = cardSilenceProtection(card,definition);
+    const fullText = getCardRuntimeRulesText(card, definition?.rulesText ?? '');
+    // Long effects are hard to read in the card's text box: the full text also gets its own note, first.
+    const longText = fullText.replace(/\s+/g, '').length > 60;
+    const notes: { key: string; title: string; text: string; tone: 'kw' | 'status' | 'change' | 'text' }[] = [
+      ...(longText ? [{ key: 'text', title: '효과', text: fullText, tone: 'text' as const }] : []),
+      ...keywords.map(k => ({ key: 'k'+k.key, title: k.label, text: k.description, tone: 'kw' as const })),
+      ...statuses.map(st => ({ key: 's'+st.key, title: st.label, text: st.description, tone: 'status' as const })),
+    ];
+    const changed = numericChanges.filter(c => c.stat !== 'maxHealth' || numericChanges.every(o => o.stat !== 'health'));
+    return (
+      <div className="kpk" data-testid="card-peek" data-many={notes.length + (changed.length ? 1 : 0) > 3 || undefined}>
+        <div className="kpk-card">
+          <CardRenderer
+            cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
+            name={definition?.name ?? '알 수 없는 카드'} cardType={card.cardType}
+            cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth}
+            rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '효과 없음')}
+            imageUrl={definition?.imageUrl} rarity={definition?.rarity} size="detail" className="w-full"
+            imageDisplaySettings={definition}
+            keywordConfig={{ ...definition?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
+            isSilenced={card.isSilenced} isStunned={card.isStunned} isAbilityDisabled={card.isAbilityDisabled}
+            dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+            countdownTurns={card.grantedText?.countdownTurns ?? card.countdownTurns}
+            countdownRemaining={card.countdownRemaining} countdownResolved={card.countdownResolved}
+            isChampionToken={card.isChampionToken} isToken={card.isToken} isSilenceImmune={card.isSilenceImmune}
+          />
+        </div>
+        {(notes.length > 0 || changed.length > 0 || silence.immune) && <div className="kpk-notes">
+          {notes.map(n => <div key={n.key} className="kpk-note" data-tone={n.tone}><b>{n.title}</b><p>{n.tone === 'text' ? <CardRulesText text={n.text}/> : n.text}</p></div>)}
+          {changed.length > 0 && <div className="kpk-note" data-tone="change"><b>수치 변화</b><p>{changed.slice(-3).map((c,i) => <span key={i} className="kpk-change">{STAT_LABELS[c.stat]} {c.before}→<em data-up={c.after >= c.before || undefined}>{c.after}</em>{c.sourceName && c.sourceName !== '기본 수치' ? <small> · {c.sourceName}</small> : null}</span>)}</p></div>}
+          <SilenceImmunityNotice {...silence}/>
+        </div>}
+      </div>
+    );
+  }
   return (
     <div className="ko-inspector-content space-y-4">
       <div className="border-b border-neutral-800 pb-3">
@@ -424,6 +564,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
               {keywords.map((keyword) => (
                 <p key={`${keyword.key}-description`} className="ko-readable-content text-neutral-300">
                   <strong className="font-bold text-amber-200">{keyword.label}:</strong> {keyword.description}
+                  {KEYWORD_LOOKS[keyword.key] && <span className="mt-0.5 block text-[0.85em] text-neutral-400">필드에서는: {KEYWORD_LOOKS[keyword.key]}</span>}
                 </p>
               ))}
             </div>
@@ -538,7 +679,7 @@ function InspectorSection({
     neutral: 'text-neutral-300',
   }[tone];
   return (
-    <section className="rounded-lg border border-neutral-800 bg-black/20 p-3.5">
+    <section data-inspector-section={title} className="rounded-lg border border-neutral-800 bg-black/20 p-3.5">
       <h4 className={`mb-2 text-[0.95rem] font-black tracking-wide ${titleClass}`}>{title}</h4>
       {children}
     </section>
@@ -576,11 +717,33 @@ export function ChampionAbilityInspectContent({
   );
 }
 
+function FinisherCards({ ids }: { ids: string[] }) {
+  const cards = ids.map((id) => getCardDefinition(id)).filter((card): card is NonNullable<typeof card> => Boolean(card));
+  if (!cards.length) return null;
+  return (
+    <div className="ko-finisher-cards" data-testid="finisher-card-preview">
+      {cards.map((card) => (
+        <CardRenderer key={card.id} cardId={card.id} name={card.name} cardType={card.cardType} cost={card.cost} attack={card.attack} health={card.health}
+          rulesText={card.rulesText ?? "효과 없음"} imageUrl={card.imageUrl} rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} keywords={card.keywords} keywordConfig={card.effectConfig}
+          imageDisplaySettings={{ imageDisplayMode: card.imageDisplayMode, imageScale: card.imageScale, imagePositionX: card.imagePositionX, imagePositionY: card.imagePositionY }}
+          size="detail" className="w-full" />
+      ))}
+    </div>
+  );
+}
+
 export function ChampionQuestInspectContent({ champion }: { champion: ChampionState }) {
   const quest = champion.quest;
   if (!quest) return <div className="text-sm text-neutral-400">피니셔 준비 조건이 없습니다.</div>;
-  if (quest.finisherChoices?.length) return <div><h3 className="mb-3 text-lg font-bold text-amber-200">피니셔 준비 · 선택지</h3><FinisherProgress champion={champion}/><p className="mt-3 text-xs text-neutral-400">하나를 획득하면 나머지는 이번 대전에서 비활성화됩니다. 동시에 달성하면 선택합니다.</p></div>;
+  const finisherIds = [
+    ...(quest.finisherChoices?.map((choice) => choice.cardDefinitionId) ?? []),
+    ...(quest.finisher?.cardDefinitionId ? [quest.finisher.cardDefinitionId] : []),
+    ...(quest.reward?.type === 'FINISHER' && quest.reward.cardDefinitionId ? [quest.reward.cardDefinitionId] : []),
+  ].filter((id, index, all) => id && all.indexOf(id) === index);
+  if (quest.finisherChoices?.length) return <div className="ko-quest-inspect"><FinisherCards ids={finisherIds} /><div><h3 className="mb-3 text-lg font-bold text-amber-200">피니셔 준비 · 선택지</h3><FinisherProgress champion={champion}/><p className="mt-3 text-xs text-neutral-400">하나를 획득하면 나머지는 이번 대전에서 비활성화됩니다. 동시에 달성하면 선택합니다.</p></div></div>;
   return (
+    <div className="ko-quest-inspect">
+    <FinisherCards ids={finisherIds} />
     <div>
       <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">피니셔 준비</div>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
@@ -594,6 +757,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">피니셔 획득 / 현재 완료 효과</div>
       <p className="ko-readable-content text-neutral-300"><CardRulesText text={championQuestRewardText(champion)}/></p>
       <p className="mt-2 text-xs text-neutral-500">피니셔 카드 연계 전까지 기존 완료 효과가 적용됩니다.</p>
+    </div>
     </div>
   );
 }

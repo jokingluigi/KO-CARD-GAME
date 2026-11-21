@@ -98,3 +98,28 @@
 
 @media (prefers-reduced-motion:reduce){.kfx *, .kfx>span{animation:none!important}}
 @keyframes kfx-turn{to{transform:rotate(360deg)}}
+
+/* keyword names on field cards — always (default) or only for a few seconds after the card lands */
+.kfx-names{left:-4%;right:-4%;top:57%;display:flex;flex-wrap:wrap;justify-content:center;gap:2px}
+.kfx-names i{font-style:normal;font-weight:900;font-size:clamp(8px,.95vw,11px);line-height:1;padding:3px 5px 2px;border-radius:4px;white-space:nowrap;
+  color:#f4e7c6;background:rgba(8,7,6,.88);border:1px solid #6e5c38;box-shadow:0 1px 3px rgba(0,0,0,.8)}
+.kfx-names i[data-kw=TAUNT]{border-color:#9fb0c4}.kfx-names i[data-kw=DODGE]{border-color:#e8c06a}.kfx-names i[data-kw=LIFESTEAL]{border-color:#c4142c}
+.kfx-names i[data-kw=REGEN]{border-color:#4fd06a}.kfx-names i[data-kw=WANTED],.kfx-names i[data-kw=CANNOT_ATTACK]{border-color:#c43a2c}
+.kfx-names i[data-kw=SURPRISE]{border-color:#9a5ac0}.kfx-names i[data-kw=RUSH]{border-color:#ffd76a}.kfx-names i[data-kw=MULTI_STRIKE]{border-color:#ff9a62}
+html[data-kw-names=entry] .kfx-names{animation:kfx-names-fade 4.2s ease forwards}
+html[data-kw-names=entry] .ko-card-depth[data-kfx]:hover .kfx-names{animation:none;opacity:1}
+@keyframes kfx-names-fade{0%,80%{opacity:1}100%{opacity:0}}
+
+/* ===== 사자 (angel messengers) — one quiet look for every messenger:
+   a thin white-gold halo, soft light falling from above, two slow motes ===== */
+.kfx-blessed{inset:0}
+.kfx-blessed i{position:absolute;left:30%;right:30%;top:-8.5%;height:6.5%;border-radius:50%;border:1.5px solid rgba(255,244,214,.95);
+  box-shadow:0 0 6px rgba(255,236,190,.85),inset 0 0 4px rgba(255,236,190,.6);animation:kfx-halo-in .7s cubic-bezier(.2,1.2,.4,1) both,kfx-halo-bob 3s ease-in-out .7s infinite}
+.kfx-blessed::before{content:"";position:absolute;inset:0;border-radius:7%/5%;
+  background:linear-gradient(rgba(255,246,222,.26),rgba(255,240,205,.08) 32%,transparent 52%);box-shadow:inset 0 0 0 1px rgba(255,240,205,.45);mix-blend-mode:screen}
+.kfx-blessed b{position:absolute;top:4%;width:3.5%;aspect-ratio:1;border-radius:50%;background:#fff6dc;box-shadow:0 0 5px #ffe9b0;opacity:0;animation:kfx-bless-mote 3.6s ease-in-out infinite}
+.kfx-blessed b:nth-of-type(1){left:22%}.kfx-blessed b:nth-of-type(2){left:70%;animation-delay:1.8s}
+@keyframes kfx-halo-in{from{transform:translateY(-140%);opacity:0}}
+@keyframes kfx-halo-bob{50%{transform:translateY(-14%)}}
+@keyframes kfx-bless-mote{20%{opacity:.9}100%{transform:translateY(900%);opacity:0}}
+.kfx-names i:is([data-kw=MSG_DARK],[data-kw=MSG_DESTRUCTION],[data-kw=MSG_KNOWLEDGE]){border-color:#e9dcb8;color:#fff6e0;box-shadow:0 0 5px rgba(255,236,190,.35),0 1px 3px rgba(0,0,0,.8)}

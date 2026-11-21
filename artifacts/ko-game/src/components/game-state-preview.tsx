@@ -87,6 +87,7 @@ import {
   ChampionAbilityInspectContent,
   ChampionQuestInspectContent,
   Inspectable,
+  justLongPressed,
 } from './alt-inspector';
 import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
 import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
@@ -95,6 +96,9 @@ import { PresentationFeedback, type PresentationCue } from './presentation-feedb
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
 import {CombatSettings} from './combat-settings';
+import { messengerKind } from './keyword-fx';
+import { MessengerRevelation } from './messenger-revelation';
+import { InspectHint } from './inspect-hint';
 import {ScreenShakeSetting} from './screen-impact';
 import { CinematicProvider, CinematicCue, CinematicIntro, CardRevealPresentation } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
@@ -112,6 +116,9 @@ import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type Champio
 import "./battle-viewport.css";
 import "./mobile-champion-layout.css";
 import "./hs-board-cues.css";
+import "./battle-declutter.css";
+import { FinalBlowLens } from "./final-blow";
+import "./field-frame.css";
 
 // CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
@@ -356,6 +363,15 @@ export function GameStatePreview({
   useHandMotion(handCardRefs, `${state.gameId}:${handSort}:${state.players[0]?.hand.map(card=>card.instanceId+':'+card.currentCost).join(':') ?? ''}`);
   const motion = useBattleMotion();
   const playerHandRef = React.useRef<HTMLDivElement | null>(null);
+  // Hearthstone mobile: the first tap on the hand lifts it up big and readable; the next tap picks a card.
+  const [handZoom, setHandZoom] = React.useState(false);
+  React.useEffect(() => { setHandZoom(false); }, [selectedCardId, state.turn]);
+  React.useEffect(() => {
+    if (!handZoom) return;
+    const away = (event: PointerEvent) => { if (!playerHandRef.current?.contains(event.target as Node)) setHandZoom(false); };
+    document.addEventListener('pointerdown', away, true);
+    return () => document.removeEventListener('pointerdown', away, true);
+  }, [handZoom]);
   const playerDeckRef = React.useRef<HTMLDivElement | null>(null);
   const opponentDeckRef = React.useRef<HTMLDivElement | null>(null);
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
@@ -410,7 +426,7 @@ export function GameStatePreview({
   const [koSpeech, setKoSpeech] = React.useState<{ gameId: string; lines: KoChampionLine[] } | null>(null);
   React.useEffect(() => setKoSpeech(null), [state.gameId]);
   const koSpeechActive = koSpeech?.gameId === state.gameId;
-  const [defeatPhase,setDefeatPhase]=React.useState<'NONE'|'WAITING'|'PLAYING'|'DONE'>('NONE');
+  const [defeatPhase,setDefeatPhase]=React.useState<'NONE'|'WAITING'|'FREEZE'|'PLAYING'|'DONE'>('NONE');
   const previousMatch=React.useRef({id:state.gameId,status:state.status});
   React.useEffect(()=>{
     const previous=previousMatch.current;previousMatch.current={id:state.gameId,status:state.status};
@@ -418,8 +434,35 @@ export function GameStatePreview({
     if(previous.status!=='FINISHED'&&state.players.some(p=>p.id===state.loserId&&p.health<=0))setDefeatPhase('WAITING');
   },[state.gameId,state.status,state.loserId]);
   React.useEffect(()=>{
-    if(defeatPhase==='WAITING'&&!playAnimation&&!attackAnimation&&!generatedPlayAnimations.length&&!cardLeaveAnimations.length&&!presentationQueue.length&&!pendingEffectFinisher&&!effectFinisher)setDefeatPhase('PLAYING');
+    if(defeatPhase==='WAITING'&&!playAnimation&&!attackAnimation&&!generatedPlayAnimations.length&&!cardLeaveAnimations.length&&!presentationQueue.length&&!pendingEffectFinisher&&!effectFinisher)setDefeatPhase('FREEZE');
   },[defeatPhase,playAnimation,attackAnimation,generatedPlayAnimations.length,cardLeaveAnimations.length,presentationQueue.length,pendingEffectFinisher,effectFinisher]);
+
+  // Final blow (Hearthstone-style): the lethal hit plays in slow motion while the camera leans in on the
+  // beaten champion and the rest of the board stops; the zoom holds through the shatter.
+  const shellRef=React.useRef<HTMLDivElement>(null);
+  const [finalLens,setFinalLens]=React.useState<{x:number;y:number;strike:boolean}|null>(null);
+  const lethalStrike=Boolean(attackAnimation&&attackAnimation.targetKind==='CHAMPION'&&state.status==='FINISHED'&&attackAnimation.damage>0&&(attackAnimation.targetPlayerId===undefined||attackAnimation.targetPlayerId===state.loserId));
+  const aimFinalCamera=React.useCallback((x:number,y:number,strike:boolean)=>{
+    const shell=shellRef.current;
+    if(shell){const b=shell.getBoundingClientRect();shell.style.setProperty('--fb-x',`${x-b.left}px`);shell.style.setProperty('--fb-y',`${y-b.top}px`);}
+    document.documentElement.style.setProperty('--fbv-x',`${x}px`);document.documentElement.style.setProperty('--fbv-y',`${y}px`);
+    setFinalLens({x,y,strike});
+  },[]);
+  React.useLayoutEffect(()=>{
+    if(!lethalStrike||!attackAnimation)return;
+    const t=attackAnimation.geometry.target;aimFinalCamera(t.left+t.width/2,t.top+t.height/2,true);
+    document.documentElement.dataset.finalStrike='';
+    return()=>{delete document.documentElement.dataset.finalStrike;};
+  },[lethalStrike,attackAnimation?.soundKey]);
+  React.useEffect(()=>{
+    if(defeatPhase!=='FREEZE')return;
+    if(!finalLens){const anchor=(state.loserId===me.id?playerChampionRef:championRef).current;
+      if(anchor){const a=anchor.getBoundingClientRect();aimFinalCamera(a.left+a.width/2,a.top+a.height/2,false);}}
+    const t=window.setTimeout(()=>setDefeatPhase('PLAYING'),finalLens?.strike?450:1100);
+    return()=>window.clearTimeout(t);
+  },[defeatPhase]);
+  React.useEffect(()=>{if(defeatPhase==='NONE'&&!lethalStrike)setFinalLens(null);if(defeatPhase==='DONE'){const t=window.setTimeout(()=>setFinalLens(null),700);return()=>window.clearTimeout(t);}return undefined;},[defeatPhase,lethalStrike]);
+  const finalCamera=lethalStrike?'strike':finalLens&&(defeatPhase==='WAITING'||defeatPhase==='FREEZE')?'freeze':finalLens&&defeatPhase==='PLAYING'?'burst':undefined;
 
   const processedEventCountRef = React.useRef<number | null>(null);
   React.useEffect(()=>{setSpokenLine(null);setWrestlerSpeech([]);if(spokenTimerRef.current!==null)window.clearTimeout(spokenTimerRef.current);processedEventCountRef.current=null;},[state.gameId]);
@@ -476,7 +519,7 @@ export function GameStatePreview({
       cardLeaveAnimations.length ||
       presentationBlocksActions(activePresentationCues) ||
       pendingEffectFinisher ||
-      effectFinisher || defeatPhase==='WAITING' || defeatPhase==='PLAYING' || koSpeechActive,
+      effectFinisher || defeatPhase==='WAITING' || defeatPhase==='FREEZE' || defeatPhase==='PLAYING' || koSpeechActive,
     ));
   }, [
     attackAnimation,
@@ -1192,7 +1235,7 @@ export function GameStatePreview({
 
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
-     <div data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+     <div ref={shellRef} data-final-blow={finalCamera} data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
@@ -1466,7 +1509,7 @@ export function GameStatePreview({
                   : !isMyTurn ? '상대가 행동하고 있어요.'
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
-                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : `남은 행동 · 공격 ${new Set(remainingActions.filter(a=>a.type==='ATTACK').map(a=>a.type==='ATTACK'?a.attackerInstanceId:'')).size}명 · 액티브 ${legalActiveCardIds.size} · 고유능력 ${canUseChampion?'가능':'불가'}`)}
+                  : !controlsSeen ? '손패 선택 → 빈 슬롯에 소환 · 설정에서 조작 안내를 볼 수 있어요.' : '')}
               </p>)}
               <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
               {!tutorialGuide&&contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
@@ -1643,7 +1686,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
-                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><HandReader state={state} definition={getCardDefinition}/><BattleHelp/><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
+                     <div data-testid="player-battle-tools" className="flex shrink-0 flex-col gap-2 text-amber-100"><button type="button" data-testid="button-settings-open-log" className="ko-menu-log min-h-11 border border-neutral-700 bg-neutral-950 px-3 text-left text-sm font-bold" onClick={()=>{setSettingsOpen(false);setHistoryOpen(true);}}>경기 기록 보기</button><label className="text-xs">손패 정렬 <select aria-label="손패 정렬" className="min-h-11 bg-neutral-950" value={handSort} onChange={e=>setHandSort(e.target.value)}><option value="DRAW">획득순</option><option value="COST">코스트순</option></select></label><HandReader state={state} definition={getCardDefinition}/><BattleHelp/><PublicCards state={state} ids={publicCardIds}/><SaveBattleImage state={state}/></div><ScreenShakeSetting /><CombatSettings />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
@@ -1836,7 +1879,13 @@ export function GameStatePreview({
             </div>
 
             {/* Player Hand */}
-             <div ref={playerHandRef} role="region" aria-label="손패" tabIndex={0} className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
+             <div ref={playerHandRef} role="region" aria-label="손패" tabIndex={0} data-zoomed={handZoom || undefined}
+               onClickCapture={(event) => {
+                 if (handZoom || effectTargeting || me.hand.length === 0 || justLongPressed()) return;
+                 if (typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches) return;
+                 event.stopPropagation(); event.preventDefault(); setHandZoom(true);
+               }}
+               className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
                 <div className="ko-hand-cards relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
@@ -1858,7 +1907,7 @@ export function GameStatePreview({
                            targetingActive={!!effectTargeting}
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost);if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. ⓘ에서 카드 효과를 확인하세요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
+                          onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost);if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. 카드를 꾹 누르면(PC는 마우스를 올리면) 효과를 볼 수 있어요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
                            cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
@@ -1871,6 +1920,8 @@ export function GameStatePreview({
 
          </div>
       </div>
+      <MessengerRevelation state={state} />
+      <InspectHint />
       <TargetingArrow
         sourceId={selectedAttackerId ?? (effectTargeting && state.targetingState?.playerId === me.id ? (typeof document !== 'undefined' && document.querySelector(`[data-card-instance-id="${state.targetingState.sourceInstanceId}"]`) ? state.targetingState.sourceInstanceId : 'champion') : null)}
         validIds={selectedAttackerId ? legalAttackTargets : validEffectTargetIds}
@@ -1917,11 +1968,13 @@ export function GameStatePreview({
       {attackAnimation && (
         <AttackAnimation
           animation={attackAnimation}
+          slowMotion={lethalStrike}
           onImpact={onAttackImpact}
           hapticsEnabled={hapticsEnabled}
           onComplete={onAttackAnimationComplete}
         />
       )}
+      {finalLens && <FinalBlowLens x={finalLens.x} y={finalLens.y} strike={finalLens.strike} flash={!finalLens.strike||attackImpactTriggered||!lethalStrike} fading={defeatPhase==='DONE'} />}
       {(defeatPhase==='PLAYING'||defeatPhase==='DONE') && <ChampionDefeatBurst
         id={state.gameId+':'+state.loserId} anchor={state.loserId===me.id?playerChampionRef:championRef}
         onBurst={() => {
@@ -2148,7 +2201,6 @@ function BoardSlot({
         onKeyDown={selectable ? (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(slotIndex); }
         } : undefined}>
-         <span className="text-[9px] font-bold tracking-widest text-neutral-600 md:text-[11px]">{slotIndex + 1}구역</span>
       </div>
     );
   }
@@ -2190,6 +2242,7 @@ function BoardSlot({
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
+         messenger={messengerKind(card)}
          className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
            runtimeKeywords={getActiveCardKeywords(card)}

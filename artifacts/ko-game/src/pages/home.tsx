@@ -780,6 +780,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       wait,
       waitForPresentationIdle,
       isCancelled: () => cancelled || aiSchedulerGenerationRef.current !== schedulerGeneration,
+      // Give the human time to read each AI move (the default pacing felt rushed).
+      actionDelayMs: 1900,
       onAction: (action) => { aiMatchActionsRef.current.push({ ...action, actor: 'AI' }); },
       getState: () => latestGameStateRef.current,
       onState: (state) => { latestGameStateRef.current = state; setGameState(state); },

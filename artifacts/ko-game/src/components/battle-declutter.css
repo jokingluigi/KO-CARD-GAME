@@ -1,0 +1,52 @@
+/*
+ * Battle declutter (Hearthstone principle: the board is the hero, details appear on demand).
+ * Presentation only — every hidden piece is still reachable by press-and-hold / hover or the menu.
+ */
+/* 1. no ⓘ buttons on cards: press-and-hold (phone) or rest the mouse (PC) shows the card */
+.ko-game-shell :is(.ko-hand-inspect-button,.ko-board-inspect-button){display:none!important}
+
+/* 2. field cards: no clipped rules text — the keyword names sit in the text box instead */
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-rules]>*{visibility:hidden}
+.ko-game-shell .ko-card-depth[data-kfx] .kfx-names{top:auto;bottom:16%;left:8%;right:8%}
+/* hand cards on phones: the clipped text is unreadable anyway */
+@media (max-width:700px){.ko-game-shell .ko-hand-card [data-card-rules]>*{visibility:hidden}}
+
+/* 4. gold: coin + number only */
+.ko-game-shell [data-resource=gold]>div:first-child{display:none}
+.ko-game-shell [data-resource=gold]{padding-top:4px!important;padding-bottom:4px!important}
+
+/* deck / graveyard: two slim chips instead of two big plates */
+.ko-game-shell .ko-zone-stack{gap:4px!important}
+.ko-game-shell .ko-zone-stack>*{height:auto!important;min-height:0!important}
+@media (max-width:768px){
+  .ko-game-shell .ko-zone-stack>*{min-height:28px!important;padding:2px 8px!important;font-size:11px!important}
+}
+
+/* 5/“손패 없음” placeholder text */
+.ko-game-shell .ko-player-hand span.text-neutral-600,.ko-game-shell .ko-opponent-hand span.text-neutral-600{visibility:hidden}
+
+/* 6. long names: one short line */
+.ko-game-shell .ko-champion-heading{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px!important;color:#cfc6b4!important}
+@media (max-width:768px){.ko-game-shell .ko-champion-heading{font-size:10px!important}}
+
+/* 7. one menu button: the log lives inside the ⚙ menu */
+.ko-game-shell .ko-battle-log-button{display:none!important}
+.ko-game-shell .ko-menu-log{color:#ece6da}
+
+/* first-battles hint */
+.ko-inspect-hint{position:fixed;left:50%;top:calc(50% - 20px);z-index:190;transform:translateX(-50%);max-width:92vw;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:800;color:#ece6da;white-space:nowrap;
+  background:rgba(8,7,6,.9);border:1px solid #6e5c38;box-shadow:0 8px 24px rgba(0,0,0,.6);pointer-events:none;animation:ko-hint 6.5s ease both}
+@keyframes ko-hint{0%{opacity:0;transform:translate(-50%,8px)}8%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+@media (max-width:480px){.ko-inspect-hint{white-space:normal;text-align:center;border-radius:14px;font-size:13px}}
+
+/* Hearthstone mobile hand: tap lifts the hand up big; tap a card to pick it, or drag it out */
+@media (max-width:768px){
+  .ko-game-shell .ko-player-hand[data-zoomed]{position:fixed!important;left:0;right:0;bottom:0;top:auto;height:auto!important;z-index:180!important;
+    padding:34px 0 calc(14px + env(safe-area-inset-bottom))!important;overflow-x:auto;background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.94) 16%)!important;border:0!important}
+  .ko-game-shell .ko-player-hand[data-zoomed]::before{content:"카드를 눌러 고르기 · 꾹 눌러 자세히";position:absolute;left:0;right:0;top:8px;text-align:center;font-size:12px;font-weight:800;color:#c8a865}
+  .ko-game-shell .ko-player-hand[data-zoomed] .ko-hand-cards{gap:10px!important;padding:0 14px!important}
+  .ko-game-shell .ko-player-hand[data-zoomed] .ko-hand-cards>*{margin:0!important}
+  .ko-game-shell .ko-player-hand[data-zoomed] .ko-hand-card{width:40vw!important;height:auto!important;aspect-ratio:1060/1484;transform:none!important}
+  .ko-game-shell .ko-player-hand[data-zoomed] .ko-hand-card [data-card-rules]>*{visibility:visible!important}
+  .ko-game-shell .ko-player-hand[data-zoomed] .ko-hand-card [data-card-rules] *{font-size:11px!important;line-height:1.3!important}
+}

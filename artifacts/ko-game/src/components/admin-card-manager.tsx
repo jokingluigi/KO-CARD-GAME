@@ -1,3 +1,4 @@
+import { AdminCardTextTidy } from "./admin-card-text-tidy";
 import {CardIntroduction} from "./card-introduction";
 import {CardRulesText} from "./card-rules-text";
 import {AdminEditorWorkspace} from './admin-editor-workspace';
@@ -627,6 +628,7 @@ export function AdminCardManager({
   const adminDraftDirty=useAdminDraftGuard(isFormOpen,{preview,imageDisplaySettings,imageUrl,entranceAudio});
   return (
     <div>
+      <AdminCardTextTidy onUnauthorized={onUnauthorized} />
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-600">CONTENT MANAGEMENT</div>

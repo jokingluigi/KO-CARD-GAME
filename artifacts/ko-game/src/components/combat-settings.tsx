@@ -1,6 +1,7 @@
 import { ReadingAccessibilitySettings } from "./player-ux/reading-accessibility";
 import { CombatSettingsPreview } from "./combat-settings-preview";
 import { useState, useEffect } from "react";
+import { readKeywordNamesMode, setKeywordNamesMode, type KeywordNamesMode } from "./keyword-fx";
 import {
   readCombatPreferences,
   saveCombatPreferences,
@@ -8,6 +9,7 @@ import {
 } from "./combat-preferences";
 export function CombatSettings() {
   const [value, setValue] = useState(readCombatPreferences);
+  const [kwNames, setKwNames] = useState<KeywordNamesMode>(readKeywordNamesMode);
   useEffect(() => {
     const changed = () => setValue(readCombatPreferences());
     window.addEventListener("ko-combat-preferences", changed);
@@ -84,6 +86,14 @@ export function CombatSettings() {
           </select>
         </label>
       ))}
+      <label className="flex min-h-11 items-center justify-between gap-2">
+        필드 카드 키워드 이름
+        <select aria-label="필드 카드 키워드 이름" className={style} value={kwNames}
+          onChange={(e) => { const mode = e.target.value as KeywordNamesMode; setKwNames(mode); setKeywordNamesMode(mode); }}>
+          <option value="always">항상 보기</option>
+          <option value="entry">나올 때 4초만 보기</option>
+        </select>
+      </label>
       <label className="flex min-h-11 items-center gap-2">
         <input
           type="checkbox"
