@@ -215,9 +215,7 @@ const listing=useAdminList(decks,(deck)=>deck.name+" "+(deck.enabled?"활성":"�
 return (
     <section className="space-y-6">
       <div>
-        <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">AI DECKS</p>
-        <h2 className="mt-2 text-2xl font-black">AI 덱 관리</h2>
-        <p className="mt-2 text-sm leading-6 text-neutral-500">카드와 Champion Definition ID를 조합해 실제 게임 엔진으로 테스트할 AI 덱을 관리합니다.</p>
+        <p className="text-sm leading-6 text-neutral-400">AI가 쓸 챔피언과 덱을 정해요. 저장하면 다음 AI 대전부터 바로 써요.</p>
       </div>
 
       {message && <p className="rounded border border-amber-800/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">{message}</p>}

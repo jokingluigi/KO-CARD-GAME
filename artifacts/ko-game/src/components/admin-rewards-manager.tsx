@@ -84,7 +84,7 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
 
   return (
     <section className="space-y-6 rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
-      <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">REWARDS & PROGRESS</p><h2 className="mt-2 text-2xl font-black">보상 · 일일 퀘스트 · 출석</h2><p className="mt-2 text-sm leading-6 text-neutral-500">모든 지급량은 서버가 검증하며, 이미 지급된 보상은 설정 변경으로 소급되지 않습니다.</p></div>
+      <div><p className="text-sm leading-6 text-neutral-400">지급량은 서버가 확인해요. 설정을 바꿔도 이미 받은 보상은 그대로예요. 퀘스트는 ‘퀘스트’ 화면에서 정해요.</p></div>
 <TutorialRewardsAdmin/>
 {message && <p role="status" className="rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
 <AdminEditorSections panels={[{"id":"admin-rewards-manager-0","label":"경기 보상"},{"id":"admin-rewards-manager-1","label":"출석 보상"}]}>{[<><section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">

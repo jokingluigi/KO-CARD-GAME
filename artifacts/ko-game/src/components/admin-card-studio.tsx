@@ -51,7 +51,7 @@ function definitionOf(card: CardRow) {
   try { return cardRecordToDefinition(card); } catch { return null; }
 }
 
-export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthorized: () => void; onOpenAdvanced?: (id: string) => void }) {
+export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: { onUnauthorized: () => void; onOpenAdvanced?: (id: string) => void; onTestGame?: (id: string) => void }) {
   const [cards, setCards] = useState<CardRow[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CardRow | null>(null);
@@ -59,6 +59,12 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthor
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "WRESTLER" | "TECHNIQUE">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | Status>("ALL");
+  const [rarityFilter, setRarityFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [sort, setSort] = useState<"updated" | "name" | "cost">("updated");
+  const [moreFilters, setMoreFilters] = useState(false);
+  const [draftHidden, setDraftHidden] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
   const [decision, setDecision] = useState<{ before: string[]; after: string[]; text: string } | null>(null);
   const [mobileEditing, setMobileEditing] = useState(false);
   const tagLabels = useTagLabels();
@@ -74,7 +80,18 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthor
     setCards(list);
     return list;
   }, [onUnauthorized]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load().then((list) => {
+      // Back from "자세히 편집" (or a shared link): reopen that card.
+      const wanted = new URLSearchParams(window.location.search).get("card");
+      const card = wanted ? list?.find((c) => c.id === wanted) : undefined;
+      if (card) { select(card); history.replaceState(history.state, "", window.location.pathname); }
+    });
+    void fetch(`${base}/draft/card-selection`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { excludedCardIds?: string[] } | null) => setDraftHidden(body?.excludedCardIds ?? null))
+      .catch(() => setDraftHidden(null));
+  }, [load]);
 
   const select = (card: CardRow) => {
     flush();
@@ -197,11 +214,64 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthor
     } catch { setSave({ kind: "error", message: "그림을 올리지 못했어요." }); }
   }
 
+  async function duplicateCard() {
+    if (!draft || busy) return;
+    flush(); setBusy(true); setSave({ kind: "saving", message: "복제하는 중…" });
+    try {
+      const response = await fetch(`${base}/cards/${encodeURIComponent(draft.id)}/duplicate`, { method: "POST", credentials: "include" });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error();
+      const body = (await response.json().catch(() => ({}))) as { card?: CardRow };
+      const list = await load();
+      const copy = body.card ? list?.find((c) => c.id === body.card!.id) : list?.filter((c) => c.name.startsWith(draft.name) && c.id !== draft.id).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+      if (copy) select(copy);
+      setSave({ kind: "saved", message: "복제했어요. 복사본은 미공개예요." });
+    } catch { setSave({ kind: "error", message: "복제하지 못했어요." }); }
+    finally { setBusy(false); }
+  }
+
+  async function toggleDraftHidden() {
+    if (!draft || draftHidden === null || busy) return;
+    const excluded = !draftHidden.includes(draft.id);
+    setBusy(true);
+    try {
+      const response = await fetch(`${base}/draft/cards/${encodeURIComponent(draft.id)}/selection`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ excluded }) });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error();
+      setDraftHidden(((await response.json()) as { excludedCardIds: string[] }).excludedCardIds);
+      setSave({ kind: "saved", message: excluded ? "드래프트 카드 고르기에서 숨겼어요" : "드래프트 카드 고르기에 다시 보여요" });
+    } catch { setSave({ kind: "error", message: "드래프트 설정을 바꾸지 못했어요." }); }
+    finally { setBusy(false); }
+  }
+
+  async function deleteCard() {
+    if (!draft || busy) return;
+    if (!window.confirm(`"${draft.name}" 카드를 지울까요?\n지운 카드는 되살릴 수 없어요. 잠깐 숨기려면 "미공개"나 "비활성"을 쓰세요.`)) return;
+    flush(); setBusy(true);
+    try {
+      const response = await fetch(`${base}/cards/${encodeURIComponent(draft.id)}`, { method: "DELETE", credentials: "include" });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) {
+        const message = await response.json().then((b: { message?: string }) => b.message).catch(() => undefined);
+        throw new Error(message);
+      }
+      const goneId = draft.id;
+      setCards((list) => list?.filter((c) => c.id !== goneId) ?? list);
+      setDraft(null); setSelectedId(null); saved.current = null; setMobileEditing(false);
+      setSave({ kind: "saved", message: "카드를 지웠어요" });
+    } catch (error) { setSave({ kind: "error", message: error instanceof Error && error.message ? error.message : "카드를 지우지 못했어요." }); }
+    finally { setBusy(false); }
+  }
+
   const names = useMemo(() => new Set((cards ?? []).map((c) => c.name)), [cards]);
   const filtered = useMemo(() => (cards ?? [])
     .filter((c) => (typeFilter === "ALL" || c.cardType === typeFilter) && (statusFilter === "ALL" || c.status === statusFilter))
+    .filter((c) => !rarityFilter || (rarityFilter === "TOKEN" ? Boolean(c.isToken) : c.rarity === rarityFilter))
+    .filter((c) => !tagFilter || (c.tags ?? []).some((t) => t === tagFilter || tagLabels[t] === tagFilter || t === tagLabels[tagFilter]))
     .filter((c) => !query.trim() || c.name.includes(query.trim()) || (c.text ?? "").includes(query.trim()))
-    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))), [cards, query, typeFilter, statusFilter]);
+    .sort((a, b) => sort === "name" ? a.name.localeCompare(b.name, "ko") : sort === "cost" ? Number(a.cost) - Number(b.cost) || a.name.localeCompare(b.name, "ko") : String(b.updatedAt).localeCompare(String(a.updatedAt))),
+    [cards, query, typeFilter, statusFilter, rarityFilter, tagFilter, sort, tagLabels]);
+  const extraFilters = (rarityFilter ? 1 : 0) + (tagFilter ? 1 : 0) + (sort !== "updated" ? 1 : 0);
 
   const tidy = draft ? tidyCardText(draft.text ?? "") : null;
   const unknownRefs = draft
@@ -232,8 +302,16 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthor
         <div className="kst-filters">
           {(["ALL", "WRESTLER", "TECHNIQUE"] as const).map((t) => <button key={t} type="button" aria-pressed={typeFilter === t} onClick={() => setTypeFilter(t)}>{t === "ALL" ? "전체" : t === "WRESTLER" ? "선수" : "기술"}</button>)}
           <span />
-          {(["ALL", "PUBLISHED", "DRAFT"] as const).map((t) => <button key={t} type="button" aria-pressed={statusFilter === t} onClick={() => setStatusFilter(t)}>{t === "ALL" ? "모든 상태" : STATUS_LABEL[t]}</button>)}
+          {(["ALL", "PUBLISHED", "DRAFT", "DISABLED"] as const).map((t) => <button key={t} type="button" aria-pressed={statusFilter === t} onClick={() => setStatusFilter(t)}>{t === "ALL" ? "모든 상태" : STATUS_LABEL[t]}</button>)}
+          <button type="button" className="kst-more" aria-expanded={moreFilters} onClick={() => setMoreFilters((v) => !v)}>{moreFilters ? "필터 접기" : `필터 더보기${extraFilters ? ` (${extraFilters})` : ""}`}</button>
         </div>
+        {moreFilters && <div className="kst-more-filters">
+          <label>등급<select value={rarityFilter} onChange={(e) => setRarityFilter(e.target.value)}><option value="">전체</option>{RARITIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}<option value="CHAMPION">챔피언</option><option value="TOKEN">토큰만</option></select></label>
+          <label>태그<select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}><option value="">전체</option>{Object.entries(tagLabels).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+          <label>정렬<select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}><option value="updated">최근 고친 순</option><option value="name">이름 순</option><option value="cost">비용 순</option></select></label>
+          {extraFilters > 0 && <button type="button" onClick={() => { setRarityFilter(""); setTagFilter(""); setSort("updated"); }}>초기화</button>}
+        </div>}
+        <p className="kst-count">{filtered.length}장</p>
         <ul>
           {filtered.map((c) => (
             <li key={c.id}>
@@ -253,7 +331,7 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthor
             <button type="button" className="kst-back" onClick={() => { flush(); if (draft) check(draft); setMobileEditing(false); }}>← 목록</button>
             <div className="kst-save" data-kind={save.kind}>{save.kind === "saving" ? (save.message ?? "저장 중…") : save.kind === "saved" ? `✓ ${save.message ?? "저장됨"}` : save.kind === "error" ? `⚠ ${save.message}` : save.kind === "check" ? `● ${save.message}` : (save.message ?? "고치면 바로 저장돼요")}</div>
             <div className="kst-status-switch">
-              {(["DRAFT", "PUBLISHED"] as const).map((s) => <button key={s} type="button" aria-pressed={draft.status === s} onClick={() => void setStatus(s)}>{STATUS_LABEL[s]}</button>)}
+              {(["DRAFT", "PUBLISHED", "DISABLED"] as const).map((s) => <button key={s} type="button" aria-pressed={draft.status === s} title={s === "DRAFT" ? "게이머에게 안 보여요" : s === "PUBLISHED" ? "게임에 나와요" : "게임에서 아예 못 써요"} onClick={() => void setStatus(s)}>{STATUS_LABEL[s]}</button>)}
             </div>
           </header>
 
@@ -262,7 +340,13 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced }: { onUnauthor
               <CardRenderer name={draft.name || "카드 이름"} cardType={draft.cardType} cost={draft.cost} attack={draft.attack} health={draft.health}
                 rulesText={draft.text || "효과 없음"} imageUrl={draft.imageUrl} rarity={draft.rarity as never} size="detail" className="w-full" imageDisplaySettings={draft as never} />
               <label className="kst-image">그림 바꾸기<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadImage(f); e.target.value = ""; }} /></label>
-              {onOpenAdvanced && <button type="button" className="kst-advanced" onClick={() => onOpenAdvanced(draft.id)}>자세히 편집 (대사·음악·특수 효과)</button>}
+              {onOpenAdvanced && <button type="button" className="kst-advanced" onClick={() => { flush(); onOpenAdvanced(draft.id); }}>자세히 편집 (대사·음악·특수 효과)</button>}
+              <div className="kst-tools">
+                {onTestGame && <button type="button" onClick={() => { flush(); onTestGame(draft.id); }}>테스트 게임</button>}
+                <button type="button" disabled={busy} onClick={() => void duplicateCard()}>복제</button>
+                {draftHidden !== null && <button type="button" disabled={busy} aria-pressed={draftHidden.includes(draft.id)} onClick={() => void toggleDraftHidden()}>{draftHidden.includes(draft.id) ? "드래프트에 다시 보이기" : "드래프트에서 숨기기"}</button>}
+                <button type="button" className="is-danger" disabled={busy} onClick={() => void deleteCard()}>지우기</button>
+              </div>
             </div>
 
             <div className="kst-fields">

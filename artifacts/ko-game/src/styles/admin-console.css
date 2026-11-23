@@ -850,3 +850,58 @@
   font-size: 12px;
   color: #999;
 }
+
+/* 2026-11 정리: 상단 테스트 게임 버튼 */
+.ko-admin .admin-test-game {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: #9fd2ff;
+  border: 1px solid #3b6b9455;
+  background: #1a2a3a40;
+}
+.ko-admin .admin-test-game:hover { border-color: #6fb2ec; color: #cfe8ff; }
+@media (max-width: 700px) {
+  .ko-admin .admin-test-game span { display: none; }
+  .ko-admin .admin-test-game { padding: 8px 10px; }
+}
+/* 페이지 안의 탭 (상점·통계) */
+.ko-admin .admin-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.ko-admin .admin-tabs button {
+  min-height: 40px; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  border: 1px solid #ffffff1c; color: #c9ced9; background: #ffffff05;
+}
+.ko-admin .admin-tabs button[aria-selected="true"] { border-color: #e2b84b; color: #1a1406; background: #e2b84b; }
+/* 유저 · 자산 지급 */
+.ko-admin .admin-user-assets { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 18px; align-items: start; }
+.ko-admin .admin-user-assets tr.is-selected td { background: #e2b84b1c; color: #f6e2a8; }
+.ko-admin .admin-user-assets tbody tr:hover td { background: #ffffff08; }
+.ko-admin .admin-user-assets-panel { position: sticky; top: 84px; display: grid; gap: 12px; padding: 18px; border-radius: 14px; border: 1px solid #ffffff14; background: #0b0f18; }
+.ko-admin .admin-user-assets-panel h2 { margin: 0; font-size: 17px; }
+.ko-admin .admin-user-assets-panel .admin-tabs { margin-bottom: 0; }
+.ko-admin .admin-user-assets-panel .admin-tabs button { min-height: 34px; padding: 6px 12px; font-size: 12px; }
+.ko-admin .admin-user-assets-who { display: grid; margin: 0; }
+.ko-admin .admin-user-assets-who b { font-size: 16px; color: #f3d27a; }
+.ko-admin .admin-user-assets-who small { color: #8a93a6; }
+.ko-admin .admin-user-assets-form { display: grid; gap: 10px; }
+.ko-admin .admin-user-assets-form label { display: grid; gap: 5px; font-size: 12px; color: #9aa3b5; }
+.ko-admin .admin-user-assets-form input, .ko-admin .admin-user-assets-form select { min-height: 42px; border-radius: 9px; border: 1px solid #ffffff1c; background: #070a12; color: #eef0f5; padding: 0 10px; font-size: 15px; }
+.ko-admin .admin-user-assets-form button { min-height: 44px; border-radius: 10px; font-weight: 800; font-size: 14px; }
+.ko-admin .admin-user-assets-form button.is-primary { background: #e2b84b; color: #1a1406; }
+.ko-admin .admin-user-assets-form button.is-danger { border: 1px solid #c0505a; color: #ffb4b4; background: #3a0f1433; }
+.ko-admin .admin-user-assets-form button:disabled { opacity: .5; }
+.ko-admin .admin-muted { margin: 0; font-size: 12px; color: #8a93a6; }
+.ko-admin .admin-ok { margin: 0; padding: 10px 12px; border-radius: 9px; background: #0f2a1a; color: #9fe0b5; font-size: 13px; }
+.ko-admin .admin-error { margin: 0; padding: 10px 12px; border-radius: 9px; background: #2a0f14; color: #ffb4b4; font-size: 13px; }
+@media (max-width: 1000px) {
+  .ko-admin .admin-user-assets { grid-template-columns: 1fr; }
+  .ko-admin .admin-user-assets-panel { position: static; }
+}
+.ko-admin .admin-overview-strip { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 700px) { .ko-admin .admin-overview-strip { grid-template-columns: 1fr 1fr 1fr; gap: 10px; } .ko-admin .admin-overview-strip small { font-size: 10px; } }
+.ko-admin .admin-nav-heading.is-single svg:last-child { display: none; }

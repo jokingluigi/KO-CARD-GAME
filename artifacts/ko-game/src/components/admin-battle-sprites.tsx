@@ -188,8 +188,6 @@ export function AdminBattleSprites() {
     >
       <header>
         <div>
-          <p className="text-xs text-neutral-400">CHAMPION SPRITE STUDIO</p>
-          <h2 className="text-2xl font-black">대전 스프라이트</h2>
           <p>
             챔피언·선택 스킨의 이미지와 표정 반응을 큰 화면에서 등록하고
             확인합니다.

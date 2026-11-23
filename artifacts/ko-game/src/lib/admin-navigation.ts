@@ -1,180 +1,92 @@
 export const ADMIN_GROUPS = [
-  { id: "home", label: "대시보드", icon: "LayoutDashboard" },
-  { id: "statistics", label: "사용 통계", icon: "BarChart3" },
-  { id: "cards", label: "카드 관리", icon: "Layers" },
-  { id: "champions", label: "챔피언 관리", icon: "Shield" },
-  { id: "sprites", label: "스프라이트 관리", icon: "Image" },
+  { id: "home", label: "홈", icon: "LayoutDashboard" },
+  { id: "cards", label: "카드", icon: "Layers" },
+  { id: "champions", label: "챔피언", icon: "Shield" },
   { id: "modes", label: "게임 모드", icon: "Swords" },
-  { id: "economy", label: "보상 및 경제", icon: "Coins" },
-  { id: "content", label: "콘텐츠 및 미디어", icon: "Image" },
-  { id: "users", label: "유저 관리", icon: "Users" },
-  { id: "tests", label: "테스트 및 진단", icon: "FlaskConical" },
-  { id: "system", label: "시스템 설정", icon: "Settings" },
+  { id: "economy", label: "상점 · 보상", icon: "Coins" },
+  { id: "content", label: "꾸미기 · 미디어", icon: "Image" },
+  { id: "operations", label: "유저 · 운영", icon: "Users" },
 ] as const;
+
+type AdminPageEntry = {
+  id: string;
+  group: (typeof ADMIN_GROUPS)[number]["id"];
+  path: string;
+  label: string;
+  description: string;
+  keywords: string;
+  /** Opened from another screen (not listed in the menu or search). */
+  hidden?: boolean;
+};
+
 export const ADMIN_PAGES = [
-  {id:'multiplayer-performance',group:'statistics',path:'/admin/multiplayer-performance',label:'멀티플레이 성능',description:'전투 지연·프레임·메모리·송신 대기를 확인합니다.',keywords:'렉 지연 딜레이 성능 p95'},
-  {
-    id: "dashboard",
-    group: "home",
-    path: "/admin",
-    label: "운영 개요",
-    description: "현재 설정과 콘텐츠 상태를 확인하고 관리 작업을 시작합니다.",
-    keywords: "홈 현황 통계 최근",
-  },
-  {id:"shop-decks",group:"economy",path:"/admin/shop-decks",label:"상점 덱 관리",description:"완성 덱 구성·가격·챔피언 포함·판매 상태를 관리합니다.",keywords:"완성 덱 판매 구성 상품 가격"},
-  {id:"battle-sprites",group:"sprites",path:"/admin/battle-sprites",label:"대전 스프라이트",description:"챔피언·스킨별 스프라이트 등록, 큰 화면 배치와 표정 반응을 확인합니다.",keywords:"스프라이트 표정 각성 배치 미리보기"},
-  {id:"cosmetics",group:"content",path:"/admin/cosmetics",label:"꾸미기 관리",description:"스킨·이미지 이모티콘 등록과 계정 지급·회수를 관리합니다.",keywords:"스킨 이모티콘 외형 지급 회수"},
-  {id:"card-statistics",group:"statistics",path:"/admin/card-statistics",label:"카드 통계",description:"실제 유저의 카드 채용·플레이·승률을 확인합니다.",keywords:"사용 통계 인기 채용률 사용률 승률"},
-  {id:"champion-statistics",group:"statistics",path:"/admin/champion-statistics",label:"챔피언 통계",description:"챔피언 선택·고유 능력·퀘스트 완료를 확인합니다.",keywords:"사용 통계 선택률 승률 퀘스트"},
-  {
-    id: "card-studio",
-    group: "cards",
-    path: "/admin/card-studio",
-    label: "카드 빠른 편집",
-    description: "카드를 만들고 고치면 바로 저장돼요. 효과가 바뀌는 글 수정은 먼저 물어봐요.",
-    keywords: "카드 만들기 수정 효과 글 텍스트 자동 저장 스튜디오",
-  },
-  {
-    id: "cards",
-    group: "cards",
-    path: "/admin/cards",
-    label: "카드 목록 · 효과",
-    description: "선수와 주문의 능력치, 효과, 키워드, 공개 상태를 관리합니다.",
-    keywords: "선수 주문 생성 수정 삭제 키워드 일러스트 토큰",
-  },
-  {
-    id: "tags",
-    group: "cards",
-    path: "/admin/tags",
-    label: "태그 관리",
-    description: "분류 태그와 연결된 선수 카드를 관리합니다.",
-    keywords: "분류 연결",
-  },
-  {
-    id: "frames",
-    group: "cards",
-    path: "/admin/card-frames",
-    label: "카드 프레임",
-    description: "카드 종류와 등급별 프레임 리소스를 관리합니다.",
-    keywords: "희귀도 이미지",
-  },
-  {
-    id: "champions",
-    group: "champions",
-    path: "/admin/champions",
-    label: "챔피언 목록 · 능력",
-    description: "고유 능력, 퀘스트, 토큰, 대사와 초상화를 관리합니다.",
-    keywords: "강화 보상 감정표현 시작 능력",
-  },
-  {
-    id: "ai-decks",
-    group: "modes",
-    path: "/admin/ai-decks",
-    label: "일반 AI 대전",
-    description: "AI 챔피언, 난이도와 실제 대전 덱을 편집합니다.",
-    keywords: "쉬움 보통 어려움",
-  },
-  {
-    id: "draft",
-    group: "modes",
-    path: "/admin/draft",
-    label: "드래프트 모드",
-    description: "드래프트 진행과 설정을 관리합니다.",
-    keywords: "픽 변이 선택",
-  },
-  {
-    id: "packs",
-    group: "economy",
-    path: "/admin/packs",
-    label: "카드팩",
-    description: "카드 풀, 확률, 지급과 개봉 미리보기를 관리합니다.",
-    keywords: "확률 뽑기 테스트 지급",
-  },
-  {
-    id: "shop",
-    group: "economy",
-    path: "/admin/shop",
-    label: "상점 · 크레딧",
-    description: "판매 상품과 사용자 크레딧 지급을 관리합니다.",
-    keywords: "재화 상품 판매 지급",
-  },
-  {
-    id: "prism",
-    group: "economy",
-    path: "/admin/prism",
-    label: "제작 · 프리즘",
-    description: "제작·분해 가격과 프리즘 지급·회수를 관리합니다.",
-    keywords: "재화 챔피언 중복 보상",
-  },
-  {
-    id: "rewards",
-    group: "economy",
-    path: "/admin/rewards",
-    label: "매치 보상 · 출석",
-    description: "온라인 매치 보상과 출석 보드를 설정합니다.",
-    keywords: "일일 출석 크레딧 보상",
-  },
-  {
-    id: "quests",
-    group: "economy",
-    path: "/admin/quests",
-    label: "일일 · 시즌 퀘스트",
-    description: "퀘스트 조건, 기간, 보상과 진단을 관리합니다.",
-    keywords: "목표 배정 시즌 일일 테스트",
-  },
-  {
-    id: "media",
-    group: "content",
-    path: "/admin/media",
-    label: "OST · 배경 · 효과음",
-    description: "게임 음악과 배경, 공격 타격음을 관리합니다.",
-    keywords: "사운드 이미지 음악 연출",
-  },
-  {
-    id: "notices",
-    group: "content",
-    path: "/admin/notices",
-    label: "공지사항",
-    description: "서비스 공지를 작성하고 공개합니다.",
-    keywords: "콘텐츠 안내",
-  },
-  {
-    id: "users",
-    group: "users",
-    path: "/admin/users",
-    label: "계정 · 자산 조회",
-    description: "기존 사용자 데이터와 자산을 확인하고 지급 도구로 이동합니다.",
-    keywords: "유저 닉네임 이메일 계정 자산",
-  },
-  {
-    id: "test",
-    group: "tests",
-    path: "/admin/test",
-    label: "카드 · 챔피언 테스트",
-    description: "기존 테스트 게임에서 실제 효과를 확인합니다.",
-    keywords: "주문 게임 엔진 AI 테스트",
-  },
-  {
-    id: "system",
-    group: "system",
-    path: "/admin/system",
-    label: "서버 점검",
-    description: "일반 이용자의 접근을 제한하는 점검 상태와 안내를 설정합니다.",
-    keywords: "서버 운영 권한 유지보수",
-  },
-] as const;
+  { id: "dashboard", group: "home", path: "/admin", label: "홈", description: "자주 하는 일과 최근에 고친 카드·챔피언을 한눈에 봐요.", keywords: "대시보드 운영 개요 현황 최근" },
+
+  { id: "cards", group: "cards", path: "/admin/cards", label: "카드 편집", description: "카드를 만들고 고치면 바로 저장돼요. 효과가 바뀌는 글 수정은 먼저 물어봐요.", keywords: "카드 선수 기술 주문 만들기 수정 효과 글 텍스트 자동 저장 복제 삭제 공개 테스트 키워드 일러스트 토큰" },
+  { id: "card-edit", group: "cards", path: "/admin/card-edit", label: "카드 자세히 편집", description: "대사·음악·특수 효과처럼 자세한 설정을 고쳐요. 다 고치면 저장을 눌러 주세요.", keywords: "고급 상세 편집", hidden: true },
+  { id: "tags", group: "cards", path: "/admin/tags", label: "태그", description: "태그 이름을 바꾸고, 여러 선수에게 한 번에 붙이거나 떼요.", keywords: "분류 연결 일괄" },
+  { id: "frames", group: "cards", path: "/admin/card-frames", label: "카드 프레임", description: "카드 종류와 등급별 테두리 그림을 바꿔요.", keywords: "희귀도 이미지 테두리" },
+
+  { id: "champions", group: "champions", path: "/admin/champions", label: "챔피언 편집", description: "고유 능력, 퀘스트, 토큰, 대사와 초상화를 고쳐요.", keywords: "강화 보상 감정표현 시작 능력 피니셔 테스트" },
+  { id: "battle-sprites", group: "champions", path: "/admin/battle-sprites", label: "대전 스프라이트", description: "챔피언·스킨별 대전 그림과 표정을 등록하고 배치를 확인해요.", keywords: "스프라이트 표정 각성 배치 미리보기 스킨" },
+
+  { id: "ai-decks", group: "modes", path: "/admin/ai-decks", label: "AI 대전", description: "AI 챔피언과 대전 덱을 고쳐요.", keywords: "일반 AI 덱 난이도 쉬움 보통 어려움" },
+  { id: "draft", group: "modes", path: "/admin/draft", label: "드래프트", description: "드래프트 모드를 켜고 끄고, 카드 풀과 규칙을 정해요.", keywords: "픽 변이 선택" },
+
+  { id: "shop", group: "economy", path: "/admin/shop", label: "상점", description: "판매 상품(카드팩)과 완성 덱을 한곳에서 관리해요.", keywords: "상품 판매 가격 크레딧 완성 덱 상점 덱" },
+  { id: "packs", group: "economy", path: "/admin/packs", label: "카드팩", description: "카드팩 내용물, 확률, 개봉 미리보기를 정해요.", keywords: "확률 뽑기 테스트 카드 풀" },
+  { id: "prism", group: "economy", path: "/admin/prism", label: "제작 가격", description: "카드·챔피언 제작 비용과 분해로 받는 프리즘을 정해요.", keywords: "프리즘 제작 분해 재화 챔피언 중복 보상" },
+  { id: "rewards", group: "economy", path: "/admin/rewards", label: "경기 보상 · 출석", description: "튜토리얼·경기 보상과 출석 보드를 정해요.", keywords: "일일 출석 크레딧 보상 튜토리얼 승리 패배" },
+  { id: "quests", group: "economy", path: "/admin/quests", label: "퀘스트", description: "일일·시즌 퀘스트의 조건, 기간, 보상을 정해요.", keywords: "목표 배정 시즌 일일 테스트" },
+
+  { id: "cosmetics", group: "content", path: "/admin/cosmetics", label: "스킨 · 이모티콘", description: "스킨·카드 뒷면·이모티콘을 등록하고 계정에 주거나 회수해요.", keywords: "꾸미기 스킨 이모티콘 외형 지급 회수 카드 뒷면" },
+  { id: "media", group: "content", path: "/admin/media", label: "음악 · 배경 · 효과음", description: "홈 메뉴 그림, 게임 음악, 배경, 타격음을 바꿔요.", keywords: "OST 사운드 이미지 음악 연출 홈 메뉴" },
+  { id: "notices", group: "content", path: "/admin/notices", label: "공지사항", description: "메인 화면에 보일 공지를 쓰고 공개해요.", keywords: "콘텐츠 안내" },
+
+  { id: "users", group: "operations", path: "/admin/users", label: "유저 · 자산 지급", description: "유저를 찾고 크레딧·카드팩·프리즘을 주거나 회수해요.", keywords: "유저 닉네임 이메일 계정 자산 크레딧 지급 카드팩 지급 프리즘 지급 회수" },
+  { id: "statistics", group: "operations", path: "/admin/statistics", label: "통계", description: "카드·챔피언 사용률과 승률, 대전 성능을 확인해요.", keywords: "사용 통계 인기 채용률 사용률 승률 선택률 렉 지연 딜레이 성능 p95 멀티플레이" },
+  { id: "system", group: "operations", path: "/admin/system", label: "서버 점검 · 관리자", description: "서버 점검을 켜고 끄고, 관리자 계정을 만들어요.", keywords: "서버 운영 권한 유지보수 관리자 계정" },
+] as const satisfies readonly AdminPageEntry[];
+
 export type AdminPageId = (typeof ADMIN_PAGES)[number]["id"];
-export function adminPageForPath(path: string) {
-  const original = path.split(/[?#]/)[0].replace(/\/$/, "");
-  const clean = original === "/admin/skins" ? "/admin/cosmetics" : original;
-  return (
-    ADMIN_PAGES.find((p) => p.path === clean) ||
-    (clean === "/admin/dashboard" ? ADMIN_PAGES.find(page=>page.id==="dashboard") : undefined)
-  );
+export type AdminPage = (typeof ADMIN_PAGES)[number];
+
+/** Pages shown in the menu and search (hidden pages are opened from another screen). */
+export const ADMIN_MENU_PAGES: readonly AdminPage[] = ADMIN_PAGES.filter((p) => !("hidden" in p && p.hidden));
+
+/** Old addresses and saved favorites keep working after pages were merged. */
+const LEGACY_PATHS: Record<string, string> = {
+  "/admin/dashboard": "/admin",
+  "/admin/card-studio": "/admin/cards",
+  "/admin/skins": "/admin/cosmetics",
+  "/admin/shop-decks": "/admin/shop",
+  "/admin/card-statistics": "/admin/statistics",
+  "/admin/champion-statistics": "/admin/statistics",
+  "/admin/multiplayer-performance": "/admin/statistics",
+  "/admin/test": "/admin",
+};
+const LEGACY_IDS: Record<string, AdminPageId> = {
+  skins: "cosmetics",
+  "card-studio": "cards",
+  "shop-decks": "shop",
+  "card-statistics": "statistics",
+  "champion-statistics": "statistics",
+  "multiplayer-performance": "statistics",
+};
+
+export function cleanAdminPath(path: string) {
+  return path.split(/[?#]/)[0].replace(/\/$/, "") || "/admin";
 }
+
+export function adminPageForPath(path: string): AdminPage | undefined {
+  const original = cleanAdminPath(path);
+  const clean = LEGACY_PATHS[original] ?? original;
+  return ADMIN_PAGES.find((p) => p.path === clean);
+}
+
 export function searchAdminPages(query: string) {
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  return ADMIN_PAGES.filter((p) =>
+  return ADMIN_MENU_PAGES.filter((p) =>
     terms.every((t) =>
       `${p.label} ${p.description} ${p.keywords} ${ADMIN_GROUPS.find((g) => g.id === p.group)?.label}`
         .toLocaleLowerCase()
@@ -182,14 +94,17 @@ export function searchAdminPages(query: string) {
     ),
   );
 }
+
 export function validAdminPageIds(value: unknown): AdminPageId[] {
   return Array.isArray(value)
     ? [
         ...new Set(
-          value.map(id => id === "skins" ? "cosmetics" : id).filter(
-            (id): id is AdminPageId =>
-              typeof id === "string" && ADMIN_PAGES.some((p) => p.id === id),
-          ),
+          value
+            .map((id) => (typeof id === "string" ? LEGACY_IDS[id] ?? id : id))
+            .filter(
+              (id): id is AdminPageId =>
+                typeof id === "string" && ADMIN_MENU_PAGES.some((p) => p.id === id),
+            ),
         ),
       ].slice(0, 10)
     : [];

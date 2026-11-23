@@ -321,9 +321,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
     <div className="space-y-6">
       <AdminHomeMenuArt onUnauthorized={onUnauthorized}/>
       <div>
-        <div className="font-display text-xs font-bold tracking-[0.2em] text-primary">GAME MEDIA</div>
-        <h2 className="mt-1 text-2xl font-black">백그라운드 관리</h2>
-       <p className="mt-2 text-sm text-neutral-500">Title과 In-Game 미디어 선택을 독립적으로 관리합니다. Title 적용 항목은 배경과 BGM에서 각각 하나만 선택되며, In-Game 선택을 꺼도 Title 미디어는 유지됩니다.</p>
+        <h2 className="text-xl font-black">게임 배경 · 음악</h2>
+       <p className="mt-2 text-sm text-neutral-400">타이틀 화면용과 게임 중 사용할 것을 따로 고를 수 있어요. 타이틀 화면에는 배경과 음악이 하나씩만 쓰여요.</p>
       </div>
 <AdminEditorSections panels={[{"id":"admin-game-media-manager-0","label":"배경 이미지"},{"id":"admin-game-media-manager-1","label":"배경 음악"},{"id":"admin-game-media-manager-2","label":"공격 타격음"},{"id":"admin-game-media-result","label":"승리·패배 음악"},{"id":"admin-game-media-manager-3","label":"업로드 규격"}]}>{[<><MediaSection
         title="배경 이미지"

@@ -83,7 +83,7 @@ export function AdminCosmetics() {
       draft.markSaved();
       await load();
       setMessage(
-        "저장했어. 대상·유형을 변경하면 해당 아이템의 기존 장착은 해제돼.",
+        "저장했어요. 대상·유형을 변경하면 해당 아이템의 기존 장착은 해제돼요.",
       );
     });
   }
@@ -116,7 +116,7 @@ export function AdminCosmetics() {
         file.size <= 5 * 1024 * 1024;
       if (!valid)
         throw new Error(
-          "PNG·WebP·JPEG, 최대 5MB만 지원해. GIF는 이번 버전에서 지원하지 않아.",
+          "PNG·WebP·JPEG, 최대 5MB만 지원해요. GIF는 이번 버전에서 지원하지 않아요.",
         );
       const result = await cosmeticsRequest<{
         uploadURL: string;
@@ -135,7 +135,7 @@ export function AdminCosmetics() {
         body: file,
         signal: AbortSignal.timeout(30000),
       });
-      if (!response.ok) throw new Error("이미지 업로드에 실패했어.");
+      if (!response.ok) throw new Error("이미지 업로드에 실패했어요.");
       const image = await cosmeticsRequest<{ imageUrl: string }>(
         `${base}/uploads/complete`,
         {
@@ -150,7 +150,7 @@ export function AdminCosmetics() {
         ...old,
         imageAssets: { ...old.imageAssets, [key]: image.imageUrl },
       }));
-      setMessage("이미지 검증 완료. 저장하면 적용돼.");
+      setMessage("이미지 검증 완료. 저장하면 적용돼요.");
     });
   }
   async function selectUser(value: { id: string; nickname: string }) {
@@ -191,8 +191,8 @@ export function AdminCosmetics() {
   return (
     <section className="cosmetics">
       <p>
-        카드팩 스킨·챔피언 스킨·카드 뒷면·이모티콘을 한곳에서 관리해. 기존
-        카드팩과 보유 기록은 유지돼. 비활성 아이템은 새 장착·지급에서 제외돼.
+        카드팩 스킨·챔피언 스킨·카드 뒷면·이모티콘을 한곳에서 관리해요. 기존
+        카드팩과 보유 기록은 유지돼요. 비활성 아이템은 새 장착·지급에서 제외돼요.
       </p>
       {message && (
         <p role="status" className="break-words">
@@ -396,7 +396,7 @@ export function AdminCosmetics() {
                 <option value="DISABLED">비활성화</option>
               </select>
               <span className="text-sm text-neutral-400">
-                카드팩 스킨 · 기존 팩 연결과 보유 기록을 함께 관리해.
+                카드팩 스킨 · 기존 팩 연결과 보유 기록을 함께 관리해요.
               </span>
             </label>
           ) : (
@@ -414,10 +414,10 @@ export function AdminCosmetics() {
           {form.type === "CHAMPION_SKIN" && (
             <p className="text-sm text-amber-200">
               챔피언 일러스트 한 장을 등록하면 기본 표시·전투 초상화·VS 인트로에
-              함께 적용돼. 각성과 토큰 외형만 별도로 등록해 줘.{" "}
+              함께 적용돼요. 각성과 토큰 외형만 별도로 등록해 주세요.{" "}
               {tokenId
-                ? "아래에 토큰 일러스트를 등록해 줘."
-                : "토큰 외형을 등록하려면 챔피언 관리에서 챔피언 토큰을 먼저 연결해 줘."}
+                ? "아래에 토큰 일러스트를 등록해 주세요."
+                : "토큰 외형을 등록하려면 챔피언 관리에서 챔피언 토큰을 먼저 연결해 주세요."}
             </p>
           )}
           <div className="cosmetics-assets">

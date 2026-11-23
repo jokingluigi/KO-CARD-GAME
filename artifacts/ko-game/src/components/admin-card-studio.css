@@ -77,3 +77,19 @@
   .kst-diff,.kst-decide{grid-template-columns:1fr}
   .kst-edit{padding:12px}
 }
+
+/* 2026-11 정리: 필터 더보기 · 카드 도구 */
+.kst .kst-more { margin-left: auto; }
+.kst .kst-more-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.kst .kst-more-filters label { display: grid; gap: 4px; font-size: 12px; color: #9aa3b5; }
+.kst .kst-more-filters select { min-height: 38px; border-radius: 8px; border: 1px solid #ffffff1c; background: #0d1220; color: #e8ebf2; padding: 0 8px; font-size: 13px; }
+.kst .kst-more-filters > button { grid-column: 1 / -1; min-height: 34px; border-radius: 8px; border: 1px solid #ffffff1c; color: #c9ced9; font-size: 12px; }
+.kst .kst-count { margin: 0; font-size: 12px; color: #8a93a6; }
+.kst .kst-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.kst .kst-tools button { min-height: 38px; border-radius: 8px; border: 1px solid #ffffff1c; background: #ffffff05; color: #d4d9e3; font-size: 12px; font-weight: 600; }
+.kst .kst-tools button:hover:not(:disabled) { border-color: #e2b84b; color: #f3d27a; }
+.kst .kst-tools button[aria-pressed="true"] { border-color: #e2b84b88; color: #f3d27a; }
+.kst .kst-tools button.is-danger { color: #f19a9a; border-color: #7a2a2a88; }
+.kst .kst-tools button.is-danger:hover:not(:disabled) { border-color: #d05a5a; color: #ffb4b4; }
+.kst .kst-tools button:disabled { opacity: .45; }
+.kst .kst-status[data-status="DISABLED"] { color: #f19a9a; border-color: #7a2a2a88; }

@@ -97,9 +97,6 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
   const [message, setMessage] = useState("상점 상품을 불러오는 중...");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [grantUserId, setGrantUserId] = useState("");
-  const [grantAmount, setGrantAmount] = useState("1000");
-  const [granting, setGranting] = useState(false);
 
   async function load() {
     try {
@@ -211,28 +208,6 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
     }
   }
 
-  async function grantCurrency() {
-    const amount = Number(grantAmount);
-    if (!grantUserId || !Number.isInteger(amount) || amount < 1) {
-      setMessage("사용자와 1 이상 정수인 지급량을 확인해 주세요.");
-      return;
-    }
-    if (!window.confirm(`${amount.toLocaleString()} ${data?.currencyDisplayName ?? "크레딧"}을 지급할까요?`)) return;
-    setGranting(true);
-    setMessage("");
-    try {
-      await request("/currency/grant", {
-        method: "POST",
-        body: JSON.stringify({ userId: grantUserId, amount }),
-      });
-      await load();
-      setMessage("크레딧을 지급했습니다.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "크레딧을 지급하지 못했습니다.");
-    } finally {
-      setGranting(false);
-    }
-  }
 
   async function discardPendingImage() {
     if (!form.imageAssetId || !form.imageUploadToken) return;
@@ -302,13 +277,9 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
 
 return (
     <div className="space-y-6">
-      <AdminEditorSections panels={[{"id":"admin-shop-manager-0","label":"상품 목록"},{"id":"admin-shop-manager-1","label":"상품 편집"},{"id":"admin-shop-manager-2","label":"계정 재화 지급"}]}>{[<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+      <AdminEditorSections panels={[{"id":"admin-shop-manager-0","label":"상품 목록"},{"id":"admin-shop-manager-1","label":"상품 편집"}]}>{[<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">SHOP ADMIN</p>
-            <h2 className="mt-2 text-xl font-black">상점 상품 관리</h2>
-            <p className="mt-2 text-sm text-neutral-500">Pack Admin은 내용물과 확률을, 이 화면은 판매 상품과 가격을 관리합니다.</p>
-          </div>
+          <p className="text-sm text-neutral-400">팩 안에 무엇이 나오는지는 ‘카드팩’ 화면에서, 여기서는 판매 가격과 판매 여부를 정해요.</p>
           <button type="button" onClick={newListing} className="flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black hover:bg-yellow-400">
             <Plus className="h-4 w-4" /> 새 상품 만들기
           </button>
@@ -324,7 +295,7 @@ return (
 <><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex items-center gap-3">
           <Package className="h-5 w-5 text-primary" />
-            <div><h2 className="text-xl font-black">{selected ? "상품 편집" : "새 상품 만들기"}</h2><p className="mt-1 text-sm text-neutral-500">현재는 PACK 상품만 지원합니다. 판매 중인 상품은 User Shop에서 실제 구매할 수 있습니다.</p></div>
+            <div><h2 className="text-xl font-black">{selected ? "상품 편집" : "새 상품 만들기"}</h2><p className="mt-1 text-sm text-neutral-500">지금은 카드팩 상품만 팔 수 있어요. 판매 중인 상품은 게임 상점에서 바로 살 수 있어요.</p></div>
         </div>
         <ProductForm
           data={data}
@@ -338,21 +309,6 @@ return (
           onCancel={newListing}
           onSave={() => void save()}
         />
-      </section></>,
-<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
-        <div className="mb-5">
-          <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">SHOP CURRENCY</p>
-          <h2 className="mt-2 text-xl font-black">유저 크레딧 지급</h2>
-          <p className="mt-2 text-sm text-neutral-500">상점 구매에만 사용하는 크레딧입니다. 전투 Gold와 Prism에는 영향을 주지 않습니다.</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
-          <select value={grantUserId} onChange={(event) => setGrantUserId(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm">
-            <option value="">사용자 선택</option>
-            {data.users.map((user) => <option key={user.id} value={user.id}>{user.nickname} · {user.email} · {user.currencyBalance.toLocaleString()} {data.currencyDisplayName}</option>)}
-          </select>
-          <input type="number" min="1" max="1000000" step="1" value={grantAmount} onChange={(event) => setGrantAmount(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm" placeholder="지급량" />
-          <button type="button" disabled={granting} onClick={() => void grantCurrency()} className="rounded bg-amber-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">{granting ? "지급 중..." : "크레딧 지급"}</button>
-        </div>
       </section></>]}</AdminEditorSections>
 
     </div>

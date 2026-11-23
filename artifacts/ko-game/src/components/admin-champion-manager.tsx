@@ -514,9 +514,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
     <div className="mb-5 flex items-end justify-between">
-      <div><div className="text-[10px] font-bold tracking-[.2em] text-neutral-600">CONTENT MANAGEMENT</div>
-        <h2 className="mt-1 text-xl font-black">챔피언 관리</h2>
-        <p className="mt-1 text-xs text-neutral-500">새 챔피언은 미공개로 저장되며 기본 최대 체력은 20입니다.</p></div>
+      <div><p className="text-sm text-neutral-400">새 챔피언은 미공개로 만들어지고, 처음 체력은 20이에요.</p></div>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
 

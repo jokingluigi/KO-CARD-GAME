@@ -22,6 +22,8 @@ type Form = {
   frameOffsetY: number;
 };
 
+const FRAME_TYPE_LABEL: Record<string, string> = { WRESTLER: "선수 카드", TECHNIQUE: "기술 카드" };
+const FRAME_RARITY_LABEL: Record<string, string> = { NORMAL: "일반", EPIC: "에픽", LEGENDARY: "레전더리", CHAMPION: "챔피언", TOKEN: "토큰" };
 function key(cardType: CardFrameCardType, rarity: CardRarity) {
   return `${cardType}:${rarity}`;
 }
@@ -241,10 +243,8 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
   return (
     <section className="space-y-5">
       <div>
-        <div className="font-display text-xs font-bold tracking-[0.2em] text-primary">CARD FRAME</div>
-        <h2 className="mt-1 text-2xl font-black">카드 프레임 관리</h2>
-        <p className="mt-2 text-sm leading-6 text-neutral-500">
-          카드 종류와 희귀도별 프레임을 한 곳에서 관리합니다. 저장된 프레임은 게임, 덱, 컬렉션, 팩 공개, 상점, 카드 미리보기에서 공통으로 사용됩니다.
+        <p className="text-sm leading-6 text-neutral-400">
+          여기서 바꾼 테두리는 게임, 덱, 컬렉션, 카드팩, 상점 등 카드가 나오는 모든 곳에 함께 적용돼요.
         </p>
       </div>
 
@@ -271,8 +271,8 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
                   onClick={() => {if(!adminDraft.confirm())return;setSelectedKey(frameKey);}}
                   className={`w-full rounded border px-3 py-3 text-left transition-colors ${selectedKey === frameKey ? "border-primary bg-primary/10" : "border-neutral-800 hover:border-neutral-600"}`}
                 >
-                  <div className="font-black">{cardType}</div>
-                  <div className="mt-1 text-xs text-neutral-500">{rarity}</div>
+                  <div className="font-black">{FRAME_TYPE_LABEL[cardType] ?? cardType}</div>
+                  <div className="mt-1 text-xs text-neutral-500">{FRAME_RARITY_LABEL[rarity] ?? rarity}</div>
                   <div className={`mt-2 text-[10px] font-bold ${frame?.enabled && frame.frameAssetId ? "text-emerald-300" : "text-neutral-600"}`}>
                     {frame?.enabled && frame.frameAssetId ? "커스텀 프레임" : "기본 프레임"}
                   </div>
@@ -285,7 +285,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
         <div className="rounded-xl border border-neutral-800 bg-black/30 p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-xl font-black">{selectedType} · {selectedRarity}</h3>
+              <h3 className="text-xl font-black">{FRAME_TYPE_LABEL[selectedType] ?? selectedType} · {FRAME_RARITY_LABEL[selectedRarity] ?? selectedRarity}</h3>
               <p className="mt-1 text-xs text-neutral-500">투명 배경 PNG/WEBP 권장 · 프레임 외곽선은 이미지 자체가 담당합니다.</p>
             </div>
             <label className="flex items-center gap-2 text-xs font-bold text-neutral-300">
@@ -337,8 +337,8 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
 
         <aside className="rounded-xl border border-neutral-800 bg-black/30 p-4">
           <div className="mb-3">
-            <div className="text-[10px] font-black tracking-[0.18em] text-neutral-500">LIVE CARD PREVIEW</div>
-            <p className="mt-1 text-xs text-neutral-500">실제 공통 Card Renderer</p>
+            <div className="text-sm font-black text-neutral-300">미리보기</div>
+            <p className="mt-1 text-xs text-neutral-500">게임에 보이는 모습 그대로예요</p>
           </div>
           <CardRenderer
             name={selectedType === "TECHNIQUE" ? "샘플 기술 카드" : "샘플 선수 카드"}
@@ -353,7 +353,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
             className="mx-auto w-full max-w-[220px] shadow-[0_15px_40px_rgba(0,0,0,0.7)]"
           />
           <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-600">
-            TECHNIQUE는 공격력/체력 영역을 표시하지 않습니다.<br />
+            기술 카드는 공격력·체력 칸이 없어요.<br />
             카드별 Artwork 위치 조절값은 이 설정과 독립적으로 유지됩니다.
           </p>
         </aside>

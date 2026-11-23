@@ -167,10 +167,8 @@ export function AdminTagManager({
   }
   return (
     <section data-testid="admin-tag-manager" className="min-w-0">
-      <h2 className="text-xl font-black text-primary">태그 관리</h2>
-      <p className="mt-2 text-sm text-neutral-400">
-        선수 카드를 검색해서 여러 장을 선택한 뒤 태그를 한 번에 연결하거나
-        해제하세요.
+      <p className="text-sm text-neutral-400">
+        태그를 고르고, 선수 여러 장을 체크한 뒤 한 번에 붙이거나 떼세요. 카드 한 장의 태그는 ‘카드 편집’에서도 바꿀 수 있어요.
       </p>
       <form
         className="mt-5 flex gap-2"

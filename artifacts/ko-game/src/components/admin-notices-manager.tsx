@@ -135,9 +135,7 @@ export function AdminNoticesManager({ onUnauthorized }: Props) {
 return (
     <div className="space-y-6">
       <div>
-        <div className="font-display text-xs font-bold tracking-[0.2em] text-primary">MAIN NOTICE</div>
-        <h2 className="mt-1 text-2xl font-black">공지 관리</h2>
-        <p className="mt-2 text-sm text-neutral-500">활성 공지만 일반 사용자 메인 화면에 표시됩니다. 내용은 안전한 일반 텍스트로 렌더링됩니다.</p>
+        <p className="text-sm text-neutral-400">‘활성’으로 켠 공지만 게이머의 메인 화면에 보여요.</p>
       </div>
 {(message || errorMessage) && (
         <div role={errorMessage ? "alert" : "status"} className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
