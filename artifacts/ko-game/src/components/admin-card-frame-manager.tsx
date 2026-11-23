@@ -1,391 +1,102 @@
-import {useAdminMutableDraft} from './admin-editor-sections';
-import {AdminEditorSections} from './admin-editor-sections';
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Image as ImageIcon, RotateCcw, Save, Trash2, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { CardRenderer } from "./card-renderer";
 import { refreshCardFrames, type CardFrameCardType, type CardFrameDefinition } from "../lib/card-frames-client";
 import { allowedCardRarities, type CardRarity } from "../game/cards/types";
+import { adminFetch, Button, EditorPane, errorText, Field, ImagePick, ListPane, ListRow, Notice, Panel, RARITY_KO, SaveLine, Split, Toggle, uploadAdminImage, useAutosave, useMobileEditing } from "./admin-kit";
 
-const adminBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
-const imageAccept = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
+type StoredFrame = CardFrameDefinition & { id: string; frameAssetId: string | null; frameUrl: string | null; updatedAt?: string };
+type Form = { key: string; frameAssetId: string | null; frameUrl: string | null; frameUploadToken: string | null; enabled: boolean; frameScale: number; frameOffsetX: number; frameOffsetY: number };
+
+const TYPE_KO: Record<string, string> = { WRESTLER: "선수 카드", TECHNIQUE: "기술 카드" };
 const cardTypes: CardFrameCardType[] = ["WRESTLER", "TECHNIQUE"];
-const defaultScale = 1.1;
+const keyOf = (t: string, r: string) => `${t}:${r}`;
+const formOf = (k: string, f?: StoredFrame): Form => ({ key: k, frameAssetId: f?.frameAssetId ?? null, frameUrl: f?.frameUrl ?? null, frameUploadToken: null, enabled: f?.enabled ?? true, frameScale: f?.frameScale ?? 1.1, frameOffsetX: f?.frameOffsetX ?? 0, frameOffsetY: f?.frameOffsetY ?? 0 });
 
-type StoredFrame = CardFrameDefinition & { id: string; frameAssetId: string | null; frameUrl: string | null };
-type Form = {
-  frameAssetId: string | null;
-  frameUrl: string | null;
-  frameUploadToken: string | null;
-  enabled: boolean;
-  frameScale: number;
-  frameOffsetX: number;
-  frameOffsetY: number;
-};
-
-const FRAME_TYPE_LABEL: Record<string, string> = { WRESTLER: "선수 카드", TECHNIQUE: "기술 카드" };
-const FRAME_RARITY_LABEL: Record<string, string> = { NORMAL: "일반", EPIC: "에픽", LEGENDARY: "레전더리", CHAMPION: "챔피언", TOKEN: "토큰" };
-function key(cardType: CardFrameCardType, rarity: CardRarity) {
-  return `${cardType}:${rarity}`;
+function Range({ label, value, min, max, step, show, onChange }: { label: string; value: number; min: number; max: number; step: number; show: string; onChange: (v: number) => void }) {
+  return <Field label={<span style={{ display: "flex", justifyContent: "space-between" }}>{label}<em style={{ fontStyle: "normal", color: "#e3b341" }}>{show}</em></span>}><input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} style={{ accentColor: "#e3b341", minHeight: 0, padding: 0 }} /></Field>;
 }
 
-function blankForm(): Form {
-  return {
-    frameAssetId: null,
-    frameUrl: null,
-    frameUploadToken: null,
-    enabled: true,
-    frameScale: defaultScale,
-    frameOffsetX: 0,
-    frameOffsetY: 0,
-  };
-}
-
-function formFromFrame(frame?: StoredFrame): Form {
-  if (!frame) return blankForm();
-  return {
-    frameAssetId: frame.frameAssetId,
-    frameUrl: frame.frameUrl,
-    frameUploadToken: null,
-    enabled: frame.enabled,
-    frameScale: frame.frameScale,
-    frameOffsetX: frame.frameOffsetX,
-    frameOffsetY: frame.frameOffsetY,
-  };
-}
-
-async function readMessage(response: Response) {
-  const body = await response.json().catch(() => ({})) as { message?: string };
-  return body.message ?? "요청을 처리하지 못했습니다.";
-}
-
+/** 카드 프레임 — 카드 종류·등급별 테두리 그림. 고치면 바로 저장돼요. */
 export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () => void }) {
-  const [frames, setFrames] = useState<StoredFrame[]>([]);
-  const [selectedKey, setSelectedKey] = useState(key("WRESTLER", "NORMAL"));
-  const [form, setForm] = useState<Form>(blankForm);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const [frames, setFrames] = useState<StoredFrame[] | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [form, setForm] = useState<Form | null>(null);
   const [error, setError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const mobile = useMobileEditing();
+  const keys = useMemo(() => cardTypes.flatMap((t) => allowedCardRarities(t).map((r) => keyOf(t, r))), []);
 
-  const selectedType = selectedKey.split(":")[0] as CardFrameCardType;
-  const selectedRarity = selectedKey.split(":")[1] as CardRarity;
-  const selectedFrame = frames.find((frame) => key(frame.cardType, frame.rarity) === selectedKey);
-  const availableKeys = useMemo(
-    () => cardTypes.flatMap((cardType) => allowedCardRarities(cardType).map((rarity) => key(cardType, rarity))),
-    [],
-  );
+  useEffect(() => { adminFetch<{ frames?: StoredFrame[] }>("/card-frames", undefined, onUnauthorized).then((b) => setFrames(b.frames ?? [])).catch((e) => setError(errorText(e, "프레임을 불러오지 못했어요."))); }, []);
+  const frameFor = (k: string) => frames?.find((f) => keyOf(f.cardType, f.rarity) === k);
 
-  const adminDraft=useAdminMutableDraft(form,selectedKey);
-  async function load() {
-    setLoading(true);
-    try {
-      const response = await fetch(`${adminBase}/card-frames`, { credentials: "include" });
-      if (response.status === 401 || response.status === 403) {
-        onUnauthorized();
-        return;
-      }
-      if (!response.ok) throw new Error(await readMessage(response));
-      const body = await response.json() as { frames?: StoredFrame[] };
-      setFrames(body.frames ?? []);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "카드 프레임을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const autosave = useAutosave(form?.key ?? null, form, async (next) => {
+    const [t, r] = next.key.split(":");
+    const { key: _k, ...body } = next;
+    const saved = await adminFetch<{ frame: StoredFrame }>(`/card-frames/${t}/${r}`, { method: "PUT", json: body }, onUnauthorized);
+    setFrames((list) => [...(list ?? []).filter((f) => keyOf(f.cardType, f.rarity) !== next.key), saved.frame]);
+    await refreshCardFrames();
+    return "저장됨 · 게임에도 바로 반영돼요";
+  }, 700);
 
-  useEffect(() => {
-    void load();
-  }, []);
-
-  useEffect(() => {
-    setForm(formFromFrame(selectedFrame));adminDraft.markSaved();
-  }, [selectedKey, selectedFrame?.id, selectedFrame?.updatedAt]);
-
-  async function discardPending() {
-    if (!form.frameAssetId || !form.frameUploadToken) return;
-    await fetch(`${adminBase}/cards/images/discard`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageAssetId: form.frameAssetId,
-        imageUploadToken: form.frameUploadToken,
-      }),
-    });
-  }
-
+  function select(k: string) { void autosave.flush(); setSelected(k); setForm(formOf(k, frameFor(k))); mobile.open(); }
   async function upload(file: File) {
-    const extension = file.name.toLowerCase().split(".").pop() ?? "";
-    const valid = (file.type === "image/png" && extension === "png")
-      || (file.type === "image/jpeg" && ["jpg", "jpeg"].includes(extension))
-      || (file.type === "image/webp" && extension === "webp");
-    if (!valid) {
-      setError("PNG, JPG, JPEG, WEBP 이미지만 업로드할 수 있습니다.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      await discardPending();
-      const requestResponse = await fetch(`${adminBase}/cards/images/upload-url`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
-      });
-      if (requestResponse.status === 401 || requestResponse.status === 403) {
-        onUnauthorized();
-        return;
-      }
-      if (!requestResponse.ok) throw new Error(await readMessage(requestResponse));
-      const uploadInfo = await requestResponse.json() as { uploadURL: string; objectPath: string };
-      const putResponse = await fetch(uploadInfo.uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!putResponse.ok) throw new Error("프레임 파일 업로드에 실패했습니다.");
-      const completeResponse = await fetch(`${adminBase}/cards/images/complete`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectPath: uploadInfo.objectPath, contentType: file.type }),
-      });
-      if (!completeResponse.ok) throw new Error(await readMessage(completeResponse));
-      const asset = await completeResponse.json() as {
-        imageAssetId: string;
-        imageUrl: string;
-        imageUploadToken: string;
-      };
-      setForm((current) => ({
-        ...current,
-        frameAssetId: asset.imageAssetId,
-        frameUrl: asset.imageUrl,
-        frameUploadToken: asset.imageUploadToken,
-      }));
-      setMessage("프레임을 업로드했습니다. 저장을 눌러 적용하세요.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "프레임을 업로드하지 못했습니다.");
-    } finally {
-      setBusy(false);
-    }
+    if (!form) return;
+    setUploading(true);
+    try { const a = await uploadAdminImage(file, onUnauthorized); setForm({ ...form, frameAssetId: a.imageAssetId, frameUrl: a.imageUrl, frameUploadToken: a.imageUploadToken }); }
+    catch (e) { autosave.setState({ kind: "error", message: errorText(e, "그림을 올리지 못했어요.") }); }
+    finally { setUploading(false); }
   }
-
-  async function save() {
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const response = await fetch(`${adminBase}/card-frames/${selectedType}/${selectedRarity}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (response.status === 401 || response.status === 403) {
-        onUnauthorized();
-        return;
-      }
-      if (!response.ok) throw new Error(await readMessage(response));
-      const body = await response.json() as { frame: StoredFrame };
-      setFrames((current) => [
-        ...current.filter((frame) => key(frame.cardType, frame.rarity) !== selectedKey),
-        body.frame,
-      ]);
-      setForm(formFromFrame(body.frame));adminDraft.markSaved();
-      await refreshCardFrames();
-      setMessage("카드 프레임을 저장했습니다. 게임과 모든 카드 화면에 반영됩니다.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "카드 프레임을 저장하지 못했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function reset() {
-    if (!window.confirm("이 프레임을 기본값으로 복원할까요?")) return;
-    setBusy(true);
-    setError("");
-    setMessage("");
+    if (!form || !window.confirm("이 테두리를 기본 그림으로 되돌릴까요?")) return;
+    const [t, r] = form.key.split(":");
     try {
-      const response = await fetch(`${adminBase}/card-frames/${selectedType}/${selectedRarity}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (response.status === 401 || response.status === 403) {
-        onUnauthorized();
-        return;
-      }
-      if (!response.ok) throw new Error(await readMessage(response));
-      setFrames((current) => current.filter((frame) => key(frame.cardType, frame.rarity) !== selectedKey));
-      setForm(blankForm());
+      await adminFetch(`/card-frames/${t}/${r}`, { method: "DELETE" }, onUnauthorized);
+      setFrames((list) => (list ?? []).filter((f) => keyOf(f.cardType, f.rarity) !== form.key));
+      const fresh = formOf(form.key); autosave.markSaved(fresh); setForm(fresh);
       await refreshCardFrames();
-      setMessage("기본 카드 프레임으로 복원했습니다.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "기본값을 복원하지 못했습니다.");
-    } finally {
-      setBusy(false);
-    }
+      autosave.setState({ kind: "saved", message: "기본 테두리로 되돌렸어요" });
+    } catch (e) { autosave.setState({ kind: "error", message: errorText(e, "되돌리지 못했어요.") }); }
   }
 
-  const preview = {
-    cardType: selectedType,
-    frameUrl: form.frameUrl,
-    enabled: form.enabled,
-    frameScale: form.frameScale,
-    frameOffsetX: form.frameOffsetX,
-    frameOffsetY: form.frameOffsetY,
-  } satisfies Partial<CardFrameDefinition>;
+  if (!frames) return error ? <Notice tone="error">{error}</Notice> : <p className="text-sm text-neutral-400">불러오는 중…</p>;
+  const set = (patch: Partial<Form>) => setForm((f) => (f ? { ...f, ...patch } : f));
+  const [type, rarity] = (form?.key ?? "WRESTLER:NORMAL").split(":") as [CardFrameCardType, CardRarity];
 
   return (
-    <section className="space-y-5">
-      <div>
-        <p className="text-sm leading-6 text-neutral-400">
-          여기서 바꾼 테두리는 게임, 덱, 컬렉션, 카드팩, 상점 등 카드가 나오는 모든 곳에 함께 적용돼요.
-        </p>
-      </div>
-
-      {(error || message) && (
-        <div className={`rounded border px-3 py-2 text-xs font-bold ${error ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
-          {error || message}
-        </div>
-      )}
-
-      <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)_250px]">
-        <aside className="rounded-xl border border-neutral-800 bg-black/30 p-3">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-black">프레임 종류</h3>
-            <ImageIcon className="h-4 w-4 text-primary" />
-          </div>
-          <div className="space-y-2">
-            {availableKeys.map((frameKey) => {
-              const [cardType, rarity] = frameKey.split(":") as [CardFrameCardType, CardRarity];
-              const frame = frames.find((item) => key(item.cardType, item.rarity) === frameKey);
-              return (
-                <button
-                  type="button"
-                  key={frameKey}
-                  onClick={() => {if(!adminDraft.confirm())return;setSelectedKey(frameKey);}}
-                  className={`w-full rounded border px-3 py-3 text-left transition-colors ${selectedKey === frameKey ? "border-primary bg-primary/10" : "border-neutral-800 hover:border-neutral-600"}`}
-                >
-                  <div className="font-black">{FRAME_TYPE_LABEL[cardType] ?? cardType}</div>
-                  <div className="mt-1 text-xs text-neutral-500">{FRAME_RARITY_LABEL[rarity] ?? rarity}</div>
-                  <div className={`mt-2 text-[10px] font-bold ${frame?.enabled && frame.frameAssetId ? "text-emerald-300" : "text-neutral-600"}`}>
-                    {frame?.enabled && frame.frameAssetId ? "커스텀 프레임" : "기본 프레임"}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
-
-        <div className="rounded-xl border border-neutral-800 bg-black/30 p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-xl font-black">{FRAME_TYPE_LABEL[selectedType] ?? selectedType} · {FRAME_RARITY_LABEL[selectedRarity] ?? selectedRarity}</h3>
-              <p className="mt-1 text-xs text-neutral-500">투명 배경 PNG/WEBP 권장 · 프레임 외곽선은 이미지 자체가 담당합니다.</p>
+    <div className="ak-page">
+      <p className="ak-hint">여기서 바꾼 테두리는 게임, 덱, 컬렉션, 카드팩, 상점 등 카드가 나오는 모든 곳에 함께 적용돼요.</p>
+      <Split editing={mobile.editing}
+        list={<ListPane count="카드 종류 · 등급">
+          {keys.map((k) => { const [t, r] = k.split(":"); const f = frameFor(k); const custom = Boolean(f?.enabled && f.frameAssetId); return <ListRow key={k} thumb={f?.frameUrl ?? null} selected={k === selected} onClick={() => select(k)} title={`${TYPE_KO[t!]} · ${RARITY_KO[r!] ?? r}`} badge={custom ? "내 그림" : "기본"} tone={custom ? "on" : "off"} />; })}
+        </ListPane>}
+        editor={<EditorPane onBack={() => { void autosave.flush(); mobile.back(); }} status={<SaveLine state={autosave.state} />} right={form && (frameFor(form.key) ? <Button onClick={() => void reset()}>기본으로 되돌리기</Button> : null)}>
+          {form && <div className="ak-frame-layout">
+            <div className="ak-panel-body">
+              <Panel title={`${TYPE_KO[type]} · ${RARITY_KO[rarity] ?? rarity} 테두리`}>
+                <Toggle checked={form.enabled} onChange={(enabled) => set({ enabled })} label={form.enabled ? "이 테두리 쓰는 중" : "꺼짐 (기본 테두리 사용)"} />
+                <div className="ak-row-actions" style={{ alignItems: "center" }}>
+                  {form.frameUrl ? <img src={form.frameUrl} alt="" style={{ width: 64, height: 90, objectFit: "contain", borderRadius: 6, background: "#07090c" }} /> : <span className="ak-hint" style={{ margin: 0 }}>아직 기본 테두리예요.</span>}
+                  <ImagePick label={form.frameUrl ? "다른 그림으로 바꾸기" : "테두리 그림 올리기"} busy={uploading} onFile={(f) => void upload(f)} />
+                  {form.frameUrl && <Button kind="ghost" onClick={() => set({ frameAssetId: null, frameUrl: null, frameUploadToken: null })}>그림 빼기</Button>}
+                </div>
+                <p className="ak-hint" style={{ margin: 0 }}>배경이 투명한 PNG·WEBP가 좋아요.</p>
+              </Panel>
+              <Panel title="크기 · 위치 맞추기">
+                <Range label="크기" value={form.frameScale} min={0.75} max={1.5} step={0.01} show={`${Math.round(form.frameScale * 100)}%`} onChange={(frameScale) => set({ frameScale })} />
+                <Range label="좌우" value={form.frameOffsetX} min={-15} max={15} step={0.5} show={`${form.frameOffsetX.toFixed(1)}%`} onChange={(frameOffsetX) => set({ frameOffsetX })} />
+                <Range label="위아래" value={form.frameOffsetY} min={-15} max={15} step={0.5} show={`${form.frameOffsetY.toFixed(1)}%`} onChange={(frameOffsetY) => set({ frameOffsetY })} />
+                <div><Button kind="ghost" onClick={() => set({ frameScale: 1.1, frameOffsetX: 0, frameOffsetY: 0 })}>크기·위치 처음대로</Button></div>
+              </Panel>
             </div>
-            <label className="flex items-center gap-2 text-xs font-bold text-neutral-300">
-              <input
-                type="checkbox"
-                checked={form.enabled}
-                onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))}
-                className="accent-primary"
-              />
-              활성화
-            </label>
-          </div>
-<AdminEditorSections panels={[{"id":"admin-card-frame-manager-0","label":"이미지 리소스"},{"id":"admin-card-frame-manager-1","label":"프레임 정렬"}]}>{[<><div className="mt-5 rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
-            <div className="flex flex-wrap items-center gap-3">
-              {form.frameUrl ? (
-                <img src={form.frameUrl} alt="" className="h-28 w-20 rounded border border-neutral-700 object-contain" />
-              ) : (
-                <div className="flex h-28 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-center text-[10px] text-neutral-600">기본 프레임 사용</div>
-              )}
-              <div className="space-y-2">
-                <button type="button" disabled={busy} onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-sm font-bold hover:border-primary disabled:opacity-50">
-                  <Upload className="h-4 w-4" /> {busy ? "처리 중..." : "프레임 업로드/교체"}
-                </button>
-                {form.frameUrl && (
-                  <button type="button" disabled={busy} onClick={() => { void discardPending(); setForm((current) => ({ ...current, frameAssetId: null, frameUrl: null, frameUploadToken: null })); }} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-300 disabled:opacity-50">
-                    <Trash2 className="h-3.5 w-3.5" /> 커스텀 이미지 제거
-                  </button>
-                )}
-                <p className="text-[10px] text-neutral-600">카드 이미지 업로드와 같은 안전한 저장소/검증 흐름을 사용합니다.</p>
-              </div>
+            <div className="ak-frame-preview">
+              <CardRenderer name={type === "TECHNIQUE" ? "샘플 기술 카드" : "샘플 선수 카드"} cardType={type} cost={4} attack={type === "TECHNIQUE" ? 0 : 7} health={type === "TECHNIQUE" ? 0 : 8}
+                rulesText={type === "TECHNIQUE" ? "대상에게 효과를 줍니다." : "등장:상대 선수 하나에게 2 데미지를 줍니다."} rarity={rarity}
+                frameOverride={{ cardType: type, frameUrl: form.frameUrl, enabled: form.enabled, frameScale: form.frameScale, frameOffsetX: form.frameOffsetX, frameOffsetY: form.frameOffsetY }} size="admin" className="mx-auto w-full max-w-[230px]" />
+              <p className="ak-hint" style={{ textAlign: "center" }}>게임에 보이는 모습 그대로예요</p>
             </div>
-            <input ref={fileInputRef} type="file" accept={imageAccept} className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); event.currentTarget.value = ""; }} />
-          </div></>,
-<><div className="mt-5 grid gap-4 sm:grid-cols-3">
-            <RangeField label="프레임 크기" value={form.frameScale} min={0.75} max={1.5} step={0.01} suffix={`${Math.round(form.frameScale * 100)}%`} onChange={(value) => setForm((current) => ({ ...current, frameScale: value }))} />
-            <RangeField label="가로 위치" value={form.frameOffsetX} min={-15} max={15} step={0.5} suffix={`${form.frameOffsetX.toFixed(1)}%`} onChange={(value) => setForm((current) => ({ ...current, frameOffsetX: value }))} />
-            <RangeField label="세로 위치" value={form.frameOffsetY} min={-15} max={15} step={0.5} suffix={`${form.frameOffsetY.toFixed(1)}%`} onChange={(value) => setForm((current) => ({ ...current, frameOffsetY: value }))} />
-          </div></>]}</AdminEditorSections>
-<div className="mt-5 flex flex-wrap gap-2">
-            <button type="button" disabled={busy || loading} onClick={() => void save()} className="flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">
-              <Save className="h-4 w-4" /> 저장
-            </button>
-            <button type="button" disabled={busy} onClick={() => void reset()} className="flex items-center gap-2 rounded border border-neutral-700 px-4 py-2.5 text-sm font-bold text-neutral-300 disabled:opacity-50">
-              <RotateCcw className="h-4 w-4" /> 기본값 복원
-            </button>
-          </div>
-
-        </div>
-
-        <aside className="rounded-xl border border-neutral-800 bg-black/30 p-4">
-          <div className="mb-3">
-            <div className="text-sm font-black text-neutral-300">미리보기</div>
-            <p className="mt-1 text-xs text-neutral-500">게임에 보이는 모습 그대로예요</p>
-          </div>
-          <CardRenderer
-            name={selectedType === "TECHNIQUE" ? "샘플 기술 카드" : "샘플 선수 카드"}
-            cardType={selectedType}
-            cost={4}
-            attack={selectedType === "TECHNIQUE" ? 0 : 7}
-            health={selectedType === "TECHNIQUE" ? 0 : 8}
-            rulesText={selectedType === "TECHNIQUE" ? "대상에게 효과를 적용합니다." : "필드에 등장하면 다음 효과를 적용합니다."}
-            rarity={selectedRarity}
-            frameOverride={preview}
-            size="admin"
-            className="mx-auto w-full max-w-[220px] shadow-[0_15px_40px_rgba(0,0,0,0.7)]"
-          />
-          <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-600">
-            기술 카드는 공격력·체력 칸이 없어요.<br />
-            카드별 Artwork 위치 조절값은 이 설정과 독립적으로 유지됩니다.
-          </p>
-        </aside>
-      </div>
-    </section>
-  );
-}
-
-function RangeField({
-  label,
-  value,
-  min,
-  max,
-  step,
-  suffix,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  suffix: string;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="text-xs font-bold text-neutral-400">
-      <span className="flex items-center justify-between gap-2">
-        {label}
-        <span className="text-primary">{suffix}</span>
-      </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} className="mt-2 w-full accent-primary" />
-    </label>
+          </div>}
+        </EditorPane>}
+      />
+    </div>
   );
 }

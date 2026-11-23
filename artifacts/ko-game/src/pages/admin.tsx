@@ -15,6 +15,7 @@ import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/components/admin-layout";
 import "@/styles/admin-console.css";
 import "@/components/admin-workspace.css";
+const AdminChampionStudio = lazy(() => import("@/components/admin-champion-studio").then((m) => ({ default: m.AdminChampionStudio })));
 const AdminSystem = lazy(() => import("@/components/admin-system").then((m) => ({ default: m.AdminSystem })));
 const AdminCosmetics = lazy(() => import("@/components/admin-cosmetics").then((m) => ({ default: m.AdminCosmetics })));
 const AdminShopHub = lazy(() => import("@/components/admin-hubs").then((m) => ({ default: m.AdminShopHub })));
@@ -212,7 +213,8 @@ export default function Admin() {
           : page?.id === "card-edit" ? <AdminCardManager onUnauthorized={onUnauthorized} editOnly onDone={(id?: string) => goPath(id ? `/admin/cards?card=${encodeURIComponent(id)}` : "/admin/cards")} />
           : page?.id === "tags" ? <AdminTagManager onUnauthorized={onUnauthorized} />
           : page?.id === "frames" ? <AdminCardFrameManager onUnauthorized={onUnauthorized} />
-          : page?.id === "champions" ? <AdminChampionManager onUnauthorized={onUnauthorized} />
+          : page?.id === "champions" ? <AdminChampionStudio onUnauthorized={onUnauthorized} onOpenAdvanced={(id) => goPath(`/admin/champion-edit?edit=${encodeURIComponent(id)}`)} onTestGame={(id) => navigate(`${ROUTES.MAIN_MENU}?source=admin&testChampionId=${encodeURIComponent(id)}`)} />
+          : page?.id === "champion-edit" ? <AdminChampionManager onUnauthorized={onUnauthorized} editOnly onDone={(id?: string) => goPath(id ? `/admin/champions?champion=${encodeURIComponent(id)}` : "/admin/champions")} />
           : page?.id === "battle-sprites" ? <AdminBattleSprites />
           : page?.id === "ai-decks" ? <AdminAIDeckManager onUnauthorized={onUnauthorized} />
           : page?.id === "draft" ? <AdminDraftManager />

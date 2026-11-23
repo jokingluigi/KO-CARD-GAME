@@ -28,6 +28,7 @@ export const ADMIN_PAGES = [
   { id: "frames", group: "cards", path: "/admin/card-frames", label: "카드 프레임", description: "카드 종류와 등급별 테두리 그림을 바꿔요.", keywords: "희귀도 이미지 테두리" },
 
   { id: "champions", group: "champions", path: "/admin/champions", label: "챔피언 편집", description: "고유 능력, 퀘스트, 토큰, 대사와 초상화를 고쳐요.", keywords: "강화 보상 감정표현 시작 능력 피니셔 테스트" },
+  { id: "champion-edit", group: "champions", path: "/admin/champion-edit", label: "챔피언 자세히 편집", description: "능력 효과, 퀘스트 조건, 피니셔, 음성 같은 자세한 설정을 고쳐요. 다 고치면 저장을 눌러 주세요.", keywords: "고급 상세 편집", hidden: true },
   { id: "battle-sprites", group: "champions", path: "/admin/battle-sprites", label: "대전 스프라이트", description: "챔피언·스킨별 대전 그림과 표정을 등록하고 배치를 확인해요.", keywords: "스프라이트 표정 각성 배치 미리보기 스킨" },
 
   { id: "ai-decks", group: "modes", path: "/admin/ai-decks", label: "AI 대전", description: "AI 챔피언과 대전 덱을 고쳐요.", keywords: "일반 AI 덱 난이도 쉬움 보통 어려움" },
