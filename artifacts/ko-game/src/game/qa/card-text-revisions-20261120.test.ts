@@ -35,3 +35,11 @@ test("'무적' cards cannot be destroyed while the condition holds",()=>{
  s.players[0].board=[j,null,null,null];
  assert.equal(destroyCard(s,s.players[0].id,'joker').success,true);
 });
+
+test('a card reworded in the admin studio keeps the effects of its saved effect wording',()=>{
+ const rec=records.find(r=>r.name==='고통 연주자')??records[0]!;
+ const base=cardRecordToDefinition(rec);
+ const reworded=cardRecordToDefinition({...rec,text:'완전히 다른 설명 문장',effectConfig:{...rec.effectConfig,effectText:rec.text}});
+ assert.equal(strip(reworded).replace(/,?"effectText":"[^"]*"/,''),strip(base));
+ assert.equal(reworded.rulesText,'완전히 다른 설명 문장');
+});

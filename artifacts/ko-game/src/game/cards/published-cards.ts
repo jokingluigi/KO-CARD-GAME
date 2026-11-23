@@ -242,6 +242,13 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     const definition = cardRecordToDefinitionFromText({ ...card, text: revision.from });
     return { ...definition, rulesText: card.text, ...('text' in definition ? { text: card.text } : {}) } as CardDefinition;
   }
+  // An administrator reworded the card but kept its effects: they resolve from the wording saved in
+  // effectConfig.effectText, while players see the new text.
+  const effectText = (card.effectConfig as Record<string, unknown> | null | undefined)?.effectText;
+  if (typeof effectText === 'string' && effectText.trim() && effectText !== card.text) {
+    const definition = cardRecordToDefinitionFromText({ ...card, text: effectText });
+    return { ...definition, rulesText: card.text, ...('text' in definition ? { text: card.text } : {}) } as CardDefinition;
+  }
   return cardRecordToDefinitionFromText(card);
 }
 

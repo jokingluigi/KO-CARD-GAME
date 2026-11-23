@@ -51,6 +51,11 @@ const AdminDraftManager = lazy(() =>
     default: m.AdminDraftManager,
   })),
 );
+const AdminCardStudio = lazy(() =>
+  import("@/components/admin-card-studio").then((m) => ({
+    default: m.AdminCardStudio,
+  })),
+);
 const AdminCardManager = lazy(() =>
   import("@/components/admin-card-manager").then((m) => ({
     default: m.AdminCardManager,
@@ -245,6 +250,8 @@ export default function Admin() {
             <AdminTagManager onUnauthorized={onUnauthorized} />
           ) : page?.id === "draft" ? (
             <AdminDraftManager />
+          ) : page?.id === "card-studio" ? (
+            <AdminCardStudio onUnauthorized={onUnauthorized} onOpenAdvanced={(id) => navigate(`/admin/cards?edit=${encodeURIComponent(id)}`)} />
           ) : page?.id === "cards" ? (
             <AdminCardManager onUnauthorized={onUnauthorized} />
           ) : page?.id === "champions" ? (

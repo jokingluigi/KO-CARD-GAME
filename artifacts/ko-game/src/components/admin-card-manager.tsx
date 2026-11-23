@@ -1,4 +1,3 @@
-import { AdminCardTextTidy } from "./admin-card-text-tidy";
 import {CardIntroduction} from "./card-introduction";
 import {CardRulesText} from "./card-rules-text";
 import {AdminEditorWorkspace} from './admin-editor-workspace';
@@ -258,6 +257,10 @@ export function AdminCardManager({
       if (!response.ok) throw new Error(await responseMessage(response));
       const body = (await response.json()) as { cards: CardRecord[] };
       setCards(body.cards);
+      // Opened from 카드 빠른 편집 → "자세히 편집": go straight to that card.
+      const editId = new URLSearchParams(window.location.search).get("edit");
+      const editCard = editId ? body.cards.find((card) => card.id === editId) : undefined;
+      if (editCard) { window.history.replaceState(null, "", window.location.pathname); window.setTimeout(() => openEdit(editCard), 0); }
       const selection = await fetch(`${adminApiBase}/draft/card-selection`, { credentials: "include" });
       if (selection.status === 401) { onUnauthorized(); return; }
       if (!selection.ok) throw new Error(await responseMessage(selection));
@@ -628,7 +631,6 @@ export function AdminCardManager({
   const adminDraftDirty=useAdminDraftGuard(isFormOpen,{preview,imageDisplaySettings,imageUrl,entranceAudio});
   return (
     <div>
-      <AdminCardTextTidy onUnauthorized={onUnauthorized} />
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-600">CONTENT MANAGEMENT</div>

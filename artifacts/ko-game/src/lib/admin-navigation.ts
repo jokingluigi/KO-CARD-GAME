@@ -27,6 +27,14 @@ export const ADMIN_PAGES = [
   {id:"card-statistics",group:"statistics",path:"/admin/card-statistics",label:"카드 통계",description:"실제 유저의 카드 채용·플레이·승률을 확인합니다.",keywords:"사용 통계 인기 채용률 사용률 승률"},
   {id:"champion-statistics",group:"statistics",path:"/admin/champion-statistics",label:"챔피언 통계",description:"챔피언 선택·고유 능력·퀘스트 완료를 확인합니다.",keywords:"사용 통계 선택률 승률 퀘스트"},
   {
+    id: "card-studio",
+    group: "cards",
+    path: "/admin/card-studio",
+    label: "카드 빠른 편집",
+    description: "카드를 만들고 고치면 바로 저장돼요. 효과가 바뀌는 글 수정은 먼저 물어봐요.",
+    keywords: "카드 만들기 수정 효과 글 텍스트 자동 저장 스튜디오",
+  },
+  {
     id: "cards",
     group: "cards",
     path: "/admin/cards",
