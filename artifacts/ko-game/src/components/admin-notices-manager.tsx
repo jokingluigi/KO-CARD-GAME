@@ -1,235 +1,76 @@
-import {useAdminDraftGuard} from './admin-editor-sections';
-import {useAdminList,AdminListControls} from './admin-list-controls';
-import {AdminEditorSections} from './admin-editor-sections';
-import { Megaphone, Power, Save, Send, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { adminFetch, Button, EditorPane, errorText, Field, Grid, ListPane, ListRow, Notice, NumberInput, Panel, SaveLine, Split, Toggle, useAutosave, useMobileEditing } from "./admin-kit";
 
-type NoticeRecord = {
-  id: string;
-  title: string;
-  body: string;
-  displayOrder: number;
-  enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+type NoticeRecord = { id: string; title: string; body: string; displayOrder: number; enabled: boolean; createdAt: string; updatedAt: string };
 
-type Props = {
-  onUnauthorized: () => void;
-};
+/** 공지사항 — 목록에서 고르면 오른쪽에서 고치고, 고치면 바로 저장돼요. */
+export function AdminNoticesManager({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const [notices, setNotices] = useState<NoticeRecord[] | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<NoticeRecord | null>(null);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
+  const mobile = useMobileEditing();
 
-const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin/notices`;
-
-async function readMessage(response: Response) {
-  try {
-    return ((await response.json()) as { message?: string }).message ?? "요청을 처리하지 못했습니다.";
-  } catch {
-    return "요청을 처리하지 못했습니다.";
-  }
-}
-
-export function AdminNoticesManager({ onUnauthorized }: Props) {
-  const [notices, setNotices] = useState<NoticeRecord[]>([]);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [displayOrder, setDisplayOrder] = useState("0");
-  const [enabled, setEnabled] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-
-  useEffect(() => {
-    void loadNotices();
-  }, []);
-
-  async function loadNotices() {
-    setLoading(true);
+  async function load() {
     try {
-      const response = await fetch(apiBase, { credentials: "include" });
-      if (response.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      if (!response.ok) throw new Error(await readMessage(response));
-      const result = await response.json() as { notices?: NoticeRecord[] };
-      setNotices(result.notices ?? []);
-    } catch (reason) {
-      setErrorMessage(reason instanceof Error ? reason.message : "공지를 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
+      const body = await adminFetch<{ notices?: NoticeRecord[] }>("/notices", undefined, onUnauthorized);
+      setNotices(body.notices ?? []);
+    } catch (e) { setError(errorText(e, "공지를 불러오지 못했어요.")); setNotices([]); }
   }
+  useEffect(() => { void load(); }, []);
 
-  async function createNotice(event: React.FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    setMessage("");
-    setErrorMessage("");
+  const autosave = useAutosave(draft?.id ?? null, draft, async (next) => {
+    if (!next.title.trim() || !next.body.trim()) throw new Error("제목과 내용을 둘 다 써 주세요.");
+    const body = await adminFetch<{ notice: NoticeRecord }>(`/notices/${encodeURIComponent(next.id)}`, { method: "PATCH", json: next }, onUnauthorized);
+    setNotices((list) => list?.map((n) => (n.id === next.id ? body.notice : n)) ?? list);
+  });
+
+  function select(notice: NoticeRecord) { void autosave.flush(); setSelectedId(notice.id); setDraft(notice); mobile.open(); }
+
+  async function create() {
     try {
-      const response = await fetch(apiBase, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          body,
-          displayOrder: Number(displayOrder),
-          enabled,
-        }),
-      });
-      if (response.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      if (!response.ok) throw new Error(await readMessage(response));
-      setTitle("");
-      setBody("");
-      setDisplayOrder("0");
-      setEnabled(true);
-      setMessage("공지를 추가했습니다.");
-      await loadNotices();
-    } catch (reason) {
-      setErrorMessage(reason instanceof Error ? reason.message : "공지를 추가하지 못했습니다.");
-    } finally {
-      setSaving(false);
-    }
+      const body = await adminFetch<{ notice?: NoticeRecord; notices?: NoticeRecord[] }>("/notices", { method: "POST", json: { title: "새 공지", body: "내용을 써 주세요.", displayOrder: 0, enabled: false } }, onUnauthorized);
+      await load();
+      const created = body.notice;
+      if (created) select(created);
+    } catch (e) { setError(errorText(e, "공지를 만들지 못했어요.")); }
   }
 
-  async function deleteNotice(notice: NoticeRecord) {
-    if (!window.confirm(`“${notice.title}” 공지를 삭제할까요?\n메인 화면에서도 제거되며 되돌릴 수 없습니다.`)) return;
-    setDeleting(notice.id); setMessage(""); setErrorMessage("");
+  async function remove() {
+    if (!draft || !window.confirm(`"${draft.title}" 공지를 지울까요?\n게이머 화면에서도 사라지고 되돌릴 수 없어요.`)) return;
     try {
-      const response = await fetch(`${apiBase}/${encodeURIComponent(notice.id)}`, { method: "DELETE", credentials: "include" });
-      if (response.status === 401 || response.status === 403) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await readMessage(response));
-      setNotices(current => current.filter(item => item.id !== notice.id));
-      setMessage("공지를 삭제했습니다.");
-    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "공지를 삭제하지 못했습니다."); }
-    finally { setDeleting(null); }
+      await adminFetch(`/notices/${encodeURIComponent(draft.id)}`, { method: "DELETE" }, onUnauthorized);
+      setNotices((list) => list?.filter((n) => n.id !== draft.id) ?? list);
+      setDraft(null); setSelectedId(null); mobile.back();
+    } catch (e) { autosave.setState({ kind: "error", message: errorText(e, "지우지 못했어요.") }); }
   }
-  async function updateNotice(notice: NoticeRecord) {
-    setMessage("");
-    setErrorMessage("");
-    const response = await fetch(`${apiBase}/${encodeURIComponent(notice.id)}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(notice),
-    });
-    if (response.status === 401) {
-      onUnauthorized();
-      return;
-    }
-    if (!response.ok) {
-      setErrorMessage(await readMessage(response));
-      return;
-    }
-    const result = await response.json() as { notice: NoticeRecord };
-    setNotices((current) => current.map((item) => item.id === notice.id ? result.notice : item));
-    setMessage("공지를 저장했습니다.");
-  }
-  useAdminDraftGuard(true,{title,body,displayOrder,enabled});
-  const listing=useAdminList(notices,(notice)=>notice.title+" "+notice.body);
-return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-neutral-400">‘활성’으로 켠 공지만 게이머의 메인 화면에 보여요.</p>
-      </div>
-{(message || errorMessage) && (
-        <div role={errorMessage ? "alert" : "status"} className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
-          {errorMessage || message}
-        </div>
-      )}
-<AdminEditorSections panels={[{"id":"admin-notices-manager-0","label":"등록된 공지"},{"id":"admin-notices-manager-1","label":"새 공지 작성"}]}>{[<><section className="space-y-3">
-        <h3 className="text-sm font-black text-neutral-300">등록된 공지</h3><AdminListControls view={listing} label="공지"/>
-        {loading ? (
-          <p className="text-xs text-neutral-500">공지를 불러오는 중...</p>
-        ) : notices.length === 0 ? (
-          <p className="rounded border border-dashed border-neutral-800 px-3 py-8 text-center text-xs text-neutral-600">등록된 공지가 없습니다.</p>
-        ) : listing.records.map((notice) => (
-          <article key={notice.id} data-notice-id={notice.id} className="space-y-3 rounded-lg border border-neutral-800 bg-black/30 p-4">
-            <input
-              aria-label="공지 제목"
-              value={notice.title}
-              onChange={(event) => setNotices((current) => current.map((item) => item.id === notice.id ? { ...item, title: event.target.value } : item))}
-              className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm font-black outline-none focus:border-primary"
-            />
-            <textarea
-              value={notice.body}
-              onChange={(event) => setNotices((current) => current.map((item) => item.id === notice.id ? { ...item, body: event.target.value } : item))}
-              rows={3}
-              className="w-full resize-y rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm leading-6 outline-none focus:border-primary"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-xs text-neutral-400">
-                우선순위
-                <input
-                  type="number"
-                  value={notice.displayOrder}
-                  onChange={(event) => setNotices((current) => current.map((item) => item.id === notice.id ? { ...item, displayOrder: Number(event.target.value) } : item))}
-                  className="w-24 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-100"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-xs font-bold text-neutral-300">
-                <input
-                  type="checkbox"
-                  checked={notice.enabled}
-                  onChange={(event) => setNotices((current) => current.map((item) => item.id === notice.id ? { ...item, enabled: event.target.checked } : item))}
-                />
-                <Power className="h-3.5 w-3.5" /> 활성
-              </label>
-              <button type="button" disabled={saving || deleting !== null} onClick={() => void updateNotice(notice)} className="ml-auto flex items-center gap-2 rounded border border-primary/60 px-3 py-2 text-xs font-black text-primary hover:bg-primary/10">
-                <Save className="h-4 w-4" /> 저장
-              </button>
-              <button type="button" disabled={saving || deleting !== null} onClick={() => void deleteNotice(notice)} className="flex min-h-11 items-center gap-2 rounded border border-red-800 px-3 py-2 text-xs text-red-300 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting === notice.id ? "삭제 중…" : "삭제"}</button>
-            </div>
-          </article>
-        ))}
-      </section></>,
-<><form onSubmit={createNotice} className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <div className="flex items-center gap-2 text-primary">
-          <Megaphone className="h-5 w-5" />
-          <h3 className="text-sm font-black">새 공지</h3>
-        </div>
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="공지 제목"
-          maxLength={120}
-          required
-          className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <textarea
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          placeholder="공지 내용"
-          maxLength={4000}
-          required
-          rows={4}
-          className="w-full resize-y rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm leading-6 outline-none focus:border-primary"
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-neutral-400">
-            우선순위
-            <input
-              type="number"
-              value={displayOrder}
-              onChange={(event) => setDisplayOrder(event.target.value)}
-              className="w-24 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm text-neutral-100"
-            />
-          </label>
-          <label className="flex items-center gap-2 text-xs font-bold text-neutral-300">
-            <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
-            바로 활성화
-          </label>
-          <button type="submit" disabled={saving} className="ml-auto flex items-center gap-2 rounded bg-primary px-4 py-2 text-xs font-black text-black hover:bg-yellow-400 disabled:opacity-50">
-            <Send className="h-4 w-4" /> {saving ? "저장 중..." : "공지 추가"}
-          </button>
-        </div>
-      </form></>]}</AdminEditorSections>
 
+  const filtered = useMemo(() => (notices ?? [])
+    .filter((n) => !search.trim() || `${n.title} ${n.body}`.includes(search.trim()))
+    .sort((a, b) => Number(b.enabled) - Number(a.enabled) || b.displayOrder - a.displayOrder || b.updatedAt.localeCompare(a.updatedAt)), [notices, search]);
+
+  if (!notices) return <p className="text-sm text-neutral-400">공지를 불러오는 중…</p>;
+  const set = (patch: Partial<NoticeRecord>) => setDraft((d) => (d ? { ...d, ...patch } : d));
+
+  return (
+    <div className="ak-page">
+      {error && <Notice tone="error">{error}</Notice>}
+      <Split editing={mobile.editing}
+        list={<ListPane actions={<button type="button" onClick={() => void create()}>+ 새 공지</button>} search={search} onSearch={setSearch} placeholder="제목이나 내용으로 찾기" count={`${filtered.length}개 · 보이는 공지 ${notices.filter((n) => n.enabled).length}개`}>
+          {filtered.map((n) => <ListRow key={n.id} selected={n.id === selectedId} onClick={() => select(n)} title={n.title} sub={n.body.replace(/\s+/g, " ").slice(0, 40)} badge={n.enabled ? "보임" : "숨김"} tone={n.enabled ? "on" : "off"} />)}
+          {!filtered.length && <p className="ak-hint" style={{ margin: 8 }}>공지가 없어요. "+ 새 공지"로 만들어 보세요.</p>}
+        </ListPane>}
+        editor={<EditorPane onBack={() => { void autosave.flush(); mobile.back(); }} status={<SaveLine state={autosave.state} />} right={draft && <Button kind="danger" onClick={() => void remove()}>지우기</Button>}
+          empty='왼쪽에서 공지를 고르거나 "+ 새 공지"를 눌러 보세요. 고친 내용은 바로 저장돼요.'>
+          {draft && <Panel>
+            <Toggle checked={draft.enabled} onChange={(enabled) => set({ enabled })} label={draft.enabled ? "게이머 메인 화면에 보여요" : "숨김 (게이머에게 안 보여요)"} />
+            <Field label="제목"><input value={draft.title} maxLength={120} onChange={(e) => set({ title: e.target.value })} /></Field>
+            <Field label="내용"><textarea rows={8} value={draft.body} maxLength={4000} onChange={(e) => set({ body: e.target.value })} /></Field>
+            <Grid><Field label="순서" hint="숫자가 클수록 위에 보여요."><NumberInput value={draft.displayOrder} min={-999} max={999} onChange={(displayOrder) => set({ displayOrder })} /></Field></Grid>
+          </Panel>}
+        </EditorPane>}
+      />
     </div>
   );
 }

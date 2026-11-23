@@ -1,4 +1,3 @@
-import {AdminAccounts} from "@/components/admin-accounts";
 import {
   lazy,
   Suspense,
@@ -16,6 +15,7 @@ import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/components/admin-layout";
 import "@/styles/admin-console.css";
 import "@/components/admin-workspace.css";
+const AdminSystem = lazy(() => import("@/components/admin-system").then((m) => ({ default: m.AdminSystem })));
 const AdminCosmetics = lazy(() => import("@/components/admin-cosmetics").then((m) => ({ default: m.AdminCosmetics })));
 const AdminShopHub = lazy(() => import("@/components/admin-hubs").then((m) => ({ default: m.AdminShopHub })));
 const AdminStatisticsHub = lazy(() => import("@/components/admin-hubs").then((m) => ({ default: m.AdminStatisticsHub })));
@@ -24,11 +24,6 @@ const AdminBattleSprites = lazy(() => import("@/components/admin-battle-sprites"
 const AdminDashboard = lazy(() =>
   import("@/components/admin-dashboard").then((m) => ({
     default: m.AdminDashboard,
-  })),
-);
-const AdminServerMaintenance = lazy(() =>
-  import("@/components/server-maintenance").then((m) => ({
-    default: m.AdminServerMaintenance,
   })),
 );
 const AdminQuestManager = lazy(() =>
@@ -225,13 +220,13 @@ export default function Admin() {
           : page?.id === "packs" ? <AdminPackManager onUnauthorized={onUnauthorized} />
           : page?.id === "prism" ? <AdminPrismManager onUnauthorized={onUnauthorized} />
           : page?.id === "rewards" ? <AdminRewardsManager onUnauthorized={onUnauthorized} />
-          : page?.id === "quests" ? <AdminQuestManager />
+          : page?.id === "quests" ? <AdminQuestManager onUnauthorized={onUnauthorized} />
           : page?.id === "cosmetics" ? <AdminCosmetics />
           : page?.id === "media" ? <AdminGameMediaManager onUnauthorized={onUnauthorized} />
           : page?.id === "notices" ? <AdminNoticesManager onUnauthorized={onUnauthorized} />
           : page?.id === "users" ? <AdminUserAssets onUnauthorized={onUnauthorized} />
           : page?.id === "statistics" ? <AdminStatisticsHub legacyPath={displayPath} onUnauthorized={onUnauthorized} />
-          : page?.id === "system" ? <><AdminServerMaintenance /><AdminAccounts /></>
+          : page?.id === "system" ? <AdminSystem onUnauthorized={onUnauthorized} />
           : (
             <button onClick={() => go("dashboard")}>홈으로 이동</button>
           )}

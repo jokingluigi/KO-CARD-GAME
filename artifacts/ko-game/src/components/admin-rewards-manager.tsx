@@ -1,111 +1,128 @@
-import {TutorialRewardsAdmin} from "./tutorial/tutorial-rewards-admin";
-import {AdminEditorSections} from './admin-editor-sections';
-import { DailyQuestEditor } from './daily-quest-editor';
-import { useEffect, useState } from "react";
-import { CalendarCheck2, Save, Settings2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { TutorialRewardsAdmin } from "./tutorial/tutorial-rewards-admin";
+import { Button, errorText, Field, Grid, Notice, NumberInput, Panel, SaveLine, Toggle, useAutosave } from "./admin-kit";
 import {
-  fetchRewardAdminData,
-  saveMatchRewardSettings,
-  updateAttendanceReward,
-  upsertAttendanceReward,
-  fetchRewardCatalogs,
-  type RewardCatalogCard,
-  type RewardCatalogChampion,
-  type RewardCatalogPack,
-  type RewardAdminData,
+  fetchRewardAdminData, fetchRewardCatalogs, saveMatchRewardSettings, updateAttendanceReward, upsertAttendanceReward,
+  type RewardAdminData, type RewardCatalogCard, type RewardCatalogChampion, type RewardCatalogPack,
 } from "@/lib/rewards-client";
+
+type Day = { dayIndex: number; rewardType: string; rewardAmount: number; rewardTargetId: string | null; enabled: boolean };
+const TYPE_KO: Record<string, string> = { CURRENCY: "크레딧", CARD: "카드", CHAMPION: "챔피언", PACK: "카드팩" };
+
+/** 경기 보상 · 출석 — 고치면 바로 저장돼요. */
 export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [data, setData] = useState<RewardAdminData | null>(null);
-  const [message, setMessage] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [match, setMatch] = useState({ winAmount: "", lossAmount: "", enabled: false });
-  const [attendanceDay, setAttendanceDay] = useState("1");
-  const [attendanceAmount, setAttendanceAmount] = useState("");
-  const [attendanceEnabled, setAttendanceEnabled] = useState(true);
-  const [attendanceRewardType, setAttendanceRewardType] = useState("CURRENCY");
-  const [attendanceTargetId, setAttendanceTargetId] = useState("");
   const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; champions: RewardCatalogChampion[]; packs: RewardCatalogPack[] }>({ cards: [], champions: [], packs: [] });
+  const [error, setError] = useState("");
+  const [match, setMatch] = useState<{ winAmount: number; lossAmount: number; enabled: boolean } | null>(null);
+  const [days, setDays] = useState<Day[]>([]);
+  const [dayIndex, setDayIndex] = useState<number | null>(null);
+
   async function load() {
     try {
       const next = await fetchRewardAdminData();
       setData(next);
+      const win = next.settings.find((s) => s.key === "MATCH_ONLINE_WIN"), loss = next.settings.find((s) => s.key === "MATCH_ONLINE_LOSS");
+      setMatch({ winAmount: win?.amount ?? 50, lossAmount: loss?.amount ?? 20, enabled: Boolean(win?.enabled && loss?.enabled) });
+      setDays(next.attendance.map((d) => ({ ...d })));
       setCatalog(await fetchRewardCatalogs());
-      const win = next.settings.find((setting) => setting.key === "MATCH_ONLINE_WIN");
-      const loss = next.settings.find((setting) => setting.key === "MATCH_ONLINE_LOSS");
-      setMatch({
-        winAmount: win ? String(win.amount) : "",
-        lossAmount: loss ? String(loss.amount) : "",
-        enabled: Boolean(win?.enabled && loss?.enabled),
-      });
-    } catch (error) {
-      if (error instanceof Error && /권한|로그인/.test(error.message)) onUnauthorized();
-      setMessage(error instanceof Error ? error.message : "보상 설정을 불러오지 못했습니다.");
+    } catch (e) {
+      if (/권한|로그인/.test(errorText(e))) onUnauthorized();
+      setError(errorText(e, "보상 설정을 불러오지 못했어요."));
     }
   }
   useEffect(() => { void load(); }, []);
 
+  const matchSave = useAutosave("match", match, async (next) => {
+    if (next.winAmount < 1 || next.lossAmount < 1) throw new Error("승리·패배 보상은 1 이상이어야 해요.");
+    await saveMatchRewardSettings(next);
+  });
 
-  async function saveMatch() {
-    setSaving(true);
+  const day = days.find((d) => d.dayIndex === dayIndex) ?? null;
+  const daySave = useAutosave(day ? `day-${day.dayIndex}` : null, day, async (next) => {
+    if (next.rewardType !== "CURRENCY" && !next.rewardTargetId) throw new Error(`어떤 ${TYPE_KO[next.rewardType]} 줄지 골라 주세요.`);
+    if (next.rewardAmount < 1) throw new Error("수량은 1 이상이어야 해요.");
+    const body = { ...next, rewardTargetId: next.rewardType === "CURRENCY" ? null : next.rewardTargetId };
+    if (data?.attendance.some((d) => d.dayIndex === next.dayIndex)) await updateAttendanceReward(next.dayIndex, body);
+    else { await upsertAttendanceReward(body); setData((d) => d && ({ ...d, attendance: [...d.attendance, body] })); }
+    return `${next.dayIndex}일차 저장됨`;
+  });
+
+  const setDay = (patch: Partial<Day>) => setDays((list) => list.map((d) => (d.dayIndex === dayIndex ? { ...d, ...patch } : d)));
+  async function addDay() {
+    const next = (days.reduce((m, d) => Math.max(m, d.dayIndex), 0) || 0) + 1;
+    if (next > 365) return;
+    const fresh: Day = { dayIndex: next, rewardType: "CURRENCY", rewardAmount: 100, rewardTargetId: null, enabled: true };
     try {
-      await saveMatchRewardSettings({ winAmount: Number(match.winAmount), lossAmount: Number(match.lossAmount), enabled: match.enabled });
-      setMessage("온라인 매치 보상 설정을 저장했습니다.");
-      await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "설정을 저장하지 못했습니다."); } finally { setSaving(false); }
+      await upsertAttendanceReward(fresh);
+      setData((d) => d && ({ ...d, attendance: [...d.attendance, fresh] }));
+      setDays((list) => [...list, fresh]);
+      setDayIndex(next);
+    } catch (e) { setError(errorText(e, "출석 날을 추가하지 못했어요.")); }
   }
 
-  async function saveAttendance() {
-    setSaving(true);
-    const body = {
-      dayIndex: Number(attendanceDay),
-      rewardType: attendanceRewardType,
-      rewardTargetId: attendanceRewardType === "CURRENCY" ? null : attendanceTargetId || null,
-      rewardAmount: Number(attendanceAmount),
-      enabled: attendanceEnabled,
-    };
-    try {
-      const exists = data?.attendance.some((item) => item.dayIndex === body.dayIndex);
-      if (exists) await updateAttendanceReward(body.dayIndex, body);
-      else await upsertAttendanceReward(body);
-       setMessage("출석 보상을 저장했습니다.");
-      await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "출석 보상을 저장하지 못했습니다."); } finally { setSaving(false); }
-  }
+  const targetOptions = useMemo(() => {
+    if (!day) return [];
+    if (day.rewardType === "CARD") return catalog.cards.filter((c) => !c.isToken && !c.isChampionToken);
+    if (day.rewardType === "CHAMPION") return catalog.champions;
+    if (day.rewardType === "PACK") return catalog.packs.filter((p) => !p.deletedAt);
+    return [];
+  }, [day?.rewardType, catalog]);
+  const label = (d: Day) => d.rewardType === "CURRENCY" ? `크레딧 ${d.rewardAmount}`
+    : `${TYPE_KO[d.rewardType]} ${(d.rewardType === "CARD" ? catalog.cards : d.rewardType === "PACK" ? catalog.packs : catalog.champions).find((x) => x.id === d.rewardTargetId)?.name ?? "고르기 전"}${d.rewardType === "CHAMPION" ? "" : ` ×${d.rewardAmount}`}`;
 
-  const attendanceTargetOptions = attendanceRewardType === "CARD"
-    ? catalog.cards.filter((card) => !card.isToken && !card.isChampionToken)
-    : catalog.packs;
-  const rewardLabel = (type: string, targetId: string | null, amount: number) => {
-    if (type === "CARD") return `카드 ${catalog.cards.find((card) => card.id === targetId)?.name ?? targetId ?? "—"} ×${amount}`;
-    if (type === "CHAMPION") return `챔피언 ${catalog.champions.find(c => c.id === targetId)?.name ?? targetId ?? "—"}`;
-    if (type === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === targetId)?.name ?? targetId ?? "—"} ×${amount}`;
-    return `+${amount} 크레딧`;
-  };
+  if (error) return <Notice tone="error">{error}</Notice>;
+  if (!data || !match) return <p className="text-sm text-neutral-400">불러오는 중…</p>;
 
   return (
-    <section className="space-y-6 rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
-      <div><p className="text-sm leading-6 text-neutral-400">지급량은 서버가 확인해요. 설정을 바꿔도 이미 받은 보상은 그대로예요. 퀘스트는 ‘퀘스트’ 화면에서 정해요.</p></div>
-<TutorialRewardsAdmin/>
-{message && <p role="status" className="rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
-<AdminEditorSections panels={[{"id":"admin-rewards-manager-0","label":"경기 보상"},{"id":"admin-rewards-manager-1","label":"출석 보상"}]}>{[<><section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
-        <div className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-amber-400" /><h3 className="font-black">온라인 매치 보상</h3></div>
-        <p className="mt-2 text-xs leading-5 text-neutral-500">온라인 매치의 canonical FINISHED 결과에만 적용됩니다. AI 로컬 매치는 서버 검증 결과가 없어 자동 지급하지 않습니다.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <label className="text-xs font-bold text-neutral-400">승리 보상<input type="number" min="1" value={match.winAmount} onChange={(event) => setMatch({ ...match, winAmount: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /></label>
-          <label className="text-xs font-bold text-neutral-400">패배 보상<input type="number" min="1" value={match.lossAmount} onChange={(event) => setMatch({ ...match, lossAmount: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /></label>
-          <label className="flex items-end gap-2 pb-2 text-xs font-bold text-neutral-300"><input type="checkbox" checked={match.enabled} onChange={(event) => setMatch({ ...match, enabled: event.target.checked })} /> 지급 활성화</label>
-        </div>
-        <button type="button" disabled={saving} onClick={() => void saveMatch()} className="mt-4 flex items-center gap-2 rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black disabled:opacity-50"><Save className="h-3.5 w-3.5" /> 저장</button>
-      </section></>,
-<><section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
-        <div className="flex items-center gap-2"><CalendarCheck2 className="h-4 w-4 text-amber-400" /><h3 className="font-black">출석 보드 관리</h3></div>
-         <div className="mt-4 grid gap-3 sm:grid-cols-3"><input type="number" min="1" max="365" value={attendanceDay} onChange={(event) => setAttendanceDay(event.target.value)} placeholder="Day" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><select value={attendanceRewardType} onChange={(event) => { setAttendanceRewardType(event.target.value); setAttendanceTargetId(""); }} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="CHAMPION">CHAMPION</option><option value="PACK">PACK</option></select>{attendanceRewardType !== "CURRENCY" ? <select value={attendanceTargetId} onChange={(event) => setAttendanceTargetId(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">보상 대상 선택</option>{attendanceTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <span />}</div>
-         <div className="mt-3 grid gap-3 sm:grid-cols-3"><input type="number" min="1" value={attendanceAmount} onChange={(event) => setAttendanceAmount(event.target.value)} placeholder="보상 수량" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><label className="flex items-center gap-2 text-xs font-bold text-neutral-300"><input type="checkbox" checked={attendanceEnabled} onChange={(event) => setAttendanceEnabled(event.target.checked)} /> 활성화</label></div>
-        <button type="button" disabled={saving} onClick={() => void saveAttendance()} className="mt-4 rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black disabled:opacity-50">Day 저장</button>
-         <div className="mt-5 grid gap-2 sm:grid-cols-4">{data?.attendance.map((item) => <button key={item.dayIndex} type="button" onClick={() => { setAttendanceDay(String(item.dayIndex)); setAttendanceAmount(String(item.rewardAmount)); setAttendanceRewardType(item.rewardType); setAttendanceTargetId(item.rewardTargetId ?? ""); setAttendanceEnabled(item.enabled); }} className="rounded border border-neutral-800 px-3 py-3 text-left hover:border-amber-700"><strong className="text-sm text-white">Day {item.dayIndex}</strong><p className="mt-1 text-xs text-amber-200">{rewardLabel(item.rewardType, item.rewardTargetId, item.rewardAmount)}</p><p className="mt-1 text-[10px] text-neutral-500">{item.enabled ? "활성" : "비활성"}</p></button>)}</div>
-      </section></>]}</AdminEditorSections>
-<p className="text-sm text-neutral-400">일일·시즌 퀘스트는 관리자 메뉴의 퀘스트 관리에서 설정하세요.</p>
+    <div className="ak-page">
+      <Panel title="튜토리얼 보상" hint="튜토리얼을 처음 끝낸 계정에게 한 번만 줘요.">
+        <TutorialRewardsAdmin />
+      </Panel>
 
-    </section>
+      <Panel title="온라인 대전 보상" right={<SaveLine state={matchSave.state} idle="" />} hint="온라인 대전이 끝나면 크레딧을 줘요. AI 대전에는 주지 않아요. 바꿔도 이미 받은 보상은 그대로예요.">
+        <Toggle checked={match.enabled} onChange={(enabled) => setMatch({ ...match, enabled })} label={match.enabled ? "보상 주는 중" : "보상 꺼짐"} />
+        <Grid>
+          <Field label="이기면 (크레딧)"><NumberInput value={match.winAmount} min={1} step={5} onChange={(winAmount) => setMatch({ ...match, winAmount })} /></Field>
+          <Field label="지면 (크레딧)"><NumberInput value={match.lossAmount} min={1} step={5} onChange={(lossAmount) => setMatch({ ...match, lossAmount })} /></Field>
+        </Grid>
+      </Panel>
+
+      <Panel title="출석 보상" right={<Button onClick={() => void addDay()}>+ 하루 추가</Button>} hint="날짜를 누르면 아래에서 보상을 고칠 수 있어요. 고치면 바로 저장돼요.">
+        <div className="ak-days">
+          {[...days].sort((a, b) => a.dayIndex - b.dayIndex).map((d) => (
+            <button key={d.dayIndex} type="button" aria-pressed={d.dayIndex === dayIndex} data-off={!d.enabled || undefined} onClick={() => { void daySave.flush(); setDayIndex(d.dayIndex); }}>
+              <b>{d.dayIndex}일차</b><small>{d.enabled ? label(d) : "꺼짐"}</small>
+            </button>
+          ))}
+          {!days.length && <p className="ak-hint">아직 출석 보상이 없어요. "+ 하루 추가"를 눌러 보세요.</p>}
+        </div>
+        {day && (
+          <div className="ak-panel" style={{ background: "#0f1216" }}>
+            <header style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}><h3 style={{ margin: 0 }}>{day.dayIndex}일차</h3><SaveLine state={daySave.state} idle="" /></header>
+            <div className="ak-panel-body">
+              <Toggle checked={day.enabled} onChange={(enabled) => setDay({ enabled })} label={day.enabled ? "이 날 보상 줌" : "이 날 보상 꺼짐"} />
+              <Grid>
+                <Field label="보상 종류">
+                  <select value={day.rewardType} onChange={(e) => setDay({ rewardType: e.target.value, rewardTargetId: null, rewardAmount: e.target.value === "CHAMPION" ? 1 : day.rewardAmount })}>
+                    {Object.entries(TYPE_KO).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </Field>
+                {day.rewardType !== "CURRENCY" && (
+                  <Field label={`줄 ${TYPE_KO[day.rewardType]}`}>
+                    <select value={day.rewardTargetId ?? ""} onChange={(e) => setDay({ rewardTargetId: e.target.value || null })}>
+                      <option value="">고르기</option>
+                      {targetOptions.map((o) => <option key={o.id} value={o.id}>{o.name}{o.status && o.status !== "PUBLISHED" ? " (미공개)" : ""}</option>)}
+                    </select>
+                  </Field>
+                )}
+                {day.rewardType !== "CHAMPION" && <Field label="수량"><NumberInput value={day.rewardAmount} min={1} step={day.rewardType === "CURRENCY" ? 10 : 1} onChange={(rewardAmount) => setDay({ rewardAmount })} /></Field>}
+              </Grid>
+            </div>
+          </div>
+        )}
+      </Panel>
+      <p className="ak-hint">일일·시즌 퀘스트는 ‘퀘스트’ 화면에서 정해요.</p>
+    </div>
   );
 }
