@@ -1,0 +1,100 @@
+{
+  "cards": [
+    {
+      "id": "34ba511c-0479-4fe2-bf7b-48ad1798859d",
+      "name": "마왕 벨모르트(강림)",
+      "cardType": "WRESTLER",
+      "cost": 6,
+      "attack": 6,
+      "health": 6,
+      "text": "이 카드가 필드에 있을 때 선수 카드가 리타이어 될 시 리타이어 시키지 않고 파괴시킵니다.\n이 카드가 필드에 있을 때 선수 카드가 파괴되면 상대 챔피언에게 2 데미지를 줍니다.",
+      "rarity": "CHAMPION",
+      "keywords": [
+        "IMMUNE"
+      ],
+      "tags": [
+        "군주",
+        "빌런"
+      ],
+      "isToken": true,
+      "isChampionToken": true,
+      "effectId": null,
+      "effectConfig": {},
+      "status": "PUBLISHED",
+      "version": 8
+    },
+    {
+      "id": "3fef0a3f-93c9-477c-a958-2f26af360104",
+      "name": "카르자엘, 파괴의 천사",
+      "cardType": "WRESTLER",
+      "cost": 6,
+      "attack": 3,
+      "health": 3,
+      "text": "등장:필드에 있는 아군 선수를 하나 선택해서 +2/+2를 부여하고 '파괴의 사자'로 임명합니다! 그 카드에게 다음과 같은 효과를 부여합니다.\n파괴의 사자:이 카드가 상대 선수 카드를 리타이어시킬 때 리타이어시키지 않고 파괴시킵니다. 이 카드가 있을 때 필드에서 선수 카드가 파괴 될 때마다 이 카드는 +1/+1을 얻습니다.",
+      "rarity": "LEGENDARY",
+      "keywords": [
+        "IMMUNE"
+      ],
+      "tags": [
+        "천사",
+        "빌런"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "status": "PUBLISHED",
+      "version": 12
+    },
+    {
+      "id": "7c3153f3-4dc6-4a8f-8148-c64e624576c3",
+      "name": "파괴의 강림",
+      "cardType": "TECHNIQUE",
+      "cost": 5,
+      "attack": 0,
+      "health": 0,
+      "text": "필드에 있는 모든 선수 카드를 파괴하고, '마왕 벨모르트(강림)'을 자신의 필드에 소환합니다.",
+      "rarity": "CHAMPION",
+      "keywords": [],
+      "tags": [
+        "피니셔"
+      ],
+      "isToken": true,
+      "isChampionToken": true,
+      "effectId": null,
+      "effectConfig": {},
+      "status": "PUBLISHED",
+      "version": 5
+    }
+  ],
+  "champion": {
+    "id": "f7b087d8-3148-43d5-a634-a81d15c81721",
+    "name": "마왕 벨모르트",
+    "maxHealth": 25,
+    "abilityName": "비열한 파괴",
+    "abilityCost": 1,
+    "abilityText": "선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "abilityEffects": {},
+    "hasQuest": true,
+    "questName": "파괴 강림",
+    "questText": "이 게임에서 카드가 총 10회 파괴됩니다.",
+    "questCondition": {
+      "finisher": {
+        "delivery": "CAST",
+        "cardDefinitionId": "7c3153f3-4dc6-4a8f-8148-c64e624576c3"
+      },
+      "required": 10
+    },
+    "questProgressRequired": 10,
+    "questRewardText": "'마왕 벨모르트(강림)'을 내 필드에 소환합니다.",
+    "questRewardEffects": null,
+    "upgradedAbilityName": "압도적 파괴",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "상대 선수 카드에게 2 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "upgradedAbilityEffects": null,
+    "championTokenDefinitionId": "34ba511c-0479-4fe2-bf7b-48ad1798859d",
+    "championTokenEffectText": null,
+    "championTokenEffectEffects": null,
+    "status": "PUBLISHED"
+  }
+}

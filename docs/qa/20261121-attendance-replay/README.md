@@ -26,3 +26,13 @@ The user's historical transcript was not supplied; the exact reproduction above 
 - Shared engine's two `findLastIndex` uses were replaced with equivalent ES2022-compatible reductions so the library project typechecks without changing compiler targets or runtime behavior.
 
 The prior environment-variable deployment approval tool is used for both services. Live revision and read-only attendance status checks follow after deployment.
+
+## Live verification
+
+Both services deployed forward from `1efb06990703cd9afad4f301152fb5f6d7765275` and serve `243b33129e688402f5f2825fed898c99a755a1b4`:
+
+- API deploy `dep-dc0id6cs728c73aci2c0`: live, public health HTTP 200 and exact revision verified.
+- Frontend deploy `dep-dc0id817lnhs738oud30`: live, public version HTTP 200 and exact revision verified.
+- Both `APPROVED_PRODUCTION_COMMIT` values match the release; both Build Commands use the static environment comparison, with no embedded release SHA.
+- Authenticated read-only attendance HTTP 200 returned `repeats=true`, cycle 1, next day 13 available, and all 12 historical claims preserved as cycle 1. No attendance claim or user reward was written during live verification. Rollover and concurrent payout behavior were verified in the isolated DB tests rather than consuming a real player's future attendance rewards.
+- The temporary diagnostic login was logged out. No new account, hosting upgrade, or separate service was created.
