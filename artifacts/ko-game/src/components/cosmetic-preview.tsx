@@ -87,20 +87,40 @@ export function CosmeticPreview({
           imageDisplayMode="CONTAIN"
         />
       </div>
-      {tokenAssets.map(([key, url]) => (
-        <div key={key} className={paired ? "text-center" : "mt-2 text-center"}>
+      {tokenAssets.length > 0 && (paired ? (
+        <div className="relative h-32 w-full text-center">
           <CardArtwork
-            src={url}
-            displayOverride={cosmeticAssetDisplay(item.imageAssets, key)}
+            src={tokenAssets[0]![1]}
+            displayOverride={cosmeticAssetDisplay(item.imageAssets, tokenAssets[0]![0])}
             alt="세트 포함 토큰 스킨"
-            className={paired ? "mx-auto h-32 w-full" : "mx-auto h-40 w-28"}
+            className="mx-auto h-32 w-full"
             imageDisplayMode="CONTAIN"
           />
-          <p className="mt-1 text-xs text-amber-200">
-            {paired
-              ? "토큰 스킨 포함"
-              : "챔피언 토큰 스킨 포함 · 장착 시 자동 적용"}
+          <p className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-[11px] font-bold text-amber-200">
+            토큰 스킨 {tokenAssets.length}종 포함
           </p>
+        </div>
+      ) : (
+        <div className="mt-2">
+          <p className="mb-1 text-center text-xs font-bold text-amber-200">
+            토큰 스킨 {tokenAssets.length}종 포함 · 장착하면 자동 적용
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {tokenAssets.map(([key, url]) => (
+              <div key={key} className="w-24 text-center">
+                <CardArtwork
+                  src={url}
+                  displayOverride={cosmeticAssetDisplay(item.imageAssets, key)}
+                  alt="세트 포함 토큰 스킨"
+                  className="mx-auto h-32 w-24"
+                  imageDisplayMode="CONTAIN"
+                />
+                <p className="mt-0.5 truncate text-[11px] text-amber-100/80">
+                  {cards.find((c) => c.id === key.slice(6))?.name ?? "토큰"}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>

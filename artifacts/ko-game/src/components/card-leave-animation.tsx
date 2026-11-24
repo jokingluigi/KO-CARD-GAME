@@ -101,7 +101,7 @@ export function CardLeaveAnimation({
         onCompleteRef.current();
       }}
     >
-      {animation.concealed || !card ? <div className="ko-zone-concealed-back"><CosmeticBack loadout={loadouts[animation.cosmeticOwnerId??""]}/></div> : <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?animation.cosmeticOwnerId:undefined}
+      {animation.concealed || !card ? <div className="ko-zone-concealed-back"><CosmeticBack loadout={loadouts[animation.cosmeticOwnerId??""]}/></div> : <CardRenderer cardId={card.definitionId} cosmeticOwnerId={animation.cosmeticOwnerId}
         name={definition?.name ?? "카드"}
         cardType={card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER"}
         cost={card.currentCost}

@@ -1,4 +1,4 @@
-import { isDefaultEmote, spriteFrames, parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
+import { isDefaultEmote, MAX_SKIN_TOKENS, relatedChampionTokenIds, skinTokenIds, spriteFrames, parseBattleSprite, parseCosmeticDisplay } from "@workspace/cosmetics";
 import {
   legacySkinItem,
   legacySkinId,
@@ -57,10 +57,16 @@ router.use(async (req, res, next) => {
 });
 router.get("/cosmetics", async (req, res) => {
   const inventory = await listOwnedCosmetics(req.authUser!.id);
-  const cardIds = inventory
-      .filter((o) => o.item.type === "CARD_SKIN")
-      .map((o) => o.item.targetId!)
-      .filter(Boolean),
+  const cardIds = [
+      ...inventory
+        .filter((o) => o.item.type === "CARD_SKIN")
+        .map((o) => o.item.targetId!)
+        .filter(Boolean),
+      // 챔피언 스킨에 딸린 토큰 카드 이름을 보여 주려고 함께 불러온다
+      ...inventory
+        .filter((o) => o.item.type === "CHAMPION_SKIN")
+        .flatMap((o) => skinTokenIds(o.item.imageAssets)),
+    ],
     championIds = inventory
       .filter((o) => o.item.type === "CHAMPION_SKIN")
       .map((o) => o.item.targetId!)
@@ -104,7 +110,7 @@ router.use("/admin/cosmetics", (req, res, next) => {
   next();
 });
 router.get("/admin/cosmetics", async (_req, res) => {
-  const [catalog, cards, champions, legacy] = await Promise.all([
+  const [catalog, cards, champions, legacy, tokens] = await Promise.all([
     db.select().from(items).orderBy(asc(items.sortOrder), asc(items.name)),
     db
       .select()
@@ -122,6 +128,11 @@ router.get("/admin/cosmetics", async (_req, res) => {
       .select()
       .from(cardSkinDefinitionsTable)
       .orderBy(asc(cardSkinDefinitionsTable.name)),
+    db
+      .select()
+      .from(cardsTable)
+      .where(or(eq(cardsTable.isToken, true), eq(cardsTable.isChampionToken, true)))
+      .orderBy(asc(cardsTable.name)),
   ]);
   res.json({
     items: [
@@ -134,7 +145,12 @@ router.get("/admin/cosmetics", async (_req, res) => {
       })),
     ],
     cards,
-    champions,
+    // 챔피언마다 스킨에 딸려 오는 토큰 (능력·피니셔·챔피언 토큰에서 자동으로 찾음)
+    champions: champions.map((champion) => ({
+      ...champion,
+      skinTokenIds: relatedChampionTokenIds(champion as unknown as Record<string, unknown>, tokens),
+    })),
+    tokens: tokens.map((token) => ({ id: token.id, name: token.name, imageUrl: token.imageUrl, cost: token.cost, attack: token.attack, health: token.health, cardType: token.cardType, text: token.text, rarity: "TOKEN" as const })),
   });
 });
 function parseItem(body: unknown, legacy = false) {
@@ -209,39 +225,23 @@ function parseItem(body: unknown, legacy = false) {
     sortOrder: Number(b.sortOrder),
   };
 }
+/** 챔피언 스킨에는 그 챔피언과 관련된 토큰(능력·피니셔·챔피언 토큰에서 자동으로 찾은 것)만 넣을 수 있다. */
 async function validateTokenAssets(input: ReturnType<typeof parseItem>) {
-  const tokenKeys = Object.keys(input.imageAssets).filter((key) =>
-    key.startsWith("token:"),
-  );
-  if (!tokenKeys.length) return;
+  const tokenIds = Object.keys(input.imageAssets)
+    .filter((key) => key.startsWith("token:"))
+    .map((key) => key.slice(6));
+  if (!tokenIds.length) return;
   if (input.type !== "CHAMPION_SKIN")
-    throw new CosmeticError(
-      422,
-      "챔피언 스킨에만 토큰 외형을 연결할 수 있습니다.",
-    );
-  const [row] = await db
-    .select({ tokenId: championsTable.championTokenDefinitionId })
-    .from(championsTable)
-    .innerJoin(
-      cardsTable,
-      eq(cardsTable.id, championsTable.championTokenDefinitionId),
-    )
-    .where(
-      and(
-        eq(championsTable.id, input.targetId ?? ""),
-        eq(cardsTable.isChampionToken, true),
-      ),
-    )
-    .limit(1);
-  if (
-    !row?.tokenId ||
-    tokenKeys.length !== 1 ||
-    tokenKeys[0] !== `token:${row.tokenId}`
-  )
-    throw new CosmeticError(
-      422,
-      "선택한 챔피언에 연결된 챔피언 토큰만 등록할 수 있습니다.",
-    );
+    throw new CosmeticError(422, "챔피언 스킨에만 토큰 외형을 연결할 수 있습니다.");
+  if (tokenIds.length > MAX_SKIN_TOKENS)
+    throw new CosmeticError(422, `토큰 그림은 ${MAX_SKIN_TOKENS}장까지 넣을 수 있습니다.`);
+  const [[champion], tokens] = await Promise.all([
+    db.select().from(championsTable).where(eq(championsTable.id, input.targetId ?? "")).limit(1),
+    db.select().from(cardsTable).where(or(eq(cardsTable.isToken, true), eq(cardsTable.isChampionToken, true))),
+  ]);
+  const related = new Set(champion ? relatedChampionTokenIds(champion as unknown as Record<string, unknown>, tokens) : []);
+  if (tokenIds.some((id) => !related.has(id)))
+    throw new CosmeticError(422, "선택한 챔피언과 관련된 토큰만 등록할 수 있습니다.");
 }
 export async function verifyCatalogAssets(
   assets: Record<string, string>,

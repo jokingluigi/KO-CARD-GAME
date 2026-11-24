@@ -135,7 +135,7 @@ export function parseCosmeticDisplay(
       !data ||
       typeof data !== "object" ||
       Array.isArray(data) ||
-      Object.keys(data).length > 8
+      Object.keys(data).length > 24
     )
       return null;
     const result: Record<string, CosmeticDisplaySettings> = {};
@@ -210,6 +210,7 @@ export function cosmeticImageSettings(
 }
 export * from "./battle-sprite";
 export * from "./champion-sprite-skin";
+export * from "./champion-tokens";
 
 export * from "./pack-probabilities";
 export * from "./home-menu";

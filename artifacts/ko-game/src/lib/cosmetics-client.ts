@@ -16,6 +16,8 @@ export type CosmeticCardPreview = {
 };
 export type CosmeticChampionPreview = {
   championTokenDefinitionId?: string | null;
+  /** 이 챔피언 스킨에 딸려 오는 토큰 카드 (관리자 화면에서만 옴). */
+  skinTokenIds?: string[];
   id: string;
   name: string;
   imageUrl: string | null;

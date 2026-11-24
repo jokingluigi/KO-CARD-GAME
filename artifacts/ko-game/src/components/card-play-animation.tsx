@@ -70,7 +70,7 @@ export function CardPlayAnimation({
   const [reading,setReading]=useState(false);
   const definition = getCardDefinition(animation.card.definitionId);
   const finisherSpell=animation.kind==='TECHNIQUE'&&isFinisherSpell(animation.card,definition);
-  const cosmeticArtwork=useCosmeticImage((!animation.card.isToken||animation.card.isChampionToken)?animation.playerId:undefined,animation.card.definitionId,'CARD_SKIN',definition?.imageUrl);
+  const cosmeticArtwork=useCosmeticImage(animation.playerId,animation.card.definitionId,'CARD_SKIN',definition?.imageUrl);
 
   // Capture viewport geometry once per play; camera recoil must not restart the flight.
   const geometryRef=useRef({id:animation.card.instanceId,kind:animation.kind,value:animation.geometry});
@@ -268,7 +268,7 @@ export function CardPlayAnimation({
         className="card-play-animation__card"
         onAnimationEnd={complete}
       >
-        <CardRenderer cardId={animation.card.definitionId} cosmeticOwnerId={(!animation.card.isToken||animation.card.isChampionToken)?animation.playerId:undefined}
+        <CardRenderer cardId={animation.card.definitionId} cosmeticOwnerId={animation.playerId}
           name={definition?.name ?? "카드"}
           cardType={animation.kind}
           cost={animation.card.currentCost}

@@ -465,7 +465,7 @@ export function Inspectable({
 export function CardInspectContent({ card, definition:override,cosmeticOwnerId }: { card: CardInstance;cosmeticOwnerId?:string; definition?:ReturnType<typeof getCardDefinition> }) {
   const altInspectContext = useContext(AltInspectContext);
   const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card,override);
-  const cosmetic=useCosmeticImage((!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined,card.definitionId,'CARD_SKIN',definition?.imageUrl);
+  const cosmetic=useCosmeticImage(cosmeticOwnerId,card.definitionId,'CARD_SKIN',definition?.imageUrl);
   const numericChanges = getNumericChanges(card);
   const peekView = useContext(PeekViewContext);
   if (peekView) {
@@ -483,7 +483,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
       <div className="kpk" data-testid="card-peek" data-many={notes.length + (changed.length ? 1 : 0) > 3 || undefined}>
         <div className="kpk-card">
           <CardRenderer
-            cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
+            cardId={card.definitionId} cosmeticOwnerId={cosmeticOwnerId}
             name={definition?.name ?? '알 수 없는 카드'} cardType={card.cardType}
             cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth}
             rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '효과 없음')}
@@ -519,7 +519,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
       <SilenceImmunityNotice {...cardSilenceProtection(card,definition)}/>
       <FullCardArtwork name={definition?.name ?? '카드'} imageUrl={cosmetic.src} fallbackImageUrl={definition?.imageUrl}>
       <CardRenderer
-        cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
+        cardId={card.definitionId} cosmeticOwnerId={cosmeticOwnerId}
         name={definition?.name ?? '알 수 없는 카드'}
         cardType={card.cardType}
         cost={card.currentCost}

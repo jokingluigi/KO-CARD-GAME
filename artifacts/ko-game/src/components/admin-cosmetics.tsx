@@ -7,6 +7,7 @@ import {
   championSkinArtwork,
   cosmeticAssetDisplay,
   parseCosmeticDisplay,
+  skinTokenIds,
   type CosmeticDisplaySettings,
   type CosmeticItem,
   type CosmeticAssets,
@@ -42,6 +43,7 @@ type Catalog = {
   items: CosmeticItem[];
   cards: CosmeticCardPreview[];
   champions: CosmeticChampionPreview[];
+  tokens?: CosmeticCardPreview[];
 };
 export function AdminCosmetics() {
   const [data, setData] = useState<Catalog | null>(null),
@@ -178,11 +180,16 @@ export function AdminCosmetics() {
       );
     });
   }
-  const tokenId =
+  // 챔피언 스킨에 딸린 토큰: 챔피언 능력·피니셔·챔피언 토큰에서 자동으로 찾은 것 (+ 예전에 넣어 둔 그림)
+  const relatedTokens =
     form.type === "CHAMPION_SKIN"
-      ? data?.champions.find((c) => c.id === form.targetId)
-          ?.championTokenDefinitionId
-      : null;
+      ? data?.champions.find((c) => c.id === form.targetId)?.skinTokenIds ?? []
+      : [];
+  const skinTokens = form.type === "CHAMPION_SKIN"
+    ? [...new Set([...relatedTokens, ...skinTokenIds(form.imageAssets)])]
+    : [];
+  const tokenCard = (id: string) => data?.tokens?.find((t) => t.id === id);
+  const missingTokens = skinTokens.filter((id) => !form.imageAssets[`token:${id}`]);
   const targets =
     form.type === "CHAMPION_SKIN"
       ? data?.champions
@@ -242,15 +249,25 @@ export function AdminCosmetics() {
             </Grid>
             {form.type === "IMAGE_EMOTE" && <Toggle checked={isDefaultEmote(form)} onChange={(on) => { const imageAssets = { ...form.imageAssets }; if (on) imageAssets.__defaultGrant = "true"; else delete imageAssets.__defaultGrant; setForm({ ...form, imageAssets }); }} label="모든 유저에게 기본으로 주기" hint="꺼도 이미 받은 유저는 그대로 가지고 있어요." />}
           </Panel>
-          <Panel title="그림" hint={form.type === "CHAMPION_SKIN" ? `일러스트 한 장이 기본 표시·전투 초상화·VS 화면에 같이 쓰여요. 각성·토큰 그림만 따로 올려요.${tokenId ? "" : " (토큰 그림은 챔피언에 토큰을 먼저 연결해야 올릴 수 있어요)"}` : "PNG·WebP·JPEG, 5MB까지 올릴 수 있어요."}>
+          <Panel title="그림" hint={form.type === "CHAMPION_SKIN" ? "일러스트 한 장이 기본 표시·전투 초상화·VS 화면에 같이 쓰여요. 각성 그림과 이 챔피언의 토큰 그림은 따로 올려요. 이 스킨을 받은 유저는 토큰 그림도 같이 받고, 장착하면 토큰에도 자동으로 적용돼요." : "PNG·WebP·JPEG, 5MB까지 올릴 수 있어요."}>
+            {form.type === "CHAMPION_SKIN" && form.targetId && (
+              <div className={`cosmetics-token-summary ${missingTokens.length ? "is-missing" : "is-done"}`}>
+                {skinTokens.length === 0
+                  ? "이 챔피언은 관련 토큰이 없어요."
+                  : missingTokens.length
+                    ? `관련 토큰 ${skinTokens.length}종 중 ${missingTokens.length}종 그림이 비어 있어요 (${missingTokens.map((id) => tokenCard(id)?.name ?? "토큰").join(", ")}). 비어 있으면 원래 그림으로 나와요.`
+                    : `관련 토큰 ${skinTokens.length}종 그림이 모두 들어 있어요 ✓`}
+              </div>
+            )}
             <div className="cosmetics-assets">
-              {(form.type === "CHAMPION_SKIN" ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])] : ["art"]).map((raw) => {
+              {(form.type === "CHAMPION_SKIN" ? ["art", "awakened", ...skinTokens.map((id) => `token:${id}`)] : ["art"]).map((raw) => {
                 const key = raw as keyof CosmeticAssets;
                 const imageUrl = key === "art" && form.type === "CHAMPION_SKIN" ? championSkinArtwork(form.imageAssets) : form.imageAssets[key];
-                const title = ({ art: form.type === "CHAMPION_SKIN" ? "챔피언 일러스트" : "그림", portrait: "전투 초상화", intro: "VS 화면", awakened: "각성 그림 (선택)" } as Record<string, string>)[key] ?? "토큰 그림 (선택)";
+                const title = ({ art: form.type === "CHAMPION_SKIN" ? "챔피언 일러스트" : "그림", portrait: "전투 초상화", intro: "VS 화면", awakened: "각성 그림 (선택)" } as Record<string, string>)[key] ?? `토큰 · ${tokenCard(String(key).slice(6))?.name ?? "알 수 없는 토큰"}${relatedTokens.includes(String(key).slice(6)) ? "" : " (지금은 관련 없음 · 빼 주세요)"}`;
                 return (
                   <div key={key} className="ak-panel" style={{ background: "#0f1216" }}><div className="ak-panel-body">
                     <b style={{ fontSize: 13 }}>{title}</b>
+                    {key.startsWith("token:") && !imageUrl && tokenCard(String(key).slice(6))?.imageUrl && <img src={tokenCard(String(key).slice(6))!.imageUrl!} alt="원래 그림" title="원래 그림" className="cosmetics-token-original" />}
                     <ImagePick label={imageUrl ? "다른 그림으로 바꾸기" : "그림 올리기"} busy={busy} onFile={(f) => void upload(f, key)} />
                     {imageUrl && <>
                       {form.type === "CARD_SKIN" || form.type === "CHAMPION_SKIN"
@@ -264,7 +281,7 @@ export function AdminCosmetics() {
             </div>
             {form.type === "CHAMPION_SKIN" && (form.id ? <a className="ak-btn" style={{ display: "inline-flex", alignItems: "center" }} href={`/admin/battle-sprites?target=${encodeURIComponent("skin:" + form.id)}`}>이 스킨의 대전 스프라이트 고치기 →</a> : <p className="ak-hint">대전 스프라이트는 아이템을 만든 뒤에 고칠 수 있어요.</p>)}
           </Panel>
-          <Panel title="미리보기"><div className="cosmetics-preview"><CosmeticPreview item={form} cards={data?.cards} champions={data?.champions} /></div></Panel>
+          <Panel title="미리보기"><div className="cosmetics-preview"><CosmeticPreview item={form} cards={[...(data?.cards ?? []), ...(data?.tokens ?? [])]} champions={data?.champions} /></div></Panel>
           {form.id && <Panel title="유저에게 주기 · 회수" hint="닉네임으로 유저를 찾은 뒤 이 아이템을 주거나 빼요.">
             <div className="ak-row-actions">
               <input className="ak-search" style={{ flex: 1, minWidth: 160 }} aria-label="플레이어 검색" placeholder="닉네임 또는 계정 ID (2글자 이상)" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void run(async () => setUsers((await cosmeticsRequest<{ users: typeof users }>(`${base}/users?q=${encodeURIComponent(userQuery)}`)).users)); }} />

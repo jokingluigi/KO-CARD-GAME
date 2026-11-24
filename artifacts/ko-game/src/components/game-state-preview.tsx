@@ -2074,7 +2074,7 @@ function HandCard({
     <Inspectable content={<CardInspectContent cosmeticOwnerId={cosmeticOwnerId} card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
     <div data-pending-play={pending} className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
       {pending&&<span role="status" className="absolute inset-x-0 top-1/2 z-50 rounded bg-black/85 p-1 text-center text-[10px] text-amber-200">사용 확인 중…</span>}
-      <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
+      <CardRenderer cardId={card.definitionId} cosmeticOwnerId={cosmeticOwnerId}
       name={def?.name ?? '알 수 없는 카드'}
       cardType={card.cardType}
       cost={card.currentCost}
@@ -2238,7 +2238,7 @@ function BoardSlot({
           {card.activeUsed || card.activeUsedThisTurn ? "사용 완료" : "액티브"}
         </button>
       )}
-       <CardRenderer cardId={card.definitionId} cosmeticOwnerId={(!card.isToken||card.isChampionToken)?cosmeticOwnerId:undefined}
+       <CardRenderer cardId={card.definitionId} cosmeticOwnerId={cosmeticOwnerId}
          name={def?.name ?? '알 수 없는 카드'}
          cardType={card.cardType}
          cost={card.currentCost}

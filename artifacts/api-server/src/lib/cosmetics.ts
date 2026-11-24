@@ -1,9 +1,9 @@
 import {ensureDefaultEmotes} from "./default-emotes";
-import {parseBattleSprite} from "@workspace/cosmetics";
+import {parseBattleSprite, relatedChampionTokenIds} from "@workspace/cosmetics";
 import { hydrateLegacySkins } from "./legacy-skin-cosmetics";
 import { ensureAdminSkins } from "./admin-skin-access";
 import { logger } from "./logger";
-import { and, eq, asc, sql } from "drizzle-orm";
+import { and, eq, asc, or, sql } from "drizzle-orm";
 import {
   db,
   cosmeticItemsTable as items,
@@ -37,7 +37,7 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
     .select({
       slot: equips.slot,
       item: items,
-      tokenId: cardsTable.id,
+      champion: championsTable,
     })
     .from(equips)
     .innerJoin(
@@ -55,17 +55,15 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
         eq(championsTable.id, items.targetId),
       ),
     )
-    .leftJoin(
-      cardsTable,
-      and(
-        eq(cardsTable.id, championsTable.championTokenDefinitionId),
-        eq(cardsTable.isChampionToken, true),
-      ),
-    )
     .where(and(eq(equips.userId, userId), eq(items.isActive, true)));
   const result = emptyCosmetics();
+  // 챔피언 스킨의 토큰 그림은 지금 그 챔피언과 관련된 토큰에만 적용한다.
+  const tokenCards = rows.some((row) => row.champion)
+    ? await db.select().from(cardsTable).where(or(eq(cardsTable.isToken, true), eq(cardsTable.isChampionToken, true)))
+    : [];
   // Do not infer any deck or private card information from the equipped inventory.
-  for (const { slot, item: raw, tokenId } of rows) {
+  for (const { slot, item: raw, champion } of rows) {
+    const relatedTokens = new Set(champion ? relatedChampionTokenIds(champion as unknown as Record<string, unknown>, tokenCards) : []);
     const item = raw as CosmeticItem;
     if (
       !item.imageAssets ||
@@ -79,8 +77,8 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
           ? !!parseCosmeticDisplay(url)
           : (["art", "portrait", "intro", "awakened"].includes(key) ||
               (item.type === "CHAMPION_SKIN" &&
-                tokenId &&
-                key === `token:${tokenId}`)) &&
+                key.startsWith("token:") &&
+                relatedTokens.has(key.slice(6)))) &&
             validImageUrl(url),
       ),
     );
