@@ -21,6 +21,7 @@ import {
 import { useAdminMutableDraft } from "./admin-editor-sections";
 import { CosmeticPreview } from "./cosmetic-preview";
 import "./cosmetics.css";
+import { Button, Chip, EditorPane, Field, Grid, ImagePick, ListPane, ListRow, Notice, NumberInput, Panel, SaveLine, Split, Toggle, useAutosave } from "./admin-kit";
 const labels: Record<CosmeticType, string> = {
   CHAMPION_SKIN: "챔피언 스킨",
   CARD_SKIN: "카드 스킨",
@@ -83,7 +84,7 @@ export function AdminCosmetics() {
       draft.markSaved();
       await load();
       setMessage(
-        "저장했어. 대상·유형을 변경하면 해당 아이템의 기존 장착은 해제돼.",
+        "저장했어요. 대상·유형을 변경하면 해당 아이템의 기존 장착은 해제돼요.",
       );
     });
   }
@@ -116,7 +117,7 @@ export function AdminCosmetics() {
         file.size <= 5 * 1024 * 1024;
       if (!valid)
         throw new Error(
-          "PNG·WebP·JPEG, 최대 5MB만 지원해. GIF는 이번 버전에서 지원하지 않아.",
+          "PNG·WebP·JPEG, 최대 5MB만 지원해요. GIF는 이번 버전에서 지원하지 않아요.",
         );
       const result = await cosmeticsRequest<{
         uploadURL: string;
@@ -135,7 +136,7 @@ export function AdminCosmetics() {
         body: file,
         signal: AbortSignal.timeout(30000),
       });
-      if (!response.ok) throw new Error("이미지 업로드에 실패했어.");
+      if (!response.ok) throw new Error("이미지 업로드에 실패했어요.");
       const image = await cosmeticsRequest<{ imageUrl: string }>(
         `${base}/uploads/complete`,
         {
@@ -150,7 +151,7 @@ export function AdminCosmetics() {
         ...old,
         imageAssets: { ...old.imageAssets, [key]: image.imageUrl },
       }));
-      setMessage("이미지 검증 완료. 저장하면 적용돼.");
+      setMessage("이미지 검증 완료. 저장하면 적용돼요.");
     });
   }
   async function selectUser(value: { id: string; nickname: string }) {
@@ -188,439 +189,100 @@ export function AdminCosmetics() {
       : form.type === "CARD_SKIN"
         ? data?.cards
         : [];
+  const autosave = useAutosave(form.id || null, form.id ? form : null, async (next) => {
+    if (!next.name.trim()) throw new Error("이름을 써 주세요.");
+    const result = await cosmeticsRequest<{ item: CosmeticItem }>(`${base}/items/${encodeURIComponent(next.id)}`, { method: "PATCH", body: JSON.stringify(next) });
+    setData((d) => d && ({ ...d, items: d.items.map((i) => (i.id === result.item.id ? result.item : i)) }));
+    draft.markSaved();
+    return "저장됨 · 대상이나 종류를 바꾸면 기존 장착은 풀려요";
+  });
+  const [editing, setEditing] = useState(false);
+  const items = (data?.items ?? []).filter((i) => i.name.includes(query) && (typeFilter === "ALL" || i.type === typeFilter));
+  const itemStatus = (i: CosmeticItem) => i.publicationStatus === "DRAFT" ? "미공개" : i.publicationStatus === "DISABLED" || !i.isActive ? "꺼짐" : isDefaultEmote(i) ? "기본 지급" : "켜짐";
+  const open = (i: CosmeticItem) => { void autosave.flush(); setForm(i); draft.markSaved(); setEditing(true); };
   return (
-    <section className="cosmetics">
-      <p>
-        카드팩 스킨·챔피언 스킨·카드 뒷면·이모티콘을 한곳에서 관리해. 기존
-        카드팩과 보유 기록은 유지돼. 비활성 아이템은 새 장착·지급에서 제외돼.
-      </p>
-      {message && (
-        <p role="status" className="break-words">
-          {message}
-        </p>
-      )}
+    <div className="ak-page">
+      {message && <Notice tone={/못|실패|오류|확인/.test(message) ? "error" : "ok"}>{message}</Notice>}
       {!data && !message && <p role="status">불러오는 중…</p>}
-      <div className="cosmetics-editor">
-        <aside>
-          <input
-            aria-label="아이템 검색"
-            placeholder="아이템 검색"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <select
-            aria-label="꾸미기 유형 필터"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
-          >
-            <option value="ALL">모든 꾸미기</option>
-            {COSMETIC_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {labels[type]}
-              </option>
-            ))}
-          </select>
-          <button
-            disabled={busy}
-            onClick={() => {
-              if (draft.confirm()) {
-                setForm(blank());
-                draft.markSaved();
-              }
-            }}
-          >
-            새 아이템
-          </button>
-          <div className="grid gap-2 mt-3">
-            {data?.items
-              .filter(
-                (i) =>
-                  i.name.includes(query) &&
-                  (typeFilter === "ALL" || i.type === typeFilter),
-              )
-              .map((i) => (
-                <button
-                  key={i.id}
-                  aria-pressed={i.id === form.id}
-                  disabled={busy}
-                  onClick={() => {
-                    if (draft.confirm()) setForm(i);
-                  }}
-                >
-                  {i.name} · {labels[i.type]}
-                  {isDefaultEmote(i) ? " · 기본 지급" : ""}
-                  {i.publicationStatus === "DRAFT"
-                    ? " · 미공개"
-                    : i.isActive
-                      ? ""
-                      : " · 비활성"}
-                </button>
-              ))}
-          </div>
-        </aside>
-        <div className="cosmetics-form">
-          <label>
-            이름
-            <input
-              aria-label="아이템 이름"
-              maxLength={120}
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </label>
-          <label>
-            유형
-            <select
-              aria-label="아이템 유형"
-              disabled={!!form.legacySkinId}
-              value={form.type}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  type: e.target.value as CosmeticType,
-                  targetId: null,
-                  imageAssets: {},
-                })
-              }
-            >
-              {COSMETIC_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {labels[t]}
-                </option>
-              ))}
-            </select>
-          </label>
-          {form.type === "IMAGE_EMOTE" && (
-            <fieldset className="rounded border border-amber-800/60 p-3">
-              <label className="cosmetic-default-grant">
-                <input
-                  type="checkbox"
-                  aria-label="이모티콘 기본 지급"
-                  checked={isDefaultEmote(form)}
-                  disabled={busy}
-                  onChange={(e) => {
-                    const imageAssets = { ...form.imageAssets };
-                    if (e.target.checked) imageAssets.__defaultGrant = "true";
-                    else delete imageAssets.__defaultGrant;
-                    setForm({ ...form, imageAssets });
-                  }}
-                />
-                기본 지급
-              </label>
-              <p className="text-xs leading-5 text-neutral-400">
-                활성 이모티콘을 기존·신규 유저에게 자동 지급합니다. 꾸미기
-                목록을 열면 지급되며, 장착 없이 전투에서 사용할 수 있습니다. 옵션을 꺼도
-                이미 지급된 보유 기록은 유지됩니다.
-              </p>
-            </fieldset>
-          )}
-          {(form.type === "CARD_SKIN" || form.type === "CHAMPION_SKIN") && (
-            <>
-              <input
-                aria-label="적용 대상 검색"
-                placeholder="적용 대상 검색"
-                value={targetQuery}
-                onChange={(e) => setTargetQuery(e.target.value)}
-              />
-              <label>
-                적용 대상
-                <select
-                  aria-label="적용 대상"
-                  value={form.targetId ?? ""}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      targetId: e.target.value || null,
-                      imageAssets: Object.fromEntries(
-                        Object.entries(form.imageAssets).filter(
-                          ([key]) => !key.startsWith("token:"),
-                        ),
-                      ),
-                    })
-                  }
-                >
-                  <option value="">대상 선택</option>
-                  {targets
-                    ?.filter(
-                      (t) =>
-                        t.id === form.targetId || t.name.includes(targetQuery),
-                    )
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            </>
-          )}
-          <label>
-            설명
-            <textarea
-              aria-label="아이템 설명"
-              maxLength={2000}
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </label>
-          <label>
-            정렬 순서
-            <input
-              aria-label="정렬 순서"
-              type="number"
-              value={form.sortOrder}
-              onChange={(e) =>
-                setForm({ ...form, sortOrder: Number(e.target.value) })
-              }
-            />
-          </label>
-          {form.legacySkinId ? (
-            <label>
-              공개 상태
-              <select
-                aria-label="스킨 공개 상태"
-                value={form.publicationStatus}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    publicationStatus: e.target
-                      .value as CosmeticItem["publicationStatus"],
-                    isActive: e.target.value === "PUBLISHED",
-                  })
-                }
-              >
-                <option value="DRAFT">미공개</option>
-                <option value="PUBLISHED">공개</option>
-                <option value="DISABLED">비활성화</option>
-              </select>
-              <span className="text-sm text-neutral-400">
-                카드팩 스킨 · 기존 팩 연결과 보유 기록을 함께 관리해.
-              </span>
-            </label>
-          ) : (
-            <label className="!flex">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) =>
-                  setForm({ ...form, isActive: e.target.checked })
-                }
-              />
-              활성화
-            </label>
-          )}
-          {form.type === "CHAMPION_SKIN" && (
-            <p className="text-sm text-amber-200">
-              챔피언 일러스트 한 장을 등록하면 기본 표시·전투 초상화·VS 인트로에
-              함께 적용돼. 각성과 토큰 외형만 별도로 등록해 줘.{" "}
-              {tokenId
-                ? "아래에 토큰 일러스트를 등록해 줘."
-                : "토큰 외형을 등록하려면 챔피언 관리에서 챔피언 토큰을 먼저 연결해 줘."}
-            </p>
-          )}
-          <div className="cosmetics-assets">
-            {form.type === "CHAMPION_SKIN" && (
-              <div className="border border-neutral-700 p-4">
-                <strong>대전 스프라이트</strong>
-                <p className="my-2 text-sm text-neutral-400">
-                  이 스킨의 스프라이트는 큰 전용 작업 화면에서 관리합니다.
-                </p>
-                {form.id ? (
-                  <a
-                    className="inline-flex min-h-11 items-center border border-amber-700 px-3 text-amber-200"
-                    href={`/admin/battle-sprites?target=${encodeURIComponent("skin:" + form.id)}`}
-                  >
-                    스프라이트 전용 관리 열기
-                  </a>
-                ) : (
-                  <p>스킨을 먼저 저장해 주세요.</p>
-                )}
-              </div>
+      <Split editing={editing}
+        list={<ListPane actions={<button type="button" disabled={busy} onClick={() => { void autosave.flush(); setForm(blank()); draft.markSaved(); setEditing(true); }}>+ 새 아이템</button>}
+          search={query} onSearch={setQuery} placeholder="아이템 찾기" count={`${items.length}개`}
+          filters={<>{(["ALL", ...COSMETIC_TYPES] as const).map((t) => <Chip key={t} on={typeFilter === t} onClick={() => setTypeFilter(t)}>{t === "ALL" ? "전체" : labels[t]}</Chip>)}</>}>
+          {items.map((i) => <ListRow key={i.id} thumb={(i.type === "CHAMPION_SKIN" ? championSkinArtwork(i.imageAssets) : i.imageAssets.art) ?? null} selected={i.id === form.id} onClick={() => open(i)} title={i.name} sub={labels[i.type]} badge={itemStatus(i)} tone={itemStatus(i) === "켜짐" || itemStatus(i) === "기본 지급" ? "on" : itemStatus(i) === "미공개" ? "warn" : "off"} />)}
+          {!items.length && <p className="ak-hint" style={{ margin: 8 }}>아이템이 없어요.</p>}
+        </ListPane>}
+        editor={<EditorPane onBack={() => { void autosave.flush(); setEditing(false); }} status={form.id ? <SaveLine state={autosave.state} /> : <span className="ak-save">새 아이템 · 이름과 종류를 정하고 ‘만들기’를 눌러 주세요</span>}
+          right={form.id ? <Button kind="danger" disabled={busy} onClick={() => void removeItem()}>지우기</Button> : <Button kind="primary" disabled={busy || !form.name.trim()} onClick={() => void save()}>만들기</Button>}>
+          <Panel title="기본">
+            <Grid>
+              <Field label="이름"><input aria-label="아이템 이름" maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+              <Field label="종류"><select aria-label="아이템 유형" disabled={!!form.legacySkinId} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as CosmeticType, targetId: null, imageAssets: {} })}>{COSMETIC_TYPES.map((t) => <option key={t} value={t}>{labels[t]}</option>)}</select></Field>
+            </Grid>
+            {(form.type === "CARD_SKIN" || form.type === "CHAMPION_SKIN") && (
+              <Grid>
+                <Field label="대상 찾기"><input aria-label="적용 대상 검색" placeholder="이름으로 찾기" value={targetQuery} onChange={(e) => setTargetQuery(e.target.value)} /></Field>
+                <Field label={form.type === "CHAMPION_SKIN" ? "어느 챔피언 스킨인가요?" : "어느 카드 스킨인가요?"}>
+                  <select aria-label="적용 대상" value={form.targetId ?? ""} onChange={(e) => setForm({ ...form, targetId: e.target.value || null, imageAssets: Object.fromEntries(Object.entries(form.imageAssets).filter(([key]) => !key.startsWith("token:"))) })}>
+                    <option value="">고르기</option>
+                    {targets?.filter((t) => t.id === form.targetId || t.name.includes(targetQuery)).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </Field>
+              </Grid>
             )}
-            {(form.type === "CHAMPION_SKIN"
-              ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])]
-              : ["art"]
-            ).map((raw) => {
-              const key = raw as keyof CosmeticAssets;
-              const imageUrl =
-                key === "art" && form.type === "CHAMPION_SKIN"
-                  ? championSkinArtwork(form.imageAssets)
-                  : form.imageAssets[key];
-              return (
-                <div key={key} className="space-y-3">
-                  {{
-                    art:
-                      form.type === "CHAMPION_SKIN"
-                        ? "챔피언 일러스트 · 전투·VS 공용"
-                        : "기본 일러스트",
-                    portrait: "전투 초상화",
-                    intro: "VS 인트로",
-                    awakened: "각성 초상화",
-                  }[key as "art" | "portrait" | "intro" | "awakened"] ??
-                    "세트 포함 챔피언 토큰 일러스트"}
-                  {form.type === "CHAMPION_SKIN" ? " (선택)" : ""}
-                  <input
-                    type="file"
-                    aria-label={`${key} 이미지 업로드`}
-                    accept="image/png,image/webp,image/jpeg"
-                    disabled={busy}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void upload(f, key);
-                      e.currentTarget.value = "";
-                    }}
-                  />
-                  {imageUrl && (
-                    <>
-                      {form.type === "CARD_SKIN" ||
-                      form.type === "CHAMPION_SKIN" ? (
-                        <SkinImageEditor
-                          slot={key}
-                          src={imageUrl}
-                          assets={form.imageAssets}
-                          champion={
-                            form.type === "CHAMPION_SKIN" &&
-                            !key.startsWith("token:")
-                          }
-                          disabled={busy}
-                          onChange={(display) =>
-                            setForm((old) => ({
-                              ...old,
-                              imageAssets: {
-                                ...old.imageAssets,
-                                [key]: imageUrl,
-                                __display: JSON.stringify({
-                                  ...parseCosmeticDisplay(
-                                    old.imageAssets.__display,
-                                  ),
-                                  [key]: display,
-                                }),
-                              },
-                            }))
-                          }
-                        />
-                      ) : (
-                        <img
-                          src={imageUrl}
-                          alt={`${key} 미리보기`}
-                          className="h-36 w-full object-contain"
-                        />
-                      )}
-                      <button
-                        disabled={busy}
-                        onClick={() => {
-                          const assets = { ...form.imageAssets };
-                          delete assets[key];
-                          if (key === "art" && form.type === "CHAMPION_SKIN") {
-                            delete assets.portrait;
-                            delete assets.intro;
-                          }
-                          setForm({ ...form, imageAssets: assets });
-                        }}
-                      >
-                        이미지 슬롯 해제
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="cosmetics-preview">
-            <CosmeticPreview
-              item={form}
-              cards={data?.cards}
-              champions={data?.champions}
-            />
-          </div>
-          {form.id && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void removeItem()}
-              className="border border-red-800 text-red-300"
-            >
-              아이템 삭제
-            </button>
-          )}
-          <button disabled={busy} onClick={() => void save()}>
-            {busy ? "처리 중…" : "아이템 저장"}
-          </button>
-        </div>
-      </div>
-      <h2 className="text-xl mt-8">플레이어 지급 · 회수</h2>
-      <div className="flex flex-wrap gap-2">
-        <input
-          aria-label="플레이어 검색"
-          placeholder="닉네임 또는 계정 ID · 2자 이상"
-          value={userQuery}
-          onChange={(e) => setUserQuery(e.target.value)}
-        />
-        <button
-          disabled={busy}
-          onClick={() =>
-            void run(async () =>
-              setUsers(
-                (
-                  await cosmeticsRequest<{ users: typeof users }>(
-                    `${base}/users?q=${encodeURIComponent(userQuery)}`,
-                  )
-                ).users,
-              ),
-            )
-          }
-        >
-          플레이어 검색
-        </button>
-      </div>
-      <nav>
-        {users.map((u) => (
-          <button
-            key={u.id}
-            disabled={busy}
-            onClick={() => void run(() => selectUser(u))}
-          >
-            {u.nickname}
-          </button>
-        ))}
-      </nav>
-      {user && (
-        <section>
-          <h2>
-            {user.nickname} 보유 아이템 ({inventory?.owned.length ?? 0})
-          </h2>
-          <div className="cosmetics-grid">
-            {data?.items
-              .filter(
-                (i) =>
-                  i.name.includes(query) &&
-                  (typeFilter === "ALL" || i.type === typeFilter),
-              )
-              .map((item) => {
-                const has = inventory?.owned.some((o) => o.item.id === item.id);
+            <Field label="설명"><textarea aria-label="아이템 설명" rows={2} maxLength={2000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+            <Grid>
+              <Field label="보이는 순서" hint="작을수록 앞"><NumberInput value={form.sortOrder} min={-9999} max={9999} onChange={(sortOrder) => setForm({ ...form, sortOrder })} /></Field>
+              {form.legacySkinId ? (
+                <Field label="공개 상태" hint="카드팩 스킨이에요. 팩 연결과 보유 기록도 함께 관리돼요.">
+                  <select aria-label="스킨 공개 상태" value={form.publicationStatus} onChange={(e) => setForm({ ...form, publicationStatus: e.target.value as CosmeticItem["publicationStatus"], isActive: e.target.value === "PUBLISHED" })}>
+                    <option value="DRAFT">미공개</option><option value="PUBLISHED">공개</option><option value="DISABLED">비활성</option>
+                  </select>
+                </Field>
+              ) : <Toggle checked={form.isActive} onChange={(isActive) => setForm({ ...form, isActive })} label={form.isActive ? "켜짐 (장착·지급 가능)" : "꺼짐 (새 장착·지급 안 됨)"} />}
+            </Grid>
+            {form.type === "IMAGE_EMOTE" && <Toggle checked={isDefaultEmote(form)} onChange={(on) => { const imageAssets = { ...form.imageAssets }; if (on) imageAssets.__defaultGrant = "true"; else delete imageAssets.__defaultGrant; setForm({ ...form, imageAssets }); }} label="모든 유저에게 기본으로 주기" hint="꺼도 이미 받은 유저는 그대로 가지고 있어요." />}
+          </Panel>
+          <Panel title="그림" hint={form.type === "CHAMPION_SKIN" ? `일러스트 한 장이 기본 표시·전투 초상화·VS 화면에 같이 쓰여요. 각성·토큰 그림만 따로 올려요.${tokenId ? "" : " (토큰 그림은 챔피언에 토큰을 먼저 연결해야 올릴 수 있어요)"}` : "PNG·WebP·JPEG, 5MB까지 올릴 수 있어요."}>
+            <div className="cosmetics-assets">
+              {(form.type === "CHAMPION_SKIN" ? ["art", "awakened", ...(tokenId ? [`token:${tokenId}`] : [])] : ["art"]).map((raw) => {
+                const key = raw as keyof CosmeticAssets;
+                const imageUrl = key === "art" && form.type === "CHAMPION_SKIN" ? championSkinArtwork(form.imageAssets) : form.imageAssets[key];
+                const title = ({ art: form.type === "CHAMPION_SKIN" ? "챔피언 일러스트" : "그림", portrait: "전투 초상화", intro: "VS 화면", awakened: "각성 그림 (선택)" } as Record<string, string>)[key] ?? "토큰 그림 (선택)";
                 return (
-                  <article key={item.id} className="cosmetics-item">
-                    <span>
-                      {item.name} · {has ? "보유" : "미보유"}
-                    </span>
-                    <button
-                      disabled={busy || (!has && !item.isActive)}
-                      onClick={() => void grant(item, has ? "REVOKE" : "GRANT")}
-                    >
-                      {has ? "회수" : "지급"}
-                    </button>
-                  </article>
+                  <div key={key} className="ak-panel" style={{ background: "#0f1216" }}><div className="ak-panel-body">
+                    <b style={{ fontSize: 13 }}>{title}</b>
+                    <ImagePick label={imageUrl ? "다른 그림으로 바꾸기" : "그림 올리기"} busy={busy} onFile={(f) => void upload(f, key)} />
+                    {imageUrl && <>
+                      {form.type === "CARD_SKIN" || form.type === "CHAMPION_SKIN"
+                        ? <SkinImageEditor slot={key} src={imageUrl} assets={form.imageAssets} champion={form.type === "CHAMPION_SKIN" && !key.startsWith("token:")} disabled={busy} onChange={(display) => setForm((old) => ({ ...old, imageAssets: { ...old.imageAssets, [key]: imageUrl, __display: JSON.stringify({ ...parseCosmeticDisplay(old.imageAssets.__display), [key]: display }) } }))} />
+                        : <img src={imageUrl} alt="" className="ak-preview-img" />}
+                      <Button kind="ghost" disabled={busy} onClick={() => { const assets = { ...form.imageAssets }; delete assets[key]; if (key === "art" && form.type === "CHAMPION_SKIN") { delete assets.portrait; delete assets.intro; } setForm({ ...form, imageAssets: assets }); }}>그림 빼기</Button>
+                    </>}
+                  </div></div>
                 );
               })}
-          </div>
-        </section>
-      )}
-    </section>
+            </div>
+            {form.type === "CHAMPION_SKIN" && (form.id ? <a className="ak-btn" style={{ display: "inline-flex", alignItems: "center" }} href={`/admin/battle-sprites?target=${encodeURIComponent("skin:" + form.id)}`}>이 스킨의 대전 스프라이트 고치기 →</a> : <p className="ak-hint">대전 스프라이트는 아이템을 만든 뒤에 고칠 수 있어요.</p>)}
+          </Panel>
+          <Panel title="미리보기"><div className="cosmetics-preview"><CosmeticPreview item={form} cards={data?.cards} champions={data?.champions} /></div></Panel>
+          {form.id && <Panel title="유저에게 주기 · 회수" hint="닉네임으로 유저를 찾은 뒤 이 아이템을 주거나 빼요.">
+            <div className="ak-row-actions">
+              <input className="ak-search" style={{ flex: 1, minWidth: 160 }} aria-label="플레이어 검색" placeholder="닉네임 또는 계정 ID (2글자 이상)" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void run(async () => setUsers((await cosmeticsRequest<{ users: typeof users }>(`${base}/users?q=${encodeURIComponent(userQuery)}`)).users)); }} />
+              <Button disabled={busy || userQuery.trim().length < 2} onClick={() => void run(async () => setUsers((await cosmeticsRequest<{ users: typeof users }>(`${base}/users?q=${encodeURIComponent(userQuery)}`)).users))}>찾기</Button>
+            </div>
+            <div className="ak-chips">{users.map((u) => <Chip key={u.id} on={user?.id === u.id} onClick={() => void run(() => selectUser(u))}>{u.nickname}</Chip>)}</div>
+            {user && (() => { const item = data?.items.find((i) => i.id === form.id); const has = inventory?.owned.some((o) => o.item.id === form.id); return item ? (
+              <div className="ak-row-actions" style={{ alignItems: "center" }}>
+                <span className="ak-hint" style={{ margin: 0 }}>{user.nickname} 님은 이 아이템을 {has ? "가지고 있어요" : "안 가지고 있어요"} (전체 {inventory?.owned.length ?? 0}개 보유)</span>
+                <Button kind={has ? "danger" : "primary"} disabled={busy || (!has && !item.isActive)} onClick={() => void grant(item, has ? "REVOKE" : "GRANT")}>{has ? "회수하기" : "주기"}</Button>
+              </div>
+            ) : null; })()}
+          </Panel>}
+        </EditorPane>}
+      />
+    </div>
   );
 }
-
 function SkinImageEditor({
   slot,
   src,

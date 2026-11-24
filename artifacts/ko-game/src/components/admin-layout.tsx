@@ -29,6 +29,7 @@ import {
 import {
   ADMIN_GROUPS,
   ADMIN_PAGES,
+  ADMIN_MENU_PAGES,
   adminPageForPath,
   searchAdminPages,
   validAdminPageIds,
@@ -75,9 +76,7 @@ export function AdminLayout({
   const [drawer, setDrawer] = useState(false),
     [collapsed, setCollapsed] = useState(false),
     [query, setQuery] = useState(""),
-    [expanded, setExpanded] = useState<string[]>(() =>
-      current ? [current.group] : [],
-    ),
+    [expanded, setExpanded] = useState<string[]>(() => ADMIN_GROUPS.map((g) => g.id)),
     [recent, setRecent] = useState(() => stored("ko-admin-recent")),
     [favorites, setFavorites] = useState(() => stored("ko-admin-favorites"));
   const [maintenance, setMaintenance] = useState<boolean | null>(null),
@@ -114,7 +113,7 @@ export function AdminLayout({
     setExpanded((old) =>
       old.includes(current.group) ? old : [...old, current.group],
     );
-    setRecent((old) => {
+    if (!("hidden" in current && current.hidden)) setRecent((old) => {
       const next = [current.id, ...old.filter((id) => id !== current.id)].slice(
         0,
         6,
@@ -300,17 +299,22 @@ export function AdminLayout({
               <>
                 {ADMIN_GROUPS.map((g) => {
                   const Icon = icons[g.icon],
-                    open = expanded.includes(g.id);
+                    open = expanded.includes(g.id),
+                    groupPages = ADMIN_MENU_PAGES.filter((p) => p.group === g.id),
+                    single = groupPages.length === 1 ? groupPages[0] : null;
                   return (
                     <div className="admin-nav-group" key={g.id}>
                       <button
                         className={
                           "admin-nav-heading " +
-                          (current?.group === g.id ? "is-current" : "")
+                          (current?.group === g.id ? "is-current" : "") +
+                          (single ? " is-single" : "")
                         }
-                        aria-expanded={open}
+                        aria-expanded={single ? undefined : open}
+                        aria-current={single && current?.id === single.id ? "page" : undefined}
                         title={g.label}
                         onClick={() => {
+                          if (single) { go(single.id); return; }
                           if (collapsed) {
                             setCollapsed(false);
                             setExpanded((old) => [...new Set([...old, g.id])]);
@@ -326,9 +330,9 @@ export function AdminLayout({
                         <span>{g.label}</span>
                         <ChevronDown size={14} />
                       </button>
-                      {open && !collapsed && (
+                      {open && !collapsed && !single && (
                         <div className="admin-nav-children">
-                          {ADMIN_PAGES.filter((p) => p.group === g.id).map(
+                          {ADMIN_MENU_PAGES.filter((p) => p.group === g.id).map(
                             (p) => (
                               <a
                                 href={p.path}
@@ -406,8 +410,12 @@ export function AdminLayout({
             </button>
             <div className="admin-breadcrumb">
               <span>KO ADMIN</span>
-              <i>/</i>
-              <span>{group?.label ?? "관리자"}</span>
+              {group?.label !== current?.label && (
+                <>
+                  <i>/</i>
+                  <span>{group?.label ?? "관리자"}</span>
+                </>
+              )}
               {current && (
                 <>
                   <i>/</i>
@@ -426,6 +434,14 @@ export function AdminLayout({
             >
               <Search size={16} />
               <span>메뉴 검색</span><kbd aria-hidden="true">Ctrl / ⌘ K</kbd>
+            </button>
+            <button
+              className="admin-test-game"
+              onClick={() => { if (confirmDiscardAdminDraft(dirtyRef.current)) navigate("/?source=admin"); }}
+              title="관리자 테스트 게임을 열어요"
+            >
+              <FlaskConical size={16} />
+              <span>테스트 게임</span>
             </button>
             <button
               className="admin-server-status"
@@ -459,7 +475,7 @@ export function AdminLayout({
           <main id="admin-content" className="admin-content">
             <div className="admin-page-heading">
               <div>
-                <p>{group?.label ?? "관리자"}</p>
+                {group?.label !== current?.label && <p>{group?.label ?? "관리자"}</p>}
                 <h1>{current?.label ?? "관리 화면을 찾을 수 없습니다"}</h1>
                 <span>
                   {current?.description ??

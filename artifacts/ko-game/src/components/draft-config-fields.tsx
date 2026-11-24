@@ -80,7 +80,7 @@ export function DraftConfigFields({
         저장한 규칙은 새 드래프트부터 적용됩니다.
       </p>
       <fieldset className="grid gap-3 sm:grid-cols-2">
-        <legend className="mb-2 font-bold">Draft 2.0</legend>
+        <legend className="mb-2 font-bold">추가 규칙</legend>
         {(
           [
             "mutationEnabled",

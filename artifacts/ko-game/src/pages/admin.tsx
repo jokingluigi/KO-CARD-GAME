@@ -1,6 +1,3 @@
-import {AdminShopDecks} from "@/components/admin-shop-decks";
-import {AdminAccounts} from "@/components/admin-accounts";
-import {AdminCosmeticsHub} from '@/components/admin-cosmetics-hub';
 import {
   lazy,
   Suspense,
@@ -18,24 +15,18 @@ import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/components/admin-layout";
 import "@/styles/admin-console.css";
 import "@/components/admin-workspace.css";
+const AdminChampionStudio = lazy(() => import("@/components/admin-champion-studio").then((m) => ({ default: m.AdminChampionStudio })));
+const AdminSystem = lazy(() => import("@/components/admin-system").then((m) => ({ default: m.AdminSystem })));
+const AdminCosmetics = lazy(() => import("@/components/admin-cosmetics").then((m) => ({ default: m.AdminCosmetics })));
+const AdminShopHub = lazy(() => import("@/components/admin-hubs").then((m) => ({ default: m.AdminShopHub })));
+const AdminStatisticsHub = lazy(() => import("@/components/admin-hubs").then((m) => ({ default: m.AdminStatisticsHub })));
+const AdminUserAssets = lazy(() => import("@/components/admin-hubs").then((m) => ({ default: m.AdminUserAssets })));
 const AdminBattleSprites = lazy(() => import("@/components/admin-battle-sprites").then(m=>({default:m.AdminBattleSprites})));
 const AdminDashboard = lazy(() =>
   import("@/components/admin-dashboard").then((m) => ({
     default: m.AdminDashboard,
   })),
 );
-const AdminUserDirectory = lazy(() =>
-  import("@/components/admin-dashboard").then((m) => ({
-    default: m.AdminUserDirectory,
-  })),
-);
-const AdminServerMaintenance = lazy(() =>
-  import("@/components/server-maintenance").then((m) => ({
-    default: m.AdminServerMaintenance,
-  })),
-);
-const AdminUsageStatistics = lazy(() => import('@/components/admin-usage-statistics').then(m=>({default:m.AdminUsageStatistics})));
-const AdminMultiplayerPerformance=lazy(()=>import('@/components/admin-multiplayer-performance'));
 const AdminQuestManager = lazy(() =>
   import("@/components/admin-quest-manager").then((m) => ({
     default: m.AdminQuestManager,
@@ -46,9 +37,10 @@ const AdminTagManager = lazy(() =>
     default: m.AdminTagManager,
   })),
 );
-const AdminDraftManager = lazy(() =>
-  import("@/components/admin-draft-manager").then((m) => ({
-    default: m.AdminDraftManager,
+const AdminDraftSettings = lazy(() => import("@/components/admin-draft-settings").then((m) => ({ default: m.AdminDraftSettings })));
+const AdminCardStudio = lazy(() =>
+  import("@/components/admin-card-studio").then((m) => ({
+    default: m.AdminCardStudio,
   })),
 );
 const AdminCardManager = lazy(() =>
@@ -69,11 +61,6 @@ const AdminPackManager = lazy(() =>
 const AdminCardFrameManager = lazy(() =>
   import("@/components/admin-card-frame-manager").then((m) => ({
     default: m.AdminCardFrameManager,
-  })),
-);
-const AdminShopManager = lazy(() =>
-  import("@/components/admin-shop-manager").then((m) => ({
-    default: m.AdminShopManager,
   })),
 );
 const AdminPrismManager = lazy(() =>
@@ -217,57 +204,29 @@ export default function Admin() {
             </div>
           }
         >
-          {page?.id === "battle-sprites" ? <AdminBattleSprites/> : page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmeticsHub onNavigate={goPath} legacy={displayPath.replace(/\/$/,'')==='/admin/skins'} onUnauthorized={onUnauthorized}/> : page?.id === "dashboard" ? (
-            <AdminDashboard go={go} />
-          ) : page?.id === "users" ? (
-            <><AdminAccounts /><AdminUserDirectory go={go} /></>
-          ) : page?.id === 'multiplayer-performance' ? <AdminMultiplayerPerformance/> : page?.id === "system" ? (
-            <AdminServerMaintenance />
-          ) : page?.id === "test" ? (
-            <section className="admin-test-launch">
-              <h2>실제 전투 엔진 테스트</h2>
-              <p>기존 테스트 게임에서 선수·주문·챔피언 효과를 확인합니다.</p>
-              <button
-                onClick={() => navigate(ROUTES.MAIN_MENU + "?source=admin")}
-              >
-                기존 테스트 모드 열기
-              </button>
-              <div className="admin-related-links">
-                <button onClick={() => go("cards")}>카드별 테스트</button>
-                <button onClick={() => go("champions")}>챔피언별 테스트</button>
-              </div>
-            </section>
-          ) : page?.id === "card-statistics" || page?.id === "champion-statistics" ? (
-            <AdminUsageStatistics key={page.id} kind={page.id === "card-statistics" ? "cards" : "champions"} onUnauthorized={onUnauthorized} />
-          ) : page?.id === "quests" ? (
-            <AdminQuestManager />
-          ) : page?.id === "tags" ? (
-            <AdminTagManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "draft" ? (
-            <AdminDraftManager />
-          ) : page?.id === "cards" ? (
-            <AdminCardManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "champions" ? (
-            <AdminChampionManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "packs" ? (
-            <AdminPackManager onUnauthorized={onUnauthorized} />
-
-          ) : page?.id === "frames" ? (
-            <AdminCardFrameManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "shop" ? (
-            <AdminShopManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "prism" ? (
-            <AdminPrismManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "media" ? (
-            <AdminGameMediaManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "notices" ? (
-            <AdminNoticesManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "ai-decks" ? (
-            <AdminAIDeckManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "rewards" ? (
-            <AdminRewardsManager onUnauthorized={onUnauthorized} />
-          ) : (
-            <button onClick={() => go("dashboard")}>운영 개요로 이동</button>
+          {page?.id === "dashboard" ? <AdminDashboard go={go} goPath={goPath} />
+          : page?.id === "cards" ? <AdminCardStudio onUnauthorized={onUnauthorized} onOpenAdvanced={(id) => goPath(`/admin/card-edit?edit=${encodeURIComponent(id)}`)} onTestGame={(id) => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(id)}`)} />
+          : page?.id === "card-edit" ? <AdminCardManager onUnauthorized={onUnauthorized} editOnly onDone={(id?: string) => goPath(id ? `/admin/cards?card=${encodeURIComponent(id)}` : "/admin/cards")} />
+          : page?.id === "tags" ? <AdminTagManager onUnauthorized={onUnauthorized} />
+          : page?.id === "frames" ? <AdminCardFrameManager onUnauthorized={onUnauthorized} />
+          : page?.id === "champions" ? <AdminChampionStudio onUnauthorized={onUnauthorized} onOpenAdvanced={(id) => goPath(`/admin/champion-edit?edit=${encodeURIComponent(id)}`)} onTestGame={(id) => navigate(`${ROUTES.MAIN_MENU}?source=admin&testChampionId=${encodeURIComponent(id)}`)} />
+          : page?.id === "champion-edit" ? <AdminChampionManager onUnauthorized={onUnauthorized} editOnly onDone={(id?: string) => goPath(id ? `/admin/champions?champion=${encodeURIComponent(id)}` : "/admin/champions")} />
+          : page?.id === "battle-sprites" ? <AdminBattleSprites />
+          : page?.id === "ai-decks" ? <AdminAIDeckManager onUnauthorized={onUnauthorized} />
+          : page?.id === "draft" ? <AdminDraftSettings />
+          : page?.id === "shop" ? <AdminShopHub legacyPath={displayPath} onUnauthorized={onUnauthorized} />
+          : page?.id === "packs" ? <AdminPackManager onUnauthorized={onUnauthorized} />
+          : page?.id === "prism" ? <AdminPrismManager onUnauthorized={onUnauthorized} />
+          : page?.id === "rewards" ? <AdminRewardsManager onUnauthorized={onUnauthorized} />
+          : page?.id === "quests" ? <AdminQuestManager onUnauthorized={onUnauthorized} />
+          : page?.id === "cosmetics" ? <AdminCosmetics />
+          : page?.id === "media" ? <AdminGameMediaManager onUnauthorized={onUnauthorized} />
+          : page?.id === "notices" ? <AdminNoticesManager onUnauthorized={onUnauthorized} />
+          : page?.id === "users" ? <AdminUserAssets onUnauthorized={onUnauthorized} />
+          : page?.id === "statistics" ? <AdminStatisticsHub legacyPath={displayPath} onUnauthorized={onUnauthorized} />
+          : page?.id === "system" ? <AdminSystem onUnauthorized={onUnauthorized} />
+          : (
+            <button onClick={() => go("dashboard")}>홈으로 이동</button>
           )}
         </Suspense>
       )}

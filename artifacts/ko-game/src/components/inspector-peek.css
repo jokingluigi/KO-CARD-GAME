@@ -87,3 +87,21 @@
   .kpk[data-many] .kpk-note[data-tone=text],.kpk[data-many] .kpk-note[data-tone=change]{grid-column:1/-1}
   .kpk[data-many] .kpk-note{padding:8px 9px 9px}
 }
+/* tags: chips that open the list of cards with that tag */
+.kpk-note[data-tone=tag]::before{background:#6f7fa8}
+.kpk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.kpk-tag{pointer-events:auto;min-height:30px;padding:0 10px;border-radius:999px;font-size:12.5px;font-weight:800;color:#d8d2c4;background:#0e0d0b;border:1px solid #3a352c;cursor:pointer}
+.kpk-tag:hover{border-color:#c8a865;color:#ece6da}
+/* the notes column takes the pointer so the tag chips can be pressed (hovering it keeps the look open) */
+.ko-touch-inspector[data-peek] .kpk-notes{pointer-events:auto}
+@media (min-width:701px){.kpk[data-many] .kpk-note[data-tone=tag]{grid-column:1/-1}}
+/* tag chips sit right under the big card, always in view */
+.kpk-tagrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px;pointer-events:auto;filter:none}
+.kpk-tagrow>span{font-size:11px;font-weight:800;color:#8f887b;letter-spacing:.04em}
+.kpk-tagrow .kpk-tags{margin-top:0}
+.kpk-card:has(.kpk-tagrow){filter:none}
+.kpk-card:has(.kpk-tagrow)>:first-child{filter:drop-shadow(0 18px 28px rgba(0,0,0,.75)) drop-shadow(0 0 1px rgba(0,0,0,.9))}
+@media (max-width:700px){.kpk-tagrow{justify-content:center}}
+/* the quick look itself takes the pointer, so moving onto it (to press a tag) keeps it open */
+.ko-touch-inspector[data-peek] .kpk{pointer-events:auto}
+.kpk-tagrow{position:relative;z-index:30}

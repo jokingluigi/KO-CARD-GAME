@@ -96,3 +96,43 @@ export function CardRulesText({text,interactive=true}:{text:string;interactive?:
   </DialogContent>}
  </Dialog></>;
 }
+
+/** Tag chips for a card's quick look: pressing one opens the shared tag browser (it outlives the quick look). */
+export function TagLinks({tags}:{tags:string[]}) {
+ const tagLabels=useTagLabels();
+ if(!tags.length)return null;
+ const stop=(e:{stopPropagation:()=>void})=>e.stopPropagation();
+ return <div className="kpk-tags">{tags.map(tag=><button key={tag} type="button" className="kpk-tag" onPointerDown={stop} onPointerUp={stop} onTouchStart={stop}
+  onClick={e=>{e.stopPropagation();window.dispatchEvent(new CustomEvent('ko-open-tag',{detail:tag}));window.setTimeout(()=>window.dispatchEvent(new Event('ko-close-inspector')),0);}}>{tagLabels[tag]??tag}</button>)}</div>;
+}
+
+/** One tag browser for the whole app: every card with a tag, each opening its details. */
+export function TagBrowserHost() {
+ const tagLabels=useTagLabels();
+ const [cards,setCards]=useState<CardDefinition[]>([]);
+ const [open,setOpen]=useState<{tag:string;card?:CardDefinition}|null>(null);
+ useEffect(()=>{const onOpen=(e:Event)=>setOpen({tag:String((e as CustomEvent).detail)});window.addEventListener('ko-open-tag',onOpen);return()=>window.removeEventListener('ko-open-tag',onOpen);},[]);
+ useEffect(()=>{if(!open||cards.length)return;let disposed=false;void fetchPublicCardTagCatalog().then(list=>{if(!disposed)setCards(list);}).catch(()=>{});return()=>{disposed=true;};},[open,cards.length]);
+ const label=(tag:string)=>tagLabels[tag]??tag;
+ const catalog=[...new Map([...cards,...getCardDefinitions()].map(card=>[card.id,card])).values()];
+ const withTag=(tag:string)=>catalog.filter(c=>!c.isToken&&(c.tags??[]).some(t=>t===tag||label(t)===label(tag))).sort((a,b)=>a.cost-b.cost||a.name.localeCompare(b.name,'ko'));
+ const stop=(e:{stopPropagation:()=>void})=>e.stopPropagation();
+ return <Dialog open={open!==null} onOpenChange={next=>{if(!next)setOpen(null);}}>
+  {open&&<DialogContent data-tag-browser-dialog="true" overlayClassName="!z-[350]" className="!z-[351] max-h-[85dvh] w-[calc(100vw-32px)] max-w-sm overflow-auto rounded-xl border-amber-400 bg-neutral-950 p-5 text-white"
+    overlayProps={{onClick:e=>{e.stopPropagation();setOpen(null);},onPointerUp:e=>e.stopPropagation()}}
+    onClick={stop} onPointerUp={stop} onKeyDown={stop}>
+   {open.card?<>
+    <DialogTitle className="pr-6 text-lg font-bold">{open.card.name}</DialogTitle>
+    {open.card.imageUrl&&<RecoverableArtwork src={open.card.imageUrl} alt={open.card.name} className="mx-auto my-3 max-h-[36dvh] object-contain"/>}
+    <p className="my-2 text-sm text-neutral-300">비용 {open.card.cost}{open.card.cardType!=='TECHNIQUE'&&` · 공격 ${open.card.attack} · 체력 ${open.card.health}`}</p>
+    <DialogDescription asChild><div className="ko-readable-content whitespace-pre-wrap break-words text-white"><CardRulesText text={open.card.rulesText||'효과 없음'}/></div></DialogDescription>
+    <button type="button" className="mt-4 min-h-11 w-full rounded border border-neutral-600" onClick={()=>setOpen({tag:open.tag})}>← '{label(open.tag)}' 카드 목록</button>
+   </>:<>
+    <DialogTitle className="pr-6 text-lg font-bold">'{label(open.tag)}' 태그</DialogTitle>
+    <DialogDescription className="text-sm text-neutral-400">{cards.length||getCardDefinitions().length?`이 태그를 가진 카드 ${withTag(open.tag).length}장`:'불러오는 중…'}</DialogDescription>
+    <div className="mt-3 grid grid-cols-2 gap-1.5">{withTag(open.tag).map(c=><button key={c.id} type="button" className="min-h-10 rounded border border-neutral-700 bg-neutral-900 px-2 text-left text-sm text-neutral-100" onClick={()=>setOpen({tag:open.tag,card:c})}><span className="mr-1 text-neutral-500">{c.cost}</span>{c.name}</button>)}</div>
+   </>}
+   <button type="button" className="mt-3 min-h-11 w-full rounded border border-neutral-500" onClick={()=>setOpen(null)}>닫기</button>
+  </DialogContent>}
+ </Dialog>;
+}

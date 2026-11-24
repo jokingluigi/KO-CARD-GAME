@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ADMIN_GROUPS,
+  ADMIN_MENU_PAGES,
   ADMIN_PAGES,
   adminPageForPath,
   searchAdminPages,
@@ -28,7 +29,8 @@ test("menu search matches labels, descriptions and all query words", () => {
   assert.deepEqual(searchAdminPages("타워 유물"), []);
   assert(searchAdminPages("일일").some((p) => p.id === "quests"));
   assert.equal(searchAdminPages("no-such-management-tool").length, 0);
-  assert.equal(searchAdminPages(" ").length, ADMIN_PAGES.length);
+  assert.equal(searchAdminPages(" ").length, ADMIN_MENU_PAGES.length);
+  assert.equal(searchAdminPages("자세히 편집").length, 0);
 });
 test("saved navigation preferences reject stale keys and duplicates", () => {
   assert.deepEqual(
@@ -50,4 +52,21 @@ test('one cosmetic menu retains legacy skin URLs and saved navigation',()=>{
 test('sprite studio has a distinct searchable route and keeps target queries',()=>{
  assert.equal(adminPageForPath('/admin/battle-sprites?target=skin%3Aexample')?.id,'battle-sprites');
  assert(searchAdminPages('스프라이트 미리보기').some(p=>p.id==='battle-sprites'));
+});
+
+test('merged pages keep old addresses and saved favorites working',()=>{
+ assert.equal(adminPageForPath('/admin/card-studio')?.id,'cards');
+ assert.equal(adminPageForPath('/admin/shop-decks')?.id,'shop');
+ assert.equal(adminPageForPath('/admin/card-statistics')?.id,'statistics');
+ assert.equal(adminPageForPath('/admin/champion-statistics')?.id,'statistics');
+ assert.equal(adminPageForPath('/admin/multiplayer-performance')?.id,'statistics');
+ assert.equal(adminPageForPath('/admin/test')?.id,'dashboard');
+ assert.equal(adminPageForPath('/admin/card-edit?edit=abc')?.id,'card-edit');
+ assert.deepEqual(validAdminPageIds(['card-studio','cards','shop-decks','card-statistics','card-edit','test']),['cards','shop','statistics']);
+});
+test('asset grants live in one place',()=>{
+ const grant=searchAdminPages('프리즘 지급').map(p=>p.id);
+ assert.deepEqual(grant,['users']);
+ assert(searchAdminPages('크레딧 지급').some(p=>p.id==='users'));
+ assert(searchAdminPages('카드팩 지급').some(p=>p.id==='users'));
 });

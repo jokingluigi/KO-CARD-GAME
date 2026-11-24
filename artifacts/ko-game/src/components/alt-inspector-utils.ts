@@ -83,8 +83,8 @@ export function getCardInspectorMetadata(card: CardInstance, override?:ReturnTyp
     .filter((keyword) => !['SILENCE', 'STUN', 'DISABLED'].includes(keyword))
     .map((keyword) => ({
       key: keyword,
-      label: keyword === 'ARMOR' ? `아머(${card.armor ?? 0})` : keyword === 'COUNTDOWN' ? card.countdownResolved ? '카운트다운 · 발동 완료' : `카운트다운(${card.countdownRemaining ?? configuredCountdownTurns({countdownTurns:card.grantedText?.countdownTurns ?? card.countdownTurns})})` : KEYWORD_LABELS[keyword] ?? keyword,
-      description: keyword === 'ARMOR' ? `공격과 반격으로 받는 피해를 ${card.armor ?? 0} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
+      label: keyword === 'DEFENSE' && card.entryDefenseActive === false ? '방어 · 끝남' : keyword === 'ARMOR' ? `아머(${card.armor ?? 0})` : keyword === 'COUNTDOWN' ? card.countdownResolved ? '카운트다운 · 발동 완료' : `카운트다운(${card.countdownRemaining ?? configuredCountdownTurns({countdownTurns:card.grantedText?.countdownTurns ?? card.countdownTurns})})` : KEYWORD_LABELS[keyword] ?? keyword,
+      description: keyword === 'DEFENSE' && card.entryDefenseActive === false ? '등장한 뒤 첫 보호 시간이 끝나서 지금은 막아 주지 않습니다.' : keyword === 'ARMOR' ? `공격과 반격으로 받는 피해를 ${card.armor ?? 0} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
     }));
   const statuses = [
     card.isSilenced ? { key: 'SILENCE', label: '침묵', description: KEYWORD_DESCRIPTIONS.SILENCE } : null,

@@ -1,76 +1,274 @@
-import {useAdminMutableDraft} from './admin-editor-sections';
-import {AdminEditorSections} from './admin-editor-sections';
+import { useEffect, useMemo, useState } from "react";
+import { fetchRewardCatalogs, type RewardCatalogCard, type RewardCatalogChampion, type RewardCatalogPack } from "@/lib/rewards-client";
+import {
+  adminFetch, Button, Chip, EditorPane, errorText, Field, fromLocalInput, Grid, ListPane, ListRow, Notice, NumberInput, Panel,
+  SaveLine, Split, Tabs, toLocalInput, Toggle, useAutosave, useMobileEditing,
+} from "./admin-kit";
 
-import { useEffect, useState } from "react";
-import { fetchRewardCatalogs, type RewardCatalogCard, type RewardCatalogPack, type RewardCatalogChampion } from "@/lib/rewards-client";
-type Reward = {rewardType:string;rewardAmount:number;rewardTargetId:string|null};
-type Definition = {id?:string;title:string;description:string;objectiveType:string;cardType:string|null;targetValue:number;enabled:boolean;condition?:unknown;platform:{questType:"DAILY"|"SEASON";seasonId:string|null;weight:number;modes:string[];rarity:string|null;result:string;activationAt:string|null;archived:boolean;version?:number;rewards:Reward[]}};
-type Season = {id:string;name:string;startsAt:string;endsAt:string;status:string};
-type Data = {dailyCompletionBonus?:Reward & {enabled:boolean};definitions:Definition[];seasons:Season[];settings:{dailyCount:number;timezone:string};objectives:string[];modes:string[];audits:Array<{id:string;action:string;entityId:string;createdAt:string}>};
-const labels:Record<string,string>={PLAY_MATCH:"경기 완료",WIN_MATCH:"경기 승리",LOSS_MATCH:"경기 패배",CARD_PLAYED:"카드 사용",WRESTLER_PLAYED:"선수 사용",TECHNIQUE_PLAYED:"주문 사용",CARD_RETIRED:"선수 리타이어",CARD_DESTROYED:"선수 파괴",DAMAGE_DEALT:"피해 주기",CHAMPION_ABILITY_USED:"챔피언 고유 능력",FUSION:"합체",ATTACK_DECLARED:"공격 선언"};
-const base=import.meta.env.BASE_URL.replace(/\/$/,"")+"/api/admin/quests";
-async function api<T>(path="",body?:unknown,method="POST"):Promise<T>{
- const response=await fetch(base+path,{credentials:"include",method:body===undefined&&method==="POST"?"GET":method,headers:{"Content-Type":"application/json"},...(body===undefined?{}:{body:JSON.stringify(body)})});
- const result=await response.json();if(!response.ok)throw new Error(result.message??"퀘스트 요청 실패");return result;
+type Reward = { rewardType: string; rewardAmount: number; rewardTargetId: string | null };
+type Platform = { questType: "DAILY" | "SEASON"; seasonId: string | null; weight: number; modes: string[]; rarity: string | null; result: string; activationAt: string | null; archived: boolean; version?: number; rewards: Reward[] };
+type Definition = { id?: string; title: string; description: string; objectiveType: string; cardType: string | null; targetValue: number; enabled: boolean; condition?: unknown; schemaVersion?: string; platform: Platform };
+type Season = { id: string; name: string; startsAt: string; endsAt: string; status: string };
+type Bonus = Reward & { enabled: boolean };
+type Data = { dailyCompletionBonus?: Bonus; definitions: Definition[]; seasons: Season[]; settings: { dailyCount: number; timezone: string }; objectives: string[]; modes: string[]; audits?: Array<{ id: string; createdAt: string; action: string; entityId: string }> };
+type Catalog = { cards: RewardCatalogCard[]; packs: RewardCatalogPack[]; champions: RewardCatalogChampion[] };
+
+const OBJECTIVE_KO: Record<string, string> = {
+  PLAY_MATCH: "경기 하기", WIN_MATCH: "경기 이기기", LOSS_MATCH: "경기 지기", CARD_PLAYED: "카드 내기", WRESTLER_PLAYED: "선수 카드 내기",
+  TECHNIQUE_PLAYED: "기술 카드 쓰기", CARD_RETIRED: "선수 리타이어시키기", CARD_DESTROYED: "선수 파괴하기", DAMAGE_DEALT: "데미지 주기",
+  CHAMPION_ABILITY_USED: "챔피언 고유 능력 쓰기", FUSION: "합체하기", ATTACK_DECLARED: "공격하기",
+};
+const MODE_KO: Record<string, string> = { AI: "AI 대전", PVP: "온라인 대전", DRAFT: "드래프트" };
+const REWARD_KO: Record<string, string> = { CURRENCY: "크레딧", PACK: "카드팩", CARD: "카드", CHAMPION: "챔피언" };
+const AUDIT_KO: Record<string, string> = { QUEST_SAVED: "퀘스트 저장", QUEST_CREATED: "퀘스트 만들기", QUEST_UPDATED: "퀘스트 고치기", QUEST_DELETED: "퀘스트 지우기", SEASON_SAVED: "시즌 저장", SEASON_DELETED: "시즌 지우기", SETTINGS_UPDATED: "배정 설정 바꾸기", DAILY_COMPLETION_BONUS_UPDATED: "추가 보상 바꾸기" };
+const SEASON_STATUS_KO: Record<string, string> = { ACTIVE: "진행", DISABLED: "꺼짐", ARCHIVED: "보관" };
+
+const fresh = (questType: "DAILY" | "SEASON", seasonId: string | null): Definition => ({
+  title: questType === "DAILY" ? "새 일일 퀘스트" : "새 시즌 퀘스트", description: "", objectiveType: "PLAY_MATCH", cardType: null, targetValue: 1, enabled: false,
+  platform: { questType, seasonId, weight: 100, modes: ["AI", "PVP", "DRAFT"], rarity: null, result: "ANY", activationAt: null, archived: false, rewards: [{ rewardType: "CURRENCY", rewardAmount: 100, rewardTargetId: null }] },
+});
+
+function RewardEditor({ reward, catalog, onChange }: { reward: Reward; catalog: Catalog; onChange: (patch: Partial<Reward>) => void }) {
+  const options = reward.rewardType === "PACK" ? catalog.packs.filter((p) => !p.deletedAt) : reward.rewardType === "CARD" ? catalog.cards.filter((c) => !c.isToken && !c.isChampionToken) : catalog.champions;
+  return (
+    <Grid cols={3}>
+      <Field label="보상 종류"><select value={reward.rewardType} onChange={(e) => onChange({ rewardType: e.target.value, rewardTargetId: null, rewardAmount: e.target.value === "CHAMPION" ? 1 : reward.rewardAmount })}>{Object.entries(REWARD_KO).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+      {reward.rewardType !== "CURRENCY" && <Field label={`어떤 ${REWARD_KO[reward.rewardType]}`}><select value={reward.rewardTargetId ?? ""} onChange={(e) => onChange({ rewardTargetId: e.target.value || null })}><option value="">고르기</option>{options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>}
+      {reward.rewardType !== "CHAMPION" && <Field label="수량"><NumberInput value={reward.rewardAmount} min={1} step={reward.rewardType === "CURRENCY" ? 10 : 1} onChange={(rewardAmount) => onChange({ rewardAmount })} /></Field>}
+    </Grid>
+  );
 }
-const fresh=(questType:"DAILY"|"SEASON"):Definition=>({title:"",description:"",objectiveType:"PLAY_MATCH",cardType:null,targetValue:1,enabled:true,platform:{questType,seasonId:null,weight:100,modes:["AI","PVP","DRAFT"],rarity:null,result:"ANY",activationAt:null,archived:false,rewards:[{rewardType:"CURRENCY",rewardAmount:100,rewardTargetId:null}]}});
-const control="mt-1 min-h-11 w-full border border-neutral-700 bg-black px-3 py-2 text-sm text-white";
-const button="min-h-11 border border-amber-600 px-4 py-2 text-sm font-bold text-amber-200 disabled:opacity-40";
-function localTime(iso:string){const d=new Date(iso);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-export function AdminQuestManager(){
- const [data,setData]=useState<Data|null>(null),[tab,setTab]=useState<"DAILY"|"SEASON">("DAILY"),[draft,setDraft]=useState<Definition>(fresh("DAILY"));
- const [message,setMessage]=useState(""),[busy,setBusy]=useState(false),[preview,setPreview]=useState(false),[advanced,setAdvanced]=useState(""),[catalog,setCatalog]=useState<{cards:RewardCatalogCard[];packs:RewardCatalogPack[];champions:RewardCatalogChampion[]}>({cards:[],packs:[],champions:[]});
- const [season,setSeason]=useState({id:"",name:"",startsAt:"",endsAt:"",status:"ACTIVE"});
- const [test,setTest]=useState({objectiveType:"CARD_PLAYED",amount:1,mode:"AI",cardType:"WRESTLER",rarity:"NORMAL",result:"WIN"});
- const [diagnostic,setDiagnostic]=useState<Array<{id:string;title:string;increment:number;reason:string}>>([]);
- const adminDraft=useAdminMutableDraft({draft,advanced},draft.id);
- async function load(){try{setData(await api<Data>());}catch(e){setMessage(e instanceof Error?e.message:"조회 실패");}}
- useEffect(()=>{void load();void fetchRewardCatalogs().then(setCatalog).catch(()=>{});},[]);
- function edit(d:Definition){if(!adminDraft.confirm())return;setDraft(structuredClone(d));setTab(d.platform.questType);setAdvanced(d.condition?JSON.stringify(d.condition,null,2):"");}
- function platform(p:Partial<Definition["platform"]>){setDraft({...draft,platform:{...draft.platform,...p}});}
- async function action(run:()=>Promise<unknown>,success="저장했습니다. 이미 배정된 퀘스트의 조건·보상은 유지됩니다."){setBusy(true);try{await run();await load();setMessage(success);}catch(e){setMessage(e instanceof Error?e.message:"저장 실패");}finally{setBusy(false);}}
- async function save(){await action(async()=>{await api("/definitions",{...draft,schemaVersion:advanced.trim()?"QUEST_CONDITION_V2":"QUEST_CONDITION_V1",condition:advanced.trim()?JSON.parse(advanced):null});adminDraft.markSaved();});}
- const bonus=data?.dailyCompletionBonus??{enabled:false,rewardType:"CURRENCY",rewardAmount:200,rewardTargetId:null};
- function bonusChange(p:Partial<typeof bonus>){if(data)setData({...data,dailyCompletionBonus:{...bonus,...p}});}
- async function deleteQuest(d:Definition){
-  if(!d.id||!window.confirm(`“${d.title}” 퀘스트를 삭제할까요?\n관리 목록과 신규 배정에서 제외됩니다. 이미 배정된 퀘스트의 진행·완료·보상 기록은 유지됩니다.`))return;
-  await action(async()=>{await api("/definitions/"+encodeURIComponent(d.id!),undefined,"DELETE");if(draft.id===d.id){setDraft(fresh(tab));setAdvanced("");adminDraft.markSaved();}},"퀘스트를 삭제했습니다. 이미 배정된 퀘스트와 보상 기록은 보존했습니다.");
- }
- function rewardChange(index:number,p:Partial<Reward>){platform({rewards:draft.platform.rewards.map((r,i)=>i===index?{...r,...p}:r)});}
- const rewardText=(r:Reward)=>r.rewardType==="CURRENCY"?r.rewardAmount.toLocaleString()+" 크레딧":((r.rewardType==="PACK"?catalog.packs: r.rewardType==="CARD"?catalog.cards:catalog.champions).find(i=>i.id===r.rewardTargetId)?.name ?? "보상 선택") + " ×"+r.rewardAmount;
- return <section className="space-y-6 text-neutral-100"><header><p className="text-xs tracking-widest text-amber-300">QUEST MANAGEMENT</p><h2 className="mt-2 text-2xl font-black">퀘스트 관리</h2><p className="mt-2 text-sm text-neutral-400">조건과 보상은 배정 시 고정됩니다. 비활성화·보관은 새 배정과 진행을 중단합니다. 삭제는 관리 목록·신규 배정에서 제외하며 이미 배정된 퀘스트와 보상 기록은 보존합니다.</p></header>
- {message&&<p role="status" className="border-l-2 border-amber-400 p-3">{message}</p>}
- <div className="flex flex-wrap gap-2">{(["DAILY","SEASON"] as const).map(t=><button key={t} className={button+(tab===t?" bg-amber-400 text-black":"")} onClick={()=>{if(!adminDraft.confirm())return;setTab(t);setDraft(fresh(t));setAdvanced("");}}>{t==="DAILY"?"일일 퀘스트":"시즌 퀘스트"}</button>)}</div>
- {data&&<section className="border-y border-neutral-800 py-4"><h3 className="font-bold">배정 설정</h3><div className="grid gap-3 sm:grid-cols-3"><label>하루 퀘스트 수<input className={control} type="number" min="1" max="20" value={data.settings?.dailyCount??3} onChange={e=>setData({...data,settings:{...data.settings,dailyCount:Number(e.target.value)}})}/></label><label>초기화 시간대<select className={control} value={data.settings?.timezone??"Asia/Seoul"} onChange={e=>setData({...data,settings:{...data.settings,timezone:e.target.value}})}><option>Asia/Seoul</option><option>UTC</option></select></label><button disabled={busy} className={button} onClick={()=>void action(()=>api("/settings",data.settings,"PUT"))}>설정 저장</button></div><p className="mt-2 text-xs text-neutral-500">선택한 시간대의 00:00에 다음 일일 기간이 시작됩니다.</p></section>}
- {data&&<section className="space-y-3 border border-amber-800 p-4" aria-label="일일 3개 완료 보상 설정">
-  <h3 className="font-bold">일일 퀘스트 3개 완료 보상</h3>
-  <p className="text-xs text-neutral-400">그날 배정된 일일 퀘스트 3개의 목표를 달성하면 하루 한 번 별도 수령합니다. 개별 보상 수령 여부는 무관하며 시즌·상시 퀘스트는 제외합니다. 종류·수량 변경은 아직 받지 않은 추가 보상에 적용됩니다.</p>
-  <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={bonus.enabled} onChange={e=>bonusChange({enabled:e.target.checked})}/>3개 완료 보상 활성화</label>
-  <div className="grid gap-3 sm:grid-cols-3"><label>추가 보상 종류<select aria-label="추가 보상 종류" className={control} value={bonus.rewardType} onChange={e=>bonusChange({rewardType:e.target.value,rewardTargetId:null,rewardAmount:e.target.value==="CHAMPION"?1:bonus.rewardAmount})}><option value="CURRENCY">크레딧</option><option value="PACK">팩</option><option value="CARD">카드</option><option value="CHAMPION">챔피언</option></select></label>
-  {bonus.rewardType!=="CURRENCY"&&<label>추가 보상 대상<select aria-label="추가 보상 대상" className={control} value={bonus.rewardTargetId??""} onChange={e=>bonusChange({rewardTargetId:e.target.value})}><option value="">선택</option>{(bonus.rewardType==="PACK"?catalog.packs:bonus.rewardType==="CARD"?catalog.cards.filter(c=>!c.isToken&&!c.isChampionToken):catalog.champions).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
-  <label>추가 보상 수량<input aria-label="추가 보상 수량" className={control} type="number" min="1" max={bonus.rewardType==="CHAMPION"?1:100000000} value={bonus.rewardAmount} onChange={e=>bonusChange({rewardAmount:Number(e.target.value)})}/></label></div>
-  <button disabled={busy} className={button} data-testid="button-save-daily-completion-bonus" onClick={()=>void action(()=>api("/completion-bonus",bonus,"PUT"),"일일 3개 완료 보상 설정을 저장했습니다.")}>추가 보상 설정 저장</button>
- </section>}
- <section className="space-y-2">{data?.definitions.filter(d=>d.platform.questType===tab && data.objectives.includes(d.objectiveType)).map(d=><div key={d.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 py-3"><div><b>{d.title}</b><p className="text-xs text-neutral-400">v{d.platform.version} · {d.platform.archived?"보관":d.enabled?"활성":"비활성"} · 목표 {d.targetValue}</p></div><div className="flex flex-wrap gap-2"><button className={button} onClick={()=>edit(d)}>수정</button><button disabled={busy} className={button} onClick={()=>void action(()=>api("/definitions",{...d,enabled:!d.enabled}))}>{d.enabled?"비활성화":"활성화"}</button><button disabled={busy||d.platform.archived} className={button} onClick={()=>void action(()=>api("/definitions",{...d,enabled:false,platform:{...d.platform,archived:true}}))}>보관</button><button disabled={busy} className={button+" border-red-800 text-red-300"} data-testid={"button-delete-quest-"+d.id} onClick={()=>void deleteQuest(d)}>삭제</button></div></div>)}</section>
- <button className={button} onClick={()=>{if(!adminDraft.confirm())return;setDraft(fresh(tab));setAdvanced("");}}>새 퀘스트</button>
- <form onSubmit={e=>{e.preventDefault();void save();}} className="space-y-4 border border-neutral-800 p-4">
- <h3 className="font-black">{draft.id?"퀘스트 수정":"퀘스트 생성"}</h3>
-<AdminEditorSections panels={[{"id":"admin-quest-manager-0","label":"기본 정보"},{"id":"admin-quest-manager-1","label":"이벤트 · 조건"},{"id":"admin-quest-manager-2","label":"보상"}]}>{[<><div className="grid gap-4 sm:grid-cols-2"><label>이름<input required className={control} maxLength={120} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label><label>목표량<input required className={control} type="number" min="1" max="100000000" value={draft.targetValue} onChange={e=>setDraft({...draft,targetValue:Number(e.target.value)})}/></label></div>
-<label className="block">설명<textarea className={control} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}/></label>
-<label className="block">활성화 시작 시점 (선택 · 현재 기기 시간)<input type="datetime-local" className={control} value={draft.platform.activationAt?localTime(draft.platform.activationAt):""} onChange={e=>platform({activationAt:e.target.value?new Date(e.target.value).toISOString():null})}/></label>
-<label className="block"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/> 활성화</label></>,
-<><div className="grid gap-4 sm:grid-cols-2"><label>이벤트<select className={control} value={draft.objectiveType} onChange={e=>setDraft({...draft,objectiveType:e.target.value})}>{data?.objectives.map(o=><option key={o} value={o}>{labels[o]??o}</option>)}</select></label>
- {tab==="DAILY"?<label>등장 가중치<input className={control} type="number" min="1" max="100000" value={draft.platform.weight} onChange={e=>platform({weight:Number(e.target.value)})}/></label>:<label>시즌<select required className={control} value={draft.platform.seasonId??""} onChange={e=>platform({seasonId:e.target.value})}><option value="">시즌 선택</option>{data?.seasons.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}</div>
-<fieldset><legend>허용 모드</legend><div className="mt-2 flex flex-wrap gap-4">{data?.modes.map(m=><label key={m}><input type="checkbox" checked={draft.platform.modes.includes(m)} onChange={e=>platform({modes:e.target.checked?[...draft.platform.modes,m]:draft.platform.modes.filter(x=>x!==m)})}/> {m}</label>)}</div></fieldset>
-<div className="grid gap-4 sm:grid-cols-3"><label>카드 종류<select className={control} value={draft.cardType??""} onChange={e=>setDraft({...draft,cardType:e.target.value||null})}><option value="">전체</option><option value="WRESTLER">선수</option><option value="TECHNIQUE">주문</option></select></label><label>등급<select className={control} value={draft.platform.rarity??""} onChange={e=>platform({rarity:e.target.value||null})}><option value="">전체</option>{["NORMAL","EPIC","LEGENDARY","CHAMPION"].map(r=><option key={r}>{r}</option>)}</select></label><label>경기 결과<select className={control} value={draft.platform.result} onChange={e=>platform({result:e.target.value})}><option value="ANY">전체</option><option value="WIN">승리</option><option value="LOSS">패배</option></select></label></div>
-<details><summary>확장 조건 JSON (태그·소유자·수치 조건)</summary><textarea aria-label="확장 조건 JSON" className={control+" h-40 font-mono"} value={advanced} onChange={e=>setAdvanced(e.target.value)}/><p className="text-xs text-neutral-500">QUEST_CONDITION_V2 형식. required는 목표량과 같아야 합니다. 비워두면 선택한 이벤트 조건을 사용합니다.</p></details></>,
-<><fieldset className="space-y-2"><legend className="font-bold">보상</legend>{draft.platform.rewards.map((r,i)=>{const options=r.rewardType==="PACK"?catalog.packs:r.rewardType==="CARD"?catalog.cards.filter(c=>!c.isToken&&!c.isChampionToken):catalog.champions;return <div key={i} className="grid gap-2 sm:grid-cols-4"><select aria-label={"보상 종류 "+(i+1)} className={control} value={r.rewardType} onChange={e=>rewardChange(i,{rewardType:e.target.value,rewardTargetId:null,rewardAmount:e.target.value==="CHAMPION"?1:r.rewardAmount})}><option value="CURRENCY">크레딧</option><option value="PACK">팩</option><option value="CARD">카드</option><option value="CHAMPION">챔피언</option></select>{r.rewardType!=="CURRENCY"&&<select required aria-label={"보상 대상 "+(i+1)} className={control} value={r.rewardTargetId??""} onChange={e=>rewardChange(i,{rewardTargetId:e.target.value})}><option value="">선택</option>{options.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select>}<input aria-label={"보상 수량 "+(i+1)} className={control} type="number" min="1" value={r.rewardAmount} onChange={e=>rewardChange(i,{rewardAmount:Number(e.target.value)})}/><button type="button" disabled={draft.platform.rewards.length===1} className={button} onClick={()=>platform({rewards:draft.platform.rewards.filter((_,n)=>n!==i)})}>제거</button></div>;})}<button type="button" disabled={draft.platform.rewards.length>=10} className={button} onClick={()=>platform({rewards:[...draft.platform.rewards,{rewardType:"CURRENCY",rewardAmount:100,rewardTargetId:null}]})}>+ 보상 추가</button></fieldset></>]}</AdminEditorSections>
-<div className="flex gap-2"><button disabled={busy} className={button}>저장</button><button type="button" className={button} onClick={()=>setPreview(!preview)}>미리보기</button></div>
-{preview&&<article aria-label="모바일 퀘스트 미리보기" className="max-w-[360px] border border-amber-700 bg-black p-5"><b className="text-amber-200">{draft.title||"퀘스트 이름"}</b><p className="mt-2 text-sm">{draft.description}</p><progress className="mt-4 w-full accent-amber-400" max={draft.targetValue} value={Math.min(2,draft.targetValue)}/><p>{Math.min(2,draft.targetValue)} / {draft.targetValue}</p><p className="mt-3 text-sm">{draft.platform.rewards.map(rewardText).join(" + ")}</p></article>}
 
- </form>
- <section className="space-y-3 border-t border-neutral-800 pt-5"><h3 className="font-black">시즌 관리</h3><div className="flex flex-wrap gap-2">{data?.seasons.map(s=><button key={s.id} className={button} onClick={()=>setSeason({...s,startsAt:localTime(s.startsAt),endsAt:localTime(s.endsAt)})}>{s.name} · {s.status}</button>)}</div><div className="grid gap-3 sm:grid-cols-2"><label>시즌 이름<input className={control} value={season.name} onChange={e=>setSeason({...season,name:e.target.value})}/></label><label>상태<select className={control} value={season.status} onChange={e=>setSeason({...season,status:e.target.value})}>{["ACTIVE","DISABLED","ARCHIVED"].map(s=><option key={s}>{s}</option>)}</select></label><label>시작 (현재 기기 시간)<input className={control} type="datetime-local" value={season.startsAt} onChange={e=>setSeason({...season,startsAt:e.target.value})}/></label><label>종료 (현재 기기 시간)<input className={control} type="datetime-local" value={season.endsAt} onChange={e=>setSeason({...season,endsAt:e.target.value})}/></label></div><button disabled={busy} className={button} onClick={()=>void action(()=>api("/seasons",{...season,id:season.id||undefined,startsAt:new Date(season.startsAt).toISOString(),endsAt:new Date(season.endsAt).toISOString()}))}>시즌 저장</button><button className={button+" ml-2"} onClick={()=>setSeason({id:"",name:"",startsAt:"",endsAt:"",status:"ACTIVE"})}>새 시즌</button>{season.id && <button disabled={busy} className={button+" ml-2 border-red-800 text-red-300"} onClick={() => { if (window.confirm(`“${season.name}” 시즌을 삭제할까요? 연결된 퀘스트나 배정 기록이 있으면 삭제가 차단됩니다.`)) void action(async () => { await api("/seasons/"+encodeURIComponent(season.id),undefined,"DELETE"); setSeason({id:"",name:"",startsAt:"",endsAt:"",status:"ACTIVE"}); },"시즌을 삭제했습니다."); }}>시즌 삭제</button>}</section>
- <section className="space-y-3 border-t border-neutral-800 pt-5"><h3 className="font-black">조건 진단 (진행도·보상 변경 없음)</h3><div className="grid gap-2 sm:grid-cols-3"><select aria-label="테스트 이벤트" className={control} value={test.objectiveType} onChange={e=>setTest({...test,objectiveType:e.target.value})}>{data?.objectives.map(o=><option key={o} value={o}>{labels[o]??o}</option>)}</select><input aria-label="테스트 수량" className={control} type="number" min="1" value={test.amount} onChange={e=>setTest({...test,amount:Number(e.target.value)})}/><select aria-label="테스트 모드" className={control} value={test.mode} onChange={e=>setTest({...test,mode:e.target.value})}>{data?.modes.map(m=><option key={m}>{m}</option>)}</select><select aria-label="테스트 카드 종류" className={control} value={test.cardType} onChange={e=>setTest({...test,cardType:e.target.value})}><option>WRESTLER</option><option>TECHNIQUE</option></select><select aria-label="테스트 등급" className={control} value={test.rarity} onChange={e=>setTest({...test,rarity:e.target.value})}>{["NORMAL","EPIC","LEGENDARY","CHAMPION"].map(r=><option key={r}>{r}</option>)}</select><select aria-label="테스트 결과" className={control} value={test.result} onChange={e=>setTest({...test,result:e.target.value})}><option>WIN</option><option>LOSS</option></select></div><button disabled={busy} className={button} onClick={()=>void action(async()=>{const d=await api<{results:typeof diagnostic}>("/diagnostic",test);setDiagnostic(d.results);})}>테스트 이벤트 실행</button>{diagnostic.map(d=><p key={d.id} className="text-sm">{d.title}: +{d.increment} · {d.reason}</p>)}</section>
- <details><summary>최근 관리자 변경 기록</summary>{data?.audits.map(a=><p key={a.id} className="break-all text-xs text-neutral-400">{new Date(a.createdAt).toLocaleString()} · {a.action} · {a.entityId}</p>)}</details>
- </section>;
+/** 퀘스트 — 일일·시즌 퀘스트와 배정 설정. 고치면 바로 저장돼요. */
+export function AdminQuestManager({ onUnauthorized }: { onUnauthorized?: () => void }) {
+  const [data, setData] = useState<Data | null>(null);
+  const [catalog, setCatalog] = useState<Catalog>({ cards: [], packs: [], champions: [] });
+  const [tab, setTab] = useState<"DAILY" | "SEASON" | "SETTINGS">("DAILY");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Definition | null>(null);
+  const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [error, setError] = useState("");
+  const mobile = useMobileEditing();
+
+  async function load() {
+    try { setData(await adminFetch<Data>("/quests", undefined, onUnauthorized)); }
+    catch (e) { setError(errorText(e, "퀘스트를 불러오지 못했어요.")); }
+  }
+  useEffect(() => { void load(); void fetchRewardCatalogs().then(setCatalog).catch(() => {}); }, []);
+
+  const autosave = useAutosave(draft?.id ?? null, draft, async (next) => {
+    if (!next.title.trim()) throw new Error("이름을 써 주세요.");
+    if (next.platform.questType === "SEASON" && !next.platform.seasonId) throw new Error("시즌을 골라 주세요.");
+    if (!next.platform.modes.length) throw new Error("어느 대전에서 셀지 하나 이상 골라 주세요.");
+    const payload = { ...next, schemaVersion: next.condition ? next.schemaVersion ?? "QUEST_CONDITION_V2" : "QUEST_CONDITION_V1", condition: next.condition ?? null };
+    const body = await adminFetch<{ definition: Definition & { platform: Platform } }>("/quests/definitions", { method: "POST", json: payload }, onUnauthorized);
+    setData((d) => d && ({ ...d, definitions: d.definitions.map((x) => (x.id === next.id ? { ...x, ...next, platform: { ...next.platform, version: body.definition.platform?.version ?? x.platform.version } } : x)) }));
+  }, 1200);
+
+  function select(d: Definition) { void autosave.flush(); setSelectedId(d.id ?? null); setDraft(structuredClone(d)); mobile.open(); }
+
+  async function create() {
+    if (tab === "SETTINGS" || !data) return;
+    const seasonId = tab === "SEASON" ? data.seasons.find((s) => s.status === "ACTIVE")?.id ?? data.seasons[0]?.id ?? null : null;
+    if (tab === "SEASON" && !seasonId) { setTab("SETTINGS"); setError("시즌 퀘스트를 만들려면 먼저 '설정' 탭에서 시즌을 만들어 주세요."); return; }
+    try {
+      const body = await adminFetch<{ definition: Definition }>("/quests/definitions", { method: "POST", json: { ...fresh(tab, seasonId), schemaVersion: "QUEST_CONDITION_V1", condition: null } }, onUnauthorized);
+      await load();
+      select({ ...fresh(tab, seasonId), ...body.definition });
+    } catch (e) { setError(errorText(e, "퀘스트를 만들지 못했어요.")); }
+  }
+
+  async function remove() {
+    if (!draft?.id || !window.confirm(`"${draft.title}" 퀘스트를 지울까요?\n새로 배정되지 않아요. 이미 받은 퀘스트와 보상 기록은 남아요.`)) return;
+    try {
+      await adminFetch(`/quests/definitions/${encodeURIComponent(draft.id)}`, { method: "DELETE" }, onUnauthorized);
+      setData((d) => d && ({ ...d, definitions: d.definitions.filter((x) => x.id !== draft.id) }));
+      setDraft(null); setSelectedId(null); mobile.back();
+    } catch (e) { autosave.setState({ kind: "error", message: errorText(e, "지우지 못했어요.") }); }
+  }
+
+  const list = useMemo(() => (data?.definitions ?? [])
+    // System quests (e.g. 드래프트 도전자) are built into the game and not edited here.
+    .filter((d) => d.platform.questType === tab && Boolean(d.platform.archived) === showArchived && (data?.objectives ?? []).includes(d.objectiveType))
+    .filter((d) => !search.trim() || `${d.title} ${d.description}`.includes(search.trim()))
+    .sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.title.localeCompare(b.title, "ko")), [data, tab, search]);
+
+  if (error && !data) return <Notice tone="error">{error}</Notice>;
+  if (!data) return <p className="text-sm text-neutral-400">불러오는 중…</p>;
+
+  const set = (patch: Partial<Definition>) => setDraft((d) => (d ? { ...d, ...patch } : d));
+  const setPlatform = (patch: Partial<Platform>) => setDraft((d) => (d ? { ...d, platform: { ...d.platform, ...patch } } : d));
+  const rewardText = (r: Reward) => r.rewardType === "CURRENCY" ? `${r.rewardAmount} 크레딧` : `${((r.rewardType === "PACK" ? catalog.packs : r.rewardType === "CARD" ? catalog.cards : catalog.champions) as Array<{ id: string; name: string }>).find((x) => x.id === r.rewardTargetId)?.name ?? REWARD_KO[r.rewardType]}${r.rewardType === "CHAMPION" ? "" : ` ×${r.rewardAmount}`}`;
+
+  return (
+    <div className="ak-page">
+      <Tabs value={tab} onChange={(t) => { void autosave.flush(); setTab(t); setDraft(null); setSelectedId(null); mobile.back(); setError(""); }} tabs={[["DAILY", "일일 퀘스트"], ["SEASON", "시즌 퀘스트"], ["SETTINGS", "설정 · 시즌"]] as const} />
+      {error && <Notice tone="warn">{error}</Notice>}
+      {tab === "SETTINGS" ? <QuestSettings data={data} catalog={catalog} onUnauthorized={onUnauthorized} reload={load} /> : (
+        <Split editing={mobile.editing}
+          list={<ListPane actions={<button type="button" onClick={() => void create()}>+ 새 퀘스트</button>} search={search} onSearch={setSearch} count={showArchived ? `보관함 ${list.length}개` : `${list.length}개 · 켜진 것 ${list.filter((d) => d.enabled).length}개`}
+            filters={<><Chip on={!showArchived} onClick={() => setShowArchived(false)}>쓰는 퀘스트</Chip><Chip on={showArchived} onClick={() => setShowArchived(true)}>보관함</Chip></>}>
+            {list.map((d) => <ListRow key={d.id} selected={d.id === selectedId} onClick={() => select(d)} title={d.title} sub={`${OBJECTIVE_KO[d.objectiveType] ?? d.objectiveType} ${d.targetValue}번 · ${d.platform.rewards.map(rewardText).join(", ")}`} badge={d.platform.archived ? "보관" : d.enabled ? "켜짐" : "꺼짐"} tone={d.platform.archived ? "off" : d.enabled ? "on" : "off"} />)}
+            {!list.length && <p className="ak-hint" style={{ margin: 8 }}>퀘스트가 없어요. "+ 새 퀘스트"로 만들어 보세요.</p>}
+          </ListPane>}
+          editor={<EditorPane onBack={() => { void autosave.flush(); mobile.back(); }} status={<SaveLine state={autosave.state} idle="고치면 바로 저장돼요 · 이미 받은 퀘스트는 안 바뀌어요" />} right={draft && <><Button onClick={() => setPlatform({ archived: !draft.platform.archived })}>{draft.platform.archived ? "보관함에서 꺼내기" : "보관하기"}</Button><Button kind="danger" onClick={() => void remove()}>지우기</Button></>}>
+            {draft && <>
+              {draft.platform.archived && <Notice tone="info">보관된 퀘스트예요. 새로 배정되지 않고 진행도 멈춰요. 지우지 않고 남겨 둘 때 써요.</Notice>}
+              <Panel>
+                <Toggle checked={draft.enabled} onChange={(enabled) => set({ enabled })} label={draft.enabled ? "켜짐 (게이머에게 배정돼요)" : "꺼짐 (배정 안 돼요)"} />
+                <Field label="이름"><input value={draft.title} maxLength={120} onChange={(e) => set({ title: e.target.value })} /></Field>
+                <Field label="설명 (선택)"><textarea rows={2} value={draft.description} onChange={(e) => set({ description: e.target.value })} /></Field>
+              </Panel>
+              <Panel title="무엇을 하면 되나요?">
+                <Grid>
+                  <Field label="할 일"><select value={draft.objectiveType} onChange={(e) => set({ objectiveType: e.target.value })}>{data.objectives.map((o) => <option key={o} value={o}>{OBJECTIVE_KO[o] ?? o}</option>)}</select></Field>
+                  <Field label="몇 번"><NumberInput value={draft.targetValue} min={1} onChange={(targetValue) => set({ targetValue })} /></Field>
+                </Grid>
+                <Field label="어느 대전에서 셀까요?"><div className="ak-chips">{data.modes.map((m) => <Chip key={m} on={draft.platform.modes.includes(m)} onClick={() => setPlatform({ modes: draft.platform.modes.includes(m) ? draft.platform.modes.filter((x) => x !== m) : [...draft.platform.modes, m] })}>{MODE_KO[m] ?? m}</Chip>)}</div></Field>
+                <Grid cols={3}>
+                  <Field label="카드 종류"><select value={draft.cardType ?? ""} onChange={(e) => set({ cardType: e.target.value || null })}><option value="">상관없음</option><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></Field>
+                  <Field label="카드 등급"><select value={draft.platform.rarity ?? ""} onChange={(e) => setPlatform({ rarity: e.target.value || null })}><option value="">상관없음</option><option value="NORMAL">일반</option><option value="EPIC">에픽</option><option value="LEGENDARY">레전더리</option><option value="CHAMPION">챔피언</option></select></Field>
+                  <Field label="경기 결과"><select value={draft.platform.result} onChange={(e) => setPlatform({ result: e.target.value })}><option value="ANY">상관없음</option><option value="WIN">이겼을 때만</option><option value="LOSS">졌을 때만</option></select></Field>
+                </Grid>
+                <ConditionEditor key={draft.id} value={draft.condition} onChange={(condition) => set({ condition: condition ?? undefined, schemaVersion: condition ? "QUEST_CONDITION_V2" : "QUEST_CONDITION_V1" })} />
+              </Panel>
+              <Panel title="보상" right={draft.platform.rewards.length < 10 && <Button onClick={() => setPlatform({ rewards: [...draft.platform.rewards, { rewardType: "CURRENCY", rewardAmount: 100, rewardTargetId: null }] })}>+ 보상 추가</Button>}>
+                {draft.platform.rewards.map((r, i) => (
+                  <div key={i} style={{ display: "grid", gap: 6 }}>
+                    <RewardEditor reward={r} catalog={catalog} onChange={(patch) => setPlatform({ rewards: draft.platform.rewards.map((x, n) => (n === i ? { ...x, ...patch } : x)) })} />
+                    {draft.platform.rewards.length > 1 && <div><Button kind="ghost" onClick={() => setPlatform({ rewards: draft.platform.rewards.filter((_, n) => n !== i) })}>이 보상 빼기</Button></div>}
+                  </div>
+                ))}
+              </Panel>
+              <Panel title="게이머 화면 미리보기">
+                <div className="ak-quest-preview">
+                  <b>{draft.title || "퀘스트 이름"}</b>
+                  {draft.description && <p>{draft.description}</p>}
+                  <progress max={draft.targetValue} value={Math.min(Math.ceil(draft.targetValue / 2), draft.targetValue)} />
+                  <small>{Math.min(Math.ceil(draft.targetValue / 2), draft.targetValue)} / {draft.targetValue} · 보상 {draft.platform.rewards.map(rewardText).join(" + ")}</small>
+                </div>
+              </Panel>
+              <Panel title="언제 · 얼마나 자주">
+                <Grid>
+                  {draft.platform.questType === "DAILY"
+                    ? <Field label="나올 확률 (가중치)" hint="숫자가 클수록 자주 배정돼요. 보통 100."><NumberInput value={draft.platform.weight} min={1} max={100000} step={10} onChange={(weight) => setPlatform({ weight })} /></Field>
+                    : <Field label="시즌"><select value={draft.platform.seasonId ?? ""} onChange={(e) => setPlatform({ seasonId: e.target.value || null })}><option value="">시즌 고르기</option>{data.seasons.map((s) => <option key={s.id} value={s.id}>{s.name} ({SEASON_STATUS_KO[s.status] ?? s.status})</option>)}</select></Field>}
+                  <Field label="시작 시간 (선택)" hint="비워 두면 바로 시작해요."><input type="datetime-local" value={toLocalInput(draft.platform.activationAt)} onChange={(e) => setPlatform({ activationAt: fromLocalInput(e.target.value) })} /></Field>
+                </Grid>
+              </Panel>
+            </>}
+          </EditorPane>}
+        />
+      )}
+    </div>
+  );
+}
+
+/** 고급: 태그·소유자·수치 같은 특수 조건 (JSON). 잘 모르면 비워 두세요. */
+function ConditionEditor({ value, onChange }: { value: unknown; onChange: (value: unknown | null) => void }) {
+  const [text, setText] = useState(value ? JSON.stringify(value, null, 2) : "");
+  const [bad, setBad] = useState(false);
+  return (
+    <details className="ak-advanced" open={Boolean(value) || undefined}>
+      <summary>고급: 특수 조건 {value ? "(사용 중)" : "(없음)"}</summary>
+      <Field label="특수 조건 (JSON)" hint="태그·주인·수치 조건을 쓸 때만 넣어요. 비워 두면 위에서 고른 조건만 써요. 'required' 값은 '몇 번'과 같아야 해요.">
+        <textarea rows={8} style={{ fontFamily: "monospace", fontSize: 13 }} value={text} onChange={(e) => { setText(e.target.value); setBad(false); }}
+          onBlur={() => { if (!text.trim()) { onChange(null); return; } try { onChange(JSON.parse(text)); } catch { setBad(true); } }} />
+      </Field>
+      {bad && <Notice tone="error">JSON 모양이 틀렸어요. 괄호나 따옴표를 확인해 주세요. (저장 안 됨)</Notice>}
+    </details>
+  );
+}
+
+function QuestTest({ data, onUnauthorized }: { data: Data; onUnauthorized?: () => void }) {
+  const [test, setTest] = useState({ objectiveType: "CARD_PLAYED", amount: 1, mode: "AI", cardType: "WRESTLER", rarity: "NORMAL", result: "WIN" });
+  const [results, setResults] = useState<Array<{ id: string; title: string; increment: number; reason: string }> | null>(null);
+  const [error, setError] = useState("");
+  async function run() {
+    setError("");
+    try { setResults((await adminFetch<{ results: Array<{ id: string; title: string; increment: number; reason: string }> }>("/quests/diagnostic", { method: "POST", json: test }, onUnauthorized)).results); }
+    catch (e) { setError(errorText(e, "시험하지 못했어요.")); }
+  }
+  return (
+    <Panel title="퀘스트 조건 시험해 보기" hint="이런 일이 일어나면 어떤 퀘스트가 몇 칸 올라가는지 미리 봐요. 실제 진행도나 보상은 안 바뀌어요.">
+      <Grid cols={3}>
+        <Field label="일어난 일"><select value={test.objectiveType} onChange={(e) => setTest({ ...test, objectiveType: e.target.value })}>{data.objectives.map((o) => <option key={o} value={o}>{OBJECTIVE_KO[o] ?? o}</option>)}</select></Field>
+        <Field label="몇 번"><NumberInput value={test.amount} min={1} max={99} onChange={(amount) => setTest({ ...test, amount })} /></Field>
+        <Field label="대전 종류"><select value={test.mode} onChange={(e) => setTest({ ...test, mode: e.target.value })}>{data.modes.map((m) => <option key={m} value={m}>{MODE_KO[m] ?? m}</option>)}</select></Field>
+        <Field label="카드 종류"><select value={test.cardType} onChange={(e) => setTest({ ...test, cardType: e.target.value })}><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></Field>
+        <Field label="카드 등급"><select value={test.rarity} onChange={(e) => setTest({ ...test, rarity: e.target.value })}><option value="NORMAL">일반</option><option value="EPIC">에픽</option><option value="LEGENDARY">레전더리</option><option value="CHAMPION">챔피언</option></select></Field>
+        <Field label="경기 결과"><select value={test.result} onChange={(e) => setTest({ ...test, result: e.target.value })}><option value="WIN">이김</option><option value="LOSS">짐</option></select></Field>
+      </Grid>
+      <div><Button kind="primary" onClick={() => void run()}>시험해 보기</Button></div>
+      {error && <Notice tone="error">{error}</Notice>}
+      {results && (results.length ? <ul className="ak-plain-list">{results.map((r) => <li key={r.id}><b>{r.title}</b> · {r.increment > 0 ? `+${r.increment} 올라가요` : "안 올라가요"} <small>({r.reason})</small></li>)}</ul> : <Notice>이 조건으로 올라가는 퀘스트가 없어요.</Notice>)}
+    </Panel>
+  );
+}
+
+function QuestSettings({ data, catalog, onUnauthorized, reload }: { data: Data; catalog: Catalog; onUnauthorized?: () => void; reload: () => Promise<void> }) {
+  const [settings, setSettings] = useState(data.settings);
+  const [bonus, setBonus] = useState<Bonus>(data.dailyCompletionBonus ?? { enabled: false, rewardType: "CURRENCY", rewardAmount: 200, rewardTargetId: null });
+  const [season, setSeason] = useState<Season | null>(null);
+  const [seasonMsg, setSeasonMsg] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+
+  const settingsSave = useAutosave("quest-settings", settings, async (next) => { await adminFetch("/quests/settings", { method: "PUT", json: next }, onUnauthorized); });
+  const bonusSave = useAutosave("quest-bonus", bonus, async (next) => {
+    if (next.rewardType !== "CURRENCY" && !next.rewardTargetId) throw new Error("줄 보상을 골라 주세요.");
+    await adminFetch("/quests/completion-bonus", { method: "PUT", json: next }, onUnauthorized);
+  });
+
+  async function saveSeason() {
+    if (!season) return;
+    if (!season.name.trim() || !season.startsAt || !season.endsAt) { setSeasonMsg({ tone: "error", text: "이름, 시작, 끝 시간을 모두 넣어 주세요." }); return; }
+    try {
+      await adminFetch("/quests/seasons", { method: "POST", json: { ...season, id: season.id || undefined } }, onUnauthorized);
+      setSeasonMsg({ tone: "ok", text: "시즌을 저장했어요." }); setSeason(null); await reload();
+    } catch (e) { setSeasonMsg({ tone: "error", text: errorText(e, "시즌을 저장하지 못했어요.") }); }
+  }
+  async function deleteSeason() {
+    if (!season?.id || !window.confirm(`"${season.name}" 시즌을 지울까요?\n연결된 퀘스트나 기록이 있으면 지울 수 없어요.`)) return;
+    try { await adminFetch(`/quests/seasons/${encodeURIComponent(season.id)}`, { method: "DELETE" }, onUnauthorized); setSeason(null); setSeasonMsg({ tone: "ok", text: "시즌을 지웠어요." }); await reload(); }
+    catch (e) { setSeasonMsg({ tone: "error", text: errorText(e, "시즌을 지우지 못했어요.") }); }
+  }
+
+  return (
+    <>
+      <Panel title="일일 퀘스트 배정" right={<SaveLine state={settingsSave.state} idle="" />}>
+        <Grid>
+          <Field label="하루에 받는 퀘스트 수"><NumberInput value={settings.dailyCount} min={1} max={20} onChange={(dailyCount) => setSettings({ ...settings, dailyCount })} /></Field>
+          <Field label="새 퀘스트가 나오는 기준 시간"><select value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}><option value="Asia/Seoul">한국 시간 자정</option><option value="UTC">세계 표준시 자정 (한국 오전 9시)</option></select></Field>
+        </Grid>
+      </Panel>
+      <Panel title="일일 퀘스트 다 깨면 주는 추가 보상" right={<SaveLine state={bonusSave.state} idle="" />} hint="그날 받은 일일 퀘스트를 모두 끝내면 하루 한 번 더 받아요.">
+        <Toggle checked={bonus.enabled} onChange={(enabled) => setBonus({ ...bonus, enabled })} label={bonus.enabled ? "추가 보상 켜짐" : "추가 보상 꺼짐"} />
+        <RewardEditor reward={bonus} catalog={catalog} onChange={(patch) => setBonus({ ...bonus, ...patch })} />
+      </Panel>
+      <Panel title="시즌" right={<Button onClick={() => { const now = new Date(); const end = new Date(now.getTime() + 30 * 864e5); setSeason({ id: "", name: "새 시즌", startsAt: now.toISOString(), endsAt: end.toISOString(), status: "ACTIVE" }); setSeasonMsg(null); }}>+ 새 시즌</Button>} hint="시즌 퀘스트는 시즌 기간에만 나와요.">
+        <div className="ak-days">
+          {data.seasons.map((s) => <button key={s.id} type="button" aria-pressed={season?.id === s.id} data-off={s.status !== "ACTIVE" || undefined} onClick={() => { setSeason({ ...s }); setSeasonMsg(null); }}><b>{s.name}</b><small>{SEASON_STATUS_KO[s.status] ?? s.status} · {new Date(s.startsAt).toLocaleDateString("ko-KR")} ~ {new Date(s.endsAt).toLocaleDateString("ko-KR")}</small></button>)}
+          {!data.seasons.length && <p className="ak-hint">아직 시즌이 없어요.</p>}
+        </div>
+        {season && (
+          <div className="ak-panel" style={{ background: "#0f1216" }}><div className="ak-panel-body">
+            <Grid>
+              <Field label="시즌 이름"><input value={season.name} onChange={(e) => setSeason({ ...season, name: e.target.value })} /></Field>
+              <Field label="상태"><select value={season.status} onChange={(e) => setSeason({ ...season, status: e.target.value })}>{Object.entries(SEASON_STATUS_KO).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+              <Field label="시작"><input type="datetime-local" value={toLocalInput(season.startsAt)} onChange={(e) => setSeason({ ...season, startsAt: fromLocalInput(e.target.value) ?? "" })} /></Field>
+              <Field label="끝"><input type="datetime-local" value={toLocalInput(season.endsAt)} onChange={(e) => setSeason({ ...season, endsAt: fromLocalInput(e.target.value) ?? "" })} /></Field>
+            </Grid>
+            <div className="ak-row-actions"><Button kind="primary" onClick={() => void saveSeason()}>시즌 저장</Button>{season.id && <Button kind="danger" onClick={() => void deleteSeason()}>시즌 지우기</Button>}<Button kind="ghost" onClick={() => setSeason(null)}>닫기</Button></div>
+          </div></div>
+        )}
+        {seasonMsg && <Notice tone={seasonMsg.tone}>{seasonMsg.text}</Notice>}
+      </Panel>
+      <QuestTest data={data} onUnauthorized={onUnauthorized} />
+      {data.audits && data.audits.length > 0 && <Panel title="최근 바꾼 기록">
+        <details className="ak-advanced"><summary>최근 {data.audits.length}건 보기</summary>
+          <ul className="ak-plain-list">{data.audits.map((a) => <li key={a.id}><small>{new Date(a.createdAt).toLocaleString("ko-KR")}</small> · {AUDIT_KO[a.action] ?? a.action} · {data.definitions.find((d) => d.id === a.entityId)?.title ?? data.seasons.find((x) => x.id === a.entityId)?.name ?? a.entityId}</li>)}</ul>
+        </details>
+      </Panel>}
+    </>
+  );
 }

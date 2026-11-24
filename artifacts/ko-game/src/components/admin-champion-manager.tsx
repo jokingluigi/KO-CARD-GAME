@@ -101,7 +101,7 @@ async function classifiedMessage(response: Response) {
   }
 }
 
-export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () => void }) {
+export function AdminChampionManager({ onUnauthorized, editOnly = false, onDone }: { onUnauthorized: () => void; /** Opened from 챔피언 편집 → "자세히 편집": only the full editor for ?edit=<id>. */ editOnly?: boolean; onDone?: (championId?: string) => void }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [champions, setChampions] = useState<Champion[]>([]);
@@ -113,6 +113,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [editing, setEditing] = useState<Champion | null>(null);
   const [form, setForm] = useState<Form>(empty);
   const [open, setOpen] = useState(false);
+  const editOnlyOpened = useRef(false);
+  const editorRef = useRef<((champion?: Champion) => void) | null>(null);
   const [error, setError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -187,7 +189,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     const response = await fetch(`${adminApiBase}/champions?${query}`, { credentials: "include" });
     if (response.status === 401) { onUnauthorized(); return; }
     if (!response.ok) { setError(await message(response)); return; }
-    setChampions(((await response.json()) as { champions: Champion[] }).champions);
+    const loaded = ((await response.json()) as { champions: Champion[] }).champions;
+    setChampions(loaded);
+    if (editOnly && !editOnlyOpened.current) {
+      editOnlyOpened.current = true;
+      const target = loaded.find((c) => c.id === new URLSearchParams(window.location.search).get("edit"));
+      if (target) window.setTimeout(() => editorRef.current?.(target), 0); else onDone?.();
+    }
     const selection = await fetch(adminApiBase + "/draft/champion-selection", { credentials: "include", cache: "no-store" });
     if (selection.status === 401) { onUnauthorized(); return; }
     if (!selection.ok) { setError(await message(selection)); return; }
@@ -270,6 +278,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 미공개로 저장했습니다.");
       setOpen(false);
       setPublicationCards(null);
+      if (editOnly) window.setTimeout(() => onDone?.(saved.id), 60);
 
     } catch (reason) {
       setError(reason instanceof TypeError
@@ -324,6 +333,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setBusy(false);
     }
   }
+   editorRef.current = (champion?: Champion) => editor(champion);
    function editor(champion?: Champion) {
        creationIdRef.current=crypto.randomUUID();
        setEditing(champion ?? null);  setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
@@ -493,6 +503,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       clearBasicPortraitLocalUrl();
       clearPortraitLocalUrl();
       setOpen(false);
+      if (editOnly) { const doneId = editing?.id; window.setTimeout(() => onDone?.(doneId), 60); }
     }
 
   const hasBrokenIntroReference = (interaction: IntroInteraction) =>
@@ -513,10 +524,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const brokenIntroInteractions = introInteractions.filter(hasBrokenIntroReference);
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
+    {editOnly && !open && <div className="p-10 text-center text-sm text-neutral-500">챔피언을 여는 중…</div>}
+    {!editOnly && <>
     <div className="mb-5 flex items-end justify-between">
-      <div><div className="text-[10px] font-bold tracking-[.2em] text-neutral-600">CONTENT MANAGEMENT</div>
-        <h2 className="mt-1 text-xl font-black">챔피언 관리</h2>
-        <p className="mt-1 text-xs text-neutral-500">새 챔피언은 미공개로 저장되며 기본 최대 체력은 20입니다.</p></div>
+      <div><p className="text-sm text-neutral-400">새 챔피언은 미공개로 만들어지고, 처음 체력은 20이에요.</p></div>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
 
@@ -554,6 +565,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">미공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
 <div className="admin-pagination"><button disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(champions.length/20))} · {champions.length}명</span><button disabled={(listPage+1)*20>=champions.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
+    </>}
     {open && <AdminEditorWorkspace title={editing ? `${form.name || '챔피언'} 편집` : '새 챔피언 만들기'} description={editing ? `현재 버전 v${editing.version} · 능력, 이미지, 대사를 한곳에서 편집합니다.` : '기본 정보와 능력을 설정하세요. 새 챔피언은 미공개로 저장됩니다.'} dirty={adminDraftDirty} isNew={!editing} busy={busy} uploading={basicPortraitUploading||portraitUploading} error={error} onClose={closeEditor} onSave={()=>void save()}>
       <div className="admin-workbench-columns"><div className="admin-workbench-fields">
         <details className="admin-champion-advanced"><summary>특수 인트로 관계</summary>

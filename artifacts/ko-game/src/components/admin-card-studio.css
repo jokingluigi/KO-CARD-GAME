@@ -1,0 +1,102 @@
+/* 카드 빠른 편집 (admin card studio) */
+.kst{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start;min-height:70vh}
+.kst button{cursor:pointer}
+.kst-list{position:sticky;top:84px;display:flex;flex-direction:column;gap:8px;max-height:calc(100dvh - 110px);border:1px solid #2b2f36;border-radius:10px;background:#0f1216;padding:10px}
+.kst-new{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kst-new button{min-height:40px;border-radius:8px;font-weight:900;color:#111;background:#e3b341}
+.kst-search{min-height:40px;border-radius:8px;border:1px solid #2f343c;background:#0a0c0f;padding:0 12px;color:#e8e6e1}
+.kst-filters{display:flex;flex-wrap:wrap;gap:4px}
+.kst-filters span{width:100%;height:0}
+.kst-filters button,.kst-chips button,.kst-snippets button,.kst-status-switch button{min-height:30px;padding:0 10px;border-radius:999px;border:1px solid #333944;background:#11151a;color:#aeb4bd;font-size:12px;font-weight:800}
+.kst-filters button[aria-pressed=true],.kst-chips button[aria-pressed=true],.kst-status-switch button[aria-pressed=true]{border-color:#e3b341;color:#f3e6c2;background:#221c0e}
+.kst-list ul{overflow-y:auto;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px}
+.kst-list li button{width:100%;display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;text-align:left;background:transparent;border:1px solid transparent}
+.kst-list li button:hover{background:#151a20}
+.kst-list li button[aria-current=true]{background:#1b1f26;border-color:#e3b341}
+.kst-thumb{width:38px;height:48px;flex:none;border-radius:5px;background:#1c2129 center 20%/cover no-repeat}
+.kst-row-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.kst-row-main b{font-size:13.5px;color:#ece9e2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kst-row-main small{font-size:11.5px;color:#8b929c}
+.kst-status{font-size:11px;font-weight:900;padding:2px 7px;border-radius:999px;border:1px solid #3a3f48;color:#9aa1aa}
+.kst-status[data-status=PUBLISHED]{border-color:#1f6f4a;color:#7fd6a8}
+.kst-status[data-status=DRAFT]{border-color:#7a5b16;color:#e8c46b}
+
+.kst-edit{border:1px solid #2b2f36;border-radius:10px;background:#0f1216;padding:16px;min-width:0}
+.kst-empty{padding:60px 20px;text-align:center;color:#9aa1aa;line-height:1.7}
+.kst-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.kst-back{display:none;min-height:36px;padding:0 12px;border-radius:8px;border:1px solid #333944;background:#11151a;color:#cfd3d8;font-weight:800}
+.kst-save{flex:1;min-width:180px;font-size:13px;font-weight:800;color:#9aa1aa}
+.kst-save[data-kind=saved]{color:#7fd6a8}
+.kst-save[data-kind=saving]{color:#cfd3d8}
+.kst-save[data-kind=error]{color:#ff8f80}
+.kst-save[data-kind=check]{color:#f0c35b}
+.kst-status-switch{display:flex;gap:4px}
+.kst-body{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;align-items:start}
+.kst-preview{position:sticky;top:90px;display:flex;flex-direction:column;gap:8px}
+.kst-image{position:relative;display:flex;align-items:center;justify-content:center;min-height:38px;border-radius:8px;border:1px dashed #444b55;color:#cfd3d8;font-size:13px;font-weight:800;cursor:pointer}
+.kst-image input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.kst-advanced{min-height:36px;border-radius:8px;border:1px solid #333944;background:#11151a;color:#aeb4bd;font-size:12px;font-weight:800}
+.kst-fields{display:flex;flex-direction:column;gap:12px;min-width:0}
+.kst-field{display:flex;flex-direction:column;gap:6px}
+.kst-field>span{font-size:12px;font-weight:900;color:#9aa1aa}
+.kst-field input,.kst-field select,.kst-field textarea{width:100%;border-radius:8px;border:1px solid #2f343c;background:#0a0c0f;color:#ece9e2;padding:9px 11px;font-size:15px}
+.kst-field textarea{line-height:1.55;resize:vertical}
+.kst-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kst-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kst-stepper>span{display:block;font-size:12px;font-weight:900;color:#9aa1aa;margin-bottom:6px}
+.kst-stepper>div{display:grid;grid-template-columns:38px 1fr 38px;border:1px solid #2f343c;border-radius:8px;overflow:hidden;background:#0a0c0f}
+.kst-stepper button{min-height:42px;font-size:18px;font-weight:900;color:#e8e6e1;background:#161a20}
+.kst-stepper input{width:100%;text-align:center;font-size:18px;font-weight:900;color:#f3e6c2;background:transparent;border:0}
+.kst-snippets,.kst-chips{display:flex;flex-wrap:wrap;gap:5px}
+.kst-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 11px;border-radius:8px;border:1px solid #4a3d18;background:#1a160c;color:#e8d29a;font-size:12.5px}
+.kst-hint[data-tone=warn]{border-color:#5a2b26;background:#1d1110;color:#ffb3a8}
+.kst-hint[data-tone=info]{border-color:#24405a;background:#0e1822;color:#a9cdf0}
+.kst-hint button{min-height:30px;padding:0 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;font-weight:900}
+.kst-decision{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:10px;border:1px solid #e3b341;background:#17130a}
+.kst-decision>b{color:#f3e6c2}
+.kst-diff{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kst-diff>div{padding:8px 10px;border-radius:8px;background:#0c0d10;border:1px solid #2b2f36}
+.kst-diff small{display:block;margin-bottom:4px;font-weight:900;color:#9aa1aa}
+.kst-diff p{margin:2px 0;font-size:12.5px;color:#dcdad5;line-height:1.45}
+.kst-decide{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kst-decide button{min-height:44px;border-radius:8px;font-weight:900;border:1px solid #e3b341;color:#f3e6c2;background:transparent}
+.kst-decide button:first-child{background:#e3b341;color:#111}
+.kst-note{font-size:12px;color:#8b929c}
+.kst-inline{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12.5px;color:#aeb4bd}
+.kst-inline input{width:80px;border-radius:6px;border:1px solid #2f343c;background:#0a0c0f;color:#ece9e2;padding:5px 8px}
+
+@media (max-width:900px){
+  .kst{grid-template-columns:1fr}
+  .kst-list{position:static;max-height:none}
+  .kst-list ul{max-height:none}
+  .kst[data-mobile-editing] .kst-list{display:none}
+  .kst:not([data-mobile-editing]) .kst-edit{display:none}
+  .kst-back{display:inline-flex;align-items:center}
+  .kst-body{grid-template-columns:1fr}
+  .kst-preview{position:static;width:min(62vw,240px);margin:0 auto}
+  .kst-diff,.kst-decide{grid-template-columns:1fr}
+  .kst-edit{padding:12px}
+}
+
+/* 2026-11 정리: 필터 더보기 · 카드 도구 */
+.kst .kst-more { margin-left: auto; }
+.kst .kst-more-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.kst .kst-more-filters label { display: grid; gap: 4px; font-size: 12px; color: #9aa3b5; }
+.kst .kst-more-filters select { min-height: 38px; border-radius: 8px; border: 1px solid #ffffff1c; background: #0d1220; color: #e8ebf2; padding: 0 8px; font-size: 13px; }
+.kst .kst-more-filters > button { grid-column: 1 / -1; min-height: 34px; border-radius: 8px; border: 1px solid #ffffff1c; color: #c9ced9; font-size: 12px; }
+.kst .kst-count { margin: 0; font-size: 12px; color: #8a93a6; }
+.kst .kst-tools, .ak-split .kst-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.kst .kst-tools button, .ak-split .kst-tools button { min-height: 38px; border-radius: 8px; border: 1px solid #ffffff1c; background: #ffffff05; color: #d4d9e3; font-size: 12px; font-weight: 600; }
+.kst .kst-tools button:hover:not(:disabled), .ak-split .kst-tools button:hover:not(:disabled) { border-color: #e2b84b; color: #f3d27a; }
+.kst .kst-tools button[aria-pressed="true"], .ak-split .kst-tools button[aria-pressed="true"] { border-color: #e2b84b88; color: #f3d27a; }
+.kst .kst-tools button.is-danger, .ak-split .kst-tools button.is-danger { color: #f19a9a; border-color: #7a2a2a88; }
+.kst .kst-tools button.is-danger:hover:not(:disabled) { border-color: #d05a5a; color: #ffb4b4; }
+.kst .kst-tools button:disabled { opacity: .45; }
+.kst .kst-status[data-status="DISABLED"] { color: #f19a9a; border-color: #7a2a2a88; }
+.ko-admin .admin-content .kst-stepper input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]){border:0;border-radius:0;background:transparent;min-height:42px;padding:0;text-align:center;font-size:18px;font-weight:900;color:#f3e6c2}
+.kst .kst-audit-run{grid-column:1/-1;min-height:36px;border-radius:8px;border:1px dashed #6b5520;color:#f3d27a;font-size:12px;font-weight:800;background:transparent}
+.kst .kst-audit{flex:none;font-size:12px;font-weight:900;color:#e8c46b}
+.kst .kst-audit[data-audit=missing]{color:#ff8f80}
+.kst .kst-audit-line{margin:0 0 10px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.5;background:#1a160c;color:#e8d29a;border:1px solid #4a3d18}
+.kst .kst-audit-line[data-audit=missing]{background:#1d1110;color:#ffb3a8;border-color:#5a2b26}
+.kst .kst-audit-line[data-audit=aligned]{background:#0d1d15;color:#9fe0b5;border-color:#1f5a3c}

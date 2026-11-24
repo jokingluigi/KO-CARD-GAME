@@ -31,6 +31,7 @@ import { championQuestRewardText } from './champion-quest-reward-text';
 import { CardTagExplorerDialog } from './card-tag-explorer-dialog';
 import { CardDetailDialog, type CardDetailRecord } from './card-detail-dialog';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
+import { TagLinks, TagBrowserHost } from './card-rules-text';
 import { getCardRuntimeRulesText } from '../lib/card-display-state';
 import { shouldPreventAltWheel, shouldToggleAltInfo } from './alt-inspector-keyboard';
 import {
@@ -254,6 +255,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
 
   return (
     <AltInspectContext.Provider value={value}>
+      <TagBrowserHost />
       <FullArtworkProvider>
       <div
         className="contents"
@@ -494,6 +496,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
             countdownRemaining={card.countdownRemaining} countdownResolved={card.countdownResolved}
             isChampionToken={card.isChampionToken} isToken={card.isToken} isSilenceImmune={card.isSilenceImmune}
           />
+          {tags.length > 0 && <div className="kpk-tagrow"><span>태그</span><TagLinks tags={tags} /></div>}
         </div>
         {(notes.length > 0 || changed.length > 0 || silence.immune) && <div className="kpk-notes">
           {notes.map(n => <div key={n.key} className="kpk-note" data-tone={n.tone}><b>{n.title}</b><p>{n.tone === 'text' ? <CardRulesText text={n.text}/> : n.text}</p></div>)}
