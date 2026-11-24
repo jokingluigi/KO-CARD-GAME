@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { championRecordToDefinition, type PublishedChampionRecord } from "../game/champions/published-champions";
 import { CardArtwork } from "./card-artwork";
 import "./admin-card-studio.css";
+import { ChampionIntroInteractions } from "./admin-champion-intros";
+import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, type ChampionPresentationLines } from "../game/champions/types";
 import { checkCardText } from "@/lib/card-text-spelling";
 import { autoFixedText, SpellingHelper, useSpellingAuto } from "./spelling-helper";
 import {
   adminFetch, Button, Chip, EditorPane, errorText, Field, Grid, ImagePick, ListPane, ListRow, Notice, NumberInput, Panel,
-  SaveLine, Split, STATUS_KO, statusTone, uploadAdminImage, useMobileEditing, type SaveState,
+  SaveLine, Split, STATUS_KO, statusTone, Tabs, uploadAdminImage, useMobileEditing, type SaveState,
 } from "./admin-kit";
 
 type Champion = PublishedChampionRecord & { [key: string]: unknown; status: "DRAFT" | "PUBLISHED" | "DISABLED"; version: number; updatedAt?: string };
@@ -33,6 +35,8 @@ export function AdminChampionStudio({ onUnauthorized, onOpenAdvanced, onTestGame
   const mobile = useMobileEditing();
   const [spellAuto, setSpellAuto] = useSpellingAuto();
   const [spellUndo, setSpellUndo] = useState<{ field: string; label: string; onUndo: () => void } | null>(null);
+  const [linePhase, setLinePhase] = useState<"BEFORE_QUEST" | "AFTER_QUEST">("BEFORE_QUEST");
+  const [rival, setRival] = useState("");
   const spellNames = useMemo(() => (list ?? []).map((c) => c.name), [list]);
 
   /** Effect-text box with the spelling helper under it (shown only when there is something to fix). */
@@ -203,12 +207,50 @@ export function AdminChampionStudio({ onUnauthorized, onOpenAdvanced, onTestGame
                 </Grid>
                 {TextBox({ field: "upgradedAbilityText", label: "글", rows: 2 })}
               </Panel>}
-              <Panel title="대전 시작 대사">
+              <Panel title="대전 시작 대사 (기본)" hint="특수 대사가 없는 상대를 만나면 이 대사가 나와요.">
                 <Grid>
                   <Field label="첫 줄"><input value={d.introLineOne ?? ""} maxLength={80} onChange={(e) => change({ introLineOne: e.target.value })} /></Field>
                   <Field label="둘째 줄"><input value={d.introLineTwo ?? ""} maxLength={80} onChange={(e) => change({ introLineTwo: e.target.value })} /></Field>
                 </Grid>
               </Panel>
+              <ChampionIntroInteractions key={d.id} champion={{ id: d.id, name: d.name, status: d.status }} champions={list.map((c) => ({ id: c.id, name: c.name, status: c.status }))} onUnauthorized={onUnauthorized} />
+              {(() => {
+                const lines = (d.presentationLines ?? {}) as ChampionPresentationLines;
+                const setLines = (next: ChampionPresentationLines) => change({ presentationLines: next } as Partial<Champion>);
+                const phase = d.hasQuest ? linePhase : "BEFORE_QUEST";
+                const rivals = list.filter((c) => c.id !== d.id);
+                return <>
+                  <Panel title="감정표현 · 승패 대사" hint="게임 중 감정표현을 누르거나 이기고 질 때 나오는 말이에요. 빈칸이면 말하지 않아요.">
+                    {d.hasQuest && <Tabs<"BEFORE_QUEST" | "AFTER_QUEST"> value={linePhase} onChange={setLinePhase} tabs={[["BEFORE_QUEST", "피니셔 준비 전"], ["AFTER_QUEST", "피니셔 준비 후"]] as const} />}
+                    {d.hasQuest && phase === "AFTER_QUEST" && <p className="ak-hint" style={{ margin: 0 }}>‘준비 후’ 칸이 비어 있으면 ‘준비 전’ 대사를 써요.</p>}
+                    <Grid>
+                      {[...CHAMPION_EMOTES, "VICTORY", "DEFEAT"].map((key) => (
+                        <Field key={phase + key} label={key === "VICTORY" ? "이겼을 때" : key === "DEFEAT" ? "졌을 때" : CHAMPION_EMOTE_LABELS[key as (typeof CHAMPION_EMOTES)[number]]}>
+                          <input maxLength={120} value={(lines[phase] as Record<string, string> | undefined)?.[key] ?? ""} onChange={(e) => setLines({ ...lines, [phase]: { ...lines[phase], [key]: e.target.value } })} />
+                        </Field>
+                      ))}
+                    </Grid>
+                    {d.hasQuest && <Field label="피니셔 준비가 끝나는 순간 대사"><input maxLength={120} value={lines.QUEST_COMPLETE ?? ""} onChange={(e) => setLines({ ...lines, QUEST_COMPLETE: e.target.value })} /></Field>}
+                  </Panel>
+                  <Panel title="상대별 승리 · 패배 대사" hint="특정 상대에게 이기거나 졌을 때만 다르게 말하게 해요. 빈칸이면 위의 기본 승패 대사를 써요.">
+                    <div className="ak-row-actions">
+                      <select className="ak-search" style={{ flex: 1, minWidth: 160 }} value={rival} onChange={(e) => setRival(e.target.value)}>
+                        <option value="">상대 챔피언 고르기</option>
+                        {rivals.map((c) => { const set = lines.MATCHUPS?.[c.id]; const used = set && Object.values(set).some((v) => v && Object.values(v).some(Boolean)); return <option key={c.id} value={c.id}>{c.name}{used ? " ✓" : ""}</option>; })}
+                      </select>
+                    </div>
+                    {rival && (d.hasQuest ? (["BEFORE_QUEST", "AFTER_QUEST"] as const) : (["BEFORE_QUEST"] as const)).map((ph) => (
+                      <Grid key={ph}>
+                        {(["VICTORY", "DEFEAT"] as const).map((kind) => (
+                          <Field key={kind} label={`${d.hasQuest ? (ph === "BEFORE_QUEST" ? "준비 전 · " : "준비 후 · ") : ""}${kind === "VICTORY" ? "이겼을 때" : "졌을 때"}`}>
+                            <input maxLength={120} value={lines.MATCHUPS?.[rival]?.[ph]?.[kind] ?? ""} onChange={(e) => setLines({ ...lines, MATCHUPS: { ...lines.MATCHUPS, [rival]: { ...lines.MATCHUPS?.[rival], [ph]: { ...lines.MATCHUPS?.[rival]?.[ph], [kind]: e.target.value } } } })} />
+                          </Field>
+                        ))}
+                      </Grid>
+                    ))}
+                  </Panel>
+                </>;
+              })()}
             </div>
             <div className="ak-frame-preview" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {d.imageUrl ? <CardArtwork src={d.imageUrl} alt="" className="aspect-[3/4] w-full rounded-lg" imageDisplayMode={d.imageDisplayMode} imageScale={d.imageScale} imagePositionX={d.imagePositionX} imagePositionY={d.imagePositionY} /> : <div className="ak-empty" style={{ padding: 30, border: "1px dashed #333944", borderRadius: 8 }}>초상화 없음</div>}
