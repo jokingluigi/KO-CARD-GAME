@@ -98,3 +98,10 @@
   background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(150,10,10,.28) 82%,rgba(120,0,0,.5) 100%);animation:ko-danger-beat 1.6s ease-out infinite}
 .ko-danger-pulse--still{animation:none;opacity:.6}
 @keyframes ko-danger-beat{0%{opacity:.35}8%{opacity:1}16%{opacity:.55}24%{opacity:.9}60%,100%{opacity:.35}}
+
+/* 내 체력이 5 이하: 화면 가장자리가 붉게 숨쉬듯 물든다 (위기감) */
+.ko-game-stage[data-critical="true"]::after{content:"";position:fixed;inset:0;z-index:105;pointer-events:none;
+  background:radial-gradient(ellipse 120% 95% at 50% 50%,transparent 58%,rgba(170,20,10,.28) 82%,rgba(120,0,0,.55) 100%);
+  animation:ko-critical-pulse 2.4s ease-in-out infinite}
+@keyframes ko-critical-pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.ko-game-stage[data-critical="true"]::after{animation:none;opacity:.8}}

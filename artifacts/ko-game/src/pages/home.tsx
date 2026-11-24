@@ -15,6 +15,7 @@ import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
 import {championSpriteSkin,cosmeticImage,cosmeticImageSettings,type MatchCosmetics} from '@workspace/cosmetics';
 import {completeBoss,readBossHandoff,type BossInfo,type BossResult} from '@/lib/boss-client';
+import {celebrate} from '@/lib/celebrate';
 import {BossDialogue,type DialogueActor} from '@/components/boss-dialogue';
 import type {BossDialogueLine} from '@/game';
 import { completeMinionACatalog } from '../game/champions/minion-a';
@@ -644,6 +645,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if(phaseIndex>0&&!shown.has('phase:'+phaseIndex)){const phase=gameState.boss?.phases[phaseIndex];show('phase:'+phaseIndex,phase?.dialogue??[],{title:phase?.name||`${phaseIndex+1}페이즈`,subtitle:'보스가 다시 일어섰다!'});return;}
     if(gameState.status==='FINISHED'&&gameState.winnerId===gameState.players[0]?.id&&!shown.has('clear')){show('clear',bossInfo.clearDialogue,{title:'보스 격파!',subtitle:bossInfo.name});}
   },[isBossMatch,bossInfo,matchReady,aiOpeningActive,bossDialogue,gameState.boss?.phaseIndex,gameState.status,gameState.winnerId]);
+  useEffect(()=>{if(bossResult?.cleared&&bossResult.firstClear&&!bossDialogue)void celebrate('boss');},[bossResult?.cleared,bossResult?.firstClear,bossDialogue]);
   const bossActor=(playerIndex:0|1):DialogueActor=>{
     const player=gameState.players[playerIndex];const champion=player?.champion;
     const phase=playerIndex===1?gameState.boss?.phases[gameState.boss.phaseIndex]:undefined;

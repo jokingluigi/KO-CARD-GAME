@@ -1,0 +1,31 @@
+/*
+ * 등급 반짝임 (직접 만든 효과 · 외부 코드 없음)
+ * 에픽: 보랏빛 / 레전드: 금빛 / 챔피언: 붉은 금빛.
+ * 천천히 빛 줄기가 지나가고, 손가락·마우스를 올리면 그 위치를 따라 빛난다.
+ * 필드 위 카드는 아주 약하게, 확대·컬렉션·팩에서는 잘 보이게.
+ */
+.ko-card-foil{position:absolute;inset:1.6% 2.2%;z-index:15;border-radius:5.5%/4%;pointer-events:none;overflow:hidden;
+  --foil-a:rgba(255,214,120,.55);--foil-b:rgba(255,246,214,.75);--foil-c:rgba(255,170,60,.35);--foil-strength:.75;
+  mix-blend-mode:screen;opacity:var(--foil-strength)}
+.ko-card-foil[data-foil="EPIC"]{--foil-a:rgba(190,140,255,.45);--foil-b:rgba(240,225,255,.7);--foil-c:rgba(120,170,255,.35);--foil-strength:.6}
+.ko-card-foil[data-foil="CHAMPION"]{--foil-a:rgba(255,150,120,.5);--foil-b:rgba(255,236,200,.75);--foil-c:rgba(255,200,80,.35)}
+/* 지나가는 빛 줄기 */
+.ko-card-foil::before{content:"";position:absolute;inset:-60%;
+  background:linear-gradient(115deg,transparent 43%,var(--foil-a) 47.5%,var(--foil-b) 50%,var(--foil-c) 52.5%,transparent 57%);
+  animation:ko-foil-sweep 6.5s ease-in-out infinite;transform:translateX(-60%)}
+/* 은은한 무지개 결 (레전드·챔피언만) */
+.ko-card-foil[data-foil="LEGENDARY"]::after,.ko-card-foil[data-foil="CHAMPION"]::after{content:"";position:absolute;inset:0;opacity:.22;
+  background:repeating-linear-gradient(125deg,rgba(255,120,120,.5) 0 6%,rgba(255,230,120,.5) 6% 12%,rgba(140,255,200,.5) 12% 18%,rgba(130,180,255,.5) 18% 24%,rgba(220,140,255,.5) 24% 30%);
+  background-size:300% 300%;animation:ko-foil-rainbow 9s linear infinite}
+/* 손가락·마우스 위치를 따라가는 빛 */
+.ko-card-depth[data-foil-active="true"] .ko-card-foil{--foil-strength:.55}
+.ko-card-depth[data-foil-active="true"] .ko-card-foil::before{animation:none;transform:none;
+  background:radial-gradient(circle at var(--foil-x,50%) var(--foil-y,50%),var(--foil-b) 0%,var(--foil-a) 9%,transparent 26%)}
+@keyframes ko-foil-sweep{0%,55%{transform:translateX(-60%)}85%,100%{transform:translateX(60%)}}
+@keyframes ko-foil-rainbow{to{background-position:300% 300%}}
+/* 필드·손패(전투 중)에서는 약하게 */
+.ko-game-shell .ko-card-foil{--foil-strength:.3}
+.ko-game-shell .ko-card-foil[data-foil-size="board"]{--foil-strength:.22}
+.ko-game-shell .ko-card-foil[data-foil-size="board"]::after{display:none}
+/* 움직임 줄이기 설정이면 정지된 은은한 빛만 */
+@media (prefers-reduced-motion:reduce){.ko-card-foil::before,.ko-card-foil::after{animation:none}.ko-card-foil::before{transform:none;opacity:.35}}

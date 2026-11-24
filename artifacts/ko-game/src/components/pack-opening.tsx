@@ -3,6 +3,8 @@ import {cosmeticAssetDisplay} from "@workspace/cosmetics";
 import {flyBetween} from "./physical-feedback";
 import {prefersReducedMotion} from "./presentation-config";
 import "./physical-card.css";
+import "./pack-reveal.css";
+import { celebrate } from "@/lib/celebrate";
 import { CosmeticPreview } from "./cosmetic-preview";
 import { useEffect, useRef, useState } from "react";
 import { Check, Gift, RotateCcw, Sparkles } from "lucide-react";
@@ -104,6 +106,13 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
   }, [isBulkResult, revealed, rewards]);
 
   const specialReward = specialQueue.length ? rewards[specialQueue[0]] : undefined;
+  const specialKey = specialQueue[0];
+  // 레전드·챔피언이 나오면 꽃가루를 한 번 터뜨린다 (움직임 줄이기 설정이면 생략)
+  useEffect(() => {
+    if (specialKey === undefined) return;
+    const kind = rewards[specialKey]?.rewardType === "CHAMPION_UNLOCK" ? "champion" : "legendary";
+    celebrate(kind);
+  }, [specialKey]);
   useEffect(() => {
     if (!specialReward) return;
     playRevealMusic(specialReward);

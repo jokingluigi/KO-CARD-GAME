@@ -13,11 +13,13 @@ const destinations = [
   { href: "/daily-quests", label: "보상", icon: Gift },
   { href: "/shop", label: "상점", icon: ShoppingBag },
 ];
-const parentRoute: Record<string,string> = {"/packs":"/shop","/attendance":"/daily-quests","/daily-quests":"/daily-quests","/cosmetics":"/collection","/settings":"/settings"};
-const sectionLabel:Record<string,string>={"/packs":"내 팩","/attendance":"출석","/daily-quests":"퀘스트","/cosmetics":"꾸미기"};
+const parentRoute: Record<string,string> = {"/boss":"/online","/draft":"/online","/packs":"/shop","/attendance":"/daily-quests","/daily-quests":"/daily-quests","/cosmetics":"/collection","/settings":"/settings"};
+const sectionLabel:Record<string,string>={"/boss":"보스전","/draft":"드래프트","/packs":"내 팩","/attendance":"출석","/daily-quests":"퀘스트","/cosmetics":"꾸미기"};
 const routes = new Set([
   "/player-notebook",
   "/online",
+  "/boss",
+  "/draft",
   "/decks",
   "/collection",
   "/shop",

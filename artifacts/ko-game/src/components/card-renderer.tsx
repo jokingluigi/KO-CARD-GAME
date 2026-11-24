@@ -1,3 +1,4 @@
+import "./card-foil.css";
 import {FittedCardName} from "./fitted-card-name";
 import {frameWindowsFromImage,type DetectedFrameWindows} from "@/lib/card-frame-windows";
 import {cardSilenceProtection} from '../lib/card-protection-display';
@@ -12,7 +13,7 @@ import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-rep
 import { MotionNumber } from './presentation-motion';
 import { CardRulesText } from './card-rules-text';
 import { FittedCardRules, FittedCardRulesContext } from './fitted-card-rules';
-import { useContext, useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useContext, useEffect, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
 import { KeywordFx, type MessengerKind } from "./keyword-fx";
 import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
@@ -349,6 +350,18 @@ export function CardRenderer({
     aspectRatio: "1060 / 1484",
   };
 
+  // 반짝이 카드: 손가락·마우스 위치를 따라 빛이 움직인다 (레전드·에픽·챔피언만)
+  function foilFollow(event: ReactPointerEvent<HTMLDivElement>) {
+    if (normalizedRarity !== "EPIC" && normalizedRarity !== "LEGENDARY" && normalizedRarity !== "CHAMPION") return;
+    const box = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.style.setProperty("--foil-x", `${Math.round(((event.clientX - box.left) / box.width) * 100)}%`);
+    event.currentTarget.style.setProperty("--foil-y", `${Math.round(((event.clientY - box.top) / box.height) * 100)}%`);
+    event.currentTarget.dataset.foilActive = "true";
+  }
+  function foilReset(event: ReactPointerEvent<HTMLDivElement>) {
+    delete event.currentTarget.dataset.foilActive;
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     onKeyDown?.(event);
     if (onClick && (event.key === "Enter" || event.key === " ")) {
@@ -366,6 +379,8 @@ export function CardRenderer({
       data-card-definition={cardId}
       data-kfx={fieldFx ? ([...keywordBadges, ...(messenger ? [`MSG_${messenger}`] : [])].join(" ") || " ") : undefined}
       onPointerDownCapture={event=>rememberCardOrigin(event.currentTarget)}
+      onPointerMove={foilFollow}
+      onPointerLeave={foilReset}
       data-card-highlight={highlight}
       data-card-silenced={isSilenced ? "true" : undefined}
       data-card-stunned={isStunned ? "true" : undefined}
@@ -419,6 +434,9 @@ export function CardRenderer({
             onError={() => setFrameFailed(true)}
             draggable={false}
           />
+        )}
+        {(normalizedRarity === "EPIC" || normalizedRarity === "LEGENDARY" || normalizedRarity === "CHAMPION") && (
+          <div className="ko-card-foil" data-foil={normalizedRarity} data-foil-size={size} aria-hidden="true" />
         )}
 
         {showName && (

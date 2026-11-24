@@ -35,3 +35,25 @@
 .kboss__go{width:100%;min-height:54px;margin-top:14px;border:none;border-radius:12px;background:linear-gradient(180deg,#ffd978,#c9922a);color:#1b1206;font-size:18px;font-weight:900;letter-spacing:.04em;box-shadow:0 4px 0 #6b4a12,0 10px 24px rgba(201,146,42,.3)}
 .kboss__go:disabled{opacity:.45;filter:grayscale(.5)}
 @media (max-width:760px){.kboss__body{grid-template-columns:1fr}.kboss__detail{position:static;order:-1}.kboss__portrait{height:170px}.kboss__stage-no{width:52px;font-size:10px}}
+/* 다른 메뉴 화면과 같은 차분한 검정·금색 톤으로 맞춤 */
+.kboss{background:#0b0a09;padding-top:12px}
+.kboss__head h1{font-size:24px;color:#ece6da}
+.kboss__head h1 svg{color:#c8a865}
+.kboss__head p{color:#8f897d}
+.kboss__back{border-color:#3a352c;background:transparent;color:#ece6da}
+.kboss__progress{border-color:#3a352c;color:#c8a865}
+.kboss__stage{border-color:#2a2722;background:#12110e}
+.kboss__stage:hover{border-color:#6e5c38}
+.kboss__stage.is-chosen{border-color:#c8a865;box-shadow:inset 0 0 0 1px #c8a865}
+.kboss__stage-no{color:#8f897d}
+.kboss__stage-art,.kboss__stage-state{border-color:#3a352c}
+.kboss__stage-text small{color:#8f897d}
+.kboss__detail{border:1px solid #3a352c;background:#12110e;box-shadow:none}
+.kboss__portrait{background:radial-gradient(circle at 50% 65%,#2a2014,#0b0a09 70%)}
+.kboss__detail h2{color:#ece6da}
+.kboss__subtitle{color:#c8a865}
+.kboss__desc{color:#b9b2a4}
+.kboss__facts li{border-color:#2a2722;background:#0b0a09}
+.kboss__deck select{border-color:#3a352c;background:#0b0a09}
+.kboss__go{background:#c8a865;box-shadow:none;border-radius:10px}
+.kboss__go:not(:disabled):hover{background:#d9bb78}
