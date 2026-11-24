@@ -4149,7 +4149,9 @@ export function resolveTriggeredAbilities(
   const parent = state.targetingState;
   // These automatic buffs are part of the event currently being dispatched.
   // Finish them without advancing or replacing the outer summon/damage frame.
-  const inlineBuffs = parent?.active && ['CARD_ENTERED', 'EXACT_ZERO_DAMAGE'].includes(trigger) && effects.every(effect => effect.type === 'STRUCTURED' && ['BUFF','ADD_KEYWORD'].includes(effect.action) && effect.target?.selection !== 'PLAYER_CHOICE');
+  // Destruction growth can fire midway through a board clear: resuming its
+  // parent here would execute the following summon before the clear returns.
+  const inlineBuffs = parent?.active && ['CARD_ENTERED', 'CARD_DESTROYED', 'EXACT_ZERO_DAMAGE'].includes(trigger) && effects.every(effect => effect.type === 'STRUCTURED' && ['BUFF','ADD_KEYWORD'].includes(effect.action) && effect.target?.selection !== 'PLAYER_CHOICE');
   const resolved = beginResolution(inlineBuffs ? {...state,targetingState:undefined} : state, {
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
      effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? (trigger === 'FIRST_ATTACKED' && options.attackerInstanceId ? [options.attackerInstanceId] : []),
