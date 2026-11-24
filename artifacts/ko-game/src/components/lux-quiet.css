@@ -138,3 +138,12 @@ body:has(.ko-game-navigation) :is(.lux-pagehead,.lux-head,.kdb-home__head)>:is(.
 
 /* player cards: the rarity is already shown by the frame — no "NORMAL / EPIC" text tag */
 .ko-card-depth[data-card-type=WRESTLER] .ko-card-rarity{display:none!important}
+
+/* ===== 우리 게임만의 표시: 제목 밑줄을 링 로프 3줄 + 코너 기둥으로 =====
+   (AI 화면에 흔한 '짧은 금색 막대 하나' 대신 레슬링 링을 닮은 모양) */
+body .lux-title::after, body .kdb-title::after{
+  content:"";display:block;width:56px;height:9px;margin-top:9px;
+  background:
+    linear-gradient(var(--q-gold),var(--q-gold)) 0 0/7px 9px no-repeat,
+    repeating-linear-gradient(180deg,var(--q-gold) 0 1.5px,transparent 1.5px 3.75px) 9px 0/47px 9px no-repeat;
+  opacity:.9}

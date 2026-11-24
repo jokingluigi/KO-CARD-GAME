@@ -1,3 +1,4 @@
+import { ScrollText, Settings } from "lucide-react";
 
 import {questPortraitForSkin} from './quest-media';
 import {BattleCardChoiceDialog} from './battle-card-choice-dialog';
@@ -1435,9 +1436,9 @@ export function GameStatePreview({
                 }}
                 className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-[10px] font-bold text-neutral-300 transition-colors hover:border-primary hover:text-primary md:text-xs"
               >
-                ⚙ 설정
+                <Settings aria-hidden="true" className="inline h-3.5 w-3.5 align-[-2px]" /> 설정
               </button>
-              <button type="button" data-testid="button-battle-match-history" aria-label="경기 로그 열기" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)} className="ko-battle-log-button border border-amber-700 bg-black text-amber-200"><span aria-hidden="true">📜</span><span>로그</span></button>
+              <button type="button" data-testid="button-battle-match-history" aria-label="경기 로그 열기" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)} className="ko-battle-log-button border border-amber-700 bg-black text-amber-200"><ScrollText aria-hidden="true" className="h-4 w-4" /><span>로그</span></button>
              {effectTargeting && (
                <div className="ko-effect-target-controls rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'

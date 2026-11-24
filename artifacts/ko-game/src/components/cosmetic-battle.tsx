@@ -1,3 +1,4 @@
+import { Smile } from "lucide-react";
 import {championEmoteLayout} from './champion-emote-layout';
 import { fetchCosmetics } from "@/lib/cosmetics-client";
 import { createPortal } from "react-dom";
@@ -255,7 +256,7 @@ export function CosmeticEmoteTools({
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        ☺
+        <Smile aria-hidden="true" className="h-5 w-5" />
       </button>
       {open &&
         createPortal(

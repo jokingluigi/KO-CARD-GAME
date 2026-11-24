@@ -527,10 +527,13 @@
 }
 .ko-board-preview
   .ko-game-controls
-  > button:first-child:not(.ko-mobile-target-cancel)::before {
-  content: "⚙";
-  font-size: 20px;
-  pointer-events: none;
+  > button:first-child:not(.ko-mobile-target-cancel)
+  svg {
+  /* 글자 대신 그린 톱니 아이콘만 크게 보여 준다 */
+  width: 20px;
+  height: 20px;
+  margin: 0 auto;
+  display: block;
 }
 @media (max-height: 760px) and (orientation: portrait) {
   .ko-board-preview .ko-game-stage {

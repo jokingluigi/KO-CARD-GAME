@@ -220,7 +220,7 @@ export default function Cosmetics() {
       </div>
       <p className="ko-wardrobe__hint">
         {type === "IMAGE_EMOTE"
-          ? "장착 없이 바로 사용 · 대전 화면의 ☺ 버튼에서 보유한 이모티콘을 골라보세요."
+          ? "장착 없이 바로 사용 · 대전 화면의 웃는 얼굴 버튼에서 보유한 이모티콘을 골라보세요."
           : "스킨은 외형만 바꿔요. 장착한 외형은 다음 대전부터 적용돼요."}
       </p>
       {error && (

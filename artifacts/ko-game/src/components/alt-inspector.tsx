@@ -613,7 +613,7 @@ export function CardInspectContent({ card, definition:override,cosmeticOwnerId }
           </div>
         </InspectorSection>
       )}
-      {card.draftMutation && <InspectorSection title="🔧 Draft Mutation" tone="neutral"><p>{card.draftMutation.name} · ATK {card.draftMutation.attack >= 0 ? '+' : ''}{card.draftMutation.attack} · HP {card.draftMutation.health >= 0 ? '+' : ''}{card.draftMutation.health} · 비용 {card.draftMutation.cost >= 0 ? '+' : ''}{card.draftMutation.cost}</p><p>{card.draftMutation.keywords.map(k => KEYWORD_LABELS[k]).join(' · ')}</p></InspectorSection>}
+      {card.draftMutation && <InspectorSection title="드래프트 변형" tone="neutral"><p>{card.draftMutation.name} · ATK {card.draftMutation.attack >= 0 ? '+' : ''}{card.draftMutation.attack} · HP {card.draftMutation.health >= 0 ? '+' : ''}{card.draftMutation.health} · 비용 {card.draftMutation.cost >= 0 ? '+' : ''}{card.draftMutation.cost}</p><p>{card.draftMutation.keywords.map(k => KEYWORD_LABELS[k]).join(' · ')}</p></InspectorSection>}
       <InspectorSection title="효과 설명" tone="neutral"><div className="ko-readable-content">
         <p data-testid="inspector-card-rules" className="whitespace-pre-wrap break-words text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.55] text-neutral-100">
           <CardRulesText text={rulesText}/>
