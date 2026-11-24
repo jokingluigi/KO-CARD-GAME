@@ -1,6 +1,6 @@
+import { Notice, Tabs } from "./admin-kit";
 import {SavedAudioStartControl} from './audio-start-control';
 import {AdminHomeMenuArt} from "./admin-home-menu-art";
-import {AdminEditorSections} from './admin-editor-sections';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, Music2, Play, Power, Square, Trash2, Upload } from "lucide-react";
 import { audioManager } from "../audio/audio-manager";
@@ -317,14 +317,14 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
     return Math.abs(ratio - viewportRatio) / viewportRatio > 0.12;
   };
 
+  const [mediaTab, setMediaTab] = useState<"home" | "bg" | "bgm" | "hit" | "result">("home");
   return (
-    <div className="space-y-6">
-      <AdminHomeMenuArt onUnauthorized={onUnauthorized}/>
-      <div>
-        <h2 className="text-xl font-black">게임 배경 · 음악</h2>
-       <p className="mt-2 text-sm text-neutral-400">타이틀 화면용과 게임 중 사용할 것을 따로 고를 수 있어요. 타이틀 화면에는 배경과 음악이 하나씩만 쓰여요.</p>
-      </div>
-<AdminEditorSections panels={[{"id":"admin-game-media-manager-0","label":"배경 이미지"},{"id":"admin-game-media-manager-1","label":"배경 음악"},{"id":"admin-game-media-manager-2","label":"공격 타격음"},{"id":"admin-game-media-result","label":"승리·패배 음악"},{"id":"admin-game-media-manager-3","label":"업로드 규격"}]}>{[<><MediaSection
+    <div className="ak-page">
+      <Tabs<"home" | "bg" | "bgm" | "hit" | "result"> value={mediaTab} onChange={setMediaTab} tabs={[["home", "홈 메뉴 그림"], ["bg", "게임 배경 그림"], ["bgm", "배경 음악"], ["hit", "공격 타격음"], ["result", "승리·패배 음악"]] as const} />
+      {(errorMessage || message) && <Notice tone={errorMessage ? "error" : "ok"}>{errorMessage || message}</Notice>}
+      {loading && mediaTab !== "home" && <p className="text-xs text-neutral-500">불러오는 중…</p>}
+      {mediaTab === "home" && <AdminHomeMenuArt onUnauthorized={onUnauthorized}/>}
+      {mediaTab === "bg" && <><><MediaSection
         title="배경 이미지"
         description="PNG / JPG / JPEG / WEBP · 권장 비율이 달라도 업로드할 수 있으며 경고만 표시합니다."
         icon={<ImageIcon className="h-5 w-5" />}
@@ -338,10 +338,10 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         onDelete={deleteItem}
         ratioWarning={ratioWarning}
         viewportRatio={viewportRatio}
-      /></>,
-<><MediaSection
+      /></><p className="ak-hint">가로로 긴 그림(1920×1080 이상)이 좋아요. 화면 비율에 따라 가장자리가 조금 잘릴 수 있으니 중요한 건 가운데에 두세요.</p></>}
+      {mediaTab === "bgm" && <><MediaSection
         title="배경 음악"
-        description="MP3 / OGG / WAV · 활성 BGM은 매치 시작 시 1개를 선택하고 매치 동안 반복 재생합니다."
+        description="MP3·OGG·WAV 파일. 켜 둔 음악 중 하나가 경기마다 골라져서 계속 반복돼요."
         icon={<Music2 className="h-5 w-5" />}
         items={bgms}
         name={bgmName}
@@ -353,8 +353,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         onDelete={deleteItem}
         ratioWarning={() => null}
         viewportRatio={viewportRatio}
-      /></>,
-<><section className="space-y-4 rounded-lg border border-red-950/70 bg-red-950/10 p-4">
+      /></>}
+      {mediaTab === "hit" && <><section className="space-y-4 rounded-lg border border-red-950/70 bg-red-950/10 p-4">
         <div>
           <h3 className="text-lg font-black text-red-200">공격 타격음</h3>
           <p className="mt-1 text-xs text-neutral-500">
@@ -379,8 +379,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
             viewportRatio={viewportRatio}
           />
         ))}
-      </section></>,
-<><section className="space-y-4">
+      </section></>}
+      {mediaTab === "result" && <><section className="space-y-4">
   {resultSoundConfig.map(({type,title}) => <MediaSection key={type}
     title={title} description="결과 화면에서 한 번 재생하며 화면을 나가면 멈춥니다. 종류별 한 곡만 활성화할 수 있고 게임 음악 음소거·볼륨 설정을 따릅니다."
     icon={<Music2 className="h-5 w-5" />} items={media.filter(item => item.mediaType === type)}
@@ -388,26 +388,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
     accept={audioAccept} uploading={uploading === type} onUpload={file => void upload(file,type)}
     onPatch={patchItem} onDelete={deleteItem} ratioWarning={() => null} viewportRatio={viewportRatio}
   />)}
-</section></>,
-<><section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <h3 className="text-sm font-black text-primary">현재 게임 화면 기준 권장 배경 이미지 규격</h3>
-        <div className="mt-3 grid gap-3 text-xs text-neutral-300 md:grid-cols-2">
-          <p><strong className="text-neutral-500">게임 컨테이너</strong><br />전체 viewport `w-full min-h-[100dvh]`, desktop은 `md:h-[100dvh]`, 내부 플레이 영역은 `max-w-5xl`</p>
-          <p><strong className="text-neutral-500">현재 viewport / 비율</strong><br />{viewportRatioLabel}</p>
-          <p><strong className="text-neutral-500">권장 해상도</strong><br />{backgroundGuidance.recommended} 이상, 현재 브라우저 viewport와 같은 비율 권장</p>
-          <p><strong className="text-neutral-500">권장 aspect ratio</strong><br />{backgroundGuidance.ratio} — 고정 1920×1080 기준이 아니라 실제 viewport 기준</p>
-          <p><strong className="text-neutral-500">최소 권장 해상도</strong><br />현재 CSS는 고정 최소 해상도를 강제하지 않으며, 모바일 `100dvh` layout과 desktop `md` layout을 사용합니다.</p>
-          <p><strong className="text-neutral-500">모바일 safe area</strong><br />현재 게임 shell에는 별도 safe-area inset padding이 없으므로 주요 피사체는 이미지 가장자리 10% 안쪽을 비워두는 것을 권장합니다.</p>
-          <p className="md:col-span-2"><strong className="text-neutral-500">crop 방식</strong><br /><code>background-size: cover</code> 권장. 세로·가로 viewport 차이로 일부 crop되며, `contain`은 게임 배경에 빈 여백이 생길 수 있습니다.</p>
-        </div>
-      </section></>]}</AdminEditorSections>
-{(errorMessage || message) && (
-        <div className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
-          {errorMessage || message}
-        </div>
-      )}
-{loading && <p className="text-xs text-neutral-500">게임 미디어를 불러오는 중...</p>}
-
+</section></>}
     </div>
   );
 }
@@ -525,7 +506,7 @@ function MediaSection({
                         checked={item.gameEnabled}
                         onChange={(event) => void onPatch(item, { gameEnabled: event.target.checked })}
                       />
-                      <Power className="h-3.5 w-3.5" /> In-Game
+                      <Power className="h-3.5 w-3.5" /> 게임 중에 쓰기
                     </label>
                      {(item.mediaType === "BACKGROUND" || item.mediaType === "BGM") && (
                        <label className="flex shrink-0 items-center gap-2 text-amber-300">
@@ -534,7 +515,7 @@ function MediaSection({
                            checked={item.titleEnabled}
                            onChange={(event) => void onPatch(item, { titleEnabled: event.target.checked })}
                          />
-                         Title 적용
+                         타이틀 화면에 쓰기
                        </label>
                      )}
                      </div>
@@ -542,7 +523,7 @@ function MediaSection({
                   {item.mediaType === "BACKGROUND" && (
                     <p className={`text-[11px] ${warning ? "text-amber-300" : "text-neutral-500"}`}>
                       {item.width}×{item.height}px · {(item.width! / item.height!).toFixed(2)}:1
-                      {warning ? ` · 현재 viewport ${viewportRatio.toFixed(2)}:1과 달라 cover crop 경고` : " · 현재 viewport 비율과 유사"}
+                      {warning ? ` · 현재 viewport ${viewportRatio.toFixed(2)}:1과 달라 cover crop 경고` : " · 지금 화면 비율과 비슷해요"}
                     </p>
                   )}
                   {item.mediaType !== "BACKGROUND" && (

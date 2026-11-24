@@ -31,8 +31,8 @@ const count = (v: unknown) => Number(v ?? 0).toLocaleString("ko-KR");
 const percent = (v: unknown) => (v == null ? "—" : `${Number(v).toFixed(1)}%`);
 const time = (v: string | null | undefined) =>
   v
-    ? new Date(v).toLocaleString("ko-KR", { timeZone: "UTC", hour12: false }) +
-      " UTC"
+    ? new Date(v).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) +
+      " (한국 시간)"
     : "아직 없음";
 const questRateLabel = (item: Item) =>
   !item.quest_eligible && item.hasQuest === false
@@ -265,29 +265,21 @@ export function AdminUsageStatistics({
         </button>
       </div>
       <p className="usage-policy">
-        이 통계는 데이터 수집이 시작된 이후의 경기만 포함합니다. 모든 지원
-        경기의 실제 유저 기록을 합산합니다.
+        실제 유저 경기만 세요. 기록을 모으기 시작한 뒤의 경기부터 들어가요.
       </p>
       {data && (
         <div className="usage-meta">
           <p>
-            수집 시작: {time(data.collectionStartedAt)}
+            마지막으로 센 때: {time(data.lastAggregatedAt)}
             <br />
-            마지막 집계: {time(data.lastAggregatedAt)}
+            기간: {time(data.from)} ~ {time(data.to)}
           </p>
           <p>
-            {data.policy}
-            <br />
-            조회: {time(data.from)} ~ {time(data.to)} (끝 시각 미포함)
-          </p>
-          <p>
-            유효 참가 {count(data.totals.participants)} · 시작 덱 확인{" "}
-            {count(data.totals.knownDecks)}
+            센 경기 참가 {count(data.totals.participants)}번
           </p>
           {data.lastErrorAt && (
             <p role="status">
-              최근 집계 실패: {time(data.lastErrorAt)} · 저장된 경기 기록으로
-              재시도 중
+              최근에 세다가 문제가 있었어요 ({time(data.lastErrorAt)}). 자동으로 다시 세는 중이에요.
             </p>
           )}
         </div>

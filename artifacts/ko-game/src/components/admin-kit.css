@@ -129,3 +129,13 @@
 .ak-frame-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px;align-items:start}
 .ak-frame-preview{position:sticky;top:90px}
 @media (max-width:900px){.ak-frame-layout{grid-template-columns:1fr}.ak-frame-preview{position:static;order:-1}}
+@media (max-width:900px){.ak-frame-preview{max-width:240px;margin:0 auto;width:100%}}
+.ak-field .ak-number input:not([type=checkbox]):not([type=file]){min-height:0;height:42px;border:0;border-radius:0;padding:0;background:transparent;width:100%;min-width:0;text-align:center;font-size:17px;font-weight:900;color:#f3e6c2}
+/* beat the older global admin input rules */
+.ko-admin .admin-content .ak-field :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),select,textarea){border:1px solid #2f343c;border-radius:8px;background:#0a0c0f;color:#ece9e2;padding:9px 11px;min-height:42px;font-size:15px}
+.ko-admin .admin-content .ak-search:is(input,select){border:1px solid #2f343c;border-radius:8px;background:#0a0c0f;color:#e8e6e1;padding:0 12px;min-height:40px;font-size:14px}
+.ak-number{display:flex!important;align-items:stretch}
+.ak-number button{flex:0 0 42px}
+.ak-number em{display:flex;align-items:center}
+.ko-admin .admin-content .ak-number input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]){flex:1;border:0;border-radius:0;padding:0;min-height:0;height:42px;background:transparent;text-align:center;font-size:17px;font-weight:900;color:#f3e6c2}
+.ko-admin .admin-content .ak-field input[type="range"]{min-height:0;padding:0;border:0;background:transparent}

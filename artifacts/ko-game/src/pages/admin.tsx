@@ -37,11 +37,7 @@ const AdminTagManager = lazy(() =>
     default: m.AdminTagManager,
   })),
 );
-const AdminDraftManager = lazy(() =>
-  import("@/components/admin-draft-manager").then((m) => ({
-    default: m.AdminDraftManager,
-  })),
-);
+const AdminDraftSettings = lazy(() => import("@/components/admin-draft-settings").then((m) => ({ default: m.AdminDraftSettings })));
 const AdminCardStudio = lazy(() =>
   import("@/components/admin-card-studio").then((m) => ({
     default: m.AdminCardStudio,
@@ -217,7 +213,7 @@ export default function Admin() {
           : page?.id === "champion-edit" ? <AdminChampionManager onUnauthorized={onUnauthorized} editOnly onDone={(id?: string) => goPath(id ? `/admin/champions?champion=${encodeURIComponent(id)}` : "/admin/champions")} />
           : page?.id === "battle-sprites" ? <AdminBattleSprites />
           : page?.id === "ai-decks" ? <AdminAIDeckManager onUnauthorized={onUnauthorized} />
-          : page?.id === "draft" ? <AdminDraftManager />
+          : page?.id === "draft" ? <AdminDraftSettings />
           : page?.id === "shop" ? <AdminShopHub legacyPath={displayPath} onUnauthorized={onUnauthorized} />
           : page?.id === "packs" ? <AdminPackManager onUnauthorized={onUnauthorized} />
           : page?.id === "prism" ? <AdminPrismManager onUnauthorized={onUnauthorized} />

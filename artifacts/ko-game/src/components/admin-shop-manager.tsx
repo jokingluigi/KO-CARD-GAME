@@ -108,7 +108,7 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
               <Grid cols={3}>
                 <Field label="시작"><input type="datetime-local" value={toLocalInput(draft.startsAt)} onChange={(e) => set({ startsAt: fromLocalInput(e.target.value) })} /></Field>
                 <Field label="끝"><input type="datetime-local" value={toLocalInput(draft.endsAt)} onChange={(e) => set({ endsAt: fromLocalInput(e.target.value) })} /></Field>
-                <Field label="보이는 순서" hint="작을수록 앞"><NumberInput value={draft.displayOrder} min={-999} max={999} onChange={(displayOrder) => set({ displayOrder })} /></Field>
+                <Field label="보이는 순서" hint="작을수록 앞"><NumberInput value={draft.displayOrder} min={0} max={9999} onChange={(displayOrder) => set({ displayOrder })} /></Field>
               </Grid>
             </Panel>
           </>}
