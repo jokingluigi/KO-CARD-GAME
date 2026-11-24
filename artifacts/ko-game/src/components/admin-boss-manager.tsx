@@ -15,6 +15,20 @@ import "./admin-boss-manager.css";
 const SPEAKER_KO = { BOSS: "보스", NARRATOR: "나레이션" } as const;
 const EFFECT_KO = { "": "효과 없음", SHAKE: "화면 흔들림", FLASH: "번쩍" } as const;
 const newPhase = (index: number): BossPhase => ({ name: `${index + 1}페이즈`, health: 30, portraitUrl: null, addToHand: [], addToDeck: [], clearBoard: false, goldPerTurn: 0, dialogue: [] });
+/** 새 보스 기본 틀: 3페이즈 + 예시 대사. 글만 고치면 바로 쓸 수 있어요. */
+const bossTemplate = (): Partial<AdminBoss> => ({
+  name: "새 보스", subtitle: "", description: "", firstClearReward: 300, playerHealthBonus: 0, status: "DRAFT",
+  introDialogue: [
+    { speaker: "NARRATOR", expression: null, text: "링 위에 거대한 그림자가 드리운다…", effect: null },
+    { speaker: "BOSS", expression: null, text: "감히 내 링에 올라오다니. 각오는 됐겠지?", effect: "SHAKE" },
+  ],
+  phases: [
+    { ...newPhase(0), name: "1페이즈", health: 30 },
+    { ...newPhase(1), name: "2페이즈 · 분노", health: 25, goldPerTurn: 1, dialogue: [{ speaker: "BOSS", expression: "hurt", text: "크윽… 이제부터 진심이다!", effect: "FLASH" }] },
+    { ...newPhase(2), name: "최종 페이즈", health: 20, goldPerTurn: 2, clearBoard: true, dialogue: [{ speaker: "BOSS", expression: "low", text: "이것이… 나의 마지막 힘이다!", effect: "SHAKE" }] },
+  ],
+  clearDialogue: [{ speaker: "BOSS", expression: "defeat", text: "이럴 수가… 내가 지다니…", effect: null }],
+});
 const newLine = (speaker: BossDialogueLine["speaker"] = "BOSS"): BossDialogueLine => ({ speaker, expression: null, text: "", effect: null });
 
 /** 게임 모드 › 보스전 — 보스·페이즈·대화 장면을 만들고 고치면 바로 저장돼요. */
@@ -60,7 +74,7 @@ export function AdminBossManager({ onUnauthorized }: { onUnauthorized: () => voi
       const firstDeck = aiDecks.find((d) => d.isValid && !d.enabled) ?? aiDecks.find((d) => d.isValid);
       const body: Partial<AdminBoss> = copyFrom
         ? { ...copyFrom, name: `${copyFrom.name} (복사)`, status: "DRAFT" }
-        : { name: "새 보스", aiDeckId: firstDeck?.id ?? null, phases: [newPhase(0)], status: "DRAFT" };
+        : { ...bossTemplate(), aiDeckId: firstDeck?.id ?? null };
       delete (body as { id?: string }).id; delete (body as { updatedAt?: string }).updatedAt;
       if (copyFrom) delete (body as { stageOrder?: number }).stageOrder;
       const result = await createAdminBoss(body);
@@ -100,13 +114,38 @@ export function AdminBossManager({ onUnauthorized }: { onUnauthorized: () => voi
   const setPhase = (index: number, patch: Partial<BossPhase>) => set({ phases: phases.map((p, i) => (i === index ? { ...p, ...patch } : p)) });
   const movePhase = (index: number, dir: -1 | 1) => { const to = index + dir; if (to < 0 || to >= phases.length) return; const next = [...phases]; [next[index], next[to]] = [next[to]!, next[index]!]; set({ phases: next }); };
   const bossImage = draft?.imageUrl ?? deck?.champion?.imageUrl ?? null;
+  const sorted = [...bosses].sort((a, b) => a.stageOrder - b.stageOrder || a.id.localeCompare(b.id));
+  const order = sorted.findIndex((b) => b.id === draft?.id);
+  const checklist: Array<[boolean, string, (() => void) | undefined]> = draft ? [
+    [Boolean(draft.name.trim()) && draft.name !== "새 보스", "보스 이름 정하기", () => setTab("basic")],
+    [Boolean(deck), "보스 덱 고르기", () => setTab("basic")],
+    [Boolean(deck?.isValid), deck && !deck.isValid ? `보스 덱 완성하기 (${deck.invalidReasons.join(" ")})` : "보스 덱이 완성돼 있어요", () => navigate("/admin/ai-decks")],
+    [!deck?.enabled, "보스 덱을 일반 AI 대전에서 빼기", deck ? () => void makeBossOnly(deck) : undefined],
+  ] : [];
+  const ready = checklist.slice(1, 3).every(([ok]) => ok);
+  async function moveStage(dir: -1 | 1) {
+    if (!draft) return;
+    const other = sorted[order + dir];
+    if (!other) return;
+    await autosave.flush();
+    const list = sorted.map((b) => (b.id === draft.id ? { ...b, ...draft } : b));
+    [list[order], list[order + dir]] = [list[order + dir]!, list[order]!];
+    try {
+      const updates = list.map((b, i) => ({ b, stageOrder: i + 1 })).filter(({ b, stageOrder }) => b.stageOrder !== stageOrder);
+      const saved = await Promise.all(updates.map(({ b, stageOrder }) => saveAdminBoss(b.id, { stageOrder })));
+      setBosses((l) => l?.map((b) => saved.find((r) => r.boss.id === b.id)?.boss ?? b) ?? l);
+      const mine = saved.find((r) => r.boss.id === draft.id)?.boss;
+      if (mine) { const next = { ...draft, stageOrder: mine.stageOrder }; autosave.markSaved(next); setDraft(next); }
+      autosave.setState({ kind: "saved", message: "순서를 바꿨어요" });
+    } catch (e) { autosave.setState({ kind: "error", message: errorText(e, "순서를 바꾸지 못했어요.") }); }
+  }
 
   return (
     <div className="ak-page">
       {error && <Notice tone="error">{error}</Notice>}
       <Split editing={mobile.editing}
         list={<ListPane actions={<button type="button" onClick={() => void create()}>+ 새 보스</button>} count={`${bosses.length}명 · 공개 ${bosses.filter((b) => b.status === "PUBLISHED").length}명`}>
-          {bosses.map((b, i) => <ListRow key={b.id} thumb={b.imageUrl} selected={b.id === selectedId} onClick={() => select(b)} title={`${i + 1}. ${b.name}`} sub={`스테이지 ${b.stageOrder} · ${b.phases.length}페이즈 · 첫 클리어 ${b.firstClearReward}`} badge={b.status === "PUBLISHED" ? "공개" : "미공개"} tone={b.status === "PUBLISHED" ? "on" : "off"} />)}
+          {[...bosses].sort((a, b) => a.stageOrder - b.stageOrder || a.id.localeCompare(b.id)).map((b, i) => <ListRow key={b.id} thumb={b.imageUrl} selected={b.id === selectedId} onClick={() => select(b)} title={`${i + 1}. ${b.name}`} sub={`${b.phases.length}페이즈 · 첫 클리어 ${b.firstClearReward}`} badge={b.status === "PUBLISHED" ? "공개" : "미공개"} tone={b.status === "PUBLISHED" ? "on" : "off"} />)}
           {!bosses.length && <p className="ak-hint" style={{ margin: 8 }}>아직 보스가 없어요. ‘+ 새 보스’를 눌러 만들어 보세요.</p>}
         </ListPane>}
         editor={<EditorPane onBack={() => { void autosave.flush(); mobile.back(); }} status={<SaveLine state={autosave.state} />}
@@ -114,9 +153,15 @@ export function AdminBossManager({ onUnauthorized }: { onUnauthorized: () => voi
           right={draft && <><Button onClick={() => void create(draft)}>복제</Button><Button kind="danger" onClick={() => void remove()}>지우기</Button></>}>
           {draft && <>
             <Panel>
-              <Toggle checked={draft.status === "PUBLISHED"} onChange={(v) => set({ status: v ? "PUBLISHED" : "DRAFT" })} label={draft.status === "PUBLISHED" ? "공개 중 (유저 보스전 목록에 나와요)" : "미공개 (관리자만 테스트할 수 있어요)"} />
-              {!deck && <Notice tone="warn">보스 덱을 아직 안 골랐어요. ‘기본’ 탭에서 골라 주세요.</Notice>}
-              {deck && !deck.isValid && <Notice tone="warn">보스 덱이 아직 완성되지 않았어요: {deck.invalidReasons.join(" ")}</Notice>}
+              <ul className="kbm-check" aria-label="공개 전 확인">
+                {checklist.map(([ok, text, go]) => <li key={text} data-ok={ok || undefined}><span>{ok ? "✓" : "!"}</span>{text}{!ok && go && <button type="button" onClick={go}>고치기 ›</button>}</li>)}
+              </ul>
+              <Toggle checked={draft.status === "PUBLISHED"} onChange={(v) => { if (v && !ready) { autosave.setState({ kind: "error", message: "위 빨간 항목을 먼저 고쳐야 공개할 수 있어요." }); return; } set({ status: v ? "PUBLISHED" : "DRAFT" }); }} label={draft.status === "PUBLISHED" ? "공개 중 (유저 보스전 목록에 나와요)" : ready ? "미공개 · 켜면 바로 유저에게 보여요" : "미공개 (위 항목을 고치면 공개할 수 있어요)"} />
+              <div className="kbm-order">
+                <span>보스전 순서: <b>{order + 1}번째 스테이지</b></span>
+                <Button disabled={order <= 0} onClick={() => void moveStage(-1)}>▲ 앞으로</Button>
+                <Button disabled={order >= sorted.length - 1} onClick={() => void moveStage(1)}>▼ 뒤로</Button>
+              </div>
               <div className="kbm-test">
                 <b>테스트 대전</b>
                 <select value={testDeckId} onChange={(e) => setTestDeckId(e.target.value)} aria-label="내 덱">
@@ -147,8 +192,7 @@ export function AdminBossManager({ onUnauthorized }: { onUnauthorized: () => voi
                 <Field label="칭호 (선택)" hint="예: 어둠의 군주"><input value={draft.subtitle} maxLength={80} onChange={(e) => set({ subtitle: e.target.value })} /></Field>
               </Grid>
               <Field label="설명 (선택)"><textarea rows={3} value={draft.description} maxLength={500} onChange={(e) => set({ description: e.target.value })} /></Field>
-              <Grid cols={3}>
-                <Field label="스테이지 순서" hint="작을수록 먼저 · 앞 보스를 깨야 열려요"><NumberInput value={draft.stageOrder} min={1} max={999} onChange={(stageOrder) => set({ stageOrder })} /></Field>
+              <Grid>
                 <Field label="첫 클리어 보상"><NumberInput value={draft.firstClearReward} min={0} max={100000} step={50} suffix="크레딧" onChange={(firstClearReward) => set({ firstClearReward })} /></Field>
                 <Field label="내 체력 보너스" hint="도전자 시작 체력 +"><NumberInput value={draft.playerHealthBonus} min={0} max={100} onChange={(playerHealthBonus) => set({ playerHealthBonus })} /></Field>
               </Grid>

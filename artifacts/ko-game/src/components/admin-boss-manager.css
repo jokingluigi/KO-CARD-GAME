@@ -30,3 +30,11 @@
 .kbm-line__top .kbm-row-btns{margin-left:auto}
 .kbm-line textarea{width:100%;resize:vertical}
 .kbm-dialogue__actions{display:flex;flex-wrap:wrap;gap:8px}
+.kbm-check{display:grid;gap:4px;margin:0 0 10px;padding:0;list-style:none}
+.kbm-check li{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #6b2a1f;border-radius:8px;background:#1a0b07;color:#ffc8b8;font-size:13px}
+.kbm-check li[data-ok]{border-color:#2f4a1f;background:#0c1407;color:#c9e6b0}
+.kbm-check li>span{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#9a3b2b;color:#fff;font-weight:900;font-size:12px;flex:none}
+.kbm-check li[data-ok]>span{background:#4a7a2a}
+.kbm-check button{margin-left:auto;color:#ffd978;font-weight:700;text-decoration:underline}
+.kbm-order{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.kbm-order span{font-size:13px;color:#cdbb92}.kbm-order b{color:#ffd978}
