@@ -8,7 +8,7 @@ import { saveAIQuestStart } from "./ai-quest-match-storage";
 import { grantReward } from "./reward-service";
 
 export const BOSS_STATUSES = ["DRAFT", "PUBLISHED"] as const;
-const SPEAKERS = ["BOSS", "PLAYER", "NARRATOR"] as const;
+const SPEAKERS = ["BOSS", "NARRATOR"] as const;
 const LINE_EFFECTS = ["SHAKE", "FLASH"] as const;
 
 const int = (value: unknown, fallback: number, min: number, max: number) => {

@@ -26,3 +26,8 @@
 @media (prefers-reduced-motion:reduce){.boss-dialogue.is-shake,.boss-dialogue__banner,.boss-dialogue__flash{animation:none}}
 .boss-dialogue__banner{isolation:isolate}
 .boss-dialogue__banner::before{content:'';position:absolute;left:0;right:0;top:50%;height:210px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(0,0,0,.82) 22%,rgba(0,0,0,.82) 78%,transparent);z-index:-1}
+/* 보스 혼자 말하기: 가운데 크게 */
+.boss-dialogue__actor.is-center{left:50%;right:auto;width:min(70vw,560px);height:min(66vh,620px);transform:translateX(-50%)}
+.boss-dialogue__actor.is-center.is-speaking{transform:translateX(-50%) translateY(-6px) scale(1.03)}
+.boss-dialogue__name{right:auto;left:24px}
+@media (max-width:640px){.boss-dialogue__actor.is-center{left:50%;width:92vw;height:56vh}}

@@ -12,7 +12,7 @@ import {
 } from "./admin-kit";
 import "./admin-boss-manager.css";
 
-const SPEAKER_KO = { BOSS: "보스", PLAYER: "내 챔피언", NARRATOR: "나레이션" } as const;
+const SPEAKER_KO = { BOSS: "보스", NARRATOR: "나레이션" } as const;
 const EFFECT_KO = { "": "효과 없음", SHAKE: "화면 흔들림", FLASH: "번쩍" } as const;
 const newPhase = (index: number): BossPhase => ({ name: `${index + 1}페이즈`, health: 30, portraitUrl: null, addToHand: [], addToDeck: [], clearBoard: false, goldPerTurn: 0, dialogue: [] });
 const newLine = (speaker: BossDialogueLine["speaker"] = "BOSS"): BossDialogueLine => ({ speaker, expression: null, text: "", effect: null });
@@ -51,7 +51,8 @@ export function AdminBossManager({ onUnauthorized }: { onUnauthorized: () => voi
     setBosses((list) => list?.map((b) => (b.id === id ? result.boss : b)) ?? list);
   });
 
-  function select(boss: AdminBoss) { void autosave.flush(); setSelectedId(boss.id); setDraft(boss); setTestPhase(0); mobile.open(); }
+  const onlyBoss = (lines: BossDialogueLine[] = []) => lines.map((l) => (l.speaker === "NARRATOR" ? l : { ...l, speaker: "BOSS" as const }));
+  function select(boss: AdminBoss) { void autosave.flush(); setSelectedId(boss.id); setDraft({ ...boss, introDialogue: onlyBoss(boss.introDialogue), clearDialogue: onlyBoss(boss.clearDialogue), phases: boss.phases.map((p) => ({ ...p, dialogue: onlyBoss(p.dialogue) })) }); setTestPhase(0); mobile.open(); }
   const set = (patch: Partial<AdminBoss>) => setDraft((d) => (d ? { ...d, ...patch } : d));
 
   async function create(copyFrom?: AdminBoss) {
@@ -205,7 +206,6 @@ export function AdminBossManager({ onUnauthorized }: { onUnauthorized: () => voi
         </EditorPane>}
       />
       {preview && <BossDialogue lines={preview.lines} banner={preview.banner}
-        player={{ name: "내 챔피언", image: () => null }}
         boss={{ name: draft?.name ?? "보스", image: () => preview.portrait ?? null }}
         onDone={() => setPreview(null)} />}
     </div>
@@ -258,10 +258,10 @@ function DialogueEditor({ title, lines, onChange, onPreview }: { title?: string;
         </div>
       ))}
       <div className="kbm-dialogue__actions">
-        <Button onClick={() => onChange([...lines, newLine(lines.at(-1)?.speaker === "BOSS" ? "PLAYER" : "BOSS")])}>+ 대사 추가</Button>
+        <Button onClick={() => onChange([...lines, newLine("BOSS")])}>+ 대사 추가</Button>
         <Button kind="ghost" onClick={onPreview}>▶ 미리 보기</Button>
       </div>
-      <p className="ak-hint">표정은 ‘대전 스프라이트’에 그 표정 그림이 있을 때만 바뀌어요. 없으면 기본 그림이 나와요.</p>
+      <p className="ak-hint">대사는 보스 혼자 해요 (도전자 챔피언은 뭐가 나올지 몰라서 대사가 없어요). 표정은 ‘대전 스프라이트’에 그 표정 그림이 있을 때만 바뀌어요. 없으면 기본 그림이 나와요.</p>
     </div>
   );
 }

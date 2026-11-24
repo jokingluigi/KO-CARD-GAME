@@ -1731,7 +1731,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       } : undefined}
     />
      {bossDialogue && (
-       <BossDialogue key={bossDialogue.key} lines={bossDialogue.lines} banner={bossDialogue.banner} player={bossActor(0)} boss={bossActor(1)} onDone={()=>setBossDialogue(null)} />
+       <BossDialogue key={bossDialogue.key} lines={bossDialogue.lines} banner={bossDialogue.banner} boss={bossActor(1)} onDone={()=>setBossDialogue(null)} />
      )}
      {isBossMatch && gameState.boss && gameState.status==='IN_PROGRESS' && (
        <div className="pointer-events-none fixed left-1/2 top-[max(6px,env(safe-area-inset-top))] z-[120] -translate-x-1/2 rounded-full border border-amber-500/70 bg-black/75 px-3 py-1 text-[11px] font-extrabold tracking-wide text-amber-200 shadow-lg" data-testid="boss-phase-badge">

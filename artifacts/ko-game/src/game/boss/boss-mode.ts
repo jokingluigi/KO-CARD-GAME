@@ -4,7 +4,8 @@ import type { Board, GameState } from '../types/game-state';
 
 /** 보스전 대화 한 줄 (RPG 대화창). */
 export interface BossDialogueLine {
-  speaker: 'BOSS' | 'PLAYER' | 'NARRATOR';
+  /** 보스 혼자 말한다 (내 챔피언은 무엇이 나올지 몰라 대사가 없다). */
+  speaker: 'BOSS' | 'NARRATOR';
   /** 전투 스프라이트 표정 이름 (없으면 기본). */
   expression?: string | null;
   text: string;
