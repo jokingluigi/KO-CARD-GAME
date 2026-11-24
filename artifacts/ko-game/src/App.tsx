@@ -29,6 +29,7 @@ import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
 
 const GameGuide=lazy(()=>import('@/pages/game-guide'));
+const BossMode=lazy(()=>import('@/pages/boss'));
 const Settings=lazy(()=>import('@/pages/settings'));
 const AccountRecovery=lazy(()=>import('@/pages/account-recovery'));
 const PlayerNotebook=lazy(()=>import("@/pages/player-notebook"));
@@ -65,6 +66,7 @@ function Router() {
         <Route path="/draft" component={Draft} />
         <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/guide" component={GameGuide}/>
+        <Route path="/boss" component={BossMode}/>
         <Route path="/settings" component={Settings}/>
         <Route path="/account-recovery" component={AccountRecovery}/>
         <Route path="/practice" component={Home}/>

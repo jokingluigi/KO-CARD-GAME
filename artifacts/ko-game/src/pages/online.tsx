@@ -1,6 +1,6 @@
 import "@/components/play-hub.css";
 import "@/components/lux-quiet.css";
-import { ArrowLeft, Bot, Layers, LoaderCircle, Shield, Swords, Users } from "lucide-react";
+import { ArrowLeft, Bot, Crown, Layers, LoaderCircle, Shield, Swords, Users } from "lucide-react";
 import { CardArtwork } from "@/components/card-artwork";
 import { fetchDecks, type Deck } from "@/lib/decks-client";
 import { SitePresenceLight } from "@/components/site-presence";
@@ -137,6 +137,7 @@ export default function Online() {
                 </button>
                 <div className="kplay-sub">
                   <button type="button" className="kplay-tile" data-testid="button-mode-ai" onClick={() => navigate(ROUTES.AI_MATCH)}><Bot className="h-6 w-6" aria-hidden="true" /><b>AI 대전</b><small>컴퓨터와 연습해요</small></button>
+                  <button type="button" className="kplay-tile" data-testid="button-mode-boss" onClick={() => navigate("/boss")}><Crown className="h-6 w-6" aria-hidden="true" /><b>보스전</b><small>강한 보스를 차례로 쓰러뜨려요</small></button>
                   <button type="button" className="kplay-tile" data-testid="button-online-friendly" onClick={() => navigate(ROUTES.ONLINE_FRIENDLY)}><Users className="h-6 w-6" aria-hidden="true" /><b>친선전</b><small>방 코드로 친구와</small></button>
                   <button type="button" className="kplay-tile" data-testid="button-mode-draft" disabled={draft !== "enabled"} onClick={() => navigate("/draft")}><Layers className="h-6 w-6" aria-hidden="true" /><b>드래프트</b><small>{draft === "enabled" ? "카드를 골라 새 덱으로" : draft === "loading" ? "확인 중…" : draft === "error" ? "상태 확인 실패" : "지금은 쉬는 중"}</small></button>
                 </div>

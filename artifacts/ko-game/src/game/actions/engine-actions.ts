@@ -1,3 +1,4 @@
+import { applyBossHooks } from '../boss/boss-mode';
 import { deferFinisherChoiceResolution, selectPreparedFinisher } from '../champions/finisher-preparation';
 import {normalizePandoraTargeting} from '../champions/pandora-targeting';
 import { hasPendingProgram, hasPendingFinisherCast } from '../engine/program';
@@ -234,6 +235,10 @@ function executeActionInternal(state: GameState, action: GameAction): ActionResu
 }
 
 export function executeAction(state: GameState, action: GameAction): ActionResult {
+  const result = executeActionWithoutBoss(state, action);
+  return result.success && result.state.boss ? {...result,state:applyBossHooks(state,result.state)} : result;
+}
+function executeActionWithoutBoss(state: GameState, action: GameAction): ActionResult {
   state = normalizePandoraTargeting(state);
   const result = deferFinisherChoiceResolution(()=>{
     const initial = executeActionInternal(state, action);

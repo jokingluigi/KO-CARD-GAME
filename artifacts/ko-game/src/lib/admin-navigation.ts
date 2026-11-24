@@ -32,6 +32,7 @@ export const ADMIN_PAGES = [
   { id: "battle-sprites", group: "champions", path: "/admin/battle-sprites", label: "대전 스프라이트", description: "챔피언·스킨별 대전 그림과 표정을 등록하고 배치를 확인해요.", keywords: "스프라이트 표정 각성 배치 미리보기 스킨" },
 
   { id: "ai-decks", group: "modes", path: "/admin/ai-decks", label: "AI 대전", description: "AI 챔피언과 대전 덱을 고쳐요.", keywords: "일반 AI 덱 난이도 쉬움 보통 어려움" },
+  { id: "bosses", group: "modes", path: "/admin/bosses", label: "보스전", description: "보스, 페이즈, 대화 장면과 첫 클리어 보상을 정해요.", keywords: "보스 스테이지 페이즈 컷씬 대사 대화 레이드" },
   { id: "draft", group: "modes", path: "/admin/draft", label: "드래프트", description: "드래프트 모드를 켜고 끄고, 카드 풀과 규칙을 정해요.", keywords: "픽 변이 선택" },
 
   { id: "shop", group: "economy", path: "/admin/shop", label: "상점", description: "판매 상품(카드팩)과 완성 덱을 한곳에서 관리해요.", keywords: "상품 판매 가격 크레딧 완성 덱 상점 덱" },

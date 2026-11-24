@@ -1,0 +1,28 @@
+.boss-dialogue{position:fixed;inset:0;z-index:9000;background:radial-gradient(ellipse at 50% 35%,rgba(40,28,8,.55),rgba(0,0,0,.88));cursor:pointer;user-select:none;overflow:hidden;font-family:inherit}
+.boss-dialogue.is-shake{animation:boss-shake .45s ease}
+@keyframes boss-shake{0%,100%{transform:none}20%{transform:translate(-8px,3px)}40%{transform:translate(7px,-4px)}60%{transform:translate(-5px,2px)}80%{transform:translate(3px,-1px)}}
+.boss-dialogue__flash{position:absolute;inset:0;background:#fff;animation:boss-flash .5s ease forwards;pointer-events:none;z-index:3}
+@keyframes boss-flash{from{opacity:.9}to{opacity:0}}
+.boss-dialogue__skip{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;z-index:4;min-height:40px;padding:0 14px;border:1px solid #8a6a2a;border-radius:999px;background:rgba(10,8,4,.8);color:#f3d27a;font-size:13px;font-weight:700}
+.boss-dialogue__actor{position:absolute;bottom:150px;width:min(46vw,420px);height:min(62vh,560px);display:flex;align-items:flex-end;justify-content:center;transition:filter .25s,transform .25s,opacity .25s;filter:brightness(.38) saturate(.6);opacity:.85}
+.boss-dialogue__actor img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 12px 24px rgba(0,0,0,.7))}
+.boss-dialogue__actor.is-left{left:2vw}
+.boss-dialogue__actor.is-right{right:2vw}
+.boss-dialogue__actor.is-left img{transform:scaleX(1)}
+.boss-dialogue__actor.is-speaking{filter:none;opacity:1;transform:translateY(-6px) scale(1.03)}
+.boss-dialogue__box{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(94vw,860px);min-height:120px;padding:26px 22px 22px;border:2px solid #c9a24a;border-radius:14px;background:linear-gradient(180deg,rgba(24,18,8,.96),rgba(8,6,2,.97));box-shadow:0 0 0 1px #3a2a0c inset,0 10px 40px rgba(0,0,0,.6);color:#f7ecd0;z-index:2}
+.boss-dialogue__box p{margin:0;font-size:clamp(16px,2.2vw,20px);line-height:1.6;white-space:pre-wrap;word-break:keep-all}
+.boss-dialogue__box.is-narration{border-color:#7d6a45;text-align:center;font-style:italic}
+.boss-dialogue__name{position:absolute;top:-17px;right:24px;padding:4px 16px;border:2px solid #c9a24a;border-radius:8px;background:#1b1206;color:#ffd978;font-weight:800;font-size:15px;letter-spacing:.02em}
+.boss-dialogue__box.is-player .boss-dialogue__name{right:auto;left:24px}
+.boss-dialogue__caret{display:inline-block;margin-left:6px;color:#e0b75a;animation:boss-caret 1s infinite}
+@keyframes boss-caret{50%{opacity:.2;transform:translateY(2px)}}
+.boss-dialogue__count{position:absolute;right:14px;bottom:8px;font-size:11px;color:#9c8659}
+.boss-dialogue__banner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:boss-banner 1.8s ease both}
+.boss-dialogue__banner span{font-size:clamp(30px,6vw,58px);font-weight:900;color:#ffd978;letter-spacing:.06em;text-shadow:0 0 24px rgba(255,190,60,.6),0 4px 0 #3a2400}
+.boss-dialogue__banner small{font-size:clamp(14px,2.4vw,20px);color:#e9d6a6}
+@keyframes boss-banner{0%{opacity:0;transform:scale(1.2)}15%{opacity:1;transform:scale(1)}85%{opacity:1}100%{opacity:0}}
+@media (max-width:640px){.boss-dialogue__actor{bottom:170px;width:56vw;height:48vh}.boss-dialogue__actor.is-left{left:-6vw}.boss-dialogue__actor.is-right{right:-6vw}}
+@media (prefers-reduced-motion:reduce){.boss-dialogue.is-shake,.boss-dialogue__banner,.boss-dialogue__flash{animation:none}}
+.boss-dialogue__banner{isolation:isolate}
+.boss-dialogue__banner::before{content:'';position:absolute;left:0;right:0;top:50%;height:210px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(0,0,0,.82) 22%,rgba(0,0,0,.82) 78%,transparent);z-index:-1}

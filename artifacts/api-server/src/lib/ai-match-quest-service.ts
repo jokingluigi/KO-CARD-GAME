@@ -217,14 +217,6 @@ export async function completeAIMatchQuestProgress(input: {
 
   if (!input.prepareOnly && await processStoredAIQuestMatch(input, replayAIMatch)) return { reward, completed: true };
 
-  const savedUserDeck = await loadUserDeck(input.userId, input.deckId);
-  if (!savedUserDeck) throw new Error("사용할 수 있는 덱을 찾을 수 없습니다.");
-  const userDeck=withFrozenLaunchDeck(savedUserDeck,input.prepareOnly?input.queuedDeck:undefined);
-  const resolvedUserDeck = await resolveDeck(userDeck, input.userId, input.isTestAccount);
-  if (!resolvedUserDeck.isValid || !userDeck.championDefinitionId) {
-    throw new Error("현재 사용할 수 없는 덱입니다.");
-  }
-
   const availableAIDecks = (await listAIDecks({ enabledOnly: true, context: "AI_DECK" }))
     .filter((deck) =>
       deck.champion?.status !== "DISABLED" &&
@@ -240,6 +232,43 @@ export async function completeAIMatchQuestProgress(input: {
     throw new Error("사용할 수 있는 AI 덱을 찾을 수 없습니다.");
   }
 
+  const {startedState,userChampion,aiChampion,userDeck}=await buildAIMatchStart(input,aiDeck);
+  if(input.prepareOnly) return {intro:await loadAiMatchIntro(userChampion,aiChampion),state:startedState,startingDeck:[...userDeck.cardDefinitionIds],difficulty:DEFAULT_AI_DIFFICULTY};
+  const userPlayerId = startedState.players[0]?.id;
+  const aiPlayerId = startedState.players[1]?.id;
+  if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
+  const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId, DEFAULT_AI_DIFFICULTY);
+
+  await db.transaction(async (tx) => {
+    await processMatchEventsForDailyQuests(
+      input.userId,
+      userPlayerId,
+      input.matchId,
+      finalState,
+      0,
+      tx,
+    );
+  });
+  } catch (error) {
+    if(input.prepareOnly) throw error;
+    const reason = error instanceof Error ? error.message : '알 수 없는 오류';
+    console.error('[KO daily quest replay]', input.matchId, reason);
+    return { reward, completed: false, message: `퀘스트 진행도를 저장하지 못했습니다: ${reason}` };
+  }
+  return { reward, completed: true };
+}
+
+type AIDeckForMatch = {championDefinitionId:string|null;cardDefinitionIds:string[]};
+/** 내 덱 + 지정한 AI 덱으로 경기 시작 상태를 만든다 (일반 AI 대전·보스전 공용). */
+export async function buildAIMatchStart(input:{userId:string;isTestAccount:boolean;deckId:string;matchId:string;prepareOnly?:boolean;queuedDeck?:FrozenLaunchDeck},aiDeck:AIDeckForMatch,extraCardIds?:string[]) {
+  const savedUserDeck = await loadUserDeck(input.userId, input.deckId);
+  if (!savedUserDeck) throw new Error("사용할 수 있는 덱을 찾을 수 없습니다.");
+  const userDeck=withFrozenLaunchDeck(savedUserDeck,input.prepareOnly?input.queuedDeck:undefined);
+  const resolvedUserDeck = await resolveDeck(userDeck, input.userId, input.isTestAccount);
+  if (!resolvedUserDeck.isValid || !userDeck.championDefinitionId) {
+    throw new Error("현재 사용할 수 없는 덱입니다.");
+  }
+
   const [cardRecords, championRecords] = await Promise.all([
     db.select().from(cardsTable),
     db.select().from(championsTable),
@@ -247,6 +276,7 @@ export async function completeAIMatchQuestProgress(input: {
   const requiredCardIds = new Set([
     ...userDeck.cardDefinitionIds,
     ...aiDeck.cardDefinitionIds,
+    ...(extraCardIds ?? []),
   ]);
   const selectedChampionIds = new Set([
     userDeck.championDefinitionId,
@@ -294,27 +324,5 @@ export async function completeAIMatchQuestProgress(input: {
     { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId), minionACardPool: completeMinionACatalog(cardRecords) },
   );
   const startedState = startGame(initialState, createDeterministicRandom(input.matchId), undefined, { flexibleDeckPlayerId: 'player-2' });
-  if(input.prepareOnly) return {intro:await loadAiMatchIntro(userChampion,aiChampion),state:startedState,startingDeck:[...userDeck.cardDefinitionIds],difficulty:DEFAULT_AI_DIFFICULTY};
-  const userPlayerId = startedState.players[0]?.id;
-  const aiPlayerId = startedState.players[1]?.id;
-  if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
-  const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId, DEFAULT_AI_DIFFICULTY);
-
-  await db.transaction(async (tx) => {
-    await processMatchEventsForDailyQuests(
-      input.userId,
-      userPlayerId,
-      input.matchId,
-      finalState,
-      0,
-      tx,
-    );
-  });
-  } catch (error) {
-    if(input.prepareOnly) throw error;
-    const reason = error instanceof Error ? error.message : '알 수 없는 오류';
-    console.error('[KO daily quest replay]', input.matchId, reason);
-    return { reward, completed: false, message: `퀘스트 진행도를 저장하지 못했습니다: ${reason}` };
-  }
-  return { reward, completed: true };
+  return {startedState,userChampion,aiChampion,userDeck};
 }

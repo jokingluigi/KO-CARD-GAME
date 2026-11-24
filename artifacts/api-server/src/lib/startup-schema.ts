@@ -1,3 +1,4 @@
+import bossMode from "../../../../lib/db/migrations/0061_boss_mode.sql";
 import attendanceCycles from "../../../../lib/db/migrations/0060_attendance_cycles.sql";
 import cardTagDisplayNames from "../../../../lib/db/migrations/0057_card_tag_display_names.sql";
 import questProgressOutbox from '../../../../lib/db/migrations/0058_quest_progress_outbox.sql';
@@ -32,7 +33,7 @@ export async function ensureApplicationStorage(database = db): Promise<void> {
     await tx.execute(sql`SET LOCAL lock_timeout = '15s'`);
     await tx.execute(sql`SET LOCAL statement_timeout = '30s'`);
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('ko-card-application-schema-v1'))`);
-    for (const migration of [aiDifficulty, epicPackConfiguration, draftStorage, aiQuestMatches, cardTagCatalog, cardTagDisplayNames, questPlatform, activeUsageStorage, cosmetics, shopDecks, aiDeckCosmetics, packEmoteRates,questProgressOutbox,cardLore,attendanceCycles]) {
+    for (const migration of [aiDifficulty, epicPackConfiguration, draftStorage, aiQuestMatches, cardTagCatalog, cardTagDisplayNames, questPlatform, activeUsageStorage, cosmetics, shopDecks, aiDeckCosmetics, packEmoteRates,questProgressOutbox,cardLore,attendanceCycles,bossMode]) {
       // One outer transaction owns application migrations and the advisory lock.
       const statements = migration.replace(/^\s*--[^\r\n]*$/gm, "").replace(/^\s*(?:BEGIN|COMMIT);\s*$/gm, "").split(";");
       // These static DDL files contain no function bodies or quoted semicolons.

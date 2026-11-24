@@ -109,6 +109,8 @@ export interface GameState {
   /** Online matches wait for both players to exchange their opening hands. */
   openingMulligan?: boolean;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
+  /** 보스전일 때만: 보스 페이즈 진행 상태. */
+  boss?: import('../boss/boss-mode').BossState;
   winnerId: string | null;
   loserId: string | null;
   players: PlayerState[];

@@ -13,7 +13,10 @@ import { questMusic } from '@/components/quest-media';
 import {prepareIntroPortraits} from '@/game/match-assets';
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
-import {cosmeticImage,cosmeticImageSettings,type MatchCosmetics} from '@workspace/cosmetics';
+import {championSpriteSkin,cosmeticImage,cosmeticImageSettings,type MatchCosmetics} from '@workspace/cosmetics';
+import {completeBoss,readBossHandoff,type BossInfo,type BossResult} from '@/lib/boss-client';
+import {BossDialogue,type DialogueActor} from '@/components/boss-dialogue';
+import type {BossDialogueLine} from '@/game';
 import { completeMinionACatalog } from '../game/champions/minion-a';
 import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
@@ -143,7 +146,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const searchParams = new URLSearchParams(window.location.search);
   const isTutorial = window.location.pathname.endsWith('/tutorial') || window.location.pathname.endsWith('/practice');
   const isAiMatch = window.location.pathname.endsWith('/ai-match');
-  const quickMatchId = isAiMatch ? searchParams.get('quickMatch') : null;
+  const quickMatchId = isAiMatch ? (searchParams.get('quickMatch') ?? searchParams.get('boss')) : null;
+  const isBossMatch = isAiMatch && Boolean(searchParams.get('boss'));
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
   const isAdminSource = searchParams.get('source') === 'admin';
@@ -207,6 +211,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const [availableAIDecks, setAvailableAIDecks] = useState<AIDeck[] | null>(null);
   const [aiMatchStarted, setAiMatchStarted] = useState(false);
   const [aiOpening, setAiOpening] = useState<AiMatchOpening | null>(null);
+  const [bossInfo, setBossInfo] = useState<BossInfo | null>(null);
+  const [bossDialogue, setBossDialogue] = useState<{ key: string; lines: BossDialogueLine[]; banner?: { title: string; subtitle?: string } } | null>(null);
+  const [bossResult, setBossResult] = useState<BossResult | null>(null);
+  const bossShownRef = useRef<Set<string>>(new Set());
   const [aiOpeningNow, setAiOpeningNow] = useState(() => Date.now());
   const [aiOpeningSkipped, setAiOpeningSkipped] = useState(false);
   const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string; difficulty: AIDeck["difficulty"] } | null>(null);
@@ -239,7 +247,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const aiOpeningActive = isAiMatch && aiMatchStarted &&
     isAiMatchOpeningActive(aiOpening, gameState.gameId, aiOpeningNow);
-  const gameplayReady = matchReady && !aiOpeningActive && !testDeckOpen;
+  const gameplayReady = matchReady && !aiOpeningActive && !testDeckOpen && !bossDialogue;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
@@ -606,12 +614,13 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if(!quickMatchId||authStatus!=='authenticated'||!authUser)return;
     const controller=new AbortController();let loaded=false;
     setMatchReady(false);setPlayError(null);
-    void Promise.all([fetchQuickAI(quickMatchId,controller.signal),fetchGameMedia(),optionalCosmetics()]).then(async ([handoff,media,loadout])=>{
+    void Promise.all([isBossMatch?Promise.resolve().then(()=>readBossHandoff(quickMatchId) as unknown as Awaited<ReturnType<typeof fetchQuickAI>>&{boss?:BossInfo}):fetchQuickAI(quickMatchId,controller.signal),fetchGameMedia(),optionalCosmetics()]).then(async ([handoff,media,loadout])=>{
       if(controller.signal.aborted)return;
       const random=createDeterministicRandom(handoff.matchId);
       const next={...handoff.state,backgroundId:media.backgrounds[Math.floor(random()*media.backgrounds.length)]?.id??null,bgmId:media.bgms[Math.floor(random()*media.bgms.length)]?.id??null};
       aiMatchQuestContextRef.current={deckId:handoff.deckId,aiDeckId:handoff.aiDeckId,difficulty:handoff.difficulty,matchId:handoff.matchId};
       aiMatchActionsRef.current=[];submittedAIMatchRef.current=null;
+      setBossInfo((handoff as {boss?:BossInfo}).boss??null);setBossResult(null);setBossDialogue(null);bossShownRef.current=new Set();
       setAiRewardStatus('pending');setAiRewardError(null);setAiQuestError(null);
       setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout,...(handoff.opponentCosmetics?{[next.players[1].id]:handoff.opponentCosmetics}:{})});
       await prepareIntroPortraits([cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl),cosmeticImage(handoff.opponentCosmetics,'CHAMPION_SKIN',next.players[1].champion!.id,'intro',handoff.opponentChampion.imageUrl)]);
@@ -622,9 +631,26 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       latestGameStateRef.current=next;setGameState(next);setMediaCatalog(media);
       setSelectedCardId(null);setSelectedAttackerId(null);setAiMatchStarted(true);setMatchReady(true);loaded=true;
     }).catch(error=>{if(!controller.signal.aborted)setPlayError(error instanceof Error?error.message:'대전을 준비하지 못했습니다.');});
-    return()=>{controller.abort();if(loaded)void releaseQuickAI(quickMatchId);};
+    return()=>{controller.abort();if(loaded&&!isBossMatch)void releaseQuickAI(quickMatchId);};
   },[quickMatchId,authStatus,authUser?.id]);
-  useEffect(()=>{if(quickMatchId&&gameState.status==='FINISHED')void releaseQuickAI(quickMatchId);},[quickMatchId,gameState.status]);
+  useEffect(()=>{if(quickMatchId&&!isBossMatch&&gameState.status==='FINISHED')void releaseQuickAI(quickMatchId);},[quickMatchId,gameState.status]);
+  // 보스전 대화: 시작 → 페이즈 전환 → 클리어
+  useEffect(()=>{
+    if(!isBossMatch||!bossInfo||!matchReady||aiOpeningActive||bossDialogue)return;
+    const shown=bossShownRef.current;
+    const show=(key:string,lines:BossDialogueLine[],banner?:{title:string;subtitle?:string})=>{shown.add(key);setBossDialogue({key,lines,banner});};
+    if(!shown.has('intro')){show('intro',bossInfo.introDialogue,{title:bossInfo.name,subtitle:bossInfo.subtitle||'보스전'});return;}
+    const phaseIndex=gameState.boss?.phaseIndex??0;
+    if(phaseIndex>0&&!shown.has('phase:'+phaseIndex)){const phase=gameState.boss?.phases[phaseIndex];show('phase:'+phaseIndex,phase?.dialogue??[],{title:phase?.name||`${phaseIndex+1}페이즈`,subtitle:'보스가 다시 일어섰다!'});return;}
+    if(gameState.status==='FINISHED'&&gameState.winnerId===gameState.players[0]?.id&&!shown.has('clear')){show('clear',bossInfo.clearDialogue,{title:'보스 격파!',subtitle:bossInfo.name});}
+  },[isBossMatch,bossInfo,matchReady,aiOpeningActive,bossDialogue,gameState.boss?.phaseIndex,gameState.status,gameState.winnerId]);
+  const bossActor=(playerIndex:0|1):DialogueActor=>{
+    const player=gameState.players[playerIndex];const champion=player?.champion;
+    const phase=playerIndex===1?gameState.boss?.phases[gameState.boss.phaseIndex]:undefined;
+    const config=champion?championSpriteSkin({championId:champion.id,loadout:aiCosmetics?.[player!.id],base:champion.presentationLines?.BATTLE_SPRITE,normal:champion.imageUrl,awakened:false}).config:null;
+    const fallback=playerIndex===1?(phase?.portraitUrl||bossInfo?.imageUrl||config?.frames.default?.url||champion?.imageUrl||null):(config?.frames.default?.url||champion?.imageUrl||null);
+    return {name:playerIndex===1?(bossInfo?.name??champion?.name??''):(champion?.name??''),image:(expression)=>(expression&&config?.frames[expression]?.url)||fallback};
+  };
 
   const [aiCosmetics,setAiCosmetics]=useState<MatchCosmetics|undefined>(undefined);
   const aiRestartErrorRef=useRef<string|null>(null);
@@ -751,6 +777,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       !aiMatchStarted ||
       !matchReady ||
       aiOpeningActive ||
+      Boolean(bossDialogue) ||
       gameState.status !== 'IN_PROGRESS' ||
       (gameState.targetingState?.active ? gameState.targetingState.playerId !== gameState.players[1]?.id : gameState.activePlayerId !== gameState.players[1]?.id) ||
       aiActionRunningRef.current
@@ -796,7 +823,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         aiActionRunningRef.current = false;
       }
     };
-  }, [gameState.activePlayerId, gameState.status, gameState.targetingState?.playerId, isAiMatch, aiMatchStarted, matchReady, aiOpeningActive]);
+  }, [gameState.activePlayerId, gameState.status, gameState.targetingState?.playerId, isAiMatch, aiMatchStarted, matchReady, aiOpeningActive, bossDialogue]);
 
   useEffect(() => {
     const match = aiMatchQuestContextRef.current;
@@ -812,6 +839,15 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     }
 
     submittedAIMatchRef.current = match.matchId;
+    if (isBossMatch) {
+      const transcript = aiMatchActionsRef.current.slice(0, 4000);
+      void (async () => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try { setBossResult(await completeBoss(match.matchId, transcript)); return; }
+          catch { await new Promise((resolve) => window.setTimeout(resolve, 700 * (attempt + 1))); }
+        }
+      })();
+    }
     setAiRewardStatus('pending');
     setAiRewardError(null);
     void (async () => {
@@ -1649,7 +1685,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
       onMulligan={handleMulligan}
-      introActive={aiOpeningActive || testDeckOpen}
+      introActive={aiOpeningActive || testDeckOpen || Boolean(bossDialogue)}
       canEndTurn={Boolean(
         gameplayReady &&
         gameState.activePlayerId === gameState.players[0].id &&
@@ -1694,8 +1730,21 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         navigate(ROUTES.ADMIN);
       } : undefined}
     />
-     {matchResultVisible && !isTutorial && (
-       <MatchResultOverlay deckRecord={aiMatchQuestContextRef.current ? {id:aiMatchQuestContextRef.current.deckId,name:aiDecks?.find(d=>d.id===aiMatchQuestContextRef.current?.deckId)?.name??"AI 대전 덱"}:undefined} onRematch={isAiMatch&&!quickMatchId&&aiMatchQuestContextRef.current ? async()=>{await startAiMatch(aiMatchQuestContextRef.current!.deckId);if(aiRestartErrorRef.current)throw Error(aiRestartErrorRef.current);}:undefined} onChooseDeck={isAiMatch?()=>window.location.assign(launchDeckEditor(aiMatchQuestContextRef.current?.deckId)):undefined} cosmetics={isAiMatch ? aiCosmetics : undefined}
+     {bossDialogue && (
+       <BossDialogue key={bossDialogue.key} lines={bossDialogue.lines} banner={bossDialogue.banner} player={bossActor(0)} boss={bossActor(1)} onDone={()=>setBossDialogue(null)} />
+     )}
+     {isBossMatch && gameState.boss && gameState.status==='IN_PROGRESS' && (
+       <div className="pointer-events-none fixed left-1/2 top-[max(6px,env(safe-area-inset-top))] z-[120] -translate-x-1/2 rounded-full border border-amber-500/70 bg-black/75 px-3 py-1 text-[11px] font-extrabold tracking-wide text-amber-200 shadow-lg" data-testid="boss-phase-badge">
+         보스 · {gameState.boss.phases[gameState.boss.phaseIndex]?.name || `${gameState.boss.phaseIndex+1}페이즈`} ({gameState.boss.phaseIndex+1}/{gameState.boss.phases.length})
+       </div>
+     )}
+     {isBossMatch && matchResultVisible && !bossDialogue && bossResult?.cleared && (
+       <div className="fixed left-1/2 top-[max(10px,env(safe-area-inset-top))] z-[400] -translate-x-1/2 rounded-xl border-2 border-amber-400 bg-gradient-to-b from-amber-950 to-black px-5 py-2 text-center text-sm font-extrabold text-amber-100 shadow-2xl" data-testid="boss-clear-banner">
+         {bossResult.test ? '테스트 보스전 클리어 (보상 없음)' : bossResult.reward ? `첫 클리어 보상 +${bossResult.reward.amount} 크레딧!` : bossResult.firstClear ? '첫 클리어!' : '보스 클리어! (첫 클리어 보상은 이미 받았어요)'}
+       </div>
+     )}
+     {matchResultVisible && !isTutorial && !bossDialogue && (
+       <MatchResultOverlay deckRecord={aiMatchQuestContextRef.current ? {id:aiMatchQuestContextRef.current.deckId,name:aiDecks?.find(d=>d.id===aiMatchQuestContextRef.current?.deckId)?.name??"AI 대전 덱"}:undefined} onRematch={isAiMatch&&!quickMatchId&&aiMatchQuestContextRef.current ? async()=>{await startAiMatch(aiMatchQuestContextRef.current!.deckId);if(aiRestartErrorRef.current)throw Error(aiRestartErrorRef.current);}:undefined} onChooseDeck={isBossMatch?()=>navigate('/boss'):isAiMatch?()=>window.location.assign(launchDeckEditor(aiMatchQuestContextRef.current?.deckId)):undefined} cosmetics={isAiMatch ? aiCosmetics : undefined}
          opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
          state={gameState}
          mediaCatalog={mediaCatalog}

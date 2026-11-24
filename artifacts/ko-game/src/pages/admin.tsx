@@ -78,6 +78,7 @@ const AdminNoticesManager = lazy(() =>
     default: m.AdminNoticesManager,
   })),
 );
+const AdminBossManager = lazy(() => import("@/components/admin-boss-manager").then((m) => ({ default: m.AdminBossManager })));
 const AdminAIDeckManager = lazy(() =>
   import("@/components/admin-ai-deck-manager").then((m) => ({
     default: m.AdminAIDeckManager,
@@ -213,6 +214,7 @@ export default function Admin() {
           : page?.id === "champion-edit" ? <AdminChampionManager onUnauthorized={onUnauthorized} editOnly onDone={(id?: string) => goPath(id ? `/admin/champions?champion=${encodeURIComponent(id)}` : "/admin/champions")} />
           : page?.id === "battle-sprites" ? <AdminBattleSprites />
           : page?.id === "ai-decks" ? <AdminAIDeckManager onUnauthorized={onUnauthorized} />
+          : page?.id === "bosses" ? <AdminBossManager onUnauthorized={onUnauthorized} />
           : page?.id === "draft" ? <AdminDraftSettings />
           : page?.id === "shop" ? <AdminShopHub legacyPath={displayPath} onUnauthorized={onUnauthorized} />
           : page?.id === "packs" ? <AdminPackManager onUnauthorized={onUnauthorized} />

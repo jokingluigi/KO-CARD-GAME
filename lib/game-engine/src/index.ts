@@ -133,3 +133,5 @@ export {hasPendingHandAddition} from '../../../artifacts/ko-game/src/game/engine
 export {normalizeHelperHealing} from '../../../artifacts/ko-game/src/game/cards/helper-healing';
 
 export { validFinisherChoices, validFinisherReward } from '../../../artifacts/ko-game/src/game/champions/finisher-config';
+export { applyBossStart, currentBossPhase } from "../../../artifacts/ko-game/src/game/boss/boss-mode";
+export type { BossDialogueLine, BossPhase, BossState } from "../../../artifacts/ko-game/src/game/boss/boss-mode";

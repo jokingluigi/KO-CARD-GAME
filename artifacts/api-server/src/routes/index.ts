@@ -1,3 +1,4 @@
+import { adminBossesRouter, bossesRouter } from "./bosses";
 import {cardTagLabels} from "../lib/card-tag-catalog";
 import claimAllRewardsRouter from "./claim-all-rewards";
 import tutorialRouter from "./tutorial";
@@ -84,5 +85,7 @@ router.use("/rewards", claimAllRewardsRouter);
 router.use("/admin/rewards", adminRewardsRouter);
 router.use("/admin/quests", adminQuestsRouter);
 router.use("/admin/notices", adminNoticesRouter);
+router.use("/bosses", bossesRouter);
+router.use("/admin/bosses", adminBossesRouter);
 
 export default router;

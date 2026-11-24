@@ -1,0 +1,37 @@
+.kboss{min-height:100dvh;padding:max(16px,env(safe-area-inset-top)) 16px 32px;background:radial-gradient(ellipse at 50% -10%,#3a2608 0%,#0c0905 45%,#050403 100%);color:#f6ead0}
+.kboss__head{display:flex;align-items:center;gap:14px;max-width:1080px;margin:0 auto 18px}
+.kboss__head h1{display:flex;align-items:center;gap:8px;margin:0;font-size:26px;font-weight:900;color:#ffd978;letter-spacing:.03em}
+.kboss__head p{margin:4px 0 0;font-size:13px;color:#b9a47a}
+.kboss__back{display:grid;place-items:center;width:44px;height:44px;flex:none;border:1px solid #6b5220;border-radius:12px;background:#120d05;color:#f3d27a}
+.kboss__progress{margin-left:auto;padding:6px 12px;border:1px solid #8a6a2a;border-radius:999px;font-size:12px;font-weight:800;color:#f3d27a;white-space:nowrap}
+.kboss__error,.kboss__loading,.kboss__empty{max-width:1080px;margin:12px auto;padding:14px;border:1px solid #6b5220;border-radius:12px;background:#120d05;display:flex;gap:10px;align-items:center}
+.kboss__error{border-color:#9a3b2b;color:#ffb4a4}.kboss__error button{margin-left:auto;padding:6px 12px;border:1px solid #c9a24a;border-radius:8px;color:#ffd978}
+.kboss__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:18px;max-width:1080px;margin:0 auto}
+.kboss__stages{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.kboss__stage{display:flex;align-items:center;gap:12px;width:100%;min-height:78px;padding:10px 14px;border:1px solid #4a3815;border-radius:14px;background:linear-gradient(180deg,#17110a,#0b0805);text-align:left;color:inherit;transition:transform .15s,border-color .15s,box-shadow .15s}
+.kboss__stage:hover{transform:translateY(-1px);border-color:#8a6a2a}
+.kboss__stage.is-chosen{border-color:#e0b75a;box-shadow:0 0 0 1px #e0b75a inset,0 0 22px rgba(224,183,90,.18)}
+.kboss__stage.is-locked{opacity:.55}
+.kboss__stage-no{flex:none;width:64px;font-size:11px;font-weight:900;color:#c9a24a;letter-spacing:.08em}
+.kboss__stage-art{display:grid;place-items:center;flex:none;width:56px;height:56px;border:1px solid #6b5220;border-radius:50%;overflow:hidden;background:#0a0704;color:#c9a24a}
+.kboss__stage-art img{width:100%;height:100%;object-fit:cover}
+.kboss__stage.is-locked .kboss__stage-art img{filter:brightness(0)}
+.kboss__stage-text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.kboss__stage-text b{font-size:17px;color:#fff6e2}.kboss__stage-text small{font-size:12px;color:#a8946b}
+.kboss__stage-state{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid #6b5220;color:#f3d27a;flex:none}
+.kboss__stage.is-cleared .kboss__stage-state{background:#3c2c0a;border-color:#e0b75a}
+.kboss__detail{position:sticky;top:16px;align-self:start;padding:20px;border:2px solid #c9a24a;border-radius:18px;background:linear-gradient(180deg,#1b1308,#090604);box-shadow:0 10px 40px rgba(0,0,0,.5);text-align:center}
+.kboss__portrait{display:grid;place-items:center;height:220px;margin:-4px -4px 12px;border-radius:12px;background:radial-gradient(circle at 50% 60%,#3a2608,#0a0704 70%);overflow:hidden;color:#c9a24a}
+.kboss__portrait img{max-height:100%;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.6))}
+.kboss__detail h2{margin:0;font-size:24px;font-weight:900;color:#ffd978}
+.kboss__subtitle{margin:4px 0 0;color:#e9d6a6;font-weight:700}
+.kboss__desc{margin:10px 0 0;font-size:14px;line-height:1.6;color:#cdbb92;white-space:pre-wrap;word-break:keep-all}
+.kboss__facts{display:grid;gap:6px;margin:14px 0;padding:0;list-style:none}
+.kboss__facts li{display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #3a2a0c;border-radius:10px;background:#0e0a05;font-size:14px}
+.kboss__facts span{color:#a8946b}.kboss__facts b{color:#fff1c8}
+.kboss__deck{display:grid;gap:6px;text-align:left;font-size:13px;color:#a8946b}
+.kboss__deck select{min-height:44px;padding:0 10px;border:1px solid #6b5220;border-radius:10px;background:#0e0a05;color:#fff1c8;font-size:15px}
+.kboss__link{min-height:44px;border:1px dashed #6b5220;border-radius:10px;color:#f3d27a}
+.kboss__go{width:100%;min-height:54px;margin-top:14px;border:none;border-radius:12px;background:linear-gradient(180deg,#ffd978,#c9922a);color:#1b1206;font-size:18px;font-weight:900;letter-spacing:.04em;box-shadow:0 4px 0 #6b4a12,0 10px 24px rgba(201,146,42,.3)}
+.kboss__go:disabled{opacity:.45;filter:grayscale(.5)}
+@media (max-width:760px){.kboss__body{grid-template-columns:1fr}.kboss__detail{position:static;order:-1}.kboss__portrait{height:170px}.kboss__stage-no{width:52px;font-size:10px}}
