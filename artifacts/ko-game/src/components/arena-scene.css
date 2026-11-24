@@ -1,0 +1,30 @@
+/* 대전 경기장 장면: 전투 화면 맨 뒤에 깔린다 */
+.ko-arena-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ko-arena-scene__art,.ko-arena-scene__art svg{position:absolute;inset:0;display:block}
+.ko-game-shell.ko-has-arena{background:#050403!important}
+.ko-game-shell.ko-has-arena .ko-game-stage{position:relative;z-index:1}
+/* 링 위에서는 기존 천 바닥 대신 링 매트가 보이게 */
+.ko-game-shell.ko-has-arena :is(.ko-opponent-board-row,.ko-player-board-row)::before{opacity:0!important}
+.ko-game-shell.ko-has-arena .ko-board-slot:not(.group){background:rgba(70,40,20,.06)!important;border:1px dashed rgba(110,40,30,.32)!important;box-shadow:none!important}
+.ko-game-shell.ko-has-arena .ko-board-slot:not(.group)::before,.ko-game-shell.ko-has-arena .ko-board-slot:not(.group)::after{opacity:0!important}
+/* 가운데 조작판: 링 위 해설 패널처럼 어둡고 단단하게 */
+.ko-game-shell.ko-has-arena .ko-game-controls{background:rgba(8,6,4,.86)!important;border:1px solid #5a4418!important;border-radius:10px!important;box-shadow:0 8px 22px rgba(0,0,0,.6)!important}
+/* 손패 받침은 반쯤 비쳐서 아래 링 에이프런(K.O. 무늬)이 보이게 */
+.ko-game-shell.ko-has-arena .ko-player-hand{background:linear-gradient(180deg,rgba(6,5,4,.55),rgba(6,5,4,.82))!important}
+/* 관중석 카메라 플래시, 조명 흔들림 */
+.ko-arena-scene .kas-flash{opacity:0;animation:kas-flash 6s infinite}
+@keyframes kas-flash{0%,92%,100%{opacity:0}94%{opacity:.95}96%{opacity:.15}}
+.ko-arena-scene .kas-spots{mix-blend-mode:screen;transform-origin:50% 0;animation:kas-sway 10s ease-in-out infinite alternate}
+@keyframes kas-sway{from{transform:rotate(-.5deg)}to{transform:rotate(.5deg)}}
+.ko-arena-scene[data-reduced] .kas-flash,.ko-arena-scene[data-reduced] .kas-spots{animation:none}
+.ko-arena-scene[data-reduced] .kas-flash{opacity:0}
+/* 해설석 링 벨: 누르면 땡! */
+.ko-arena-bell{position:fixed;z-index:0;pointer-events:auto;width:150px;height:120px;padding:0;border:0;background:none;cursor:pointer;filter:drop-shadow(0 8px 12px rgba(0,0,0,.6))}
+.ko-arena-bell:hover .ko-arena-bell__bell{filter:brightness(1.15)}
+.ko-arena-bell__bell{transform-origin:52px 44px}
+.ko-arena-bell.is-ringing .ko-arena-bell__bell{animation:kab-shake .6s ease-out}
+@keyframes kab-shake{15%{transform:rotate(-9deg)}35%{transform:rotate(7deg)}55%{transform:rotate(-4deg)}75%{transform:rotate(2deg)}100%{transform:none}}
+.ko-arena-bell__label{position:absolute;left:36px;top:-6px;font-weight:900;font-size:18px;color:#ffe7a3;text-shadow:0 2px 0 #000;opacity:0;pointer-events:none}
+.ko-arena-bell.is-ringing .ko-arena-bell__label{animation:kab-label .9s ease-out}
+@keyframes kab-label{0%{opacity:0;transform:translateY(6px)}20%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
+@media (prefers-reduced-motion:reduce){.ko-arena-bell.is-ringing .ko-arena-bell__bell,.ko-arena-bell.is-ringing .ko-arena-bell__label{animation:none}}
