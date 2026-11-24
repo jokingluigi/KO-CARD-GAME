@@ -1,0 +1,4 @@
+Board rim wood texture (src/components/battle-board-assets/board-rim-wood.webp)
+Source: WoodFloor043 from ambientCG.com
+License: Creative Commons CC0 1.0 Universal (public domain). Attribution not required.
+https://docs.ambientcg.com/license

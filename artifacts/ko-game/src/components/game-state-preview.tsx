@@ -1,4 +1,4 @@
-import { ArenaScene } from "./arena-scene";
+import { TableScene } from "./table-scene";
 import { ScrollText, Settings } from "lucide-react";
 
 import {questPortraitForSkin} from './quest-media';
@@ -1243,7 +1243,7 @@ export function GameStatePreview({
 
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
-     <div ref={shellRef} data-final-blow={finalCamera} data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : " ko-has-arena"}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+     <div ref={shellRef} data-final-blow={finalCamera} data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : " ko-has-table"}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
@@ -1262,7 +1262,7 @@ export function GameStatePreview({
       {state.status==='IN_PROGRESS' && (state.waitingForHandDiscardPlayerId && state.waitingForHandDiscardPlayerId!==me.id || state.targetingState?.handAddition && state.targetingState.playerId!==me.id) && <div role="status" className="pointer-events-none fixed left-1/2 top-4 z-40 -translate-x-1/2 rounded border border-amber-700 bg-neutral-950/95 p-3 text-sm text-amber-200">상대가 손패에서 버릴 카드를 선택하고 있어요.</div>}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
 
-      {blackGold && !backgroundAssetUrl && !selectedBackground && <ArenaScene />}
+      {blackGold && !backgroundAssetUrl && !selectedBackground && <TableScene />}
       {/* Background Ambience */}
       <div className="ko-cinematic-background pointer-events-none absolute inset-0 z-0 bg-neutral-950">
         {(backgroundAssetUrl || selectedBackground) && (
