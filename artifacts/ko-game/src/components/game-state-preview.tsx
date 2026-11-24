@@ -1437,7 +1437,7 @@ export function GameStatePreview({
               >
                 ⚙ 설정
               </button>
-              <button type="button" data-testid="button-battle-match-history" aria-label="경기 로그 열기" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)} className="ko-battle-log-button hidden border border-amber-700 bg-black text-amber-200">로그</button>
+              <button type="button" data-testid="button-battle-match-history" aria-label="경기 로그 열기" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)} className="ko-battle-log-button border border-amber-700 bg-black text-amber-200"><span aria-hidden="true">📜</span><span>로그</span></button>
              {effectTargeting && (
                <div className="ko-effect-target-controls rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'

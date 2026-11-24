@@ -29,8 +29,10 @@
 .ko-game-shell .ko-champion-heading{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px!important;color:#cfc6b4!important}
 @media (max-width:768px){.ko-game-shell .ko-champion-heading{font-size:10px!important}}
 
-/* 7. one menu button: the log lives inside the ⚙ menu */
-.ko-game-shell .ko-battle-log-button{display:none!important}
+/* 7. 경기 로그는 설정 안에 숨기지 않고 항상 바로 누를 수 있게 둔다 */
+.ko-game-shell .ko-battle-log-button{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:1px;white-space:nowrap;line-height:1.1;min-width:44px;border-radius:4px;padding:6px 8px;font-size:12px;font-weight:800;color:#f3d27a;background:#0b0905;border:1px solid #8a6a2a;transition:border-color .15s,color .15s}
+.ko-game-shell .ko-battle-log-button:hover{border-color:#e0b75a;color:#ffe3a0}
+@media (max-width:768px){.ko-game-shell .ko-battle-log-button{min-height:44px;padding:2px;font-size:10px}}
 .ko-game-shell .ko-menu-log{color:#ece6da}
 
 /* first-battles hint */
