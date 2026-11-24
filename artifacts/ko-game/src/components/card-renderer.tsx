@@ -305,7 +305,7 @@ export function CardRenderer({
     TAUNT: "도발",
     RUSH: "러쉬",
     SURPRISE: "기습",
-    DODGE: visibleDodgeCharges > 1 ? `회피 ×${visibleDodgeCharges}` : "회피",
+    DODGE: visibleDodgeCharges > 1 ? `회피(${visibleDodgeCharges})` : "회피",
     ARMOR: typeof armorValue === 'number' ? `아머(${armorValue})` : '아머',
     COUNTDOWN: countdownResolved ? '카운트다운 · 발동 완료' : `카운트다운(${countdownValue})`,
     STUN: "기절",
@@ -394,7 +394,7 @@ export function CardRenderer({
       role={onClick ? 'button' : undefined}
       aria-label={onClick ? name : undefined}
     >
-      {fieldFx && <KeywordFx keywords={keywordBadges} armor={armorValue} countdown={countdownValue} messenger={messenger} />}
+      {fieldFx && <KeywordFx keywords={keywordBadges} armor={armorValue} dodge={visibleDodgeCharges} countdown={countdownValue} messenger={messenger} />}
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
           src={cosmetic.src} fallbackSrc={fallbackImageUrl ?? imageUrl}

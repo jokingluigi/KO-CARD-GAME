@@ -46,8 +46,15 @@ const NAMES: Record<string, string> = {
   MULTI_STRIKE: "연타", LIFESTEAL: "흡혈", REGEN: "치유", CANNOT_ATTACK: "공격불가", WANTED: "수배", COUNTDOWN: "카운트다운",
 };
 
-export function KeywordFx({ keywords, armor, countdown, messenger }: { keywords: string[]; armor?: unknown; countdown?: unknown; messenger?: MessengerKind }) {
+export function keywordFxName(k: string, counts: { armor?: unknown; dodge?: unknown } = {}): string {
+  if (k === "DODGE" && typeof counts.dodge === "number" && counts.dodge > 1) return `회피(${counts.dodge})`;
+  if (k === "ARMOR" && typeof counts.armor === "number" && counts.armor > 0) return `아머(${counts.armor})`;
+  return NAMES[k] ?? k;
+}
+
+export function KeywordFx({ keywords, armor, dodge, countdown, messenger }: { keywords: string[]; armor?: unknown; dodge?: unknown; countdown?: unknown; messenger?: MessengerKind }) {
   const has = (k: string) => keywords.includes(k);
+  const label = (k: string) => keywordFxName(k, { armor, dodge });
   const shown = keywords.filter(k => VISUAL_KEYWORDS.has(k));
   if (!shown.length && !messenger) return null;
   return (
@@ -57,8 +64,8 @@ export function KeywordFx({ keywords, armor, countdown, messenger }: { keywords:
     {has("MULTI_STRIKE") && <span className="kfx-back kfx-multi" aria-hidden="true"><i /><i /></span>}
     {has("RUSH") && <span className="kfx-back kfx-rush" aria-hidden="true"><i /><i /><i /><i /></span>}
     {has("WANTED") && <span className="kfx-top kfx-wanted" aria-hidden="true"><b>WANTED</b></span>}
-    <span className="kfx-top kfx-names" aria-hidden="true">{messenger && <i data-kw={`MSG_${messenger}`}>{MESSENGER_NAMES[messenger]}</i>}{shown.map(k => <i key={k} data-kw={k}>{NAMES[k]}</i>)}</span>
-    <span className="kfx" role="img" aria-label={`키워드 ${[...(messenger ? [MESSENGER_NAMES[messenger]] : []), ...shown.map(k => NAMES[k])].join(", ")}`} title={[...(messenger ? [MESSENGER_NAMES[messenger]] : []), ...shown.map(k => NAMES[k])].join(" · ")}>
+    <span className="kfx-top kfx-names" aria-hidden="true">{messenger && <i data-kw={`MSG_${messenger}`}>{MESSENGER_NAMES[messenger]}</i>}{shown.map(k => <i key={k} data-kw={k}>{label(k)}</i>)}</span>
+    <span className="kfx" role="img" aria-label={`키워드 ${[...(messenger ? [MESSENGER_NAMES[messenger]] : []), ...shown.map(label)].join(", ")}`} title={[...(messenger ? [MESSENGER_NAMES[messenger]] : []), ...shown.map(label)].join(" · ")}>
       {has("SURPRISE") && <span className="kfx-surprise"><i /><b /></span>}
       {has("LIFESTEAL") && <span className="kfx-lifesteal"><i /><i /><i /></span>}
       {has("REGEN") && <span className="kfx-regen"><i /><i /><i /><i /><i /></span>}
