@@ -94,3 +94,9 @@
 .kst .kst-tools button:disabled { opacity: .45; }
 .kst .kst-status[data-status="DISABLED"] { color: #f19a9a; border-color: #7a2a2a88; }
 .ko-admin .admin-content .kst-stepper input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]){border:0;border-radius:0;background:transparent;min-height:42px;padding:0;text-align:center;font-size:18px;font-weight:900;color:#f3e6c2}
+.kst .kst-audit-run{grid-column:1/-1;min-height:36px;border-radius:8px;border:1px dashed #6b5520;color:#f3d27a;font-size:12px;font-weight:800;background:transparent}
+.kst .kst-audit{flex:none;font-size:12px;font-weight:900;color:#e8c46b}
+.kst .kst-audit[data-audit=missing]{color:#ff8f80}
+.kst .kst-audit-line{margin:0 0 10px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.5;background:#1a160c;color:#e8d29a;border:1px solid #4a3d18}
+.kst .kst-audit-line[data-audit=missing]{background:#1d1110;color:#ffb3a8;border-color:#5a2b26}
+.kst .kst-audit-line[data-audit=aligned]{background:#0d1d15;color:#9fe0b5;border-color:#1f5a3c}

@@ -139,3 +139,11 @@
 .ak-number em{display:flex;align-items:center}
 .ko-admin .admin-content .ak-number input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]){flex:1;border:0;border-radius:0;padding:0;min-height:0;height:42px;background:transparent;text-align:center;font-size:17px;font-weight:900;color:#f3e6c2}
 .ko-admin .admin-content .ak-field input[type="range"]{min-height:0;padding:0;border:0;background:transparent}
+.ak-quest-preview{max-width:340px;display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:10px;border:1px solid #7a5b16;background:#000}
+.ak-quest-preview b{color:#f3d27a}
+.ak-quest-preview p{margin:0;font-size:13px;color:#cfd3d8}
+.ak-quest-preview progress{width:100%;accent-color:#e3b341}
+.ak-quest-preview small{color:#9aa1aa}
+.ak-plain-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.ak-plain-list li{padding:5px 0;border-bottom:1px solid #1a1e24}
+.ak-plain-list small{color:#8b929c}

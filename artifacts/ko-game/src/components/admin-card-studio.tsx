@@ -250,14 +250,30 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
   }
 
   const names = useMemo(() => new Set((cards ?? []).map((c) => c.name)), [cards]);
+  const [audit, setAudit] = useState<Record<string, { status: "missing" | "review" | "aligned" | "none"; reason: string }> | null>(null);
+  const [auditFilter, setAuditFilter] = useState("");
+  const [auditing, setAuditing] = useState(false);
+  async function runAudit() {
+    setAuditing(true);
+    try {
+      const response = await fetch(`${base}/cards/effect-audit`, { credentials: "include" });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error();
+      const body = (await response.json()) as { results: Array<{ id: string; status: "missing" | "review" | "aligned" | "none"; reason: string }> };
+      setAudit(Object.fromEntries(body.results.map((r) => [r.id, r])));
+    } catch { setSave({ kind: "error", message: "효과 점검을 하지 못했어요." }); }
+    finally { setAuditing(false); }
+  }
   const filtered = useMemo(() => (cards ?? [])
     .filter((c) => (typeFilter === "ALL" || c.cardType === typeFilter) && (statusFilter === "ALL" || c.status === statusFilter))
     .filter((c) => !rarityFilter || (rarityFilter === "TOKEN" ? Boolean(c.isToken) : c.rarity === rarityFilter))
     .filter((c) => !tagFilter || (c.tags ?? []).some((t) => t === tagFilter || tagLabels[t] === tagFilter || t === tagLabels[tagFilter]))
+    .filter((c) => !auditFilter || audit?.[c.id]?.status === auditFilter)
     .filter((c) => !query.trim() || c.name.includes(query.trim()) || (c.text ?? "").includes(query.trim()))
     .sort((a, b) => sort === "name" ? a.name.localeCompare(b.name, "ko") : sort === "cost" ? Number(a.cost) - Number(b.cost) || a.name.localeCompare(b.name, "ko") : String(b.updatedAt).localeCompare(String(a.updatedAt))),
-    [cards, query, typeFilter, statusFilter, rarityFilter, tagFilter, sort, tagLabels]);
-  const extraFilters = (rarityFilter ? 1 : 0) + (tagFilter ? 1 : 0) + (sort !== "updated" ? 1 : 0);
+    [cards, query, typeFilter, statusFilter, rarityFilter, tagFilter, sort, tagLabels, audit, auditFilter]);
+  const extraFilters = (rarityFilter ? 1 : 0) + (tagFilter ? 1 : 0) + (sort !== "updated" ? 1 : 0) + (auditFilter ? 1 : 0);
+  const auditCount = (status: string) => Object.values(audit ?? {}).filter((r) => r.status === status).length;
 
   const spellNames = useMemo(() => [...names, ...Object.values(tagLabels)], [names, tagLabels]);
   const unknownRefs = draft
@@ -295,7 +311,9 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
           <label>등급<select value={rarityFilter} onChange={(e) => setRarityFilter(e.target.value)}><option value="">전체</option>{RARITIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}<option value="CHAMPION">챔피언</option><option value="TOKEN">토큰만</option></select></label>
           <label>태그<select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}><option value="">전체</option>{Object.entries(tagLabels).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
           <label>정렬<select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}><option value="updated">최근 고친 순</option><option value="name">이름 순</option><option value="cost">비용 순</option></select></label>
-          {extraFilters > 0 && <button type="button" onClick={() => { setRarityFilter(""); setTagFilter(""); setSort("updated"); }}>초기화</button>}
+          {audit ? <label>효과 점검<select value={auditFilter} onChange={(e) => setAuditFilter(e.target.value)}><option value="">전체</option><option value="missing">⚠ 설정이 빠진 듯 ({auditCount("missing")})</option><option value="review">? 직접 확인 필요 ({auditCount("review")})</option><option value="aligned">✓ 글과 설정 맞음 ({auditCount("aligned")})</option></select></label>
+            : <button type="button" className="kst-audit-run" disabled={auditing} onClick={() => void runAudit()}>{auditing ? "점검 중…" : "모든 카드 효과 점검하기"}</button>}
+          {extraFilters > 0 && <button type="button" onClick={() => { setRarityFilter(""); setTagFilter(""); setSort("updated"); setAuditFilter(""); }}>초기화</button>}
         </div>}
         <p className="kst-count">{filtered.length}장</p>
         <ul>
@@ -304,6 +322,7 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
               <button type="button" aria-current={c.id === selectedId || undefined} onClick={() => select(c)}>
                 <span className="kst-thumb" style={c.imageUrl ? { backgroundImage: `url(${c.imageUrl})` } : undefined} />
                 <span className="kst-row-main"><b>{c.name}</b><small>{c.cardType === "WRESTLER" ? `${c.cost} · ${c.attack}/${c.health}` : `기술 · ${c.cost}`}{c.isToken ? " · 토큰" : ""}</small></span>
+                {audit?.[c.id] && (audit[c.id]!.status === "missing" || audit[c.id]!.status === "review") && <span className="kst-audit" data-audit={audit[c.id]!.status} title={audit[c.id]!.reason}>{audit[c.id]!.status === "missing" ? "⚠" : "?"}</span>}
                 <span className="kst-status" data-status={c.status}>{STATUS_LABEL[c.status]}</span>
               </button>
             </li>
@@ -321,6 +340,7 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
             </div>
           </header>
 
+          {audit?.[draft.id] && audit[draft.id]!.status !== "none" && <p className="kst-audit-line" data-audit={audit[draft.id]!.status}>효과 점검: {audit[draft.id]!.status === "missing" ? "⚠ 설정이 빠진 듯해요" : audit[draft.id]!.status === "review" ? "? 직접 확인이 필요해요" : "✓ 글과 설정이 맞아요 (실제 경기 확인 권장)"} · {audit[draft.id]!.reason}</p>}
           <div className="kst-body">
             <div className="kst-preview">
               <CardRenderer name={draft.name || "카드 이름"} cardType={draft.cardType} cost={draft.cost} attack={draft.attack} health={draft.health}

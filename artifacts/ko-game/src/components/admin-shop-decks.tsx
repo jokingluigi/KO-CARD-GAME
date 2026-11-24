@@ -55,6 +55,14 @@ export function AdminShopDecks() {
     try { await shopDeckRequest(`/admin/shop-decks/${encodeURIComponent(form.id)}`, { method: "DELETE" }); setForm(null); mobile.back(); await load(); }
     catch (e) { autosave.setState({ kind: "error", message: errorText(e, "지우지 못했어요.") }); }
   }
+  async function stopSale() {
+    if (!form?.id) return;
+    try {
+      const r = await shopDeckRequest<{ item: ShopDeckProduct }>(`/admin/shop-decks/${encodeURIComponent(form.id)}/disable`, { method: "POST" });
+      autosave.markSaved(r.item); setForm(r.item); await load();
+      autosave.setState({ kind: "saved", message: "판매를 멈췄어요. 이미 산 사람의 덱은 그대로예요." });
+    } catch (e) { autosave.setState({ kind: "error", message: errorText(e, "판매를 멈추지 못했어요.") }); }
+  }
   async function upload(file: File) {
     if (!form) return;
     setUploading(true);
@@ -92,7 +100,7 @@ export function AdminShopDecks() {
           empty="왼쪽에서 덱을 고르거나 새로 만들어 보세요. 각 덱은 계정당 한 번만 살 수 있어요.">
           {form && <>
             <Panel>
-              <Toggle checked={form.enabled} onChange={(enabled) => set({ enabled })} label={form.enabled ? "판매 중" : "판매 꺼짐"} />
+              <Toggle checked={form.enabled} onChange={(enabled) => { if (!enabled && form.id) void stopSale(); else set({ enabled }); }} label={form.enabled ? "판매 중" : "판매 꺼짐"} hint={form.enabled ? "끄면 덱이 덜 채워졌어도 바로 판매를 멈춰요" : undefined} />
               <Grid>
                 <Field label="덱 이름"><input value={form.name} maxLength={30} onChange={(e) => set({ name: e.target.value })} /></Field>
                 <Field label="가격 (크레딧)"><NumberInput value={form.price} min={0} step={50} onChange={(price) => set({ price })} /></Field>

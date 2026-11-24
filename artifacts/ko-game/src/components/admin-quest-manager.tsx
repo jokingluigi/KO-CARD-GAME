@@ -10,7 +10,7 @@ type Platform = { questType: "DAILY" | "SEASON"; seasonId: string | null; weight
 type Definition = { id?: string; title: string; description: string; objectiveType: string; cardType: string | null; targetValue: number; enabled: boolean; condition?: unknown; schemaVersion?: string; platform: Platform };
 type Season = { id: string; name: string; startsAt: string; endsAt: string; status: string };
 type Bonus = Reward & { enabled: boolean };
-type Data = { dailyCompletionBonus?: Bonus; definitions: Definition[]; seasons: Season[]; settings: { dailyCount: number; timezone: string }; objectives: string[]; modes: string[] };
+type Data = { dailyCompletionBonus?: Bonus; definitions: Definition[]; seasons: Season[]; settings: { dailyCount: number; timezone: string }; objectives: string[]; modes: string[]; audits?: Array<{ id: string; createdAt: string; action: string; entityId: string }> };
 type Catalog = { cards: RewardCatalogCard[]; packs: RewardCatalogPack[]; champions: RewardCatalogChampion[] };
 
 const OBJECTIVE_KO: Record<string, string> = {
@@ -20,6 +20,7 @@ const OBJECTIVE_KO: Record<string, string> = {
 };
 const MODE_KO: Record<string, string> = { AI: "AI 대전", PVP: "온라인 대전", DRAFT: "드래프트" };
 const REWARD_KO: Record<string, string> = { CURRENCY: "크레딧", PACK: "카드팩", CARD: "카드", CHAMPION: "챔피언" };
+const AUDIT_KO: Record<string, string> = { QUEST_SAVED: "퀘스트 저장", QUEST_CREATED: "퀘스트 만들기", QUEST_UPDATED: "퀘스트 고치기", QUEST_DELETED: "퀘스트 지우기", SEASON_SAVED: "시즌 저장", SEASON_DELETED: "시즌 지우기", SETTINGS_UPDATED: "배정 설정 바꾸기", DAILY_COMPLETION_BONUS_UPDATED: "추가 보상 바꾸기" };
 const SEASON_STATUS_KO: Record<string, string> = { ACTIVE: "진행", DISABLED: "꺼짐", ARCHIVED: "보관" };
 
 const fresh = (questType: "DAILY" | "SEASON", seasonId: string | null): Definition => ({
@@ -46,6 +47,7 @@ export function AdminQuestManager({ onUnauthorized }: { onUnauthorized?: () => v
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Definition | null>(null);
   const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [error, setError] = useState("");
   const mobile = useMobileEditing();
 
@@ -88,7 +90,7 @@ export function AdminQuestManager({ onUnauthorized }: { onUnauthorized?: () => v
 
   const list = useMemo(() => (data?.definitions ?? [])
     // System quests (e.g. 드래프트 도전자) are built into the game and not edited here.
-    .filter((d) => d.platform.questType === tab && !d.platform.archived && (data?.objectives ?? []).includes(d.objectiveType))
+    .filter((d) => d.platform.questType === tab && Boolean(d.platform.archived) === showArchived && (data?.objectives ?? []).includes(d.objectiveType))
     .filter((d) => !search.trim() || `${d.title} ${d.description}`.includes(search.trim()))
     .sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.title.localeCompare(b.title, "ko")), [data, tab, search]);
 
@@ -105,12 +107,14 @@ export function AdminQuestManager({ onUnauthorized }: { onUnauthorized?: () => v
       {error && <Notice tone="warn">{error}</Notice>}
       {tab === "SETTINGS" ? <QuestSettings data={data} catalog={catalog} onUnauthorized={onUnauthorized} reload={load} /> : (
         <Split editing={mobile.editing}
-          list={<ListPane actions={<button type="button" onClick={() => void create()}>+ 새 퀘스트</button>} search={search} onSearch={setSearch} count={`${list.length}개 · 켜진 것 ${list.filter((d) => d.enabled).length}개`}>
-            {list.map((d) => <ListRow key={d.id} selected={d.id === selectedId} onClick={() => select(d)} title={d.title} sub={`${OBJECTIVE_KO[d.objectiveType] ?? d.objectiveType} ${d.targetValue}번 · ${d.platform.rewards.map(rewardText).join(", ")}`} badge={d.enabled ? "켜짐" : "꺼짐"} tone={d.enabled ? "on" : "off"} />)}
+          list={<ListPane actions={<button type="button" onClick={() => void create()}>+ 새 퀘스트</button>} search={search} onSearch={setSearch} count={showArchived ? `보관함 ${list.length}개` : `${list.length}개 · 켜진 것 ${list.filter((d) => d.enabled).length}개`}
+            filters={<><Chip on={!showArchived} onClick={() => setShowArchived(false)}>쓰는 퀘스트</Chip><Chip on={showArchived} onClick={() => setShowArchived(true)}>보관함</Chip></>}>
+            {list.map((d) => <ListRow key={d.id} selected={d.id === selectedId} onClick={() => select(d)} title={d.title} sub={`${OBJECTIVE_KO[d.objectiveType] ?? d.objectiveType} ${d.targetValue}번 · ${d.platform.rewards.map(rewardText).join(", ")}`} badge={d.platform.archived ? "보관" : d.enabled ? "켜짐" : "꺼짐"} tone={d.platform.archived ? "off" : d.enabled ? "on" : "off"} />)}
             {!list.length && <p className="ak-hint" style={{ margin: 8 }}>퀘스트가 없어요. "+ 새 퀘스트"로 만들어 보세요.</p>}
           </ListPane>}
-          editor={<EditorPane onBack={() => { void autosave.flush(); mobile.back(); }} status={<SaveLine state={autosave.state} idle="고치면 바로 저장돼요 · 이미 받은 퀘스트는 안 바뀌어요" />} right={draft && <Button kind="danger" onClick={() => void remove()}>지우기</Button>}>
+          editor={<EditorPane onBack={() => { void autosave.flush(); mobile.back(); }} status={<SaveLine state={autosave.state} idle="고치면 바로 저장돼요 · 이미 받은 퀘스트는 안 바뀌어요" />} right={draft && <><Button onClick={() => setPlatform({ archived: !draft.platform.archived })}>{draft.platform.archived ? "보관함에서 꺼내기" : "보관하기"}</Button><Button kind="danger" onClick={() => void remove()}>지우기</Button></>}>
             {draft && <>
+              {draft.platform.archived && <Notice tone="info">보관된 퀘스트예요. 새로 배정되지 않고 진행도 멈춰요. 지우지 않고 남겨 둘 때 써요.</Notice>}
               <Panel>
                 <Toggle checked={draft.enabled} onChange={(enabled) => set({ enabled })} label={draft.enabled ? "켜짐 (게이머에게 배정돼요)" : "꺼짐 (배정 안 돼요)"} />
                 <Field label="이름"><input value={draft.title} maxLength={120} onChange={(e) => set({ title: e.target.value })} /></Field>
@@ -136,6 +140,14 @@ export function AdminQuestManager({ onUnauthorized }: { onUnauthorized?: () => v
                     {draft.platform.rewards.length > 1 && <div><Button kind="ghost" onClick={() => setPlatform({ rewards: draft.platform.rewards.filter((_, n) => n !== i) })}>이 보상 빼기</Button></div>}
                   </div>
                 ))}
+              </Panel>
+              <Panel title="게이머 화면 미리보기">
+                <div className="ak-quest-preview">
+                  <b>{draft.title || "퀘스트 이름"}</b>
+                  {draft.description && <p>{draft.description}</p>}
+                  <progress max={draft.targetValue} value={Math.min(Math.ceil(draft.targetValue / 2), draft.targetValue)} />
+                  <small>{Math.min(Math.ceil(draft.targetValue / 2), draft.targetValue)} / {draft.targetValue} · 보상 {draft.platform.rewards.map(rewardText).join(" + ")}</small>
+                </div>
               </Panel>
               <Panel title="언제 · 얼마나 자주">
                 <Grid>
@@ -166,6 +178,32 @@ function ConditionEditor({ value, onChange }: { value: unknown; onChange: (value
       </Field>
       {bad && <Notice tone="error">JSON 모양이 틀렸어요. 괄호나 따옴표를 확인해 주세요. (저장 안 됨)</Notice>}
     </details>
+  );
+}
+
+function QuestTest({ data, onUnauthorized }: { data: Data; onUnauthorized?: () => void }) {
+  const [test, setTest] = useState({ objectiveType: "CARD_PLAYED", amount: 1, mode: "AI", cardType: "WRESTLER", rarity: "NORMAL", result: "WIN" });
+  const [results, setResults] = useState<Array<{ id: string; title: string; increment: number; reason: string }> | null>(null);
+  const [error, setError] = useState("");
+  async function run() {
+    setError("");
+    try { setResults((await adminFetch<{ results: Array<{ id: string; title: string; increment: number; reason: string }> }>("/quests/diagnostic", { method: "POST", json: test }, onUnauthorized)).results); }
+    catch (e) { setError(errorText(e, "시험하지 못했어요.")); }
+  }
+  return (
+    <Panel title="퀘스트 조건 시험해 보기" hint="이런 일이 일어나면 어떤 퀘스트가 몇 칸 올라가는지 미리 봐요. 실제 진행도나 보상은 안 바뀌어요.">
+      <Grid cols={3}>
+        <Field label="일어난 일"><select value={test.objectiveType} onChange={(e) => setTest({ ...test, objectiveType: e.target.value })}>{data.objectives.map((o) => <option key={o} value={o}>{OBJECTIVE_KO[o] ?? o}</option>)}</select></Field>
+        <Field label="몇 번"><NumberInput value={test.amount} min={1} max={99} onChange={(amount) => setTest({ ...test, amount })} /></Field>
+        <Field label="대전 종류"><select value={test.mode} onChange={(e) => setTest({ ...test, mode: e.target.value })}>{data.modes.map((m) => <option key={m} value={m}>{MODE_KO[m] ?? m}</option>)}</select></Field>
+        <Field label="카드 종류"><select value={test.cardType} onChange={(e) => setTest({ ...test, cardType: e.target.value })}><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></Field>
+        <Field label="카드 등급"><select value={test.rarity} onChange={(e) => setTest({ ...test, rarity: e.target.value })}><option value="NORMAL">일반</option><option value="EPIC">에픽</option><option value="LEGENDARY">레전더리</option><option value="CHAMPION">챔피언</option></select></Field>
+        <Field label="경기 결과"><select value={test.result} onChange={(e) => setTest({ ...test, result: e.target.value })}><option value="WIN">이김</option><option value="LOSS">짐</option></select></Field>
+      </Grid>
+      <div><Button kind="primary" onClick={() => void run()}>시험해 보기</Button></div>
+      {error && <Notice tone="error">{error}</Notice>}
+      {results && (results.length ? <ul className="ak-plain-list">{results.map((r) => <li key={r.id}><b>{r.title}</b> · {r.increment > 0 ? `+${r.increment} 올라가요` : "안 올라가요"} <small>({r.reason})</small></li>)}</ul> : <Notice>이 조건으로 올라가는 퀘스트가 없어요.</Notice>)}
+    </Panel>
   );
 }
 
@@ -225,6 +263,12 @@ function QuestSettings({ data, catalog, onUnauthorized, reload }: { data: Data; 
         )}
         {seasonMsg && <Notice tone={seasonMsg.tone}>{seasonMsg.text}</Notice>}
       </Panel>
+      <QuestTest data={data} onUnauthorized={onUnauthorized} />
+      {data.audits && data.audits.length > 0 && <Panel title="최근 바꾼 기록">
+        <details className="ak-advanced"><summary>최근 {data.audits.length}건 보기</summary>
+          <ul className="ak-plain-list">{data.audits.map((a) => <li key={a.id}><small>{new Date(a.createdAt).toLocaleString("ko-KR")}</small> · {AUDIT_KO[a.action] ?? a.action} · {data.definitions.find((d) => d.id === a.entityId)?.title ?? data.seasons.find((x) => x.id === a.entityId)?.name ?? a.entityId}</li>)}</ul>
+        </details>
+      </Panel>}
     </>
   );
 }

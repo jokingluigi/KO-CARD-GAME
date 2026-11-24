@@ -108,6 +108,8 @@ export function AdminAIDeckManager({ onUnauthorized }: { onUnauthorized: () => v
             <Panel>
               <Toggle checked={draft.enabled} onChange={(v) => void setEnabled(v)} label={draft.enabled ? "AI 대전에 나와요" : "꺼짐 (대전에 안 나와요)"} hint={deck && !deck.isValid ? "덱을 다 채워야 켤 수 있어요" : undefined} />
               {deck && !deck.isValid && <Notice tone="warn">아직 대전에 못 써요: {deck.invalidReasons.join(" ")}</Notice>}
+              {draft.cardDefinitionIds.some((id) => !cardsById.has(id)) && <Notice tone="error">지워진 카드가 덱에 있어요. 아래 덱에서 ‘없는 카드’를 눌러 빼 주세요.</Notice>}
+              {deck && (deck.requiredCardDefinitionIds ?? []).some((id) => !cardsById.has(id)) && <Notice tone="error">이 덱의 카드 효과나 챔피언 토큰이 쓰는 카드 중 지워진 것이 있어요: {(deck.requiredCardDefinitionIds ?? []).filter((id) => !cardsById.has(id)).join(", ")} — 자동으로 바꾸지 않으니 덱을 확인해 주세요.</Notice>}
               <Grid>
                 <Field label="덱 이름"><input value={draft.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} /></Field>
                 <Field label="보이는 순서" hint="작을수록 앞"><NumberInput value={draft.displayOrder} min={-999} max={999} onChange={(displayOrder) => set({ displayOrder })} /></Field>

@@ -13,6 +13,8 @@ export function AdminTagManager({ onUnauthorized }: { onUnauthorized: () => void
   const [cardSearch, setCardSearch] = useState("");
   const [show, setShow] = useState<"ALL" | "ON" | "OFF">("ALL");
   const [rarity, setRarity] = useState("");
+  const [status, setStatus] = useState("");
+  const [cost, setCost] = useState("");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [rename, setRename] = useState<{ tag: string; name: string } | null>(null);
@@ -63,7 +65,8 @@ export function AdminTagManager({ onUnauthorized }: { onUnauthorized: () => void
   }
 
   const cards = useMemo(() => (data?.cards ?? [])
-    .filter((c) => !cardSearch.trim() || c.name.includes(cardSearch.trim()))
+    .filter((c) => cardSearch.trim().split(/\s+/).filter(Boolean).every((w) => c.name.includes(w) || c.tags.some((t) => label(t).includes(w))))
+    .filter((c) => (!status || c.status === status) && (cost === "" || c.cost === Number(cost)))
     .filter((c) => show === "ALL" || (show === "ON") === c.tags.includes(selected))
     .filter((c) => !rarity || c.rarity === rarity)
     .sort((a, b) => Number(b.tags.includes(selected)) - Number(a.tags.includes(selected)) || a.name.localeCompare(b.name, "ko")), [data, cardSearch, show, rarity, selected]);
@@ -87,8 +90,10 @@ export function AdminTagManager({ onUnauthorized }: { onUnauthorized: () => void
             {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
             <Panel title="선수에게 붙이기 · 떼기" hint="카드를 하나씩 눌러 바로 붙이거나 떼요. 여러 장은 체크한 뒤 아래 버튼을 누르세요.">
               <div className="ak-row-actions">
-                <input className="ak-search" style={{ flex: 1, minWidth: 160 }} placeholder="선수 이름 찾기" value={cardSearch} onChange={(e) => setCardSearch(e.target.value)} />
+                <input className="ak-search" style={{ flex: 1, minWidth: 160 }} placeholder="선수 이름·태그 찾기 (여러 단어 가능)" value={cardSearch} onChange={(e) => setCardSearch(e.target.value)} />
                 <select className="ak-search" value={rarity} onChange={(e) => setRarity(e.target.value)}><option value="">모든 등급</option>{["NORMAL", "EPIC", "LEGENDARY", "CHAMPION"].map((r) => <option key={r} value={r}>{RARITY_KO[r]}</option>)}</select>
+                <select className="ak-search" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">모든 상태</option><option value="PUBLISHED">공개</option><option value="DRAFT">미공개</option><option value="DISABLED">비활성</option></select>
+                <select className="ak-search" value={cost} onChange={(e) => setCost(e.target.value)}><option value="">모든 비용</option>{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n}골드</option>)}</select>
               </div>
               <div className="ak-chips">
                 {([["ALL", "전체"], ["ON", "붙은 선수"], ["OFF", "안 붙은 선수"]] as const).map(([v, l]) => <Chip key={v} on={show === v} onClick={() => setShow(v)}>{l}</Chip>)}
