@@ -20,3 +20,12 @@ Automatic destruction-growth BUFF/ADD_KEYWORD effects now use the same inline ha
 - Latest production administrator UI work (`f9dd774`) was merged and preserved. Only the shared engine behavior and test/QA files are changed by this fix; no administrator-owned database record is written.
 
 Live deployment verification follows below.
+
+## Live release
+
+Both services serve `0386e93a0d2fc3b20809cdede90b8271c2572862` after guarded forward deployments on November 24, 2026 (approximately 16:54 KST).
+
+- API: `dep-dc2k476tlv9c738ced6g`, forward from `8b55332e9a9edfae8935b4e579eac8dd8a425dd9`; live, exact public health revision verified, HTTP 200.
+- Frontend: `dep-dc2k48mc6qcc73f9cho0`, forward from `f9dd774e85a065745c3d09c2558e64f40895f4c5`; live, exact public version verified, HTTP 200.
+- Deployment guard tests: 11 passed. No game data, account, hosting plan, or paid service was changed.
+- Existing client-side AI matches keep their already-loaded JavaScript; reload before a new match. Already created tokens are not removed retroactively by a new token-cap rule.
