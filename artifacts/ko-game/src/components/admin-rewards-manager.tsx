@@ -78,7 +78,7 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
     <div className="ak-page">
       <TutorialRewardsAdmin />
 
-      <Panel title="온라인 대전 보상" right={<SaveLine state={matchSave.state} idle="" />} hint="온라인 대전이 끝나면 크레딧을 줘요. AI 대전에는 주지 않아요. 바꿔도 이미 받은 보상은 그대로예요.">
+      <Panel title="대전 보상 (온라인 · AI 대전)" right={<SaveLine state={matchSave.state} idle="" />} hint="온라인 대전과 AI 대전이 끝나면 같은 금액의 크레딧을 줘요. 경기마다 한 번만 받아요. 바꿔도 이미 받은 보상은 그대로예요.">
         <Toggle checked={match.enabled} onChange={(enabled) => setMatch({ ...match, enabled })} label={match.enabled ? "보상 주는 중" : "보상 꺼짐"} />
         <Grid>
           <Field label="이기면 (크레딧)"><NumberInput value={match.winAmount} min={1} step={5} onChange={(winAmount) => setMatch({ ...match, winAmount })} /></Field>
