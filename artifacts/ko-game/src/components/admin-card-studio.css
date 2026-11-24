@@ -93,3 +93,4 @@
 .kst .kst-tools button.is-danger:hover:not(:disabled) { border-color: #d05a5a; color: #ffb4b4; }
 .kst .kst-tools button:disabled { opacity: .45; }
 .kst .kst-status[data-status="DISABLED"] { color: #f19a9a; border-color: #7a2a2a88; }
+.ko-admin .admin-content .kst-stepper input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]){border:0;border-radius:0;background:transparent;min-height:42px;padding:0;text-align:center;font-size:18px;font-weight:900;color:#f3e6c2}

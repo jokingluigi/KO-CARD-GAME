@@ -4,6 +4,7 @@ import { cardRecordToDefinition, type PublishedCardRecord } from "../game/cards/
 import { sameCardEffects, summarizeCardEffects } from "../lib/card-effect-summary";
 import { useTagLabels } from "../lib/tag-labels";
 import "./admin-card-studio.css";
+import { autoFixedText, SpellingHelper, useSpellingAuto } from "./spelling-helper";
 
 /**
  * 카드 빠른 편집 — one screen to make and tidy cards. Every change saves by itself a moment after
@@ -30,23 +31,6 @@ const RARITIES: Array<[string, string]> = [["NORMAL", "일반"], ["EPIC", "에�
 const SNIPPETS = ["등장:", "퇴장:", "턴 종료:", "턴 시작:", "업그레이드:", "콤보:", "데미지", "묘지", "+1/+1"];
 const STATUS_LABEL: Record<Status, string> = { PUBLISHED: "공개", DRAFT: "미공개", DISABLED: "비활성" };
 
-function rieul(ch: string) { const o = ch.charCodeAt(0) - 0xac00; return o >= 0 && o < 11172 && o % 28 === 8; }
-/** House style (2026-11-20 tidy-up): 데미지, 묘지, 깎다, "~할 때", "등장:효과". */
-export function tidyCardText(text: string): { text: string; fixes: string[] } {
-  let s = text; const fixes: string[] = [];
-  const sub = (re: RegExp, to: string, label: string) => { const n = s.replace(re, to); if (n !== s) { fixes.push(label); s = n; } };
-  sub(/(^|\n)(\s*)(등장|퇴장|턴 종료|턴 시작|콤보|업그레이드|액티브|합체|공격 시)\s*:\s+/g, "$1$2$3:", "\"등장: \" → \"등장:\"");
-  sub(/피해/g, "데미지", "피해 → 데미지");
-  sub(/무덤/g, "묘지", "무덤 → 묘지");
-  sub(/깍/g, "깎", "깍 → 깎");
-  sub(/(['’])태그/g, "$1 태그", "태그 앞 띄어쓰기");
-  const spaced = [...s].map((ch, i, all) => (all[i + 1] === "때" && rieul(ch) ? `${ch} ` : ch)).join("");
-  if (spaced !== s) { fixes.push("\"~할때\" → \"~할 때\""); s = spaced; }
-  sub(/[ \t]{2,}/g, " ", "공백 두 칸");
-  sub(/[ \t]+(\n|$)/g, "$1", "줄 끝 공백");
-  return { text: s, fixes };
-}
-
 function definitionOf(card: CardRow) {
   try { return cardRecordToDefinition(card); } catch { return null; }
 }
@@ -63,6 +47,8 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
   const [tagFilter, setTagFilter] = useState("");
   const [sort, setSort] = useState<"updated" | "name" | "cost">("updated");
   const [moreFilters, setMoreFilters] = useState(false);
+  const [spellAuto, setSpellAuto] = useSpellingAuto();
+  const [spellUndo, setSpellUndo] = useState<{ label: string; onUndo: () => void } | null>(null);
   const [draftHidden, setDraftHidden] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [decision, setDecision] = useState<{ before: string[]; after: string[]; text: string } | null>(null);
@@ -273,7 +259,7 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
     [cards, query, typeFilter, statusFilter, rarityFilter, tagFilter, sort, tagLabels]);
   const extraFilters = (rarityFilter ? 1 : 0) + (tagFilter ? 1 : 0) + (sort !== "updated" ? 1 : 0);
 
-  const tidy = draft ? tidyCardText(draft.text ?? "") : null;
+  const spellNames = useMemo(() => [...names, ...Object.values(tagLabels)], [names, tagLabels]);
   const unknownRefs = draft
     ? [...(draft.text ?? "").matchAll(/['‘]([^'’\n]{2,24})['’]/g)].map((m) => m[1]!.trim())
       .filter((x) => !names.has(x) && !Object.values(tagLabels).includes(x) && !Object.keys(tagLabels).includes(x) && !QUICK_KEYWORDS.some(([, l]) => l === x) && !/^(어둠|파괴|지식)의 사자$|^무적$|^회피\(\d+\)$|^아머\(\d+\)$/.test(x))
@@ -369,10 +355,16 @@ export function AdminCardStudio({ onUnauthorized, onOpenAdvanced, onTestGame }: 
               </div>
 
               <label className="kst-field"><span>효과 글</span>
-                <textarea ref={textRef} rows={5} value={draft.text ?? ""} onChange={(e) => change({ text: e.target.value }, 1100)} placeholder="예) 등장:상대 선수 하나에게 2 데미지를 줍니다." />
+                <textarea ref={textRef} rows={5} value={draft.text ?? ""} onChange={(e) => { setSpellUndo(null); change({ text: e.target.value }, 1100); }} onBlur={() => {
+                  if (!spellAuto) return;
+                  const before = draft.text ?? "", fixed = autoFixedText(before, spellNames);
+                  if (fixed === null) return;
+                  change({ text: fixed }, 300);
+                  setSpellUndo({ label: "맞춤법을 자동으로 고쳤어요.", onUndo: () => { setSpellUndo(null); change({ text: before }, 300); } });
+                }} placeholder="예) 등장:상대 선수 하나에게 2 데미지를 줍니다." />
               </label>
               <div className="kst-snippets">{SNIPPETS.map((s) => <button key={s} type="button" onClick={() => insert(s)}>{s}</button>)}</div>
-              {tidy && tidy.fixes.length > 0 && <div className="kst-hint"><span>맞춤법·용어: {tidy.fixes.join(", ")}</span><button type="button" onClick={() => change({ text: tidy.text }, 300)}>한 번에 고치기</button></div>}
+              <SpellingHelper text={draft.text ?? ""} names={spellNames} onApply={(text) => { setSpellUndo(null); change({ text }, 300); }} auto={spellAuto} onAutoChange={setSpellAuto} undo={spellUndo} />
               {unknownRefs.length > 0 && <div className="kst-hint" data-tone="warn"><span>이런 이름의 카드나 태그가 없어요: {unknownRefs.map((r) => `'${r}'`).join(", ")}</span></div>}
               {effectSource && <div className="kst-hint" data-tone="info"><span>이 카드는 글만 바꾼 상태예요. 효과는 예전 글 기준으로 작동해요.</span><button type="button" onClick={() => { const { effectText: _e, ...rest } = draft.effectConfig as Record<string, unknown>; const followed = { ...draft, effectConfig: rest } as CardRow; setDraft(followed); check({ ...followed, text: draft.text }); }}>지금 글 기준으로 효과 맞추기</button></div>}
 

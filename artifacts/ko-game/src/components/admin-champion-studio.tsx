@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { championRecordToDefinition, type PublishedChampionRecord } from "../game/champions/published-champions";
 import { CardArtwork } from "./card-artwork";
 import "./admin-card-studio.css";
+import { checkCardText } from "@/lib/card-text-spelling";
+import { autoFixedText, SpellingHelper, useSpellingAuto } from "./spelling-helper";
 import {
   adminFetch, Button, Chip, EditorPane, errorText, Field, Grid, ImagePick, ListPane, ListRow, Notice, NumberInput, Panel,
   SaveLine, Split, STATUS_KO, statusTone, uploadAdminImage, useMobileEditing, type SaveState,
@@ -29,6 +31,22 @@ export function AdminChampionStudio({ onUnauthorized, onOpenAdvanced, onTestGame
   const saved = useRef<Champion | null>(null);
   const timer = useRef<number | null>(null);
   const mobile = useMobileEditing();
+  const [spellAuto, setSpellAuto] = useSpellingAuto();
+  const [spellUndo, setSpellUndo] = useState<{ field: string; label: string; onUndo: () => void } | null>(null);
+  const spellNames = useMemo(() => (list ?? []).map((c) => c.name), [list]);
+
+  /** Effect-text box with the spelling helper under it (shown only when there is something to fix). */
+  function TextBox({ field, label, rows = 3 }: { field: "abilityText" | "questText" | "questRewardText" | "upgradedAbilityText" | "gameStartAbilityText"; label: string; rows?: number }) {
+    const value = String(draft?.[field] ?? "");
+    const fixes = checkCardText(value, spellNames).length;
+    return (
+      <>
+        <Field label={label}><textarea rows={rows} value={value} onChange={(e) => { setSpellUndo(null); change({ [field]: e.target.value } as Partial<Champion>, 1100); }}
+          onBlur={() => { if (!spellAuto) return; const fixed = autoFixedText(value, spellNames); if (fixed === null) return; change({ [field]: fixed } as Partial<Champion>, 300); setSpellUndo({ field, label: "맞춤법을 자동으로 고쳤어요.", onUndo: () => { setSpellUndo(null); change({ [field]: value } as Partial<Champion>, 300); } }); }} /></Field>
+        {(fixes > 0 || spellUndo?.field === field) && <SpellingHelper text={value} names={spellNames} onApply={(text) => { setSpellUndo(null); change({ [field]: text } as Partial<Champion>, 300); }} auto={spellAuto} onAutoChange={setSpellAuto} undo={spellUndo?.field === field ? spellUndo : null} />}
+      </>
+    );
+  }
 
   async function load() {
     try {
@@ -167,23 +185,23 @@ export function AdminChampionStudio({ onUnauthorized, onOpenAdvanced, onTestGame
                   <Field label="능력 이름"><input value={d.abilityName} onChange={(e) => change({ abilityName: e.target.value })} /></Field>
                   <Field label="비용 (골드)"><NumberInput value={d.abilityCost} min={0} max={20} onChange={(abilityCost) => change({ abilityCost }, 500)} /></Field>
                 </Grid>
-                <Field label="능력 글"><textarea rows={3} value={d.abilityText} onChange={(e) => change({ abilityText: e.target.value }, 1100)} /></Field>
+                {TextBox({ field: "abilityText", label: "능력 글" })}
               </Panel>
               {(d.gameStartAbilityName || d.gameStartAbilityText) && <Panel title="게임 시작 능력">
                 <Field label="이름"><input value={d.gameStartAbilityName ?? ""} onChange={(e) => change({ gameStartAbilityName: e.target.value })} /></Field>
-                <Field label="글"><textarea rows={2} value={d.gameStartAbilityText ?? ""} onChange={(e) => change({ gameStartAbilityText: e.target.value }, 1100)} /></Field>
+                {TextBox({ field: "gameStartAbilityText", label: "글", rows: 2 })}
               </Panel>}
               {d.hasQuest && <Panel title="퀘스트 (피니셔 준비)" hint="조건·보상 효과는 '자세히 편집'에서 정해요.">
                 <Field label="퀘스트 이름"><input value={d.questName ?? ""} onChange={(e) => change({ questName: e.target.value })} /></Field>
-                <Field label="퀘스트 글"><textarea rows={2} value={d.questText ?? ""} onChange={(e) => change({ questText: e.target.value }, 1100)} /></Field>
-                <Field label="보상 글"><textarea rows={2} value={d.questRewardText ?? ""} onChange={(e) => change({ questRewardText: e.target.value }, 1100)} /></Field>
+                {TextBox({ field: "questText", label: "퀘스트 글", rows: 2 })}
+                {TextBox({ field: "questRewardText", label: "보상 글", rows: 2 })}
               </Panel>}
               {d.upgradedAbilityName !== null && d.upgradedAbilityName !== undefined && <Panel title="강화된 능력 (퀘스트 완료 후)">
                 <Grid>
                   <Field label="이름"><input value={d.upgradedAbilityName ?? ""} onChange={(e) => change({ upgradedAbilityName: e.target.value })} /></Field>
                   <Field label="비용 (골드)"><NumberInput value={d.upgradedAbilityCost ?? d.abilityCost} min={0} max={20} onChange={(upgradedAbilityCost) => change({ upgradedAbilityCost }, 500)} /></Field>
                 </Grid>
-                <Field label="글"><textarea rows={2} value={d.upgradedAbilityText ?? ""} onChange={(e) => change({ upgradedAbilityText: e.target.value }, 1100)} /></Field>
+                {TextBox({ field: "upgradedAbilityText", label: "글", rows: 2 })}
               </Panel>}
               <Panel title="대전 시작 대사">
                 <Grid>
