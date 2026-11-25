@@ -29,6 +29,8 @@ export function ChampionSpeechBubble({
   // A soft pop as the bubble appears (emotes and champion lines alike).
   useEffect(() => {
     if (!document.hidden) audioManager.playImpactOverlay(import.meta.env.BASE_URL + "sfx/dialogue-pop.wav", 24, 3);
+    // 14. 말하는 챔피언이 글자 박자에 맞춰 통통 튄다
+    if (!document.hidden) window.dispatchEvent(new CustomEvent("ko-champion-speak", { detail: { playerId, chars: text.length } }));
   }, [text, playerId]);
   useLayoutEffect(() => {
     let signature = "";

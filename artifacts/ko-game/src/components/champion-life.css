@@ -1,0 +1,45 @@
+/* 챔피언 스프라이트 생동감 (champion-life.ts) */
+
+/* 10. 그림자: 챔피언이 뒷배경 앞에 서 있는 것처럼 뒤로 드리우는 그림자. 움직이면 커지고 흐려짐
+   11. 테두리 빛: 내 턴엔 금색, 위기 땐 주황 */
+.ko-battle-actor .ko-battle-actor__body{
+  filter:drop-shadow(6px 9px 8px rgba(0,0,0,.55));
+  transition:filter .35s ease}
+.ko-battle-actor[data-active-turn="true"] .ko-battle-actor__body{
+  filter:drop-shadow(0 0 1px rgba(255,226,150,.95)) drop-shadow(0 0 7px rgba(255,196,90,.55)) drop-shadow(6px 9px 8px rgba(0,0,0,.55))}
+.ko-battle-actor[data-sprite-state="LOW"] .ko-battle-actor__body{
+  filter:drop-shadow(0 0 1px rgba(255,150,90,.9)) drop-shadow(0 0 6px rgba(255,110,50,.45)) drop-shadow(6px 9px 8px rgba(0,0,0,.55))}
+.ko-sprite-visual[data-moving="true"] .ko-battle-actor__body{
+  filter:drop-shadow(14px 20px 14px rgba(0,0,0,.42))}
+.ko-battle-actor[data-active-turn="true"] .ko-sprite-visual[data-moving="true"] .ko-battle-actor__body{
+  filter:drop-shadow(0 0 1px rgba(255,226,150,.95)) drop-shadow(0 0 8px rgba(255,196,90,.6)) drop-shadow(14px 20px 14px rgba(0,0,0,.42))}
+
+/* 13. 조명 따라 명암 + 12. 피격 실루엣: 그림 모양 그대로 오려낸 덧칠 층 */
+.kj-sprite-shade,.kj-sprite-flash{position:absolute;inset:0;pointer-events:none;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.kj-sprite-shade{mix-blend-mode:multiply;opacity:.9;
+  background:linear-gradient(90deg,rgba(40,26,40,.55) 0%,rgba(80,60,70,.25) 30%,rgba(255,255,255,0) 58%)}
+.kj-sprite-shade::after{content:"";position:absolute;inset:0;mix-blend-mode:screen;
+  background:linear-gradient(270deg,rgba(255,200,130,.28) 0%,rgba(255,200,130,0) 35%)}
+.kj-sprite-flash{opacity:0;background:#fff}
+
+/* 6. 잔상 */
+.kj-afterimage{z-index:230;pointer-events:none;filter:sepia(1) saturate(3) hue-rotate(-12deg) brightness(1.4) drop-shadow(0 0 6px var(--kj-ghost,#ffcf6a))!important;mix-blend-mode:screen}
+
+/* 18. 스킨별 기운 (스킨 강조색으로) */
+.kj-sprite-aura{position:absolute;inset:8% 10% 0;z-index:-1;pointer-events:none}
+.kj-sprite-aura::before{content:"";position:absolute;inset:10% 6% 0;border-radius:50% 50% 30% 30%;
+  background:radial-gradient(ellipse at 50% 65%,color-mix(in srgb,var(--sprite-accent,#c9a24a) 55%,transparent) 0,transparent 68%);
+  opacity:.38;filter:blur(10px);animation:kj-aura-glow 3.8s ease-in-out infinite}
+.kj-sprite-aura i{position:absolute;bottom:4%;border-radius:50%;opacity:0}
+.kj-sprite-aura[data-style="smoke"] i{width:34%;height:30%;background:radial-gradient(circle,color-mix(in srgb,var(--sprite-accent,#c9a24a) 60%,#fff 10%),transparent 70%);filter:blur(8px);animation:kj-aura-smoke 5.2s ease-out infinite}
+.kj-sprite-aura[data-style="embers"] i{width:4px;height:4px;background:color-mix(in srgb,var(--sprite-accent,#ffb43a) 70%,#fff 30%);box-shadow:0 0 6px var(--sprite-accent,#ffb43a);animation:kj-aura-ember 3.6s linear infinite}
+.kj-sprite-aura[data-style="sparks"] i{width:2px;height:16px;border-radius:1px;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--sprite-accent,#9ad8ff) 60%,#fff 40%),transparent);animation:kj-aura-spark 2.8s steps(1) infinite}
+.kj-sprite-aura i:nth-child(1){left:8%;animation-delay:-.4s}.kj-sprite-aura i:nth-child(2){left:30%;animation-delay:-1.6s}
+.kj-sprite-aura i:nth-child(3){left:52%;animation-delay:-2.7s}.kj-sprite-aura i:nth-child(4){left:72%;animation-delay:-.9s}.kj-sprite-aura i:nth-child(5){left:88%;animation-delay:-2.1s}
+@keyframes kj-aura-glow{50%{opacity:.55;transform:scale(1.04)}}
+@keyframes kj-aura-smoke{0%{opacity:0;transform:translateY(0) scale(.6)}25%{opacity:.35}100%{opacity:0;transform:translateY(-160%) scale(1.5)}}
+@keyframes kj-aura-ember{0%{opacity:0;transform:translate(0,0)}15%{opacity:.9}100%{opacity:0;transform:translate(10px,-260%)}}
+@keyframes kj-aura-spark{0%,62%,100%{opacity:0}64%{opacity:.9;transform:translateY(-40%) rotate(14deg)}68%{opacity:0}80%{opacity:.7;transform:translateY(-120%) rotate(-10deg)}83%{opacity:0}}
+
+@media (prefers-reduced-motion:reduce){.kj-sprite-aura::before,.kj-sprite-aura i{animation:none}.kj-sprite-aura i{display:none}}

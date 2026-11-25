@@ -32,6 +32,7 @@ import { spawnAbilityFlare, spawnHealGlow } from "./battle-moments";
 import { audioManager } from "../audio/audio-manager";
 import { spawnArrivalBlast } from "./card-arrival";
 import { spawnImpactBurst } from "./impact-burst";
+import { auraStyle, hitSilhouette, idleFidget, landingThud, speakBounce, spawnAfterimages, turnLean } from "./champion-life";
 export function ChampionSpriteVisual({
   children,
   cue,
@@ -48,7 +49,9 @@ export function ChampionSpriteVisual({
   preview = false,
   motion,
   setIdentity,
+  waiting = false,
 }: {
+  waiting?: boolean;
   children: ReactNode;
   cue?: ChampionMotionCue;
   state?: string;
@@ -249,11 +252,16 @@ export function ChampionSpriteVisual({
       if (cue.kind === "HEAL") spawnHealGlow({ x: at.x, y: at.y, size: Math.max(90, rect.height * .7) });
       if (cue.kind === "AWAKEN") { spawnArrivalBlast({ x: at.x, y: at.y, width: rect.width * .8, height: rect.height * .8, kind: "LEGENDARY" }); }
       // 29. 이모트: 챔피언이 앞으로 살짝 튀어나왔다 돌아간다
+      // 6·7·12·19: 잔상 돌진, 무게 실린 착지, 피격 실루엣, 턴 시작 다가오기
+      if (["SPELL", "WRESTLER_ATTACK", "ABILITY", "LEGENDARY_SUMMON"].includes(cue.kind)) spawnAfterimages(anchor.querySelector<HTMLElement>(".ko-battle-actor__body"), accent);
+      if (["ABILITY", "LEGENDARY_SUMMON", "AWAKEN"].includes(cue.kind)) landingThud(anchor);
+      if (cue.kind === "TURN") turnLean(anchor);
       if (cue.kind === "EMOTE") animate(anchor, [{ scale: "1", filter: "brightness(1)" }, { scale: "1.08", filter: "brightness(1.18)", offset: .22 }, { scale: ".98", offset: .55 }, { scale: "1", filter: "brightness(1)" }], 560);
       if ((cue.kind === "HIT" || cue.kind === "HEAVY_HIT") && !cue.basicAttack) {
         const damage = cue.damage ?? (cue.kind === "HEAVY_HIT" ? 5 : 1);
         spawnImpactBurst({ x: at.x, y: at.y, dx: direction?.x ?? 0, dy: direction?.y ?? 1, damage, crackAt: { x: at.x, y: rect.bottom - 10 } });
       }
+      if (cue.kind === "HIT" || cue.kind === "HEAVY_HIT") hitSilhouette(anchor, cue.kind === "HEAVY_HIT");
       if (cue.kind === "HIT" || cue.kind === "HEAVY_HIT")
         animate(anchor, [{ filter: "brightness(1)" }, { filter: "brightness(2.4) saturate(.4)", offset: .08 }, { filter: "brightness(1.3) sepia(.4) hue-rotate(-30deg) saturate(2)", offset: .2 }, { filter: "brightness(1)" }], Math.min(duration, cue.kind === "HEAVY_HIT" ? 420 : 280));
     }
@@ -315,6 +323,25 @@ export function ChampionSpriteVisual({
       window.removeEventListener("resize", clear);
     };
   }, [cue?.id, identity, setIdentity, reduced, revision, motionKey]);
+  // 9. 상대 턴에 가끔 까딱 / 14. 말할 때 통통
+  const movingRef = useRef(false);
+  movingRef.current = moving;
+  useEffect(() => {
+    if (!waiting || preview || reduced) return;
+    let timer = 0;
+    const next = () => { timer = window.setTimeout(() => { if (!movingRef.current && !document.hidden) idleFidget(host.current, self); next(); }, 6000 + Math.random() * 5000); };
+    next();
+    return () => window.clearTimeout(timer);
+  }, [waiting, preview, reduced, self]);
+  useEffect(() => {
+    if (preview || !playerId) return;
+    const speak = (event: Event) => {
+      const detail = (event as CustomEvent<{ playerId?: string; chars?: number }>).detail;
+      if (detail?.playerId === playerId && !movingRef.current) speakBounce(host.current, detail.chars ?? 12);
+    };
+    window.addEventListener("ko-champion-speak", speak);
+    return () => window.removeEventListener("ko-champion-speak", speak);
+  }, [playerId, preview]);
   // Outcome poses also restore on reconnect without replaying an entrance.
   const settings = normalizeImageDisplaySettings(display, 3);
   const persistent =
@@ -385,6 +412,7 @@ export function ChampionSpriteVisual({
     >
 
 
+      {!preview && <div className="kj-sprite-aura" data-style={auraStyle(identity.split(":").slice(1).join(":") || identity)} aria-hidden="true"><i /><i /><i /><i /><i /></div>}
       <div className="ko-sprite-stance">
         <div className="ko-sprite-breath">
           <div className="ko-sprite-low-tremor">
@@ -407,11 +435,14 @@ export function useMotionExpression(
   motion?: SpriteMotionSettings,
 ) {
   const [ready, setReady] = useState<string>();
-  const delay = prefersReducedMotion() ? 0 : expressionLead(cue?.kind, motion);
+  // 15. 공격·기술 직전 아주 잠깐 '놀람' 표정으로 기합을 넣는다
+  const windup = cue?.kind === "SPELL" || cue?.kind === "ABILITY";
+  const lead = prefersReducedMotion() ? 0 : expressionLead(cue?.kind, motion);
+  const delay = windup && lead ? Math.max(lead, 110) : lead;
   useEffect(() => {
     if (!cue || !delay) return;
     const timer = setTimeout(() => setReady(cue.id), delay);
     return () => clearTimeout(timer);
   }, [cue?.id, delay]);
-  return delay && ready !== cue?.id ? ("IDLE" as const) : event;
+  return delay && ready !== cue?.id ? (windup ? ("ALLY_RETIRED" as const) : ("IDLE" as const)) : event;
 }

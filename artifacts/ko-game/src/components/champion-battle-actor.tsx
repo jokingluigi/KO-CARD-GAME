@@ -24,6 +24,7 @@ import {
 import { prefersReducedMotion } from "./presentation-config";
 import { CardArtwork } from "./card-artwork";
 import "./champion-battle-actor.css";
+import "./champion-life.css";
 /** Lives inside the existing champion target/ref: all targeting geometry stays real. */
 export function ChampionBattleActor({
   state,
@@ -229,11 +230,16 @@ export function ChampionBattleActor({
     reaction.cue,
     motionSettings,
   );
+  // 16. 상대를 거의 끝냈으면 평소 표정이 여유로운(안도) 표정으로
+  const myHealth = getPlayerSurvivalHealth(state, playerId);
+  const rival = state.players.find((p) => p.id !== playerId);
+  const rivalHealth = rival ? getPlayerSurvivalHealth(state, rival.id) : 99;
+  const confident = state.status === "IN_PROGRESS" && rivalHealth > 0 && rivalHealth <= 5 && myHealth >= rivalHealth + 4 && !spriteIsLow(myHealth);
   const candidates = championSpriteCandidates(appearance, {
     awakened: displayAwakened,
     low: spriteIsLow(getPlayerSurvivalHealth(state, playerId)),
     outcome,
-    reaction: expressionEvent,
+    reaction: expressionEvent === "IDLE" && confident && !outcome ? "HEAL" : expressionEvent,
     emote: reaction.cue?.emote,
   });
   const [failed, setFailed] = useState<Set<string>>(new Set());
@@ -325,6 +331,7 @@ export function ChampionBattleActor({
         (spriteIsLow(getPlayerSurvivalHealth(state, playerId)) ? "LOW" : "IDLE")
       }
       data-sprite-skin={identity}
+      data-active-turn={state.status === "IN_PROGRESS" && state.activePlayerId === playerId}
       data-sprite-set={
         setIdentity.endsWith(":awakened") ? "awakened" : "normal"
       }
@@ -360,6 +367,7 @@ export function ChampionBattleActor({
         origin={currentSet?.effects?.origin?.[self ? "self" : "opponent"]}
         viewerPlayerId={state.players[0].id}
         playerId={playerId}
+        waiting={state.status === "IN_PROGRESS" && state.activePlayerId !== playerId}
       >
         {selected ? (
           <div
@@ -397,6 +405,14 @@ export function ChampionBattleActor({
               imagePositionY={placement?.y ?? (displayFrame ? 50 : 0)}
               className="h-full w-full"
             />
+            {displayFrame && displayUrl && (() => {
+              // 12·13: 그림 모양 그대로 오려낸 명암·피격 실루엣 층
+              const fit = placement?.crop ? "cover" : "contain";
+              const x = placement?.x ?? 50, y = placement?.y ?? 50, scale = Math.min(3, Math.max(.1, placement?.scale ?? 1));
+              const mask = { WebkitMaskImage: `url("${displayUrl}")`, maskImage: `url("${displayUrl}")`, WebkitMaskSize: fit, maskSize: fit,
+                WebkitMaskPosition: `${x}% ${y}%`, maskPosition: `${x}% ${y}%`, transform: `scale(${scale})`, transformOrigin: `${x}% ${y}%` } as React.CSSProperties;
+              return <><i className="kj-sprite-shade" style={mask} /><i className="kj-sprite-flash" style={mask} /></>;
+            })()}
           </div>
         ) : (
           <span>{name}</span>
