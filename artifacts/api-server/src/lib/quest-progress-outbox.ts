@@ -200,7 +200,7 @@ export function startQuestProgressWorker() {
     } catch (error) {
       logger.error({ err: error }, "Quest progress outbox retry scheduled");
     } finally {
-      idleTicks = processed ? 0 : Math.min(idleTicks + 1, 10);
+      idleTicks = processed ? 0 : Math.min(idleTicks + 1, 60);
       nextAt = Date.now() + idleTicks * 500;
       busy = false;
     }

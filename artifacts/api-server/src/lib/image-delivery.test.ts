@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { acceptsWebp, clearImageCache, deliverImage, IMMUTABLE_CACHE, optimizeImage } from "./image-delivery";
+import { acceptsWebp, clearImageCache, clearImageMemory, deliverImage, IMMUTABLE_CACHE, optimizeImage } from "./image-delivery";
 
 async function png(width: number, height: number, alpha = false) {
   const channels = alpha ? 4 : 3;
@@ -71,4 +71,21 @@ test("Accept 헤더 판별", () => {
   assert.equal(acceptsWebp("image/avif,image/webp,*/*"), true);
   assert.equal(acceptsWebp("image/png,*/*"), false);
   assert.equal(acceptsWebp(undefined), false);
+});
+
+test("메모리에서 밀려나도 디스크 보관함에서 다시 꺼내 Supabase에 다시 묻지 않는다", async () => {
+  clearImageCache();
+  const raw = await png(500, 700);
+  let downloads = 0;
+  const download = async () => { downloads++; return { buffer: raw, contentType: "image/png" }; };
+  const first = fakeResponse();
+  await deliverImage("card-images/disk-test.png", "card-images", true, download, first as never);
+  await new Promise((r) => setTimeout(r, 50)); // 디스크 저장 기다리기
+  clearImageMemory();
+  const second = fakeResponse();
+  await deliverImage("card-images/disk-test.png", "card-images", true, download, second as never);
+  assert.equal(downloads, 1);
+  assert.equal(second.headers["content-type"], "image/webp");
+  assert.deepEqual(second.body, first.body);
+  clearImageCache();
 });

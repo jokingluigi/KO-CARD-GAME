@@ -76,7 +76,7 @@ export class DraftError extends Error {
 }
 const record = (value: unknown) => value as Record<string, unknown>;
 // 드래프트 설정은 관리자가 저장할 때 즉시 무효화되므로, 그 외에는 10초 동안 재사용해도 안전하다 (빈 서버의 반복 조회 절감)
-const settingsCache = new DraftReadCache<{enabled:boolean;config:ReturnType<typeof parseDraftConfig>}>(10_000);
+const settingsCache = new DraftReadCache<{enabled:boolean;config:ReturnType<typeof parseDraftConfig>}>(60_000);
 // Cache only the immutable catalog. JOIN cosmetics are projected from the
 // locked row on every full read, so other processes never retain stale loadouts.
 const snapshotCache = new DraftReadCache<CosmeticDraftSnapshot>(5*60_000,64,16*1024*1024);

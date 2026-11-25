@@ -35,11 +35,11 @@ import {
 } from "../lib/card-frames-client";
 
 const frameAssetNames: Partial<Record<CardRarity, string>> = {
-  NORMAL: "card-frame-normal.png",
+  NORMAL: "card-frame-normal.webp",
   // Temporary base artwork; the rarity badge distinguishes EPIC.
-  EPIC: "card-frame-normal.png",
-  LEGENDARY: "card-frame-legendary.png",
-  CHAMPION: "card-frame-champion.png",
+  EPIC: "card-frame-normal.webp",
+  LEGENDARY: "card-frame-legendary.webp",
+  CHAMPION: "card-frame-champion.webp",
 };
 
 const rarityBadgeColors: Record<CardRarity, string> = {

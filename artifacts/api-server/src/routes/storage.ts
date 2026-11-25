@@ -9,6 +9,7 @@ import {
   GameBgmStorage,
 } from "../lib/object-storage";
 import { acceptsWebp, deliverImage } from "../lib/image-delivery";
+import { deliverCachedAudio } from "../lib/audio-cache";
 
 const router: IRouter = Router();
 const shopDeckStorage = new ShopDeckImageStorage();
@@ -45,7 +46,7 @@ router.get(
       const found = isImageStorage && "download" in storage
         ? await deliverImage(objectPath, path.split("/")[1] ?? "", acceptsWebp(request.headers.accept),
             () => (storage as { download(p: string): Promise<{ buffer: Buffer; contentType: string | null } | null> }).download(objectPath), response)
-        : await storage.stream(objectPath, response);
+        : await deliverAudio(objectPath, storage, response);
       if (!found) response.status(404).json({ message: `${assetLabel}를 찾을 수 없습니다.` });
     } catch (error) {
       request.log.error({ err: error }, "Failed to serve object asset");
@@ -55,5 +56,22 @@ router.get(
     }
   },
 );
+
+/** 음악은 서버 디스크에 한 번 받아 두고 그다음부터는 서버에서 바로 보낸다. 문제가 생기면 예전처럼 바로 이어 보낸다. */
+async function deliverAudio(
+  objectPath: string,
+  storage: { stream(p: string, r: import("express").Response): Promise<boolean>; download?(p: string): Promise<{ buffer: Buffer; contentType: string | null } | null> },
+  response: import("express").Response,
+): Promise<boolean> {
+  if (storage.download) {
+    try {
+      const result = await deliverCachedAudio(objectPath, () => storage.download!(objectPath), response);
+      if (result !== null) return result;
+    } catch {
+      if (response.headersSent) return true;
+    }
+  }
+  return storage.stream(objectPath, response);
+}
 
 export default router;

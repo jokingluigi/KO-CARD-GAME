@@ -579,6 +579,10 @@ class AudioAssetStorage {
     return this.provider.save(objectPath, buffer, contentType);
   }
 
+  download(objectPath: string) {
+    return this.provider.download(objectPath, this.folder);
+  }
+
   stream(objectPath: string, response: ExpressResponse) {
     return this.provider.stream(objectPath, response);
   }

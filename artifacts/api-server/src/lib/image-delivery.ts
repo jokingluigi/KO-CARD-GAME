@@ -1,4 +1,9 @@
 import sharp from "sharp";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { rmSync } from "node:fs";
+import path from "node:path";
 import type { Response } from "express";
 
 /**
@@ -43,6 +48,44 @@ function remember(key: string, value: Variant) {
     cachedBytes -= entry.buffer.length;
   }
 }
+/**
+ * 디스크 보관함: 메모리에서 밀려난 그림도 서버 임시 폴더에 남겨 두어
+ * Supabase에서 다시 내려받지 않게 한다. (서버가 재시작되면 비워진다)
+ */
+const DISK_BUDGET = Math.max(0, Number(process.env["IMAGE_DISK_CACHE_MB"] ?? 400)) * 1024 * 1024;
+const DISK_DIR = path.join(tmpdir(), "ko-image-cache");
+let diskBytes = 0;
+let diskReady: Promise<boolean> | null = null;
+function diskFile(key: string) {
+  return path.join(DISK_DIR, createHash("sha1").update(key).digest("hex"));
+}
+function ensureDisk() {
+  diskReady ??= mkdir(DISK_DIR, { recursive: true }).then(() => true, () => false);
+  return diskReady;
+}
+async function diskRecall(key: string): Promise<Variant | null> {
+  if (!DISK_BUDGET || !(await ensureDisk())) return null;
+  try {
+    const file = diskFile(key);
+    const [buffer, meta] = await Promise.all([readFile(file), readFile(`${file}.type`, "utf8")]);
+    return { buffer, contentType: meta };
+  } catch {
+    return null;
+  }
+}
+async function diskRemember(key: string, value: Variant) {
+  if (!DISK_BUDGET || diskBytes + value.buffer.length > DISK_BUDGET || !(await ensureDisk())) return;
+  try {
+    const file = diskFile(key);
+    await writeFile(`${file}.type`, value.contentType);
+    await writeFile(`${file}.tmp`, value.buffer);
+    await rename(`${file}.tmp`, file); // 다 쓴 뒤에만 보이게 (반쯤 쓴 파일을 읽지 않도록)
+    diskBytes += value.buffer.length;
+  } catch {
+    /* 디스크가 꽉 차도 게임에는 영향 없음 */
+  }
+}
+
 function recall(key: string) {
   const hit = cache.get(key);
   if (hit) { cache.delete(key); cache.set(key, hit); } // 최근 사용 순서 갱신
@@ -84,10 +127,13 @@ export async function deliverImage(
     let pending = inflight.get(key);
     if (!pending) {
       pending = (async () => {
+        const stored = await diskRecall(key);
+        if (stored) { remember(key, stored); return stored; }
         const raw = await download();
         if (!raw) return null;
         const result = await optimizeImage(raw, folder, webp);
         remember(key, result);
+        void diskRemember(key, result);
         return result;
       })().finally(() => inflight.delete(key));
       inflight.set(key, pending);
@@ -107,4 +153,12 @@ export async function deliverImage(
 export function imageCacheStats() {
   return { entries: cache.size, bytes: cachedBytes, budget: CACHE_BUDGET };
 }
-export function clearImageCache() { cache.clear(); cachedBytes = 0; }
+/** 메모리 보관함만 비운다 (디스크 보관함은 남김) */
+export function clearImageMemory() { cache.clear(); cachedBytes = 0; }
+/** 메모리·디스크 보관함 모두 비운다 */
+export function clearImageCache() {
+  clearImageMemory();
+  rmSync(DISK_DIR, { recursive: true, force: true });
+  diskReady = null;
+  diskBytes = 0;
+}
