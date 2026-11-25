@@ -609,7 +609,7 @@ export function GameStatePreview({
     if (effectFinisherTimerRef.current !== null) window.clearTimeout(effectFinisherTimerRef.current);
   }, []);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const currentCardStats = new Map<string, { attack: number; health: number; maxHealth:number }>();
     for (const player of state.players) {
       for (const card of [...player.hand, ...player.deck, ...player.graveyard, ...player.removedFromGame, ...player.board]) {
@@ -1076,8 +1076,23 @@ export function GameStatePreview({
   const championAbilityCost = selectedChampionAbility?.cost ?? me.champion?.abilityCost ?? 0;
   const canUseChampion = canUseChampionAbility(state, me.id);
   const championActionReady = canUseChampion && canEndTurn && !effectTargeting && !interactionStatus;
-  const mySurvivalHealth = getPlayerSurvivalHealth(state, me.id);
-  const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
+  // 공격이 날아가는 중(맞기 전)에는 맞을 쪽 체력을 '맞기 직전 진짜 값'으로 보여준다.
+  // 서버 결과는 공격 시작과 동시에 오지만, 숫자는 맞는 순간에 줄어야 순서가 맞다.
+  const holdingHit = Boolean(attackAnimation && !attackImpactTriggered && attackAnimation.damage > 0);
+  const heldChampionHealth = (playerId: string, actual: number) =>
+    holdingHit && attackAnimation!.targetKind === 'CHAMPION' && attackAnimation!.targetPlayerId === playerId
+      ? actual + attackAnimation!.damage
+      : actual;
+  const heldBoardCard = <T extends { instanceId: string; currentHealth: number } | null>(card: T): T => {
+    if (!card || !attackAnimation || attackImpactTriggered) return card;
+    if (attackAnimation.targetKind === 'CARD' && attackAnimation.target?.instanceId === card.instanceId && attackAnimation.damage > 0)
+      return { ...card, currentHealth: card.currentHealth + attackAnimation.damage };
+    if (attackAnimation.attacker.instanceId === card.instanceId && (attackAnimation.counterDamage ?? 0) > 0)
+      return { ...card, currentHealth: card.currentHealth + (attackAnimation.counterDamage ?? 0) };
+    return card;
+  };
+  const mySurvivalHealth = heldChampionHealth(me.id, getPlayerSurvivalHealth(state, me.id));
+  const opponentSurvivalHealth = heldChampionHealth(opp.id, getPlayerSurvivalHealth(state, opp.id));
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
   const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
   const opponentChampionProtected = state.status !== 'FINISHED' && isChampionProtectedByToken(state, opp.id);
@@ -1460,7 +1475,7 @@ export function GameStatePreview({
                {opp.board.map((card, i) => (
                  <BoardSlot
                    key={`opp-board-${i}`} cosmeticOwnerId={opp.id}
-                   card={card}
+                   card={heldBoardCard(card)}
                    isOpponent={true}
                    slotIndex={i as BoardSlotIndex}
                    selectable={false}
@@ -1605,7 +1620,7 @@ export function GameStatePreview({
                {me.board.map((card, i) => (
                  <BoardSlot
                    key={`me-board-${i}`}
-                   card={card}
+                   card={heldBoardCard(card)}
                    isOpponent={false} cosmeticOwnerId={me.id}
                    slotIndex={i as BoardSlotIndex}
                     selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}

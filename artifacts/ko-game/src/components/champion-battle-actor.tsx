@@ -105,6 +105,9 @@ export function ChampionBattleActor({
     cue?: ChampionMotionCue;
   }>({ event: "IDLE", until: 0 });
   const pendingHit = useRef<ChampionMotionCue | null>(null);
+  const pendingSince = useRef(0);
+  const [pendingTick, setPendingTick] = useState(0);
+  const sawAttack = useRef(false);
   const previous = useRef(state);
   const cursor = useRef(spriteEventCursor(state));
   const appearanceKey = useRef(state.gameId + ":" + setIdentity);
@@ -140,6 +143,7 @@ export function ChampionBattleActor({
       displayAwakened && config?.awakening === "REPLACE"
         ? config.awakened
         : config;
+    let heldNow = false;
     const visible = cues.filter((cue) => {
       if (
         cue.kind === "EMOTE" &&
@@ -149,16 +153,21 @@ export function ChampionBattleActor({
         ] === null
       )
         return false;
+      // 공격으로 맞은 경우: 공격 연출이 아직 시작 전이어도(같은 순간에 도착) 맞는 순간까지 피격 표정을 미룬다
       if (
         (cue.event === "HIT" || cue.event === "HEAVY_HIT") &&
-        attackActive &&
+        (attackActive || cue.basicAttack) &&
         !hitContact
       ) {
         if (pendingHit.current?.event !== "HEAVY_HIT") pendingHit.current = cue;
+        pendingSince.current = Date.now();
+        sawAttack.current = attackActive;
+        heldNow = true;
         return false;
       }
       return true;
     });
+    if (heldNow) setPendingTick((n) => n + 1);
     setReaction((current) => {
       let next: typeof current =
         changed && current.event !== "AWAKEN"
@@ -183,9 +192,12 @@ export function ChampionBattleActor({
     });
   }, [state, playerId, setIdentity, attackActive, hitContact]);
   useEffect(() => {
-    if (pendingHit.current && (hitContact || !attackActive)) {
+    if (attackActive && pendingHit.current) sawAttack.current = true;
+    const release = () => {
       const cue = pendingHit.current;
+      if (!cue) return;
       pendingHit.current = null;
+      sawAttack.current = false;
       setReaction((current) => {
         const next = reactSprite(
           current,
@@ -195,8 +207,17 @@ export function ChampionBattleActor({
         );
         return next === current ? current : { ...next, cue };
       });
+    };
+    if (!pendingHit.current) return undefined;
+    // 맞는 순간이 왔거나, 공격 연출이 끝났는데 맞는 순간을 못 받았으면 지금 보여준다
+    if (hitContact || (!attackActive && sawAttack.current)) { release(); return undefined; }
+    // 공격 연출이 끝내 오지 않으면(연출 생략 등) 잠시 뒤 그냥 보여준다
+    if (!attackActive) {
+      const timer = window.setTimeout(release, Math.max(0, 1200 - (Date.now() - pendingSince.current)));
+      return () => window.clearTimeout(timer);
     }
-  }, [hitContact, attackActive, state.gameId, setIdentity]);
+    return undefined;
+  }, [hitContact, attackActive, state.gameId, setIdentity, pendingTick]);
   useEffect(() => {
     if (
       !reaction.until ||

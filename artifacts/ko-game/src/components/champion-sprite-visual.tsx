@@ -444,14 +444,12 @@ export function useMotionExpression(
   motion?: SpriteMotionSettings,
 ) {
   const [ready, setReady] = useState<string>();
-  // 15. 공격·기술 직전 아주 잠깐 '놀람' 표정으로 기합을 넣는다
-  const windup = cue?.kind === "SPELL" || cue?.kind === "ABILITY";
   const lead = prefersReducedMotion() ? 0 : expressionLead(cue?.kind, motion);
-  const delay = windup && lead ? Math.max(lead, 110) : lead;
+  const delay = lead;
   useEffect(() => {
     if (!cue || !delay) return;
     const timer = setTimeout(() => setReady(cue.id), delay);
     return () => clearTimeout(timer);
   }, [cue?.id, delay]);
-  return delay && ready !== cue?.id ? (windup ? ("ALLY_RETIRED" as const) : ("IDLE" as const)) : event;
+  return delay && ready !== cue?.id ? ("IDLE" as const) : event;
 }
