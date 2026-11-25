@@ -99,6 +99,7 @@ import { enqueuePresentation, presentationBatch } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
+import { installCursorLight, spawnGaugeAbsorb } from './visual-polish';
 import { MulliganStage, MulliganExitStage, mulliganExitDuration, type MulliganExit } from './mulligan-stage';
 import {CombatSettings} from './combat-settings';
 import { messengerKind } from './keyword-fx';
@@ -444,6 +445,24 @@ export function GameStatePreview({
     if(!stage)return;
     return installBoardTaps(stage,()=>{if(!idleBoardRef.current)return false;audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/board-knock.wav',30,1);return true;});
   },[]);
+  // 12. 테이블 조명이 마우스를 살짝 따라온다
+  React.useEffect(()=>installCursorLight(document.querySelector<HTMLElement>('.ko-game-stage')),[]);
+  // 10. 피니셔 준비가 오르면 빛 알갱이가 게이지로 빨려 들어간다
+  const questProgressRef=React.useRef<Record<string,number>>({});
+  React.useEffect(()=>{
+    const seen=questProgressRef.current;
+    for(const player of state.players){
+      if(!player.champion?.quest)continue;
+      const now=championPreparationProgress(player.champion).current,before=seen[state.gameId+player.id];
+      seen[state.gameId+player.id]=now;
+      if(before!==undefined&&now>before){
+        const meter=document.querySelector(`[data-quest-meter="${player.id}"]`);
+        const portrait=document.querySelector(player.id===state.players[0].id?'.ko-player-champion':'.ko-opponent-champion');
+        const r=portrait?.getBoundingClientRect();
+        spawnGaugeAbsorb(meter,r&&r.width?{x:r.left+r.width/2,y:r.top+r.height/2}:undefined);
+      }
+    }
+  },[state]);
   const activePresentationCues = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
@@ -1417,7 +1436,7 @@ export function GameStatePreview({
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
                     {opp.champion.quest.finisherChoices?.length ? <FinisherProgress champion={opp.champion} compact/> : <>피니셔 준비 {opp.champion.questCompleted ? '완료' : <><MotionNumber value={championPreparationProgress(opp.champion).current} />/{championPreparationProgress(opp.champion).required}</>}
-                     <span className="ko-quest-meter" aria-hidden="true" data-near={Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))>=.8?"true":undefined}><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))})`}} /></span>
+                     <span className="ko-quest-meter" data-quest-meter={opp.id} aria-hidden="true" data-near={Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))>=.8?"true":undefined}><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(opp.champion).current/Math.max(1,championPreparationProgress(opp.champion).required)))})`}} /></span>
                     <AwakeningStatus champion={opp.champion} />
                     {!opp.champion.questCompleted && championPreparationProgress(opp.champion).current === championPreparationProgress(opp.champion).required - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}</>}
                   </div>
@@ -1895,7 +1914,7 @@ export function GameStatePreview({
                  <Inspectable className="ko-player-quest" content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      {me.champion.quest.finisherChoices?.length ? <FinisherProgress champion={me.champion} compact/> : <>피니셔 준비 {me.champion.questCompleted ? '완료' : <><MotionNumber value={championPreparationProgress(me.champion).current} />/{championPreparationProgress(me.champion).required}</>}
-                     <span className="ko-quest-meter" aria-hidden="true" data-near={Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))>=.8?"true":undefined}><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))})`}} /></span>
+                     <span className="ko-quest-meter" data-quest-meter={me.id} aria-hidden="true" data-near={Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))>=.8?"true":undefined}><i style={{transform:`scaleX(${Math.max(0,Math.min(1,championPreparationProgress(me.champion).current/Math.max(1,championPreparationProgress(me.champion).required)))})`}} /></span>
                      <AwakeningStatus champion={me.champion} />
                      {!me.champion.questCompleted && championPreparationProgress(me.champion).current === championPreparationProgress(me.champion).required - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}</>}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (

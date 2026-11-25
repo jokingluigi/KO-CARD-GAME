@@ -1,0 +1,20 @@
+/* 10. 게이지로 빨려 드는 빛 알갱이 */
+.kv-mote{position:fixed;z-index:240;width:7px;height:7px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff6d0 0,#f6dc8e 40%,rgba(214,170,70,0) 70%);box-shadow:0 0 8px 2px rgba(246,200,100,.7)}
+
+/* 12. 마우스를 따라오는 은은한 조명 (빛 한 장을 옮기기만 함) */
+.kv-cursor-light{position:fixed;left:0;top:0;width:720px;height:520px;z-index:35;pointer-events:none;opacity:0;transition:opacity .35s;will-change:transform;
+  background:radial-gradient(closest-side,rgba(255,226,160,.14),rgba(255,226,160,.05) 55%,transparent)}
+.kv-cursor-light[data-on=true]{opacity:1}
+
+/* 15. 색약 모드: 빨강·초록 대신 파랑·주황 + 모양으로 구분 */
+html[data-ko-colorblind=on]{
+  --kv-ok:#4aa3ff; --kv-bad:#ff9a2e;
+}
+html[data-ko-colorblind=on] .ko-game-shell{--kv-cb:1}
+/* 낼 수 있는 카드·공격 가능 선수: 초록 → 파랑 */
+html[data-ko-colorblind=on] .ko-game-shell .ko-hand-card--available:not(.ko-hand-card--selected)::before,
+html[data-ko-colorblind=on] .ko-game-shell [data-card-highlight=attack]::before{box-shadow:0 0 0 2px rgba(120,190,255,.95),0 0 10px 3px rgba(60,150,255,.75),0 0 22px 6px rgba(40,110,230,.35)}
+/* 할 일 다 한 턴 종료 버튼: 초록 → 파랑 */
+html[data-ko-colorblind=on] .ko-game-shell .ko-game-controls .ko-turn-end:not(:disabled)[data-turn-state=done]{background:linear-gradient(#a9d6ff,#4a9cf0 55%,#2a6fc4)!important;color:#04172e!important;border-color:#1b4a8a!important;animation:none;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 0 16px rgba(110,180,255,.7)!important}
+/* 체력 위험(빨강) → 주황 + 줄무늬 */
+html[data-ko-colorblind=on] .ko-portrait-health[data-low=true]{filter:hue-rotate(28deg) saturate(1.2)}

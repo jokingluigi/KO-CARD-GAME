@@ -375,6 +375,9 @@ export function CardRenderer({
       if (tilt) {
         node.style.setProperty("--kj-tilt-x", `${(-(fy - .5) * 14).toFixed(1)}deg`);
         node.style.setProperty("--kj-tilt-y", `${((fx - .5) * 16).toFixed(1)}deg`);
+        // 1. 깊이감: 그림이 테두리보다 살짝 반대로 움직여 카드 안쪽이 깊어 보이게
+        node.style.setProperty("--kj-par-x", `${((fx - .5) * -7).toFixed(1)}px`);
+        node.style.setProperty("--kj-par-y", `${((fy - .5) * -6).toFixed(1)}px`);
         node.dataset.kjTilt = "true";
       }
       if (foil) {
@@ -393,6 +396,8 @@ export function CardRenderer({
     delete node.dataset.kjTilt;
     node.style.removeProperty("--kj-tilt-x");
     node.style.removeProperty("--kj-tilt-y");
+    node.style.removeProperty("--kj-par-x");
+    node.style.removeProperty("--kj-par-y");
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -434,7 +439,7 @@ export function CardRenderer({
           displayOverride={cosmetic.display ?? artworkDisplayOverride}
           loading={artworkLoading}
           alt={name || "카드 이미지"}
-          className={`absolute inset-0 h-full w-full ${isSilenced ? "ko-card-artwork-muted" : ""}`}
+          className={`ko-card-art-depth absolute inset-0 h-full w-full ${isSilenced ? "ko-card-artwork-muted" : ""}`}
           {...imageDisplaySettings}
           interactive={interactiveArtwork}
           showHint={showArtworkHint}

@@ -11,6 +11,8 @@ export type CombatPreferences = {
   dialogueTextScale: number;
   highContrastTargets: boolean;
   visualEventCaptions: boolean;
+  /** 15. 색약 모드: 빨강·초록 대신 주황·파랑 */
+  colorblind: boolean;
 };
 export const COMBAT_PREFERENCES_KEY = "ko-combat-presentation-v1";
 export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
@@ -26,6 +28,7 @@ export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
   dialogueTextScale: 1,
   highContrastTargets: true,
   visualEventCaptions: true,
+  colorblind: false,
 };
 export function parseCombatPreferences(
   value: string | null,
@@ -49,6 +52,7 @@ export function parseCombatPreferences(
       dialogueTextScale: textScale(p.dialogueTextScale),
       highContrastTargets: p.highContrastTargets !== false,
       visualEventCaptions: p.visualEventCaptions !== false,
+      colorblind: p.colorblind === true,
     };
   } catch {
     return { ...DEFAULT_COMBAT_PREFERENCES };

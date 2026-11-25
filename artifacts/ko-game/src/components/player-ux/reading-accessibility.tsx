@@ -21,6 +21,7 @@ export function ReadingAccessibilityBridge() {
       document.documentElement.dataset.contrastTargets = String(
         p.highContrastTargets,
       );
+      document.documentElement.dataset.koColorblind = p.colorblind ? "on" : "off";
     };
     apply();
     window.addEventListener("ko-combat-preferences", apply);
@@ -81,6 +82,14 @@ export function ReadingAccessibilitySettings() {
           onChange={(e) => update({ visualEventCaptions: e.target.checked })}
         />
         소리 없이도 주요 전투 사건 안내
+      </label>
+      <label className="flex min-h-11 items-center gap-3 text-sm">
+        <input
+          type="checkbox"
+          checked={value.colorblind}
+          onChange={(e) => update({ colorblind: e.target.checked })}
+        />
+        색약 모드 (빨강·초록 대신 주황·파랑)
       </label>
       <p className="ko-reading-sample border-l-2 border-amber-700 pl-3 text-neutral-200">
         설명 예시: 선택한 선수에게 효과를 적용합니다.

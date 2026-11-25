@@ -27,6 +27,7 @@ import { spawnResultStinger } from "./battle-moments";
 import { bestHitOf, recordMatchResult } from "./battle-juice";
 import { BestHitReplay } from "./best-hit-replay";
 import { celebrate } from "@/lib/celebrate";
+import { countUp } from "./visual-polish";
 
 export function MatchResultOverlay({
   state, onRematch,onChooseDeck,deckRecord,
@@ -134,6 +135,9 @@ export function MatchResultOverlay({
       : "MATCH COMPLETE";
   const reason = matchEndReason(state, player?.id ?? "");
   const [ownSummary, opponentSummary] = matchSummary(state);
+  // 14. 매치 리포트 숫자가 0부터 올라간다
+  const reportReady = Boolean(ownSummary && opponentSummary);
+  useEffect(()=>countUp(root.current,".ko-result-score-row strong",700),[state.gameId,reportReady]);
   const winner = state.players.find(
     (candidate) => candidate.id === state.winnerId,
   );

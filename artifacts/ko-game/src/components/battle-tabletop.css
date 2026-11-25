@@ -24,3 +24,6 @@
 @media (prefers-reduced-motion:reduce){
   .ko-game-stage .ko-hand-card .ko-card-depth{transform:var(--ko-phys,none);transition:none}
   .ko-game-shell .ko-board-slot[data-drag-valid="true"]{animation:none!important;box-shadow:0 0 0 2px rgba(243,215,140,.9)!important}}
+/* 1. 깊이감: 손패 카드를 기울이면 그림이 테두리 안쪽에서 반대로 살짝 움직인다 */
+.ko-game-shell [data-kj-tilt] .ko-card-art-depth{transform:translate(var(--kj-par-x,0px),var(--kj-par-y,0px)) scale(1.04);transition:transform .08s linear}
+@media (prefers-reduced-motion:reduce){.ko-game-shell [data-kj-tilt] .ko-card-art-depth{transform:none}}
