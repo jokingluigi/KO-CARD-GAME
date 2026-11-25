@@ -149,12 +149,6 @@ export function dodgeMoment(card: HTMLElement | null) {
       { opacity: 0, transform: `translateX(${side * (26 + i * 14)}px)`, filter: 'grayscale(1) brightness(1.6)' },
     ], { duration: 420, delay: i * 50, easing: 'ease-out' });
   }
-  // 아주 잠깐 화면 속 움직임을 느리게 (0.2초) — 진행 중인 연출만, 게임 시간은 그대로
-  try {
-    const running = document.getAnimations().filter((a) => a.playState === 'running');
-    running.forEach((a) => { a.updatePlaybackRate?.(.3); });
-    window.setTimeout(() => running.forEach((a) => { try { a.updatePlaybackRate?.(1); } catch { /* 끝난 연출 */ } }), 200);
-  } catch { /* 연출 */ }
 }
 
 // ─────────────────────────────── 12. 누적 피해 숫자

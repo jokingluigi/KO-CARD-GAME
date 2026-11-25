@@ -282,7 +282,10 @@ export function ChampionBattleActor({
   const placement = displayFrame?.[self ? "self" : "opponent"];
   useEffect(() => {
     let cancelled = false;
-    if (selected) {
+    if (selected && decoded.current.has(selected.url)) {
+      // 이미 준비된 그림(경기 시작 때 미리 풀어 둔 반응 그림 등)은 기다리지 않고 바로 바꾼다
+      setReady(selected.url, Boolean(selected.frame && selected.frame !== appearance.portraitFrame));
+    } else if (selected) {
       const image = new Image();
       image.src = selected.url;
       const url = selected.url, sprite = Boolean(selected.frame && selected.frame !== appearance.portraitFrame);
@@ -319,6 +322,12 @@ export function ChampionBattleActor({
         const image = new Image();
         image.src = f.url;
         images.push(image);
+        // 미리 받아서 '그릴 준비'까지 끝내 둔다 → 피격·공격 반응이 늦지 않게 바로 바뀜
+        const url = f.url;
+        image.decode().then(() => { decoded.current.add(url); }, () => {
+          if (image.complete && image.naturalWidth > 0) decoded.current.add(url);
+          else image.addEventListener("load", () => { if (image.naturalWidth > 0) decoded.current.add(url); }, { once: true });
+        });
       }
     return () => {
       for (const image of images) image.src = "";

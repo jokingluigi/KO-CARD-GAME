@@ -467,18 +467,6 @@ export function GameStatePreview({
     }
   },[state]);
   const activePresentationCues = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
-  // 3. 광역 피해 물결: 한 번에 여러 대상이 맞으면 피해 출처(또는 왼쪽)에서 가까운 순서로 0.06초씩 늦게
-  const rippleDelays = React.useMemo(() => {
-    const damage = activePresentationCues.filter(c => c.kind === 'DAMAGE' && !c.combat && !c.quiet);
-    const delays = new Map<string, number>();
-    if (damage.length < 2) return delays;
-    const sx = damage[0].sourceLeft, sy = damage[0].sourceTop;
-    const order = [...damage].sort((a, b) => sx !== undefined && sy !== undefined
-      ? Math.hypot(a.left - sx, a.top - sy) - Math.hypot(b.left - sx, b.top - sy)
-      : a.left - b.left);
-    order.forEach((cue, index) => delays.set(cue.id, index * 60));
-    return delays;
-  }, [activePresentationCues]);
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
   const effectFinisherTimerRef = React.useRef<number | null>(null);
@@ -2092,7 +2080,7 @@ export function GameStatePreview({
         (!attackAnimation || attackImpactTriggered) && (
         cue.kind === "QUEST_COMPLETE"
           ? <QuestPresentation key={cue.id} cue={cue} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={() => handlePresentationQueueComplete(cue.id)} />
-          : <PresentationFeedback key={cue.id} delay={rippleDelays.get(cue.id) ?? 0} lethal={state.status==='FINISHED' && cue.playerId===state.loserId} cue={cue} onStart={handlePresentationCueStart} onComplete={() => handlePresentationQueueComplete(cue.id)} />
+          : <PresentationFeedback key={cue.id} lethal={state.status==='FINISHED' && cue.playerId===state.loserId} cue={cue} onStart={handlePresentationCueStart} onComplete={() => handlePresentationQueueComplete(cue.id)} />
       ))}
     </div>
     </AltInspectProvider></CinematicProvider></RenderCardCatalog.Provider></BattleCosmeticsContext.Provider>
