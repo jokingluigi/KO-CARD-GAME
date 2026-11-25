@@ -46,7 +46,8 @@ export async function streamAudio(
     }
     response.setHeader(
       "Cache-Control",
-      upstream.status === 416 ? "no-store" : "public, max-age=86400",
+      // 업로드 파일 이름은 매번 고유하게 만들어져 내용이 바뀌지 않는다 → 브라우저가 오래 보관해도 안전
+      upstream.status === 416 ? "no-store" : "public, max-age=31536000, immutable",
     );
     if (!upstream.body) {
       response.end();

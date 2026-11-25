@@ -9,7 +9,8 @@ export async function readMaintenance(){
  const row=result.rows[0];return {enabled:row?.maintenance_enabled===true,message:String(row?.maintenance_message??MAINTENANCE_MESSAGE)};
 }
 export function maintenanceAllows(enabled:boolean,role?:string){return !enabled||role==='ADMIN';}
-export const socketMaintenance=shortLivedRead(readMaintenance,1000);
+// 점검 여부는 모든 요청마다 확인한다 → DB를 매번 읽지 않도록 3초 동안 재사용 (관리자가 바꾸면 즉시 갱신)
+export const socketMaintenance=shortLivedRead(readMaintenance,3000);
 export function createMaintenanceGate(read=readMaintenance,authenticate=getAuthenticatedUser){return async(req:Request,res:Response,next:NextFunction)=>{
  try{
   const publicCardImage = (req.method === 'GET' || req.method === 'HEAD') && /^\/storage\/objects\/uploads\/(?:card-images|cosmetics)\/[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp)$/i.test(req.path);
@@ -22,4 +23,4 @@ export function createMaintenanceGate(read=readMaintenance,authenticate=getAuthe
   res.setHeader('Retry-After','30');res.status(503).json({code:'SERVER_MAINTENANCE',message:settings.message});
  }catch(error){next(error);}
 };}
-export const maintenanceGate=createMaintenanceGate();
+export const maintenanceGate=createMaintenanceGate(()=>socketMaintenance.get());

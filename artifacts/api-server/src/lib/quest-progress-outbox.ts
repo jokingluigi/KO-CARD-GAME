@@ -42,6 +42,8 @@ function questState(state: GameState, offset: number): GameState {
     })),
   } as unknown as GameState;
 }
+/** 새 일이 들어오면 워커가 다시 0.5초 간격으로 확인하게 깨운다. */
+let wakeQuestWorker = () => {};
 export async function enqueueQuestProgress(
   tx: Tx,
   matchId: string,
@@ -50,6 +52,7 @@ export async function enqueueQuestProgress(
   state: GameState,
   eventStart: number,
 ) {
+  wakeQuestWorker();
   const context = await loadQuestProcessingContext(tx),
     eventOffset = state.status === "FINISHED" ? 0 : eventStart;
   const payload: Job = {
@@ -181,18 +184,28 @@ export async function flushQuestProgress(userId: string) {
 }
 export function startQuestProgressWorker() {
   let busy = false;
+  // 할 일이 없으면 점점 천천히 확인한다 (0.5초 → 최대 5초). 일이 생기면 다시 0.5초.
+  // 경기 직후 보상은 플레이어 요청 경로(drain)에서 바로 처리되므로, 이 워커는 재시도·남은 일 정리용이다.
+  let idleTicks = 0;
+  let nextAt = 0;
   const tick = async () => {
-    if (busy) return;
+    if (busy || Date.now() < nextAt) return;
     busy = true;
+    let processed = 0;
     try {
-      for (let i = 0; i < 30; i++)
+      for (let i = 0; i < 30; i++) {
         if (!(await processNextQuestProgress())) break;
+        processed++;
+      }
     } catch (error) {
       logger.error({ err: error }, "Quest progress outbox retry scheduled");
     } finally {
+      idleTicks = processed ? 0 : Math.min(idleTicks + 1, 10);
+      nextAt = Date.now() + idleTicks * 500;
       busy = false;
     }
   };
+  wakeQuestWorker = () => { idleTicks = 0; nextAt = 0; };
   const timer = setInterval(() => void tick(), 500);
   timer.unref();
   void tick();
