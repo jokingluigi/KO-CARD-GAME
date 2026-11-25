@@ -149,6 +149,9 @@ function scaleSize(value: number, scale: number): number {
 export type CardRendererSize = "hand" | "board" | "detail" | "admin";
 export type CardHighlight = "selected" | "target" | "attack";
 
+/** 카드별 마우스 위치 처리 상태 (화면 그리기 한 번에 한 번만 반영). */
+const pointerFx = new WeakMap<HTMLElement, { rect: DOMRect; x: number; y: number; frame: number }>();
+
 export function CardRenderer({
   cardId,
   name,
@@ -352,25 +355,44 @@ export function CardRenderer({
 
   // 반짝이 카드: 손가락·마우스 위치를 따라 빛이 움직인다 (레전드·에픽·챔피언만)
   function foilFollow(event: ReactPointerEvent<HTMLDivElement>) {
-    // 7. 손패 카드는 마우스를 따라 입체적으로 기운다 (터치는 제외).
-    if (size === "hand" && event.pointerType === "mouse") {
-      const tilt = event.currentTarget.getBoundingClientRect();
-      const nx = (event.clientX - tilt.left) / Math.max(1, tilt.width) - .5, ny = (event.clientY - tilt.top) / Math.max(1, tilt.height) - .5;
-      event.currentTarget.style.setProperty("--kj-tilt-x", `${(-ny * 14).toFixed(1)}deg`);
-      event.currentTarget.style.setProperty("--kj-tilt-y", `${(nx * 16).toFixed(1)}deg`);
-      event.currentTarget.dataset.kjTilt = "true";
-    }
-    if (normalizedRarity !== "EPIC" && normalizedRarity !== "LEGENDARY" && normalizedRarity !== "CHAMPION") return;
-    const box = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.style.setProperty("--foil-x", `${Math.round(((event.clientX - box.left) / box.width) * 100)}%`);
-    event.currentTarget.style.setProperty("--foil-y", `${Math.round(((event.clientY - box.top) / box.height) * 100)}%`);
-    event.currentTarget.dataset.foilActive = "true";
+    const tilt = size === "hand" && event.pointerType === "mouse";
+    // 대전 중에는 반짝이가 마우스를 따라가지 않는다 (아주 약하게 보이는데 비용이 큼). 컬렉션·팩에서는 따라감.
+    const foil = (normalizedRarity === "EPIC" || normalizedRarity === "LEGENDARY" || normalizedRarity === "CHAMPION") && !event.currentTarget.closest(".ko-game-shell");
+    if (!tilt && !foil) return;
+    // 잔렉 방지: 마우스가 움직일 때마다가 아니라 화면이 그려질 때 한 번만 반영하고,
+    // 카드 위치는 처음 들어올 때 한 번만 잰다 (기울어진 카드를 계속 다시 재지 않게).
+    const node = event.currentTarget;
+    let entry = pointerFx.get(node);
+    if (!entry) { entry = { rect: node.getBoundingClientRect(), x: 0, y: 0, frame: 0 }; pointerFx.set(node, entry); }
+    entry.x = event.clientX; entry.y = event.clientY;
+    if (entry.frame) return;
+    const live = entry;
+    live.frame = requestAnimationFrame(() => {
+      live.frame = 0;
+      const { rect } = live;
+      const fx = (live.x - rect.left) / Math.max(1, rect.width), fy = (live.y - rect.top) / Math.max(1, rect.height);
+      // 7. 손패 카드는 마우스를 따라 입체적으로 기운다 (터치는 제외).
+      if (tilt) {
+        node.style.setProperty("--kj-tilt-x", `${(-(fy - .5) * 14).toFixed(1)}deg`);
+        node.style.setProperty("--kj-tilt-y", `${((fx - .5) * 16).toFixed(1)}deg`);
+        node.dataset.kjTilt = "true";
+      }
+      if (foil) {
+        node.style.setProperty("--foil-dx", (fx - .5).toFixed(3));
+        node.style.setProperty("--foil-dy", (fy - .5).toFixed(3));
+        node.dataset.foilActive = "true";
+      }
+    });
   }
   function foilReset(event: ReactPointerEvent<HTMLDivElement>) {
-    delete event.currentTarget.dataset.foilActive;
-    delete event.currentTarget.dataset.kjTilt;
-    event.currentTarget.style.removeProperty("--kj-tilt-x");
-    event.currentTarget.style.removeProperty("--kj-tilt-y");
+    const node = event.currentTarget;
+    const entry = pointerFx.get(node);
+    if (entry?.frame) cancelAnimationFrame(entry.frame);
+    pointerFx.delete(node);
+    delete node.dataset.foilActive;
+    delete node.dataset.kjTilt;
+    node.style.removeProperty("--kj-tilt-x");
+    node.style.removeProperty("--kj-tilt-y");
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {

@@ -190,7 +190,8 @@ export function CosmeticEmoteTools({
   const [, refreshLayout] = useState(0);
   const button = useRef<HTMLButtonElement | null>(null),
     panel = useRef<HTMLDivElement | null>(null);
-  const rect = button.current?.getBoundingClientRect();
+  // 열려 있을 때만 위치를 잰다 (대전 화면이 다시 그려질 때마다 재면 잔렉).
+  const rect = open ? button.current?.getBoundingClientRect() : undefined;
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();

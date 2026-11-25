@@ -83,9 +83,14 @@ export function ChampionSpriteVisual({
   } | null>(null);
   useLayoutEffect(() => {
     if (!host.current) return;
-    const update = () => {
+    // 잔렉 방지: 크기 감시기가 이미 알려주는 높이를 쓰고, 다시 재지 않는다.
+    let lastHeight = -1;
+    const update = (measured?: number) => {
       if (!host.current) return;
-      setHeight(host.current.getBoundingClientRect().height);
+      const height = measured ?? host.current.getBoundingClientRect().height;
+      if (Math.abs(height - lastHeight) < 0.5) return;
+      lastHeight = height;
+      setHeight(height);
       const css = getComputedStyle(host.current);
       setCentered(
         css.getPropertyValue("--sprite-battle-axis").trim() === "vertical",
@@ -95,7 +100,10 @@ export function ChampionSpriteVisual({
       );
     };
     update();
-    const observer = new ResizeObserver(update);
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[entries.length - 1]?.borderBoxSize?.[0];
+      update(box ? box.blockSize : entries[entries.length - 1]?.contentRect.height);
+    });
     observer.observe(host.current);
     return () => observer.disconnect();
   }, []);

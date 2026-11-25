@@ -1,4 +1,5 @@
 import './perf-smooth.css';
+import { readSeconds, useSecondsValue, type SecondsStore } from '@/lib/seconds-store';
 import { TableScene } from "./table-scene";
 import { ScrollText, Settings } from "lucide-react";
 
@@ -139,7 +140,7 @@ interface GameStatePreviewProps {
   selectedCardId: string | null;
   selectedAttackerId: string | null;
   playError: string | null;
-  turnSecondsRemaining: number;
+  turnSecondsRemaining: number | SecondsStore;
   pendingCardInstanceId?:string|null;
   turnDeadlineAt?: number | null;
   serverOffset?: number;
@@ -1106,17 +1107,27 @@ export function GameStatePreview({
   }
 
   function setBoardCardRef(cardId: string, element: HTMLDivElement | null) {
-    if (element) {
-      boardCardRefs.current.set(cardId, element);
-      const rect = element.getBoundingClientRect();
-      lastCardPositionsRef.current.set(cardId, {
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-      });
-    } else boardCardRefs.current.delete(cardId);
+    const remember = (node: HTMLDivElement) => {
+      const rect = node.getBoundingClientRect();
+      lastCardPositionsRef.current.set(cardId, { left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+    };
+    if (element) { boardCardRefs.current.set(cardId, element); remember(element); }
+    else { const old = boardCardRefs.current.get(cardId); if (old?.isConnected) remember(old); boardCardRefs.current.delete(cardId); }
   }
+  // 잔렉 방지: 카드마다 '고정된' 연결 함수를 써서, 화면이 다시 그려질 때마다
+  // 모든 카드 위치를 다시 재지 않게 한다 (카드가 새로 생기거나 사라질 때만 잰다).
+  const stableRefCallbacks = React.useRef(new Map<string, (element: HTMLDivElement | null) => void>());
+  const stableCardRef = (kind: 'hand' | 'board', cardId: string) => {
+    const key = kind + ':' + cardId;
+    let callback = stableRefCallbacks.current.get(key);
+    if (!callback) {
+      callback = (element) => (kind === 'hand' ? setHandCardRefLive.current : setBoardCardRefLive.current)(cardId, element);
+      stableRefCallbacks.current.set(key, callback);
+    }
+    return callback;
+  };
+  const setHandCardRefLive = React.useRef(setHandCardRef); setHandCardRefLive.current = setHandCardRef;
+  const setBoardCardRefLive = React.useRef(setBoardCardRef); setBoardCardRefLive.current = setBoardCardRef;
 
   function cuePosition(cue: { kind: string; cardInstanceId?: string; playerId?: string; championId?: string }) {
     const cardElement = cue.cardInstanceId
@@ -1425,7 +1436,7 @@ export function GameStatePreview({
                     activeUsable={false}
                     onUseActive={() => undefined}
                       slotRef={(element) => setOpponentBoardSlotRef(i, element)}
-                     cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
+                     cardRef={card ? stableCardRef('board', card.instanceId) : undefined}
                      hit={Boolean(
                        attackImpactTriggered &&
                        attackAnimation && attackAnimation.damage > 0 &&
@@ -1483,7 +1494,7 @@ export function GameStatePreview({
                    {isMyTurn ? '내 턴' : '상대 턴'}
                  </div>
                </div>
-               {showTurnTimer && <BattleTurnClock seconds={turnSecondsRemaining} deadline={turnDeadlineAt} offset={serverOffset} />}
+               {showTurnTimer && <TurnClockSlot source={turnSecondsRemaining} deadline={turnDeadlineAt} offset={serverOffset} />}
             </div>
             <button
               type="button"
@@ -1494,7 +1505,7 @@ export function GameStatePreview({
               onClick={(event) => {
                 pressButton(event.currentTarget);
                 if(selectedCardId||selectedAttackerId){if(selectedCardId)onSelectCard(selectedCardId);if(selectedAttackerId)onSelectAttacker(selectedAttackerId);setAttackHint('선택을 해제했어요. 턴을 끝내려면 다시 눌러주세요.');return;}
-                if (readCombatPreferences().confirmEndTurn && remainingActions.length && secondsUntil(turnDeadlineAt,serverOffset,Date.now(),turnSecondsRemaining) > 10 && !confirmEndTurn) {
+                if (readCombatPreferences().confirmEndTurn && remainingActions.length && secondsUntil(turnDeadlineAt,serverOffset,Date.now(),readSeconds(turnSecondsRemaining)) > 10 && !confirmEndTurn) {
                   setConfirmEndTurn(true);
                   return;
                 }
@@ -1559,7 +1570,7 @@ export function GameStatePreview({
                    slotIndex={i as BoardSlotIndex}
                     selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
                     slotRef={(element) => setBoardSlotRef(i, element)}
-                     cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
+                     cardRef={card ? stableCardRef('board', card.instanceId) : undefined}
                      hit={Boolean(
                        attackImpactTriggered &&
                        attackAnimation && attackAnimation.damage > 0 &&
@@ -1937,7 +1948,7 @@ export function GameStatePreview({
                            presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                           onClick={() => {if(effectTargeting){if(validEffectTargetIds.has(card.instanceId))onEffectTarget(card.instanceId);return;}const reason=handUnavailableReason(state,card,payableCost);if(reason){explainAt(card.instanceId,reason);return;}if(!playableHandIds.has(card.instanceId)){explainAt(card.instanceId,"현재 사용 조건을 충족하지 못했거나 선택할 수 있는 대상이 없어요. 카드를 꾹 누르면(PC는 마우스를 올리면) 효과를 볼 수 있어요.");return;}if(interactionStatus){explainAt(card.instanceId,interactionStatus);return;}setLocalReason(null);setAttackHint(null);onSelectCard(card.instanceId);}}
-                           cardRef={(element) => setHandCardRef(card.instanceId, element)}
+                           cardRef={stableCardRef('hand', card.instanceId)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
                         />
@@ -2447,4 +2458,10 @@ function GraveyardModal({
       </div>
     </div>
   );
+}
+
+/** 남은 시간만 다시 그리는 작은 시계 자리 (대전 화면 전체가 매초 다시 그려지지 않게). */
+function TurnClockSlot({ source, deadline, offset }: { source: number | SecondsStore; deadline: React.ComponentProps<typeof BattleTurnClock>['deadline']; offset: React.ComponentProps<typeof BattleTurnClock>['offset'] }) {
+  const seconds = useSecondsValue(source);
+  return <BattleTurnClock seconds={seconds} deadline={deadline} offset={offset} />;
 }

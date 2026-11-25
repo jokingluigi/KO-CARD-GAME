@@ -17,6 +17,7 @@ import {championSpriteSkin,cosmeticImage,cosmeticImageSettings,type MatchCosmeti
 import {completeBoss,readBossHandoff,type BossInfo,type BossResult} from '@/lib/boss-client';
 import {celebrate} from '@/lib/celebrate';
 import {spawnBossIntro} from '@/components/battle-juice';
+import { createSecondsStore, type SecondsStore } from '@/lib/seconds-store';
 import {BossDialogue,type DialogueActor} from '@/components/boss-dialogue';
 import type {BossDialogueLine} from '@/game';
 import { completeMinionACatalog } from '../game/champions/minion-a';
@@ -200,9 +201,11 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     null,
   );
   const [playError, setPlayError] = useState<string | null>(null);
-  const [turnSecondsRemaining, setTurnSecondsRemaining] = useState(
-    TURN_TIME_LIMIT_SECONDS,
-  );
+  // 턴 시계: 1초마다 바뀌어도 시계만 다시 그려지도록 저장소에 담는다 (잔렉 방지)
+  const turnClock = useRef<SecondsStore | null>(null);
+  turnClock.current ??= createSecondsStore(TURN_TIME_LIMIT_SECONDS,);
+  const setTurnSecondsRemaining = turnClock.current.set;
+  const turnSecondsRemaining = turnClock.current;
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
   const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
   const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
