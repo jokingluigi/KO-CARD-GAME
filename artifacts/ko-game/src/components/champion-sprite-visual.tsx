@@ -1,3 +1,4 @@
+import { spawnAwakenSplit } from './battle-juice';
 import {boundPortraitFrames} from "./motion/battle-motion-bounds";
 import './battle-atmosphere.css';
 import {
@@ -247,7 +248,9 @@ export function ChampionSpriteVisual({
       // Hearthstone-style moments on the champion sprite itself.
       if (cue.kind === "ABILITY") { spawnAbilityFlare(null, at, rect.height * .75); audioManager.playImpactOverlay(import.meta.env.BASE_URL + "sfx/ability-cast.wav", 44, 6); }
       if (cue.kind === "HEAL") spawnHealGlow({ x: at.x, y: at.y, size: Math.max(90, rect.height * .7) });
-      if (cue.kind === "AWAKEN") spawnArrivalBlast({ x: at.x, y: at.y, width: rect.width * .8, height: rect.height * .8, kind: "LEGENDARY" });
+      if (cue.kind === "AWAKEN") { spawnArrivalBlast({ x: at.x, y: at.y, width: rect.width * .8, height: rect.height * .8, kind: "LEGENDARY" }); spawnAwakenSplit(at.x, at.y); }
+      // 29. 이모트: 챔피언이 앞으로 살짝 튀어나왔다 돌아간다
+      if (cue.kind === "EMOTE") animate(anchor, [{ scale: "1", filter: "brightness(1)" }, { scale: "1.08", filter: "brightness(1.18)", offset: .22 }, { scale: ".98", offset: .55 }, { scale: "1", filter: "brightness(1)" }], 560);
       if ((cue.kind === "HIT" || cue.kind === "HEAVY_HIT") && !cue.basicAttack) {
         const damage = cue.damage ?? (cue.kind === "HEAVY_HIT" ? 5 : 1);
         spawnImpactBurst({ x: at.x, y: at.y, dx: direction?.x ?? 0, dy: direction?.y ?? 1, damage, crackAt: { x: at.x, y: rect.bottom - 10 } });

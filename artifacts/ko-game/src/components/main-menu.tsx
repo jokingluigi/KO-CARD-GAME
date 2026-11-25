@@ -1,3 +1,4 @@
+import { readJuiceRecord } from './battle-juice';
 import {ClaimAllRewardsButton} from "./claim-all-rewards";
 import { MotionNumber } from "./presentation-motion";
 import {HomePacksShortcut} from "./home-packs-shortcut";
@@ -86,6 +87,7 @@ const menuItems = [
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, onNicknameChanged }: MainMenuProps) {
   const toolbarRef=useRef<HTMLDivElement>(null),accountRef=useRef<HTMLButtonElement>(null);
+  const [winStreak]=useState(()=>typeof window==='undefined'?0:readJuiceRecord().streak);
   const [toolbarSpace,setToolbarSpace]=useState(350);
   useLayoutEffect(()=>{const node=toolbarRef.current;if(!node)return;const update=()=>setToolbarSpace(Math.ceil(node.getBoundingClientRect().width)+12);update();const observer=new ResizeObserver(update);observer.observe(node);return()=>observer.disconnect();},[]);
   const [launchStatus,setLaunchStatus]=useState<HomeLaunchStatus>({kind:'LOADING',reason:'출전 덱을 확인하고 있어요.',editUrl:'/decks'});
@@ -193,7 +195,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
       <div aria-hidden="true" className="kmm-shade" />
 
       <header className="kmm-top">
-        <div className="kmm-brand"><h1 className="kmm-logo font-display">KO</h1><span className="kmm-tag">CARD BATTLE</span></div>
+        <div className="kmm-brand"><h1 className="kmm-logo font-display">KO</h1><span className="kmm-tag">CARD BATTLE</span>{winStreak >= 2 && <span className="kj-streak kj-streak--menu" aria-label={`${winStreak}연승 중`}><i aria-hidden="true" />{winStreak}연승</span>}</div>
         {user && (
           <div className="kmm-wallet" aria-label="보유 재화">
             <span title="크레딧"><i className="kmm-coin" aria-hidden="true" />{user.isTestAccount ? "∞" : <MotionNumber value={user.currencyBalance} format={n=>n.toLocaleString()} />}</span>

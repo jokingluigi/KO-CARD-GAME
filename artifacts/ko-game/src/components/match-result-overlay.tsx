@@ -24,6 +24,9 @@ import { audioManager } from "@/audio/audio-manager";
 import type { GameMediaCatalog } from "@/game/media";
 import "./cinematic-presentation.css";
 import { spawnResultStinger } from "./battle-moments";
+import { bestHitOf, recordMatchResult } from "./battle-juice";
+import { BestHitReplay } from "./best-hit-replay";
+import { celebrate } from "@/lib/celebrate";
 
 export function MatchResultOverlay({
   state, onRematch,onChooseDeck,deckRecord,
@@ -69,6 +72,23 @@ export function MatchResultOverlay({
 
   // The verdict lands with a stinger: VICTORY bursts gold, DEFEAT cracks the screen.
   const stingerRef=useRef('');
+  const [record,setRecord]=useState<{streak:number;firstWinToday:boolean}|null>(null);
+  // 19·44·47: 승리 꽃가루, 패배 흑백, 연승 기록, 오늘의 첫 승리
+  useEffect(()=>{
+    if(state.status!=="FINISHED"||(!isVictory&&!isDefeat))return;
+    const result=recordMatchResult(state.gameId,isVictory);
+    setRecord(result);
+    const timers:number[]=[];
+    if(isVictory&&result.counted){
+      timers.push(window.setTimeout(()=>void celebrate("legendary"),1300));
+      if(result.firstWinToday)timers.push(window.setTimeout(()=>{
+        void celebrate("boss");
+        const stamp=document.createElement("div");stamp.className="kj-first-win";stamp.setAttribute("aria-hidden","true");stamp.textContent="오늘의 첫 승리!";
+        document.body.appendChild(stamp);window.setTimeout(()=>stamp.remove(),3400);
+      },2400));
+    }else if(isDefeat)document.documentElement.classList.add("kj-defeat-gray");
+    return()=>{timers.forEach(t=>window.clearTimeout(t));document.documentElement.classList.remove("kj-defeat-gray");};
+  },[state.gameId,state.status,isVictory,isDefeat]);
   useEffect(()=>{
     if(state.status!=="FINISHED"||(!isVictory&&!isDefeat)||stingerRef.current===state.gameId)return;
     stingerRef.current=state.gameId;
@@ -167,6 +187,7 @@ export function MatchResultOverlay({
   const portrait=questPortraitForSkin(champion,cosmetics[player?.id??'']);
   const opponentPortrait=questPortraitForSkin(state.players[1]?.champion,cosmetics[state.players[1]?.id??'']);
   const root = useRef<HTMLDivElement>(null);
+  const bestHit = bestHitOf(state.gameId);
   useEffect(() => {
     const previous = document.activeElement;
     root.current?.focus({ preventScroll: true });
@@ -231,6 +252,7 @@ export function MatchResultOverlay({
                 <span className="ko-result-korean">{title}</span>
               </h1>
               <p className="ko-result-reason">{reason}</p>
+              {isVictory && record && record.streak >= 2 && <p className="kj-streak" aria-label={`${record.streak}연승`}><i aria-hidden="true" />{record.streak}연승!</p>}
               {champion && (
                 <p className="ko-result-champion-name">
                   {champion.name}
@@ -263,6 +285,7 @@ export function MatchResultOverlay({
           </header>
           <div className="ko-result-content">
             <div className="ko-result-analysis">
+              {bestHit && <BestHitReplay hit={bestHit} />}
               {finishingHit && (
                 <div className="ko-result-finisher">
                   <span>LAST HIT / 마지막 일격</span>

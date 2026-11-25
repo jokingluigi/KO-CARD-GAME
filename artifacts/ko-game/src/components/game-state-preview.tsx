@@ -107,6 +107,8 @@ import { QuestPresentation } from './quest-presentation';
 import { canPresentBattleQuest } from './quest-presentation-policy';
 import { audioManager } from '../audio/audio-manager';
 import { installBoardTaps, spawnCoinToss, startDangerPulse } from './battle-moments';
+import { useBattleAtmosphere } from './battle-atmosphere';
+import { noteHit, pressButton, springHandReflow } from './battle-juice';
 import { TargetingArrow } from './targeting-arrow';
 import { combatHitSound } from '../audio/combat-hit-sound';
 import { MatchTutorial } from './match-tutorial';
@@ -449,6 +451,17 @@ export function GameStatePreview({
   // beaten champion and the rest of the board stops; the zoom holds through the shatter.
   const shellRef=React.useRef<HTMLDivElement>(null);
   const [finalLens,setFinalLens]=React.useState<{x:number;y:number;strike:boolean}|null>(null);
+  useBattleAtmosphere(state, blackGold);
+  const handSpringRef=React.useRef<HTMLDivElement>(null);
+  const handSignature=state.players[0]?.hand.map(card=>card.instanceId).join(',')??'';
+  React.useLayoutEffect(()=>{springHandReflow(handSpringRef.current);},[handSignature,handSort]);
+  React.useEffect(()=>{
+    const a=attackAnimation;if(!a||a.damage<=0)return;
+    const def=getCardDefinition(a.attacker.definitionId);
+    const owner=a.attackerPlayerId??state.players.find(p=>[...p.board,...p.graveyard].some(c=>c?.instanceId===a.attacker.instanceId))?.id;
+    const target=a.targetKind==='CHAMPION'?(state.players.find(p=>p.id===a.targetPlayerId)?.champion?.name??'챔피언'):(a.target?getCardDefinition(a.target.definitionId)?.name??'카드':'카드');
+    noteHit(state.gameId,{damage:a.damage,attacker:def?.name??'카드',art:cosmeticImage(owner?cosmetics[owner]:undefined,'CARD_SKIN',a.attacker.definitionId,'art',def?.imageUrl),target,finisher:Boolean(a.finishingBlow)});
+  },[attackAnimation?.soundKey]);
   const lethalStrike=Boolean(attackAnimation&&attackAnimation.targetKind==='CHAMPION'&&state.status==='FINISHED'&&attackAnimation.damage>0&&(attackAnimation.targetPlayerId===undefined||attackAnimation.targetPlayerId===state.loserId));
   const aimFinalCamera=React.useCallback((x:number,y:number,strike:boolean)=>{
     const shell=shellRef.current;
@@ -893,6 +906,8 @@ export function GameStatePreview({
       return {
         ...draft,
         label: draft.kind === "QUEST_PROGRESS" ? '피니셔 준비 진행' : draft.label,
+        ...(draft.kind === 'DAMAGE' && draft.cardInstanceId && (previousCards.get(draft.cardInstanceId)?.currentHealth ?? Infinity) < (draft.value ?? 0)
+          ? { overkill: (draft.value ?? 0) - Math.max(0, previousCards.get(draft.cardInstanceId)!.currentHealth) } : {}),
         ...cuePosition(draft),
         targetWidth:(draft.cardInstanceId?boardCardRefs.current.get(draft.cardInstanceId)??handCardRefs.current.get(draft.cardInstanceId):draft.playerId===state.players[0]?.id?playerChampionRef.current:championRef.current)?.getBoundingClientRect().width,
 
@@ -1343,8 +1358,11 @@ export function GameStatePreview({
                   {selectedAttackerId && (
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
                   )}
+                  {selectedAttackerId && legalAttackTargets.has(opp.id) && attackBaseDamage >= opponentSurvivalHealth && opponentSurvivalHealth > 0 && !opponentChampionProtected && (
+                    <span className="kj-lethal-reticle" aria-hidden="true"><i /><b>K.O.</b></span>
+                  )}
                   {selectedAttackerId && legalAttackTargets.has(opp.id) && (
-                    <span className="ko-champion-target-hint pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-red-950 px-1.5 py-0.5 text-[8px] font-bold text-white">기본 피해 {attackBaseDamage}</span>
+                    <span className={`ko-champion-target-hint pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-red-950 px-1.5 py-0.5 text-[8px] font-bold text-white ${attackBaseDamage >= opponentSurvivalHealth && opponentSurvivalHealth > 0 && !opponentChampionProtected ? 'kj-lethal-hint' : ''}`}>{attackBaseDamage >= opponentSurvivalHealth && opponentSurvivalHealth > 0 && !opponentChampionProtected ? `KO 가능! 피해 ${attackBaseDamage}` : `기본 피해 ${attackBaseDamage}`}</span>
                   )}
                 </div>
                 <div className="ko-opponent-stats flex w-[76px] shrink-0 flex-col items-start gap-1">
@@ -1472,7 +1490,8 @@ export function GameStatePreview({
               data-actions-remain={Boolean(remainingActions.length&&isMyTurn)}
               data-turn-state={!isMyTurn?undefined:(remainingActions.length||legalActions.some(action=>action.type==='PLAY_WRESTLER'||action.type==='PLAY_TECHNIQUE'))?'moves':'done'}
               aria-label={confirmEndTurn?'남은 행동이 있지만 턴 종료 확정':`턴 종료${remainingActions.length&&isMyTurn?' · 사용 가능한 공격 또는 능력 남음':''}`}
-              onClick={() => {
+              onClick={(event) => {
+                pressButton(event.currentTarget);
                 if(selectedCardId||selectedAttackerId){if(selectedCardId)onSelectCard(selectedCardId);if(selectedAttackerId)onSelectAttacker(selectedAttackerId);setAttackHint('선택을 해제했어요. 턴을 끝내려면 다시 눌러주세요.');return;}
                 if (readCombatPreferences().confirmEndTurn && remainingActions.length && secondsUntil(turnDeadlineAt,serverOffset,Date.now(),turnSecondsRemaining) > 10 && !confirmEndTurn) {
                   setConfirmEndTurn(true);
@@ -1895,7 +1914,7 @@ export function GameStatePreview({
                  event.stopPropagation(); event.preventDefault(); setHandZoom(true);
                }}
                className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
-                <div className="ko-hand-cards relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
+                <div ref={handSpringRef} className="ko-hand-cards relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
                  ) : (

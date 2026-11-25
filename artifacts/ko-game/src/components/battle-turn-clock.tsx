@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import "./battle-juice.css";
 import { createPortal } from "react-dom";
 import { audioManager } from "../audio/audio-manager";
 import "./turn-rope.css";
@@ -87,6 +88,8 @@ function TurnRope({ remaining }: { remaining: number }) {
     if (document.hidden) return;
     if (!lit.current) { lit.current = true; audioManager.playImpactOverlay(import.meta.env.BASE_URL + 'sfx/rope-ignite.wav', 34, 3); }
     else if (remaining <= 5) audioManager.playImpactOverlay(import.meta.env.BASE_URL + 'sfx/rope-tick.wav', remaining <= 3 ? 34 : 26, 2);
+    // 16. 시간이 얼마 안 남으면 심장박동
+    if (remaining > 0 && remaining <= 10 && remaining % (remaining <= 5 ? 1 : 2) === 0) audioManager.playImpactOverlay(import.meta.env.BASE_URL + 'sfx/heartbeat.wav', remaining <= 5 ? 30 : 20, 1);
   }, [remaining]);
   if (!rect) return null;
   // The fuse is the full width at ROPE_SECONDS and burns towards the left edge; one second of burn per tick.
@@ -96,6 +99,7 @@ function TurnRope({ remaining }: { remaining: number }) {
       <div className="ko-turn-rope__cord" style={{ width: `${fraction * 100}%` }}>
         <span className="ko-turn-rope__flame" />
       </div>
+      {remaining <= 10 && <div className={`kj-time-pulse ${remaining <= 5 ? 'kj-time-pulse--hard' : ''}`} />}
     </div>,
     document.body,
   );

@@ -18,3 +18,8 @@
 .ko-game-shell.ko-has-table .ko-battle-command{background:rgba(10,8,5,.66)!important;border:1px solid rgba(0,0,0,.7)!important;box-shadow:inset 0 2px 6px rgba(0,0,0,.6)!important}
 /* 손패 받침: 테이블 위에 놓인 가죽 받침 */
 .ko-game-shell.ko-has-table .ko-player-hand{background:linear-gradient(180deg,rgba(30,18,10,.55),rgba(12,8,5,.8))!important;border-color:rgba(201,162,74,.35)!important}
+/* 34. 턴이 지날수록 조명이 좁아짐 (--kj-dusk: 0 → 1) */
+.ko-table-scene::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 52% 46% at 50% 46%,rgba(255,190,110,calc(.10 * var(--kj-dusk,0))),transparent 62%),
+    radial-gradient(ellipse 80% 70% at 50% 46%,transparent 30%,rgba(0,0,0,calc(.62 * var(--kj-dusk,0))) 100%);
+  transition:background 2.5s ease}

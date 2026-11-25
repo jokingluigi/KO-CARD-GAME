@@ -1,4 +1,5 @@
 
+import { spawnCostCoins } from './battle-juice';
 import './battle-atmosphere.css';
 import {spawnLandingDust,spawnImpactBurst} from './impact-burst';
 import {spawnSpellDissolve,spellBurnFrames} from './spell-dissolve';
@@ -120,6 +121,8 @@ export function CardPlayAnimation({
 
   useEffect(() => {
     completedRef.current=false;landedRef.current=false;setLanded(false);
+    // 15. 낸 카드의 코스트만큼 골드 동전이 카드로 빨려 들어간다 (직접 낸 카드만).
+    if(!animation.batchId&&!document.hidden)try{const golds=document.querySelectorAll('[data-resource="gold"]');const mine=source.top+source.height/2>innerHeight/2;spawnCostCoins(golds[mine?golds.length-1:0]?.getBoundingClientRect(),{x:source.left+source.width/2,y:source.top+source.height/2},Math.max(0,animation.card.currentCost??0));}catch{/* visual only */}
     if(finisherSpell)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/spell-cast.wav',34,6);
     // A soft whoosh as a card leaves the hand.
     else if(animation.kind==='WRESTLER'&&!reduced&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/card-lift.wav',arrival?32:26,3);

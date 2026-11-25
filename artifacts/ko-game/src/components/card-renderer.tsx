@@ -352,6 +352,14 @@ export function CardRenderer({
 
   // 반짝이 카드: 손가락·마우스 위치를 따라 빛이 움직인다 (레전드·에픽·챔피언만)
   function foilFollow(event: ReactPointerEvent<HTMLDivElement>) {
+    // 7. 손패 카드는 마우스를 따라 입체적으로 기운다 (터치는 제외).
+    if (size === "hand" && event.pointerType === "mouse") {
+      const tilt = event.currentTarget.getBoundingClientRect();
+      const nx = (event.clientX - tilt.left) / Math.max(1, tilt.width) - .5, ny = (event.clientY - tilt.top) / Math.max(1, tilt.height) - .5;
+      event.currentTarget.style.setProperty("--kj-tilt-x", `${(-ny * 14).toFixed(1)}deg`);
+      event.currentTarget.style.setProperty("--kj-tilt-y", `${(nx * 16).toFixed(1)}deg`);
+      event.currentTarget.dataset.kjTilt = "true";
+    }
     if (normalizedRarity !== "EPIC" && normalizedRarity !== "LEGENDARY" && normalizedRarity !== "CHAMPION") return;
     const box = event.currentTarget.getBoundingClientRect();
     event.currentTarget.style.setProperty("--foil-x", `${Math.round(((event.clientX - box.left) / box.width) * 100)}%`);
@@ -360,6 +368,9 @@ export function CardRenderer({
   }
   function foilReset(event: ReactPointerEvent<HTMLDivElement>) {
     delete event.currentTarget.dataset.foilActive;
+    delete event.currentTarget.dataset.kjTilt;
+    event.currentTarget.style.removeProperty("--kj-tilt-x");
+    event.currentTarget.style.removeProperty("--kj-tilt-y");
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {

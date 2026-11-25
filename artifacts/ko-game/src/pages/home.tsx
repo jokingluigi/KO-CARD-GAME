@@ -16,6 +16,7 @@ import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
 import {championSpriteSkin,cosmeticImage,cosmeticImageSettings,type MatchCosmetics} from '@workspace/cosmetics';
 import {completeBoss,readBossHandoff,type BossInfo,type BossResult} from '@/lib/boss-client';
 import {celebrate} from '@/lib/celebrate';
+import {spawnBossIntro} from '@/components/battle-juice';
 import {BossDialogue,type DialogueActor} from '@/components/boss-dialogue';
 import type {BossDialogueLine} from '@/game';
 import { completeMinionACatalog } from '../game/champions/minion-a';
@@ -213,6 +214,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const [aiMatchStarted, setAiMatchStarted] = useState(false);
   const [aiOpening, setAiOpening] = useState<AiMatchOpening | null>(null);
   const [bossInfo, setBossInfo] = useState<BossInfo | null>(null);
+  const [bossSirenDone, setBossSirenDone] = useState(false);
   const [bossDialogue, setBossDialogue] = useState<{ key: string; lines: BossDialogueLine[]; banner?: { title: string; subtitle?: string } } | null>(null);
   const [bossResult, setBossResult] = useState<BossResult | null>(null);
   const bossShownRef = useRef<Set<string>>(new Set());
@@ -621,7 +623,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       const next={...handoff.state,backgroundId:media.backgrounds[Math.floor(random()*media.backgrounds.length)]?.id??null,bgmId:media.bgms[Math.floor(random()*media.bgms.length)]?.id??null};
       aiMatchQuestContextRef.current={deckId:handoff.deckId,aiDeckId:handoff.aiDeckId,difficulty:handoff.difficulty,matchId:handoff.matchId};
       aiMatchActionsRef.current=[];submittedAIMatchRef.current=null;
-      setBossInfo((handoff as {boss?:BossInfo}).boss??null);setBossResult(null);setBossDialogue(null);bossShownRef.current=new Set();
+      setBossInfo((handoff as {boss?:BossInfo}).boss??null);setBossSirenDone(false);setBossResult(null);setBossDialogue(null);bossShownRef.current=new Set();
       setAiRewardStatus('pending');setAiRewardError(null);setAiQuestError(null);
       setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout,...(handoff.opponentCosmetics?{[next.players[1].id]:handoff.opponentCosmetics}:{})});
       await prepareIntroPortraits([cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl),cosmeticImage(handoff.opponentCosmetics,'CHAMPION_SKIN',next.players[1].champion!.id,'intro',handoff.opponentChampion.imageUrl)]);
@@ -640,11 +642,12 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if(!isBossMatch||!bossInfo||!matchReady||aiOpeningActive||bossDialogue)return;
     const shown=bossShownRef.current;
     const show=(key:string,lines:BossDialogueLine[],banner?:{title:string;subtitle?:string})=>{shown.add(key);setBossDialogue({key,lines,banner});};
+    if(!bossSirenDone){if(!shown.has('siren')){shown.add('siren');spawnBossIntro(bossInfo.name,bossInfo.subtitle||'BOSS BATTLE');window.setTimeout(()=>setBossSirenDone(true),2700);}return;}
     if(!shown.has('intro')){show('intro',bossInfo.introDialogue,{title:bossInfo.name,subtitle:bossInfo.subtitle||'보스전'});return;}
     const phaseIndex=gameState.boss?.phaseIndex??0;
     if(phaseIndex>0&&!shown.has('phase:'+phaseIndex)){const phase=gameState.boss?.phases[phaseIndex];show('phase:'+phaseIndex,phase?.dialogue??[],{title:phase?.name||`${phaseIndex+1}페이즈`,subtitle:'보스가 다시 일어섰다!'});return;}
     if(gameState.status==='FINISHED'&&gameState.winnerId===gameState.players[0]?.id&&!shown.has('clear')){show('clear',bossInfo.clearDialogue,{title:'보스 격파!',subtitle:bossInfo.name});}
-  },[isBossMatch,bossInfo,matchReady,aiOpeningActive,bossDialogue,gameState.boss?.phaseIndex,gameState.status,gameState.winnerId]);
+  },[isBossMatch,bossInfo,bossSirenDone,matchReady,aiOpeningActive,bossDialogue,gameState.boss?.phaseIndex,gameState.status,gameState.winnerId]);
   useEffect(()=>{if(bossResult?.cleared&&bossResult.firstClear&&!bossDialogue)void celebrate('boss');},[bossResult?.cleared,bossResult?.firstClear,bossDialogue]);
   const bossActor=(playerIndex:0|1):DialogueActor=>{
     const player=gameState.players[playerIndex];const champion=player?.champion;

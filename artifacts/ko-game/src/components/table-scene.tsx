@@ -3,6 +3,7 @@ import { prefersReducedMotion } from "./presentation-config";
 import tableWood from "./battle-board-assets/walnut-material-wide.webp";
 import rimWood from "./battle-board-assets/board-rim-wood.webp";
 import "./table-scene.css";
+import "./battle-tabletop.css";
 
 /**
  * 대전 화면 = 나무 테이블 위에 펼쳐 둔 보드게임판.

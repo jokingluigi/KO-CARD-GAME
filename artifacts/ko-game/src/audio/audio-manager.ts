@@ -39,6 +39,8 @@ function hasBrowserAudio() {
   return typeof window !== "undefined" && typeof Audio !== "undefined";
 }
 
+export type SfxOptions = { pan?: number; pitch?: number };
+
 class AudioManager {
   private attackRevision = 0;
   private attackCleanup: (()=>void)|null=null;
@@ -243,7 +245,8 @@ class AudioManager {
       audio.preload = "auto";
       this.attackBaseVolume = volume;
       audio.volume = safeVolume(volume * this.sfxVolume / 100);
-      audio.playbackRate = Math.max(0.8, Math.min(1.25, pitch));
+      try { (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false; } catch { /* optional */ }
+      audio.playbackRate = Math.max(0.8, Math.min(1.25, pitch === 1 ? 1 + (Math.random() - .5) * .07 : pitch));
       this.attackAudio = audio;
       const cleanup=()=>{audio.removeEventListener?.("ended",ended);if(this.attackCleanup===cleanup)this.attackCleanup=null;};
       const ended=()=>{if(this.attackRevision===revision&&this.attackAudio===audio)this.attackAudio=null;cleanup();};
@@ -272,7 +275,7 @@ class AudioManager {
   }
 
   /** One-shot layer that does not cut off the ongoing finishing blow. */
-  playImpactOverlay(url: string, volume: number, priority = 4) {
+  playImpactOverlay(url: string, volume: number, priority = 4, options: SfxOptions = {}) {
     if (!hasBrowserAudio() || !url || !acceptsSound(this.soundPriority, this.soundUntil, priority, Date.now())) return;
     if (this.overlays.size >= 4) { const oldest = this.overlays.values().next().value; oldest?.pause(); if (oldest) this.overlays.delete(oldest); }
     const audio = new Audio(externalSound(url));
@@ -280,8 +283,76 @@ class AudioManager {
     const release = () => this.overlays.delete(audio);
     audio.addEventListener('ended', release, { once: true });
     audio.addEventListener('error', release, { once: true });
-    audio.volume = safeVolume(volume * this.sfxVolume / 100);
+    this.applyVariation(audio, url, options.pitch);
+    const level = safeVolume(volume * this.sfxVolume / 100);
+    if (!this.routePanned(audio, options.pan, level)) audio.volume = level;
     void audio.play().catch(release);
+  }
+
+  /** Repeated hits never sound identical: impacts get a small random pitch drift. */
+  private applyVariation(audio: HTMLAudioElement, url: string, pitch?: number) {
+    const varied = /combat-|impact-|armor|card-destroy|board-knock|combo-hit|coin-tick/.test(url);
+    const rate = (pitch ?? 1) * (varied ? 1 + (Math.random() - .5) * .09 : 1);
+    if (rate === 1) return;
+    try { (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false; } catch { /* optional */ }
+    audio.playbackRate = Math.max(.7, Math.min(1.6, rate));
+  }
+
+  private spatial: AudioContext | null = null;
+  /** Left-side hits come from the left speaker. Only once audio is unlocked; otherwise plays centred. */
+  private routePanned(audio: HTMLAudioElement, pan: number | undefined, level: number) {
+    if (pan === undefined || !Number.isFinite(pan) || Math.abs(pan) < .04) return false;
+    const context = this.spatial;
+    if (!context || context.state !== 'running' || typeof context.createStereoPanner !== 'function') return false;
+    try {
+      const source = context.createMediaElementSource(audio);
+      const panner = context.createStereoPanner();
+      const gain = context.createGain();
+      panner.pan.value = Math.max(-.75, Math.min(.75, pan));
+      gain.gain.value = level;
+      source.connect(gain).connect(panner).connect(context.destination);
+      audio.volume = 1;
+      return true;
+    } catch { return false; }
+  }
+
+  private ensureSpatial() {
+    if (typeof window === 'undefined') return;
+    try {
+      const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) return;
+      this.spatial ??= new Ctor();
+      if (this.spatial.state === 'suspended') void this.spatial.resume().catch(() => undefined);
+    } catch { this.spatial = null; }
+  }
+
+  private layer: { audio: HTMLAudioElement; url: string; level: number; fade: number | null } | null = null;
+  /** A looping music layer (tension drums) that sits on top of the battle music. */
+  setMusicLayer(url: string | null, level = .5) {
+    if (!hasBrowserAudio()) return;
+    const target = url && !this.bgmMuted && this.musicContext !== 'SILENT' ? safeVolume(level * this.bgmVolume / 100) : 0;
+    if (url && (!this.layer || this.layer.url !== url)) {
+      this.layer?.audio.pause();
+      const audio = new Audio(externalSound(url));
+      audio.loop = true; audio.volume = 0;
+      this.layer = { audio, url, level, fade: null };
+      void audio.play().catch(() => undefined);
+    }
+    const layer = this.layer;
+    if (!layer) return;
+    layer.level = level;
+    if (layer.fade) window.clearInterval(layer.fade);
+    layer.fade = window.setInterval(() => {
+      const next = layer.audio.volume + Math.sign(target - layer.audio.volume) * .03;
+      if (Math.abs(target - layer.audio.volume) <= .03) {
+        layer.audio.volume = target;
+        if (layer.fade) window.clearInterval(layer.fade);
+        layer.fade = null;
+        if (target === 0) { layer.audio.pause(); if (this.layer === layer) this.layer = null; }
+        return;
+      }
+      layer.audio.volume = safeVolume(next);
+    }, 60);
   }
 
   duckForPresentation(factor: number, durationMs: number) {
@@ -336,6 +407,7 @@ class AudioManager {
 
   setBgmMuted(muted: boolean) {
     this.bgmMuted = muted;
+    if (muted && this.layer) this.setMusicLayer(null);
     if (this.bgm) {
       this.bgm.audio.muted = muted;
       this.bgm.audio.volume = muted
@@ -367,6 +439,7 @@ class AudioManager {
   }
 
   unlockAudio() {
+    this.ensureSpatial();
     if (this.current?.awaitingUnlock) this.current.retryPlayback();
     if (this.bgmMuted) return;
     this.reconcileBgmPlayback();
@@ -386,12 +459,14 @@ class AudioManager {
 
   /** Clears every game-owned music/effect handle when leaving a match route. */
   stopGameAudio() {
+    this.setMusicLayer(null);
     this.stopBgm();
     this.stopAttack();
   }
 
   /** Match preparation must never discard the menu track or its autoplay retry. */
   stopBattleAudio() {
+    this.setMusicLayer(null);
     this.stopTemporary(false);
     this.queue = [];
     if (this.pendingBaseMusic?.scope === "BATTLE") this.pendingBaseMusic = null;

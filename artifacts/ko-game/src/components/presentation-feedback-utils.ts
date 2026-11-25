@@ -39,6 +39,8 @@ export type PresentationCueDraft = {
   /** A confirmed status reaction can use a different visual from status acquisition. */
   combat?: boolean;
   selfDamage?: boolean;
+  /** Damage beyond the target's remaining health (presentation only). */
+  overkill?: number;
 };
 
 /** Cosmetic feedback must not hold the AI turn or legal player input. */

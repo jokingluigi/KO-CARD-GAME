@@ -5,6 +5,7 @@ import "./effect-readability.css";
 import { MotionNumber } from "./presentation-motion";
 import { displayHealth } from "./match-display-utils";
 import "./champion-portrait-frame.css";
+import "./battle-juice.css";
 
 /** HUD chrome inside the existing champion target; never intercepts input. */
 export function ChampionPortraitFrame({
@@ -57,6 +58,7 @@ export function ChampionPortraitFrame({
           />
         </svg>
       </div>
+      {health > 0 && health <= 5 && <div className="kj-low-aura" aria-hidden="true"><i /><i /><i /></div>}
       <div className="ko-portrait-plinth" aria-hidden="true" />
       <span className="ko-portrait-name font-display" title={name}>
         {name.replace(/^챔피언\s*/, "")}
@@ -84,26 +86,33 @@ function HealthTrack({
   health: number;
   maxHealth: number;
 }) {
+  // 격투게임식 체력바: 맞으면 깎인 부분이 하얗게 남았다가 잠시 뒤 천천히 줄어든다.
   const ratio = Math.max(0, Math.min(1, health / Math.max(1, maxHealth))),
     [trail, setTrail] = useState(ratio),
+    [mode, setMode] = useState<"idle" | "hit" | "drain" | "heal">("idle"),
     prior = useRef({ ratio, maxHealth });
   useEffect(() => {
     const old = prior.current;
     prior.current = { ratio, maxHealth };
-    if (
-      old.maxHealth !== maxHealth ||
-      ratio >= old.ratio ||
-      prefersReducedMotion()
-    ) {
+    if (old.maxHealth !== maxHealth || ratio === old.ratio || prefersReducedMotion()) {
       setTrail(ratio);
+      setMode("idle");
       return;
     }
-    setTrail(old.ratio);
-    const t = setTimeout(() => setTrail(ratio), 100);
-    return () => clearTimeout(t);
+    if (ratio > old.ratio) {
+      setTrail(ratio);
+      setMode("heal");
+      const t = setTimeout(() => setMode("idle"), 700);
+      return () => clearTimeout(t);
+    }
+    setTrail((current) => Math.max(current, old.ratio));
+    setMode("hit");
+    const hold = setTimeout(() => { setMode("drain"); setTrail(ratio); }, 520);
+    const rest = setTimeout(() => setMode("idle"), 1300);
+    return () => { clearTimeout(hold); clearTimeout(rest); };
   }, [ratio, maxHealth]);
   return (
-    <span className="ko-portrait-health-track" aria-hidden="true">
+    <span className="ko-portrait-health-track" data-mode={mode} aria-hidden="true">
       <i style={{ width: trail * 100 + "%" }} />
       <b style={{ width: ratio * 100 + "%" }} />
     </span>

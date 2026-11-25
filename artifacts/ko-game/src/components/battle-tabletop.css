@@ -1,0 +1,27 @@
+/* 테이블 위 카드 손맛 (5 그림자, 7 손패 기울기, 33 놓을 칸, 37 손패 출렁임) */
+
+/* 5. 카드 그림자: 테이블 위에 놓인 카드, 들어 올리면 그림자가 커지고 흐려짐 */
+.ko-game-shell.ko-has-table .ko-game-stage .ko-card-depth{
+  filter:drop-shadow(0 3px 2px rgba(0,0,0,.55)) drop-shadow(0 10px 10px rgba(0,0,0,.34));
+  transition:filter .22s ease}
+.ko-game-shell.ko-has-table .ko-game-stage :is(.ko-hand-card:hover,.ko-hand-card--selected) .ko-card-depth,
+.ko-game-shell.ko-has-table .ko-game-stage .ko-card-depth[data-kj-tilt]{
+  filter:drop-shadow(0 12px 6px rgba(0,0,0,.34)) drop-shadow(0 30px 24px rgba(0,0,0,.4))}
+.ko-game-shell.ko-has-table .ko-card-drag-ghost{box-shadow:none!important;
+  filter:drop-shadow(0 24px 12px rgba(0,0,0,.38)) drop-shadow(0 46px 34px rgba(0,0,0,.32))}
+
+/* 7. 손패 기울기 (마우스) */
+.ko-game-stage .ko-hand-card .ko-card-depth{
+  transform:perspective(760px) rotateX(var(--kj-tilt-x,0deg)) rotateY(var(--kj-tilt-y,0deg)) var(--ko-phys,translateZ(0));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.ko-game-stage .ko-hand-card .ko-card-depth[data-kj-tilt]{transition:transform .08s linear}
+
+/* 33. 카드를 끌면 놓을 수 있는 칸이 숨 쉬듯 빛남 */
+.ko-game-shell .ko-board-slot[data-drag-valid="true"]{animation:kj-slot-breathe 1.3s ease-in-out infinite!important}
+.ko-game-shell .ko-board-slot[data-drag-hover="true"]{animation:none!important;box-shadow:0 0 0 2px #f3d78c,0 0 22px rgba(255,205,110,.65),inset 0 0 22px rgba(255,205,110,.35)!important}
+@keyframes kj-slot-breathe{0%,100%{box-shadow:0 0 0 1px rgba(232,200,120,.55),0 0 6px rgba(255,205,110,.2),inset 0 0 8px rgba(255,205,110,.1)}
+  50%{box-shadow:0 0 0 2px rgba(243,215,140,.95),0 0 18px rgba(255,205,110,.55),inset 0 0 16px rgba(255,205,110,.28)}}
+
+@media (prefers-reduced-motion:reduce){
+  .ko-game-stage .ko-hand-card .ko-card-depth{transform:var(--ko-phys,none);transition:none}
+  .ko-game-shell .ko-board-slot[data-drag-valid="true"]{animation:none!important;box-shadow:0 0 0 2px rgba(243,215,140,.9)!important}}

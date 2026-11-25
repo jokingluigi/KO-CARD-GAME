@@ -1,0 +1,3 @@
+KO CARD GAME in-house sound effects.
+All files were generated procedurally by docs/audio/ko-synth-generate.py (numpy/scipy synthesis).
+No third-party recordings are used. Owned by the KO CARD GAME project.

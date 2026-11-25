@@ -17,6 +17,7 @@ import { prefersReducedMotion } from "./presentation-config";
 import { spawnDamageBadge, spawnImpactBurst } from './impact-burst';
 import { spawnPortraitCracks } from './battle-moments';
 import { hitForce, kickBoard } from './card-physics';
+import { attackJuice } from './battle-juice-cues';
 import { impactBurstProfile, shudderFrames } from './impact-burst-model';
 
 export function AttackAnimation({
@@ -128,6 +129,7 @@ export function AttackAnimation({
       }
       // Base hit playback clears old overlays; start the new bass layer afterwards.
       onImpactRef.current();
+      if(!document.hidden)try{attackJuice(animation,{x:contactX,y:contactY},target);}catch{/* visual only */}
       if (!document.hidden) {
         const profile=damageImpact(animation.damage,Boolean(animation.finishingBlow));
         screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:{...profile,duration:Math.min(profile.duration,duration-impactDelay-16)},x:contactX,y:contactY,direction:{x:dx,y:dy},nearby:impactRank(profile)>=4});
