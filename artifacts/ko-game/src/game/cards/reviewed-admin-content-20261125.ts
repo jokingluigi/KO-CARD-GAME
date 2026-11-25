@@ -10,6 +10,10 @@ const reviewedTexts: Record<string, string> = {
   "5a980204-0e83-446f-9660-f893b28d23af": "카운트다운(3):'대망의 라스트 스테이지'를 발동합니다.",
   // 대망의 라스트 스테이지 (토큰 기술)
   "30900369-2bc3-43c0-8db1-e1f14909f9a8":
+    "모두에게 10 데미지를 줍니다. 이 효과로 양 측의 챔피언이 동시에 체력이 다 떨어지면 상대 챔피언의 승리입니다. 이 카드는 손패에 들어온 즉시 효과가 발동됩니다.",
+};
+const previousTexts: Record<string, string> = {
+  "30900369-2bc3-43c0-8db1-e1f14909f9a8":
     "모두에게 10 데미지를 줍니다. 이 효과로 양 측의 챔피언이 동시에 체력이 다 떨어지면 상대 챔피언의 승리입니다.",
 };
 const clean = (s: string) => s.replace(/\s/gu, "");
@@ -35,12 +39,21 @@ const stageAbilities = (trigger: CardAbility["trigger"]) =>
   LAST_STAGE_EFFECTS.map(effects => ({ trigger, effects }) as CardAbility);
 
 export function reviewedNovember25Abilities(card: PublishedCardRecord): CardAbility[] | null {
-  if (card.effectId || !reviewedTexts[card.id] || clean(reviewedTexts[card.id]!) !== clean(card.text)) return null;
+  if (card.effectId || !reviewedTexts[card.id]) return null;
+  const latest = clean(reviewedTexts[card.id]!) === clean(card.text);
+  if (!latest && !(previousTexts[card.id] && clean(previousTexts[card.id]!) === clean(card.text))) return null;
   switch (card.id) {
     case "5a980204-0e83-446f-9660-f893b28d23af":
       return stageAbilities("COUNTDOWN");
-    case "30900369-2bc3-43c0-8db1-e1f14909f9a8":
-      return stageAbilities("ACTIVE");
+    case "30900369-2bc3-43c0-8db1-e1f14909f9a8": {
+      if (!latest) return stageAbilities("ACTIVE");
+      // 손패에 들어오는 순간(드로우 또는 새로 생성) 바로 발동하고, 발동한 카드는 사라진다.
+      const inHand = (trigger: CardAbility["trigger"]) => [
+        ...LAST_STAGE_EFFECTS.map(effects => ({ trigger, effects, sourceZones: ["HAND"] }) as CardAbility),
+        { trigger, effects: [fx("REMOVE_FROM_GAME", { zone: "HAND", owner: "SELF", selection: "SELF", count: 1 })], sourceZones: ["HAND"] } as CardAbility,
+      ];
+      return [...inHand("CARD_DRAWN"), ...inHand("HAND_WRESTLER_ADDED"), ...stageAbilities("ACTIVE")];
+    }
     default:
       return null;
   }

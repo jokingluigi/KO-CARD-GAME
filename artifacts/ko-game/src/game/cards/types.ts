@@ -24,7 +24,7 @@ export function normalizeCardRarity(value?: unknown): CardRarity {
 
 export function allowedCardRarities(cardType: 'WRESTLER' | 'TECHNIQUE'): CardRarity[] {
   return cardType === 'TECHNIQUE'
-    ? ['EPIC', 'CHAMPION', 'TOKEN']
+    ? ['EPIC', 'LEGENDARY', 'CHAMPION', 'TOKEN']
     : ['NORMAL', 'EPIC', 'LEGENDARY', 'CHAMPION', 'TOKEN'];
 }
 
@@ -37,7 +37,10 @@ export function normalizeCardRarityForType(
   if (cardType === 'TECHNIQUE') {
     // An explicitly selected champion grade also applies to generated spells.
     if (rarity === 'CHAMPION') return rarity;
-    return rarity === 'TOKEN' || tokenFlags?.isToken || tokenFlags?.isChampionToken ? 'TOKEN' : 'EPIC';
+    const token = rarity === 'TOKEN' || tokenFlags?.isToken || tokenFlags?.isChampionToken;
+    // 토큰 기술은 레전더리 등급을 그대로 유지한다 (선수 토큰과 동일). 일반 기술은 에픽까지.
+    if (rarity === 'LEGENDARY' && (tokenFlags?.isToken || tokenFlags?.isChampionToken)) return rarity;
+    return token ? 'TOKEN' : 'EPIC';
   }
   return rarity;
 }

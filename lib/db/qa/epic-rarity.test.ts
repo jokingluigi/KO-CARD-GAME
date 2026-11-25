@@ -124,7 +124,7 @@ test('AI exceptions, test deck and actual engine match start retain EPIC',async(
 });
 
 test('technique grades preserve CHAMPION in admin/runtime; legacy migration remains idempotent', async()=>{
- assert.deepEqual(allowedCardRarities('TECHNIQUE'),['EPIC','CHAMPION','TOKEN']);
+ assert.deepEqual(allowedCardRarities('TECHNIQUE'),['EPIC','LEGENDARY','CHAMPION','TOKEN']);
  const base={name:'Technique grade QA',cardType:'TECHNIQUE',cost:1,attack:0,health:0,text:'unchanged',isToken:false,isChampionToken:false,keywords:[],tags:[],effectConfig:{},status:'DRAFT'};
  for(const rarity of ['NORMAL','EPIC','LEGENDARY','CHAMPION','TOKEN'] as const){
   const expected=rarity==='TOKEN'?'TOKEN':rarity==='CHAMPION'?'CHAMPION':'EPIC';
@@ -134,6 +134,8 @@ test('technique grades preserve CHAMPION in admin/runtime; legacy migration rema
   await database.insert(schema.cardsTable).values({...base,id:`tech-grade-${rarity}`,rarity});
  }
  assert.equal(admin.parseCardInput({...base,rarity:'NORMAL',isToken:true})?.rarity,'TOKEN');
+ // 2026-11-25: 토큰 기술은 레전더리 등급을 유지한다 (일반 기술의 레전더리는 여전히 에픽).
+ assert.equal(admin.parseCardInput({...base,rarity:'LEGENDARY',isToken:true})?.rarity,'LEGENDARY');
  await database.insert(schema.cardsTable).values({...base,id:'tech-grade-flagged-token',isToken:true,rarity:'NORMAL'});
  const decksBefore=await database.select().from(schema.decksTable);
  const wrestlersBefore=(await database.select().from(schema.cardsTable)).filter(c=>c.cardType==='WRESTLER');

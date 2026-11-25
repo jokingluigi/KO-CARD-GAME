@@ -68,3 +68,53 @@ test('스타라 주인만 쓰러지면 상대 승리', () => {
   assert.equal(state.status, 'FINISHED');
   assert.equal(state.winnerId, 'player-2');
 });
+
+// ── 2026-11-25 추가 글: "이 카드는 손패에 들어온 즉시 효과가 발동됩니다."
+import { applyEffect } from '../effects/effect-engine';
+import { normalizeCardRarityForType } from '../cards/types';
+import { generateCardInstance } from '../cards/generation';
+import { setRuntimeCardDefinitions } from '../cards/test-cards';
+const stageLatest = { ...stage, text: stage.text + ' 이 카드는 손패에 들어온 즉시 효과가 발동됩니다.' } as PublishedCardRecord;
+function handSetup(myHp: number, foeHp: number, inDeck: boolean): GameState {
+  const t = cardRecordToDefinition(stageLatest);
+  setRuntimeCardDefinitions([t, filler]);
+  let state = createInitialGameState(undefined, [t, filler], undefined, [Array(25).fill(filler.id), Array(25).fill(filler.id)]);
+  if (inDeck) state.players[0].deck.unshift(generateCardInstance(t, { instanceId: 'stage-in-deck', isGenerated: false }));
+  state.status = 'IN_PROGRESS'; state.turn = 1; state.activePlayerId = 'player-1';
+  for (const p of state.players) { p.currentGold = 100; p.mulliganUsed = true; }
+  state.players[0].health = myHp; state.players[1].health = foeHp;
+  if (state.players[0].champion) state.players[0].champion.health = myHp;
+  if (state.players[1].champion) state.players[1].champion.health = foeHp;
+  return state;
+}
+
+test('라스트 스테이지(최신 글): 드로우하는 즉시 발동하고 손패에서 사라진다', () => {
+  let state = handSetup(25, 25, true);
+  state = drawCard(state, 'player-1');
+  assert.equal(state.players[0].health, 15);
+  assert.equal(state.players[1].health, 15);
+  assert.equal(state.players[0].hand.some(c => c.definitionId === stage.id), false, '발동 후 손패에 남으면 안 됨');
+});
+
+test('라스트 스테이지(최신 글): 손패에 새로 생성되는 즉시 발동한다', () => {
+  let state = handSetup(25, 25, false);
+  const source = state.players[0].deck[0]!;
+  state = applyEffect(state, 'player-1', source, { type: 'STRUCTURED', action: 'GENERATE', values: { definitionRef: { name: '대망의 라스트 스테이지' }, resolveByName: true, count: 1 } } as never);
+  assert.equal(state.players[0].health, 15);
+  assert.equal(state.players[1].health, 15);
+  assert.equal(state.players[0].hand.some(c => c.definitionId === stage.id), false);
+});
+
+test('라스트 스테이지(최신 글): 생성되어 양쪽이 동시에 쓰러지면 상대 승리', () => {
+  let state = handSetup(6, 6, true);
+  state = drawCard(state, 'player-1');
+  assert.equal(state.status, 'FINISHED');
+  assert.equal(state.winnerId, 'player-2');
+});
+
+test('토큰 기술은 레전더리 등급을 유지, 일반 기술은 에픽까지', () => {
+  assert.equal(normalizeCardRarityForType('TECHNIQUE', 'LEGENDARY', { isToken: true }), 'LEGENDARY');
+  assert.equal(normalizeCardRarityForType('TECHNIQUE', 'LEGENDARY', {}), 'EPIC');
+  assert.equal(normalizeCardRarityForType('TECHNIQUE', 'TOKEN', { isToken: true }), 'TOKEN');
+  assert.equal(normalizeCardRarityForType('WRESTLER', 'LEGENDARY', { isToken: true }), 'LEGENDARY');
+});

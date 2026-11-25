@@ -1403,7 +1403,12 @@ export function resolveHandAdditionListeners(state:GameState,playerId:string,car
  for(const arriving of cards){
   const generated=isNewGenerationArrival(next,arriving.instanceId);
   if(generated)next=resolveCardGainGrowth(next,playerId);
-  if(arriving.cardType!=='WRESTLER')continue;
+  if(arriving.cardType!=='WRESTLER'){
+   // 손패에 새로 생성되는 즉시 발동하는 기술 카드 (예: 대망의 라스트 스테이지)
+   const self=next.players.find(p=>p.id===playerId)?.hand.find(c=>c.instanceId===arriving.instanceId);
+   if(generated&&self&&getActiveCardAbilities(self).some(a=>a.trigger==='HAND_WRESTLER_ADDED'&&'sourceZones' in a&&a.sourceZones?.includes('HAND')))next=resolveTriggeredAbilities(next,playerId,self,'HAND_WRESTLER_ADDED');
+   continue;
+  }
   const sources=next.players.find(player=>player.id===playerId)?.board.filter((card):card is CardInstance=>card!==null) ?? [];
   for(const source of sources){
    const live=next.players.find(player=>player.id===playerId)?.board.find(card=>card?.instanceId===source.instanceId);
@@ -3322,13 +3327,16 @@ function applyEffectInternal(
     if (effect.action === 'REMOVE_FROM_GAME') {
       return targets.reduce((nextState, target) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
-        const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
+        const current = owner?.board.find((card) => card?.instanceId === target.instanceId)
+          ?? owner?.hand.find((card) => card.instanceId === target.instanceId);
         if (!owner || !current) return nextState;
         return {
           ...nextState,
           players: nextState.players.map((player) => player.id !== targetOwner ? player : {
             ...player,
             board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board,
+            // 손패에서 스스로 발동하고 사라지는 카드도 같은 방식으로 게임에서 제거한다.
+            hand: player.hand.filter((card) => card.instanceId !== current.instanceId),
             removedFromGame: [...player.removedFromGame, { ...current, boardSlot: null }],
           }),
           events: [...nextState.events, {
