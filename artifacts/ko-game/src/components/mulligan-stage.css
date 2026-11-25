@@ -1,0 +1,119 @@
+/* 시작 손패 교체(멀리건) 연출 — 검정·금색, 하스스톤풍 */
+.ko-mull-stage{display:flex;align-items:center;justify-content:center;padding:16px;color:#f4e6c2;perspective:1400px;--gold:#d6b867;--gold-hi:#f6dc8e;--ink:#0b0907}
+.ko-mull-backdrop{position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 45%,rgba(34,24,8,.86),rgba(0,0,0,.96) 70%);animation:ko-mull-fade .45s ease-out both;overflow:hidden}
+.ko-mull-rays{position:absolute;left:50%;top:46%;width:160vmax;height:160vmax;translate:-50% -50%;background:repeating-conic-gradient(from 0deg,rgba(214,184,103,.07) 0 6deg,transparent 6deg 18deg);mask:radial-gradient(circle,#000 0,transparent 42%);animation:ko-mull-spin 60s linear infinite}
+.ko-mull-dust{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 20% 30%,#f6dc8e88,transparent),radial-gradient(1px 1px at 70% 60%,#f6dc8e66,transparent),radial-gradient(1.5px 1.5px at 40% 80%,#f6dc8e55,transparent),radial-gradient(1px 1px at 85% 25%,#f6dc8e77,transparent);background-size:300px 300px;animation:ko-mull-dust 14s linear infinite;opacity:.8}
+
+.ko-mull-stage .ko-mull-sheet.ko-mull-sheet{position:relative;width:min(1040px,100%);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:clamp(10px,2.2vh,22px);background:none;border:0;box-shadow:none;padding:0;overflow:visible}
+.ko-mull-head{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;animation:ko-mull-drop .5s cubic-bezier(.2,.9,.3,1.2) .05s both}
+.ko-mull-title{display:flex;align-items:center;gap:14px}
+.ko-mull-title h2{margin:0;font-size:clamp(24px,4.2vw,40px);font-weight:900;letter-spacing:.08em;color:var(--gold-hi);text-shadow:0 2px 0 #5a4310,0 0 18px rgba(246,220,142,.35)}
+.ko-mull-title__line{width:clamp(30px,10vw,120px);height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.ko-mull-head p{margin:0;font-size:clamp(12px,1.6vw,14px);color:#cdbb8e;opacity:.9}
+
+/* 타이머 링 */
+.ko-mull-timer{position:relative;width:46px;height:46px;display:grid;place-items:center}
+.ko-mull-timer svg{position:absolute;inset:0;rotate:-90deg}
+.ko-mull-timer circle{fill:none;stroke-width:3}
+.ko-mull-timer__track{stroke:rgba(214,184,103,.18)}
+.ko-mull-timer__fill{stroke:var(--gold);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--ring));transition:stroke-dashoffset .25s linear,stroke .3s;stroke-linecap:round}
+.ko-mull-timer b{font-size:16px;font-weight:900;color:var(--gold-hi)}
+.ko-mull-timer[data-urgent=true] .ko-mull-timer__fill{stroke:#ff5a3c}
+.ko-mull-timer[data-urgent=true] b{color:#ff8a6c;animation:ko-mull-beat 1s ease-in-out infinite}
+
+/* 카드 줄 */
+.ko-mull-row{display:flex;justify-content:center;align-items:flex-end;gap:clamp(8px,2vw,26px);width:100%;padding:18px 0 8px}
+.ko-mull-card{position:relative;width:clamp(120px,19vw,200px);aspect-ratio:5/7;padding:0;border:0;background:none;cursor:pointer;transform-style:preserve-3d;
+  --fan:calc((var(--i) - (var(--n) - 1) / 2));
+  transform:translateY(calc(var(--fan) * var(--fan) * 5px)) rotate(calc(var(--fan) * 2.2deg));
+  transition:transform .28s cubic-bezier(.2,.9,.3,1.3),filter .25s}
+.ko-mull-flip{position:absolute;inset:0;transform-style:preserve-3d;animation:ko-mull-deal .78s cubic-bezier(.2,.8,.25,1) calc(.26s + var(--i) * .17s) both}
+.ko-mull-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:7%/5%}
+.ko-mull-face--front>*{width:100%;height:100%}
+.ko-mull-face--back{transform:rotateY(180deg);overflow:hidden;box-shadow:0 0 0 2px #6b5320,0 10px 24px #000a}
+.ko-mull-face--back img{width:100%;height:100%;object-fit:cover}
+.ko-mull-back-art{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,#2b2110,#0a0806 70%);border:3px solid var(--gold);border-radius:inherit}
+.ko-mull-back-art i{position:absolute;inset:10%;border:1.5px solid rgba(214,184,103,.55);transform:rotate(45deg) scale(.72);border-radius:6px}
+.ko-mull-back-art b{font-size:clamp(22px,4vw,40px);font-weight:900;color:var(--gold-hi);letter-spacing:.06em;text-shadow:0 2px 0 #5a4310}
+
+.ko-mull-stage[data-dealt=true] .ko-mull-card:hover,.ko-mull-stage[data-dealt=true] .ko-mull-card:focus-visible{transform:translateY(-14px) scale(1.04);filter:drop-shadow(0 0 14px rgba(246,220,142,.55));outline:none;z-index:2}
+.ko-mull-card[data-picked=true]{transform:translateY(14px) scale(.96) rotate(calc(var(--fan) * 2.2deg - 2deg))}
+.ko-mull-card[data-picked=true] .ko-mull-face--front{filter:grayscale(.55) brightness(.55)}
+.ko-mull-stage[data-dealt=true] .ko-mull-card[data-picked=true]:hover{transform:translateY(6px) scale(.98)}
+
+/* 교체 도장 */
+.ko-mull-stamp{position:absolute;left:50%;top:44%;translate:-50% -50%;display:grid;place-items:center;pointer-events:none;opacity:0;scale:1.8;rotate:-14deg;transition:opacity .12s,scale .22s cubic-bezier(.2,.9,.3,1.5)}
+.ko-mull-stamp i{font-style:normal;font-size:clamp(56px,9vw,96px);line-height:1;font-weight:900;color:#ff4b2b;text-shadow:0 0 0 #000,0 3px 0 #5a0d00,0 0 18px rgba(255,80,40,.6)}
+.ko-mull-stamp em{font-style:normal;margin-top:-6px;padding:2px 10px;border:2px solid #ff6a48;color:#ffd6c8;background:rgba(60,8,0,.85);font-weight:900;letter-spacing:.2em;font-size:clamp(11px,1.5vw,14px)}
+.ko-mull-card[data-picked=true] .ko-mull-stamp{opacity:1;scale:1}
+
+/* 버튼 */
+.ko-mull-actions{display:flex;gap:12px;justify-content:center;animation:ko-mull-rise .45s ease-out calc(.4s + var(--count-delay,.6s)) both}
+.ko-mull-stage[data-count="3"] .ko-mull-actions{--count-delay:.5s}
+.ko-mull-btn{min-width:150px;padding:12px 22px;font-weight:900;font-size:15px;letter-spacing:.04em;border-radius:0;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%);transition:filter .15s,transform .12s}
+.ko-mull-btn:active{transform:translateY(1px) scale(.98)}
+.ko-mull-btn--ghost{background:linear-gradient(#2a2216,#15110b);color:#e6d3a0;border:0;box-shadow:inset 0 0 0 2px #6b5320}
+.ko-mull-btn--gold{background:linear-gradient(#f6dc8e,#c49a3c 55%,#8e6a22);color:#1a1205;border:0}
+.ko-mull-btn:hover:not(:disabled){filter:brightness(1.12)}
+.ko-mull-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* 확정 후 */
+.ko-mull-stage--exit .ko-mull-card{cursor:default}
+.ko-mull-stage--exit .ko-mull-flip{animation:none}
+.ko-mull-stage--exit .ko-mull-row{animation:ko-mull-settle .5s cubic-bezier(.5,0,.8,.4) var(--settle,.15s) both}
+.ko-mull-stage--exit[data-swapping=true] .ko-mull-row{--settle:1.25s}
+.ko-mull-stage--exit .ko-mull-backdrop{animation:ko-mull-fade-out .45s ease-in var(--settle-bg,.25s) both}
+.ko-mull-stage--exit[data-swapping=true] .ko-mull-backdrop{--settle-bg:1.3s}
+.ko-mull-stage--exit .ko-mull-head{animation:ko-mull-pop .4s cubic-bezier(.2,.9,.3,1.4) both}
+.ko-mull-stage--exit .ko-mull-card--exit[data-swap=true] .ko-mull-flip--old{animation:ko-mull-return .6s cubic-bezier(.5,0,.75,0) calc(var(--i) * .08s) both}
+.ko-mull-stage--exit .ko-mull-flip.ko-mull-flip--new{animation:ko-mull-arrive .62s cubic-bezier(.2,.8,.25,1) calc(.62s + var(--i) * .12s) both}
+.ko-mull-new-glow{position:absolute;inset:-8%;border-radius:10%;background:radial-gradient(closest-side,rgba(246,220,142,.75),transparent);mix-blend-mode:screen;opacity:0;animation:ko-mull-glow .7s ease-out calc(1.05s + var(--i) * .12s) both;pointer-events:none}
+
+@keyframes ko-mull-fade{from{opacity:0}}
+@keyframes ko-mull-fade-out{to{opacity:0}}
+@keyframes ko-mull-spin{to{rotate:360deg}}
+@keyframes ko-mull-dust{to{background-position:300px -300px,-300px 300px,300px 300px,-300px -300px}}
+@keyframes ko-mull-drop{from{opacity:0;transform:translateY(-24px) scale(.9)}}
+@keyframes ko-mull-pop{from{opacity:0;transform:scale(.7)}}
+@keyframes ko-mull-rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes ko-mull-beat{50%{transform:scale(1.2)}}
+/* 덱(화면 위쪽 가운데)에서 뒷면으로 날아와 내려앉으며 뒤집힘 */
+@keyframes ko-mull-deal{
+  0%{opacity:0;transform:translate(calc(var(--fan) * -60%),-70vh) rotateY(180deg) rotateZ(-20deg) scale(.55)}
+  12%{opacity:1}
+  62%{transform:translate(0,-10px) rotateY(180deg) rotateZ(0) scale(1.02)}
+  100%{opacity:1;transform:none}
+}
+@keyframes ko-mull-return{
+  0%{transform:none}
+  35%{transform:translateY(-14px) rotateY(180deg) scale(1.03)}
+  100%{opacity:0;transform:translate(calc(var(--fan) * -40%),-75vh) rotateY(180deg) rotateZ(14deg) scale(.5)}
+}
+@keyframes ko-mull-arrive{
+  0%{opacity:0;transform:translateY(-70vh) rotateY(180deg) scale(.55)}
+  15%{opacity:1}
+  60%{transform:translateY(-8px) rotateY(180deg) scale(1.02)}
+  100%{opacity:1;transform:none}
+}
+@keyframes ko-mull-glow{0%{opacity:0;transform:scale(.8)}35%{opacity:1}100%{opacity:0;transform:scale(1.25)}}
+@keyframes ko-mull-settle{to{opacity:0;transform:translateY(42vh) scale(.55)}}
+
+/* 휴대폰: 2×2 */
+@media (max-width:640px){
+  .ko-mull-row{flex-wrap:wrap;gap:12px 14px;padding-top:6px}
+  .ko-mull-card{width:min(40vw,170px);transform:none}
+  .ko-mull-card[data-picked=true]{transform:translateY(8px) scale(.95)}
+  .ko-mull-flip{--fan:0}
+  .ko-mull-btn{min-width:0;flex:1}
+  .ko-mull-actions{width:100%;max-width:420px}
+  .ko-mull-head p{max-width:300px}
+}
+@media (max-height:560px){.ko-mull-card{width:clamp(96px,15vw,150px)}.ko-mull-head p{display:none}}
+@media (prefers-reduced-motion:reduce){
+  .ko-mull-stage *,.ko-mull-stage *::before{animation-duration:.01ms!important;animation-delay:0s!important}
+  .ko-mull-rays,.ko-mull-dust{animation:none}
+}
+/* 예전 멀리건 창 스타일(premium-presentation.css)이 덮어쓰지 않게 */
+.ko-mull-stage .ko-mull-sheet.ko-mulligan-sheet{background:none;border:0;box-shadow:none;padding:0}
+.ko-mull-stage .ko-mulligan-sheet button.ko-mull-card,.ko-mull-stage .ko-mulligan-sheet button.ko-mull-card[aria-pressed]{background:none}
+.ko-mull-stage .ko-mulligan-sheet .ko-mull-title h2{color:var(--gold-hi)}

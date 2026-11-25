@@ -99,6 +99,7 @@ import { enqueuePresentation, presentationBatch } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
+import { MulliganStage, MulliganExitStage, mulliganExitDuration, type MulliganExit } from './mulligan-stage';
 import {CombatSettings} from './combat-settings';
 import { messengerKind } from './keyword-fx';
 import { MessengerRevelation } from './messenger-revelation';
@@ -295,8 +296,20 @@ export function GameStatePreview({
   React.useEffect(() => { setHistoryOpen(false); }, [state.gameId, state.status]);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [mulliganSeconds, setMulliganSeconds] = React.useState(20);
-  const mulliganSubmitRef = React.useRef(onMulligan);
-  mulliganSubmitRef.current = onMulligan;
+  const [mulliganExit, setMulliganExit] = React.useState<MulliganExit | null>(null);
+  const submitMulligan = React.useCallback((ids: string[]) => {
+    if (!onMulligan) return;
+    setMulliganExit({ hand: state.players[0].hand, selected: ids, startedAt: Date.now() });
+    onMulligan(ids);
+  }, [onMulligan, state.players]);
+  React.useEffect(() => {
+    if (!mulliganExit) return;
+    const timer = window.setTimeout(() => setMulliganExit(null), mulliganExitDuration(mulliganExit));
+    return () => window.clearTimeout(timer);
+  }, [mulliganExit]);
+  React.useEffect(() => { setMulliganExit(null); }, [state.gameId]);
+  const mulliganSubmitRef = React.useRef(submitMulligan);
+  mulliganSubmitRef.current = submitMulligan;
   const mulliganSelectionRef = React.useRef<string[]>([]);
   React.useEffect(() => {
     if (!onMulligan || introActive || !canMulligan(state, state.players[0].id)) return;
@@ -312,9 +325,9 @@ export function GameStatePreview({
   // First player: a coin toss once the opening (intro / mulligan) is out of the way.
   const mulliganOpen=Boolean(onMulligan)&&canMulligan(state,state.players[0].id);
   React.useEffect(()=>{
-    if(introActive||mulliganOpen||state.status!=='IN_PROGRESS'||state.turn!==1||!state.activePlayerId)return;
+    if(introActive||mulliganOpen||mulliganExit||state.status!=='IN_PROGRESS'||state.turn!==1||!state.activePlayerId)return;
     spawnCoinToss(state.gameId,state.activePlayerId===state.players[0].id,sound=>audioManager.playImpactOverlay(import.meta.env.BASE_URL+(sound==='flip'?'sfx/coin-flip.wav':'sfx/board-knock.wav'),sound==='flip'?40:46,4));
-  },[state.gameId,state.turn,state.activePlayerId,state.status,introActive,mulliganOpen]);
+  },[state.gameId,state.turn,state.activePlayerId,state.status,introActive,mulliganOpen,Boolean(mulliganExit)]);
   // Low health: the screen edges throb red with a quiet heartbeat.
   const inDanger=state.status==='IN_PROGRESS'&&state.players[0].health>0&&state.players[0].health<=5;
   React.useEffect(()=>{
@@ -982,6 +995,11 @@ export function GameStatePreview({
   }
 
   const me = state.players[0];
+  const renderMulliganCard = (card: typeof me.hand[number]) => {
+    const def = getCardDefinition(card.definitionId);
+    return <CardRenderer name={def?.name ?? '카드'} cardType={card.cardType} cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth} rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '')} cardId={card.definitionId} cosmeticOwnerId={me.id} imageUrl={def?.imageUrl} rarity={def?.rarity} size="hand" imageDisplaySettings={def} className="pointer-events-none w-full" />;
+  };
+  const mulliganBack = cosmetics[me.id]?.cardBack?.imageAssets?.art ? <img src={cosmetics[me.id]!.cardBack!.imageAssets!.art} alt="" /> : undefined;
   const opp = state.players[1];
   React.useEffect(()=>{
     const pending=spellDropTargetRef.current;if(!pending)return;
@@ -1767,31 +1785,25 @@ export function GameStatePreview({
              </>
            )}
 
-          {onMulligan && !introActive && canMulligan(state, state.players[0].id) && (
-            <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="시작 손패 교체">
-              <div className="ko-mulligan-sheet max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
-                <h2 className="text-lg font-black text-amber-300">시작 손패 교체 · {mulliganSeconds}초</h2>
-                <p className="my-3 text-sm text-neutral-300">첫 턴 행동 전, 바꿀 카드를 선택하세요. 선택한 카드만 덱의 카드와 교체합니다.</p>
-                <div className="mx-auto grid w-full max-w-[660px] grid-cols-2 justify-items-center gap-3 sm:grid-cols-4">
-                  {state.players[0].hand.map((card) => <button key={card.instanceId} type="button"
-                    aria-pressed={mulliganSelection.includes(card.instanceId)}
-                    onClick={() => setMulliganSelection((current) => current.includes(card.instanceId)
-                      ? current.filter((id) => id !== card.instanceId) : [...current, card.instanceId])}
-                    aria-label={`${getCardDefinition(card.definitionId)?.name ?? card.definitionId} ${mulliganSelection.includes(card.instanceId) ? '교체 선택됨' : '교체 선택'}`}
-                    className={`relative w-full max-w-[150px] rounded-lg p-1 transition-transform hover:-translate-y-2 ${mulliganSelection.includes(card.instanceId) ? '-translate-y-3 bg-amber-500 ring-2 ring-amber-300' : 'bg-neutral-700'}`}>
-                    <CardRenderer name={getCardDefinition(card.definitionId)?.name ?? '카드'} cardType={card.cardType} cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth} rulesText={getCardRuntimeRulesText(card, getCardDefinition(card.definitionId)?.rulesText ?? '')} cardId={card.definitionId} cosmeticOwnerId={me.id} imageUrl={getCardDefinition(card.definitionId)?.imageUrl} rarity={getCardDefinition(card.definitionId)?.rarity} size="hand" imageDisplaySettings={getCardDefinition(card.definitionId)} className="pointer-events-none w-full" />
-                    {mulliganSelection.includes(card.instanceId) && <span className="absolute inset-x-1 bottom-1 rounded bg-amber-300/95 py-1 text-center text-xs font-black text-black">교체 선택</span>}
-                  </button>)}
-                </div>
-                <div className="mt-4 flex justify-end gap-2">
-                  <button type="button" onClick={() => onMulligan([])} className="rounded border border-neutral-500 px-4 py-2">그대로 시작</button>
-                  <button type="button" disabled={mulliganSelection.length > state.players[0].deck.length}
-                    onClick={() => onMulligan(mulliganSelection)} className="rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{mulliganSelection.length}장 교체</button>
-                </div>
-              </div>
-            </div>
+          {onMulligan && !introActive && !mulliganExit && canMulligan(state, state.players[0].id) && (
+            <MulliganStage
+              key={state.gameId}
+              hand={state.players[0].hand}
+              nameOf={(card) => getCardDefinition(card.definitionId)?.name ?? '카드'}
+              seconds={mulliganSeconds}
+              selection={mulliganSelection}
+              onToggle={(id) => setMulliganSelection((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])}
+              onKeep={() => submitMulligan([])}
+              onConfirm={() => submitMulligan(mulliganSelection)}
+              confirmDisabled={mulliganSelection.length > state.players[0].deck.length}
+              renderCard={renderMulliganCard}
+              back={mulliganBack}
+            />
           )}
-          {onMulligan && !introActive && state.openingMulligan && me.mulliganUsed && (
+          {mulliganExit && (
+            <MulliganExitStage key={mulliganExit.startedAt} exit={mulliganExit} hand={state.players[0].hand} renderCard={renderMulliganCard} back={mulliganBack} />
+          )}
+          {onMulligan && !introActive && !mulliganExit && state.openingMulligan && me.mulliganUsed && (
             <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/75 p-4" role="status">
               <div className="rounded-xl border border-amber-500 bg-neutral-950 p-6 text-center text-amber-200">상대의 시작 손패 교체를 기다리고 있습니다.</div>
             </div>
