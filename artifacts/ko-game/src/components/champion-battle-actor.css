@@ -15,9 +15,6 @@
 .ko-battle-actor[data-reaction="HEAVY_HIT"] {
   animation: ko-actor-hit 260ms ease-out;
 }
-.ko-battle-actor[data-reaction="ATTACK"] {
-  animation: ko-actor-ability 500ms ease-out;
-}
 .ko-battle-actor[data-reaction="AWAKEN"] {
   animation: ko-actor-ability 800ms ease-out;
 }

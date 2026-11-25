@@ -32,7 +32,7 @@ import { spawnAbilityFlare, spawnHealGlow } from "./battle-moments";
 import { audioManager } from "../audio/audio-manager";
 import { spawnArrivalBlast } from "./card-arrival";
 import { spawnImpactBurst } from "./impact-burst";
-import { auraStyle, hitSilhouette, idleFidget, landingThud, speakBounce, spawnAfterimages, turnLean } from "./champion-life";
+import { auraStyle, hitSilhouette, idleFidget, landingThud, speakBounce, turnLean } from "./champion-life";
 export function ChampionSpriteVisual({
   children,
   cue,
@@ -225,7 +225,9 @@ export function ChampionSpriteVisual({
       };
     }
     continuity.current = null;
-    animate(node, frames);
+    // 공격할 때 챔피언 몸은 움직이지 않는다 (표정만 바뀜).
+    const still = cue.kind === "SPELL" || cue.kind === "WRESTLER_ATTACK";
+    if (!still) animate(node, frames);
     const emphasized = [
       "TURN",
       "ABILITY",
@@ -253,7 +255,6 @@ export function ChampionSpriteVisual({
       if (cue.kind === "AWAKEN") { spawnArrivalBlast({ x: at.x, y: at.y, width: rect.width * .8, height: rect.height * .8, kind: "LEGENDARY" }); }
       // 29. 이모트: 챔피언이 앞으로 살짝 튀어나왔다 돌아간다
       // 6·7·12·19: 잔상 돌진, 무게 실린 착지, 피격 실루엣, 턴 시작 다가오기
-      if (["SPELL", "WRESTLER_ATTACK", "ABILITY", "LEGENDARY_SUMMON"].includes(cue.kind)) spawnAfterimages(anchor.querySelector<HTMLElement>(".ko-battle-actor__body"), accent);
       if (["ABILITY", "LEGENDARY_SUMMON", "AWAKEN"].includes(cue.kind)) landingThud(anchor);
       if (cue.kind === "TURN") turnLean(anchor);
       if (cue.kind === "EMOTE") animate(anchor, [{ scale: "1", filter: "brightness(1)" }, { scale: "1.08", filter: "brightness(1.18)", offset: .22 }, { scale: ".98", offset: .55 }, { scale: "1", filter: "brightness(1)" }], 560);

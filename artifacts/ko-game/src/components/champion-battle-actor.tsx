@@ -230,16 +230,11 @@ export function ChampionBattleActor({
     reaction.cue,
     motionSettings,
   );
-  // 16. 상대를 거의 끝냈으면 평소 표정이 여유로운(안도) 표정으로
-  const myHealth = getPlayerSurvivalHealth(state, playerId);
-  const rival = state.players.find((p) => p.id !== playerId);
-  const rivalHealth = rival ? getPlayerSurvivalHealth(state, rival.id) : 99;
-  const confident = state.status === "IN_PROGRESS" && rivalHealth > 0 && rivalHealth <= 5 && myHealth >= rivalHealth + 4 && !spriteIsLow(myHealth);
   const candidates = championSpriteCandidates(appearance, {
     awakened: displayAwakened,
     low: spriteIsLow(getPlayerSurvivalHealth(state, playerId)),
     outcome,
-    reaction: expressionEvent === "IDLE" && confident && !outcome ? "HEAL" : expressionEvent,
+    reaction: expressionEvent,
     emote: reaction.cue?.emote,
   });
   const [failed, setFailed] = useState<Set<string>>(new Set());
