@@ -30,7 +30,7 @@ export function statusPresentation(events:GameEvent[],before:Map<string,CardInst
   if(event.type!=='DAMAGE_DEALT'||event.reason!=='COMBAT'||event.target?.type!=='CARD'||event.tags?.some(tag=>['BLOCKED','DODGE'].includes(tag)))continue;
   const id=event.target.cardInstanceId,card=before.get(id);
   if(card&&!(getActiveCardKeywords(card).includes('DEFENSE')&&(card.entryDefenseActive??card.enteredThisTurn))&&getActiveCardKeywords(card).includes('ARMOR')&&(card.grantedText?.armor??card.armor??0)>0)
-   result.push({id:batch+':armor:'+index,kind:'ARMOR',label:'아머',cardInstanceId:id,duration:180,eventIndex:index});
+   result.push({id:batch+':armor:'+index,kind:'ARMOR',label:'아머',cardInstanceId:id,duration:180,eventIndex:index,...((event.amount??0)>0?{value:event.amount}:{})});
  }
  return result;
 }

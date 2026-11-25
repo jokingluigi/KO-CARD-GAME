@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "./targeting-arrow.css";
+import { flinch, startAimTension, stopAimTension } from "./hit-feel";
 
 /**
  * Hearthstone's aiming arrow: while an attacker or an effect is choosing a target, a curved
@@ -20,16 +21,27 @@ export function TargetingArrow({ sourceId, validIds, championValid }: {
   useEffect(() => {
     setPointer(null);
     if (!sourceId) return;
+    // 7. 조준하는 동안 내 카드가 힘을 모으며 떨리고 낮은 긴장음이 깔린다
+    const sourceNode = sourceId === "champion"
+      ? document.querySelector<HTMLElement>(".ko-player-champion .ko-portrait-window")
+      : document.querySelector<HTMLElement>(`[data-card-instance-id="${CSS.escape(sourceId)}"]`);
+    startAimTension(sourceNode);
+    let lastTarget: Element | null = null;
     const move = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       const el = event.target instanceof Element ? event.target : null;
-      const card = el?.closest<HTMLElement>("[data-card-instance-id]")?.dataset.cardInstanceId;
-      const ok = (card !== undefined && card !== sourceId && valid.current.validIds.has(card))
-        || (valid.current.championValid && Boolean(el?.closest(".ko-opponent-champion")));
+      const cardNode = el?.closest<HTMLElement>("[data-card-instance-id]") ?? null;
+      const card = cardNode?.dataset.cardInstanceId;
+      const cardOk = card !== undefined && card !== sourceId && valid.current.validIds.has(card);
+      const champNode = valid.current.championValid ? el?.closest<HTMLElement>(".ko-opponent-champion") ?? null : null;
+      const ok = cardOk || Boolean(champNode);
+      // 8. 화살표가 닿은 상대가 움찔
+      const hit = cardOk ? cardNode : champNode ? champNode.querySelector<HTMLElement>(".ko-portrait-window") ?? champNode : null;
+      if (hit !== lastTarget) { lastTarget = hit; if (hit) flinch(hit); }
       setPointer({ x: event.clientX, y: event.clientY, valid: ok });
     };
     window.addEventListener("pointermove", move, { passive: true });
-    return () => window.removeEventListener("pointermove", move);
+    return () => { window.removeEventListener("pointermove", move); stopAimTension(); };
   }, [sourceId]);
   if (!sourceId || !pointer) return null;
   const node = sourceId === "champion"

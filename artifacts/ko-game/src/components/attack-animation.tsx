@@ -19,16 +19,20 @@ import { spawnPortraitCracks } from './battle-moments';
 import { hitForce, kickBoard } from './card-physics';
 import { attackJuice } from './battle-juice-cues';
 import { impactBurstProfile, shudderFrames } from './impact-burst-model';
+import { counterRecoil, preImpactVacuum, soundLead } from './hit-feel';
 
 export function AttackAnimation({
   animation,
   onImpact,
+  onImpactSound,
   slowMotion = false,
   onComplete,
   hapticsEnabled = false,
 }: {
   animation: AttackAnimationState;
   onImpact: () => void;
+  /** 1. 소리 지연 보정: 맞는 소리만 기기 지연만큼 먼저 튼다 (화면·체력 반영은 그대로 맞는 순간). */
+  onImpactSound?: () => void;
   /** Lethal blow: the whole strike plays in slow motion with a longer hit-stop. */
   slowMotion?: boolean;
   onComplete: () => void;
@@ -49,6 +53,8 @@ export function AttackAnimation({
   const [impacted,setImpacted] = useState(false);
   onImpactRef.current = onImpact;
   onCompleteRef.current = onComplete;
+  const onImpactSoundRef = useRef(onImpactSound);
+  onImpactSoundRef.current = onImpactSound;
   const definition = getCardDefinition(animation.attacker.definitionId);
   const geometryRef=useRef({id:animation.soundKey,value:animation.geometry});
   if(geometryRef.current.id!==animation.soundKey)geometryRef.current={id:animation.soundKey,value:animation.geometry};
@@ -94,9 +100,13 @@ export function AttackAnimation({
     let shudder:Animation|undefined;
     let healthPop:Animation|undefined;
     if (animation.finishingBlow) audioManager.duckForPresentation(.4, 500);
+    let soundPlayed=false,vacuumed=false;
+    const lead=reduced?0:soundLead();
+    const playImpactSound=()=>{if(soundPlayed)return;soundPlayed=true;try{onImpactSoundRef.current?.();}catch{/* 소리 */}};
     const impact = () => {
       if (impactedRef.current) return;
       impactedRef.current = true;
+      playImpactSound();
       setImpacted(true);
       if(animation.finishingBlow&&!reduced)try{hush=document.querySelector(".ko-cinematic-background")?.animate([{filter:"brightness(.6)"},{filter:"brightness(1)"}],{duration:220,easing:"ease-out"});}catch{}
 
@@ -138,6 +148,8 @@ export function AttackAnimation({
     const release = () => {
       if(releasedOnce)return; releasedOnce=true; setReleased(true);
       if(phaseRef.current)phaseRef.current.dataset.attackPhase='REACTION';
+      // 13. 반격받으면 공격한 카드도 뒤로 튕겨 나간다
+      if((animation.counterDamage??0)>0&&animation.targetKind==='CARD')counterRecoil(attackerRef.current,dx,dy,animation.counterDamage??0);
 
     };
     const complete = () => {
@@ -187,6 +199,10 @@ export function AttackAnimation({
         movementPlayed=true;
         audioManager.playImpactOverlay(import.meta.env.BASE_URL+"sfx/combat-movement.wav", 22, 4);
       }
+      // 2. 큰 타격 직전 음악이 확 줄었다가(진공) 맞는 순간 돌아온다
+      if(!vacuumed&&!animation.finishingBlow&&time>=impactDelay-120&&time<impactDelay){vacuumed=true;preImpactVacuum(animation.damage);}
+      // 1. 휴대폰 소리 지연만큼 '퍽' 소리를 먼저
+      if(lead>0&&time>=impactDelay-lead)playImpactSound();
       if(time>=impactDelay) impact();
       else if(phaseRef.current)phaseRef.current.dataset.attackPhase=time<100?'ANTICIPATION':'ACCELERATION';
       if(time>=timeline.release)release();

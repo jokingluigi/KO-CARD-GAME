@@ -7,7 +7,7 @@ import {spawnHealGlow,spawnTurnBanner} from './battle-moments';
 import {spawnImpactBurst} from './impact-burst';
 import {juiceForCue} from './battle-juice-cues';
 import {panAt} from './battle-juice';
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import type { PresentationCueDraft } from "./presentation-feedback-utils";
@@ -53,12 +53,17 @@ export function PresentationFeedback({
   onComplete,
   onStart,
   lethal=false,
+  delay=0,
 }: {
   cue: PresentationCue;
   onComplete: () => void;
   onStart?: (cue: PresentationCue) => void;
   lethal?:boolean;
+  /** 3. 광역 피해 물결: 같은 순간 여러 장이 맞으면 가까운 카드부터 조금씩 늦게 */
+  delay?:number;
 }) {
+  const [ready,setReady]=useState(delay<=0);
+  useEffect(()=>{if(delay<=0){setReady(true);return;}setReady(false);const t=window.setTimeout(()=>setReady(true),delay);return()=>window.clearTimeout(t);},[cue.id,delay]);
   const spriteDamage=cue.kind==='DAMAGE'&&Boolean(cue.playerId)&&!cue.cardInstanceId;
   const screen=useScreenImpact(),screenRef=useRef(screen);screenRef.current=screen;
   const completedRef = useRef(false);
@@ -69,6 +74,7 @@ export function PresentationFeedback({
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
+    if(!ready)return;
     completedRef.current = false;
     if(!cue.quiet&&cue.kind==='DAMAGE'&&!cue.combat&&!spriteDamage&&!cue.selfDamage)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
     // Effect damage gets the same hit burst as combat, scaled by damage (finisher-class at 10+).
@@ -88,7 +94,7 @@ export function PresentationFeedback({
       onCompleteRef.current();
     }, cue.duration);
     return () => window.clearTimeout(timeoutId);
-  }, [cue.duration, cue.id]);
+  }, [cue.duration, cue.id, ready]);
 
   const style = {
     "--presentation-left": `${cue.left}px`,
@@ -98,6 +104,7 @@ export function PresentationFeedback({
     "--presentation-source-y": `${(cue.sourceTop ?? cue.top) - cue.top}px`,
   } as CSSProperties;
 
+  if(!ready)return null;
   return (
     <>
 

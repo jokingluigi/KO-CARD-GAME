@@ -133,4 +133,34 @@ for name, a, b in [('stat-up.wav', 520, 1040), ('stat-down.wav', 700, 330)]:
     ph = 2 * np.pi * np.cumsum(f) / SR
     x = (np.sin(ph) + .3 * np.sin(2 * ph)) * np.minimum(1, d / .01) * np.exp(-d / .14)
     save(name, norm(x, .6))
+# 타격감 2차: 아머 깨짐 (유리 파편 + 둔탁한 금속)
+d = t(.9)
+glass = sum(np.sin(2 * np.pi * f * d + rng.uniform(0, 6)) * np.exp(-d / dc) * rng.uniform(.4, 1)
+            for f, dc in [(rng.uniform(2200, 7800), rng.uniform(.04, .22)) for _ in range(26)])
+crack = hp(rng.standard_normal(len(d)), 1800) * np.exp(-d / .05)
+clank = np.sin(2 * np.pi * (180 * np.exp(-d * 9) + 140) * d) * np.exp(-d / .16)
+save('armor-shatter.wav', norm(glass * .55 + crack * .9 + clank * .8, .85))
+
+# 타격감 2차: K.O. 확인 (링 종 한 번 + 둔탁한 쿵)
+d = t(1.3)
+bell = sum(np.sin(2 * np.pi * f * d) * np.exp(-d / dc) * a for f, dc, a in [(1180, .55, 1), (2960, .3, .45), (4630, .16, .25), (590, .7, .35)])
+thump = np.sin(2 * np.pi * (95 * np.exp(-d * 14) + 48) * d) * np.exp(-d / .14)
+save('ko-bell.wav', norm(bell * .55 + thump * .9, .85))
+
+# 타격감 2차: 경기장 울림 꼬리 (넓은 공간 잔향, 단독 재생용)
+d = t(1.6)
+tail = lp(rng.standard_normal(len(d)), 700, 2) * np.minimum(1, d / .04) * np.exp(-d / .42)
+tail += lp(rng.standard_normal(len(d)), 160, 2) * 1.6 * np.minimum(1, d / .06) * np.exp(-d / .55)
+L = tail + bp(rng.standard_normal(len(d)), 300, 1600, 2) * .25 * np.exp(-d / .3)
+R = np.roll(tail, int(SR * .013)) + bp(rng.standard_normal(len(d)), 300, 1600, 2) * .25 * np.exp(-d / .3)
+save('arena-tail.wav', norm(np.stack([L, R], 1), .7), stereo=True)
+
+# 타격감 2차: 조준 긴장음 (끊김 없이 반복되는 낮은 웅웅거림, 2초)
+L2 = 2.0; d = t(L2)
+hum = np.sin(2 * np.pi * 55 * d) + .5 * np.sin(2 * np.pi * 110 * d + .3) + .22 * np.sin(2 * np.pi * 165.5 * d)
+hum *= .75 + .25 * np.sin(2 * np.pi * 2 * d)  # 2Hz 맥박 (2초에 정확히 4번 → 이음매 없음)
+air = lp(rng.standard_normal(len(d)), 300, 2) * .25
+x = hum + air
+fade = int(SR * .01); x[:fade] *= np.linspace(0, 1, fade); x[-fade:] *= np.linspace(1, 0, fade)
+save('aim-tension.wav', norm(x, .5))
 print('ok')

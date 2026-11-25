@@ -398,6 +398,22 @@ class AudioManager {
 
   getSfxVolume() { return this.sfxVolume; }
 
+  /**
+   * 1. 소리 지연 보정: 휴대폰은 소리가 화면보다 늦게 나온다.
+   * 그만큼 소리를 먼저 틀 수 있도록 '얼마나 먼저'(ms)를 알려준다. 0~140ms.
+   * 기기가 알려주는 출력 지연 + 효과음 재생 시작에 드는 시간(대략값).
+   */
+  soundLeadMs() {
+    if (typeof window === 'undefined') return 0;
+    const ctx = this.spatial as (AudioContext & { outputLatency?: number }) | null;
+    const device = ctx ? ((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000 : 0;
+    const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+    const start = /Android/i.test(ua) ? 45 : /iPhone|iPad|iPod/i.test(ua) ? 25 : 12;
+    const fallback = /Android/i.test(ua) ? 60 : 0;
+    const total = (device > 0 ? device : fallback) + start;
+    return Math.round(Math.max(0, Math.min(140, total)));
+  }
+
   setEntranceVolume(volume: number) {
     this.entranceVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
     if (this.current && this.current.request.kind !== 'PREVIEW') {

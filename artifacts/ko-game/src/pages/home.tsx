@@ -1724,6 +1724,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       attackAnimation={attackAnimation}
       attackImpactTriggered={attackImpactTriggered}
       onAttackImpact={handleAttackImpact}
+      onAttackImpactSound={() => { if (attackAnimation) playAttackSound(attackAnimation); }}
       onAttackAnimationComplete={handleAttackAnimationComplete}
       onSelectAttacker={handleSelectAttacker}
       onAttackWrestler={handleAttackWrestler}

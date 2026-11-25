@@ -1,0 +1,37 @@
+/* 타격감 2차 — 화면 연출 전용 */
+
+/* 4. 만화 집중선: 맞는 지점을 향해 검은 선이 모인다 (가운데는 비움) */
+.kh-focus{position:fixed;inset:0;z-index:212;pointer-events:none;transform-origin:var(--x) var(--y);
+  background:repeating-conic-gradient(from 0deg at var(--x) var(--y),rgba(0,0,0,.82) 0deg .7deg,transparent .7deg 5.3deg,rgba(0,0,0,.6) 5.3deg 5.8deg,transparent 5.8deg 9deg);
+  -webkit-mask:radial-gradient(circle at var(--x) var(--y),transparent 0,transparent var(--hole),#000 calc(var(--hole) + 14%));
+  mask:radial-gradient(circle at var(--x) var(--y),transparent 0,transparent var(--hole),#000 calc(var(--hole) + 14%))}
+
+/* 5. 내 챔피언 피격: 화면 가장자리 붉은 번쩍 */
+.kh-hurt{position:fixed;inset:0;z-index:211;pointer-events:none;
+  background:radial-gradient(ellipse 75% 70% at 50% 50%,transparent 55%,rgba(200,10,10,.55) 85%,rgba(140,0,0,.85) 100%)}
+.kh-hurt--cb{background:radial-gradient(ellipse 75% 70% at 50% 50%,transparent 55%,rgba(240,120,0,.55) 85%,rgba(170,80,0,.85) 100%)}
+
+/* 6. K.O. 도장 */
+.kh-ko{position:fixed;z-index:250;pointer-events:none}
+.kh-ko b{display:block;padding:4px 12px;border:3px solid #ffd76a;background:rgba(40,8,0,.82);color:#ffe9a8;font-weight:900;font-size:clamp(20px,3vw,30px);letter-spacing:.06em;
+  text-shadow:0 2px 0 #7a1a00,0 0 12px rgba(255,170,60,.7);box-shadow:0 0 0 2px #5a1200,0 0 22px rgba(255,140,40,.45)}
+
+/* 9. 아머 파편 */
+.kh-shard{position:fixed;z-index:215;width:10px;height:14px;pointer-events:none;
+  background:linear-gradient(135deg,#e8f4ff,#9fc3e6 50%,#5b7fa6);clip-path:polygon(50% 0,100% 40%,70% 100%,0 70%);box-shadow:0 0 6px rgba(180,220,255,.8)}
+.kh-shield-break{position:fixed;z-index:215;width:90px;height:90px;border-radius:50%;pointer-events:none;border:3px solid rgba(200,230,255,.9);box-shadow:0 0 18px rgba(160,210,255,.7)}
+
+/* 12. 누적 피해 */
+.kh-total{position:fixed;z-index:250;pointer-events:none;display:flex;align-items:baseline;gap:4px;padding:2px 10px;
+  background:linear-gradient(#3a0d05,#1a0502);border:2px solid #ff8a3c;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+.kh-total small{color:#ffc79a;font-weight:800;font-size:12px}
+.kh-total b{color:#fff1d6;font-weight:900;font-size:22px;text-shadow:0 0 8px #ff6a1a}
+
+/* 7. 조준 중인 내 카드가 힘을 모으며 떨린다 */
+.kh-aiming{animation:kh-aim-tremble .12s steps(2,end) infinite}
+@keyframes kh-aim-tremble{0%{translate:0 0}25%{translate:-1px 0}50%{translate:1px -1px}75%{translate:0 1px}}
+
+/* 11. 회피 잔상 */
+.kh-ghost{mix-blend-mode:screen}
+
+@media (prefers-reduced-motion:reduce){.kh-aiming{animation:none}.kh-focus{display:none}}

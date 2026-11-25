@@ -1104,6 +1104,9 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           setAttackImpactTriggered(true);
           if (attackAnimation) playAttackSound(attackAnimation);
         }}
+        onAttackImpactSound={() => {
+          if (attackAnimation) playAttackSound(attackAnimation);
+        }}
         onAttackAnimationComplete={() => {
           setAttackAnimation(null);
           setAttackImpactTriggered(false);
