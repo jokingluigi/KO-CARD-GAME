@@ -97,6 +97,15 @@ export function championSpriteCandidates(
   if (skin.config) {
     const frame = selectSpriteFrame(skin.config, state);
     if (frame) candidates.push({ url: frame.url, frame });
+    // 반응 그림을 못 불러오면 '지금 상태' 그림(예: 저체력)으로, 그다음에 기본 그림으로.
+    const resting = selectSpriteFrame(skin.config, {
+      awakened: state.awakened,
+      low: state.low,
+      outcome: state.outcome,
+      reaction: "IDLE",
+    });
+    if (resting && !candidates.some((c) => c.url === resting.url))
+      candidates.push({ url: resting.url, frame: resting });
     const defaultFrame = selectSpriteFrame(skin.config, {
       awakened: state.awakened,
       low: false,

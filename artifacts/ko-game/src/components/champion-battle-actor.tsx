@@ -261,8 +261,10 @@ export function ChampionBattleActor({
   // keep the last sprite that did load (idle preferred) until the retry lands.
   const decoded = useRef(new Set<string>());
   const isSprite = (c?: { frame?: unknown }) => Boolean(c?.frame && c.frame !== appearance.portraitFrame);
+  // 대신 보여줄 그림: '지금 상태' 그림(저체력 등) → 기본 → 반응 순서로, 이미 불러온 것 중에서.
+  const spriteCandidates = candidates.filter(isSprite);
   const fallbackSprite = selectedRaw && !isSprite(selectedRaw)
-    ? candidates.filter(isSprite).reverse().find(c => decoded.current.has(c.url))
+    ? [...spriteCandidates.slice(1), ...spriteCandidates.slice(0, 1)].find(c => decoded.current.has(c.url))
     : undefined;
   const selected = fallbackSprite ?? selectedRaw;
   const setReady = (url: string, sprite: boolean) => setLoaded({ id: loadIdentity, url, sprite });
@@ -284,8 +286,16 @@ export function ChampionBattleActor({
       const image = new Image();
       image.src = selected.url;
       const url = selected.url, sprite = Boolean(selected.frame && selected.frame !== appearance.portraitFrame);
+      // 휴대폰에서는 그림이 다 받아졌는데도 decode()가 가끔 실패한다 → 실제로 그려질 수 있으면 성공으로 본다.
+      const loadedAnyway = () =>
+        new Promise<void>((resolve, reject) => {
+          const ok = () => (image.naturalWidth > 0 ? resolve() : reject(new Error("image failed")));
+          if (image.complete) ok();
+          else { image.onload = ok; image.onerror = () => reject(new Error("image failed")); }
+        });
       image
         .decode()
+        .catch(loadedAnyway)
         .then(() => {
           decoded.current.add(url);
           if (!cancelled) setReady(url, sprite);
