@@ -5,7 +5,6 @@ import "./effect-readability.css";
 import { MotionNumber } from "./presentation-motion";
 import { displayHealth } from "./match-display-utils";
 import "./champion-portrait-frame.css";
-import "./battle-juice.css";
 
 /** HUD chrome inside the existing champion target; never intercepts input. */
 export function ChampionPortraitFrame({
@@ -58,7 +57,6 @@ export function ChampionPortraitFrame({
           />
         </svg>
       </div>
-      {health > 0 && health <= 5 && <div className="kj-low-aura" aria-hidden="true"><i /><i /><i /></div>}
       <div className="ko-portrait-plinth" aria-hidden="true" />
       <span className="ko-portrait-name font-display" title={name}>
         {name.replace(/^챔피언\s*/, "")}

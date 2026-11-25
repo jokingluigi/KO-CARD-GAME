@@ -241,32 +241,6 @@ export function spawnReversal(mine: boolean) {
   if (mine) crowdReact(2);
 }
 
-// ─────────────────────────────── 31. 각성: 금빛으로 화면이 갈라짐
-export function spawnAwakenSplit(x: number, y: number) {
-  if (!live()) return;
-  const { reduced, flash } = prefs();
-  const W = innerWidth, H = innerHeight;
-  // 챔피언 자리에서 사방으로 뻗는 금빛 균열
-  const rays = Array.from({ length: 7 }, (_, i) => {
-    let a = (i / 7) * Math.PI * 2 + Math.random() * .5, px0 = x, py0 = y, d = `M${x.toFixed(0)} ${y.toFixed(0)}`;
-    const len = Math.hypot(W, H);
-    for (let step = 0; step < 9; step++) {
-      a += (Math.random() - .5) * .7;
-      const seg = len / 9 * (0.6 + Math.random() * .6);
-      px0 += Math.cos(a) * seg; py0 += Math.sin(a) * seg;
-      d += ` L${px0.toFixed(0)} ${py0.toFixed(0)}`;
-    }
-    return d;
-  });
-  const paths = rays.map(d => `<path class="kj-awaken__glow" d="${d}"/><path class="kj-awaken__core" d="${d}"/>`).join('');
-  const el = layer('kj-awaken', { '--kj-x': px(x), '--kj-y': px(y), '--kj-flash': `${Math.min(1, flash)}` }, document.body,
-    `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><filter id="kj-awaken-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>${paths}</svg>`);
-  play(el, reduced ? [{ opacity: 0 }, { opacity: .8, offset: .2 }, { opacity: 0 }]
-    : [{ opacity: 0, clipPath: `circle(0px at ${px(x)} ${px(y)})` }, { opacity: 1, clipPath: `circle(150vmax at ${px(x)} ${px(y)})`, offset: .35 }, { opacity: 1, offset: .6 }, { opacity: 0 }],
-  { duration: 1500, easing: 'ease-out' });
-  crowdReact(2);
-}
-
 // ─────────────────────────────── 15. 쓴 코스트가 동전처럼 카드로
 export function spawnCostCoins(from: DOMRect | null | undefined, to: { x: number; y: number }, count: number) {
   if (!from || !from.width || !live() || count <= 0) return;
