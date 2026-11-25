@@ -19,7 +19,7 @@ import { spawnPortraitCracks } from './battle-moments';
 import { hitForce, kickBoard } from './card-physics';
 import { attackJuice } from './battle-juice-cues';
 import { impactBurstProfile, shudderFrames } from './impact-burst-model';
-import { counterRecoil, preImpactVacuum, soundLead } from './hit-feel';
+import { attackSpotlight, counterRecoil, preImpactVacuum, soundLead } from './hit-feel';
 
 export function AttackAnimation({
   animation,
@@ -101,12 +101,20 @@ export function AttackAnimation({
     let healthPop:Animation|undefined;
     if (animation.finishingBlow) audioManager.duckForPresentation(.4, 500);
     let soundPlayed=false,vacuumed=false;
+    // 3차 5. 공격력 6 이상: 예비 동작 동안 주변이 어두워지고 공격자·대상에만 빛
+    const closeSpot=animation.currentAttack>=6&&!document.hidden
+      ? attackSpotlight(
+          {x:source.left+source.width/2,y:source.top+source.height/2,r:Math.max(source.width,source.height)*.62},
+          {x:target.left+target.width/2,y:target.top+target.height/2,r:Math.max(target.width,target.height)*.62},
+          Math.max(120,impactDelay*.7))
+      : ()=>{};
     const lead=reduced?0:soundLead();
     const playImpactSound=()=>{if(soundPlayed)return;soundPlayed=true;try{onImpactSoundRef.current?.();}catch{/* 소리 */}};
     const impact = () => {
       if (impactedRef.current) return;
       impactedRef.current = true;
       playImpactSound();
+      closeSpot();
       setImpacted(true);
       if(animation.finishingBlow&&!reduced)try{hush=document.querySelector(".ko-cinematic-background")?.animate([{filter:"brightness(.6)"},{filter:"brightness(1)"}],{duration:220,easing:"ease-out"});}catch{}
 
@@ -217,6 +225,7 @@ export function AttackAnimation({
     window.addEventListener('resize',complete);
     window.addEventListener('ko-combat-preferences',complete);
     return () => {
+      closeSpot();
       cancelAnimationFrame(frame);
       if(motion){motion.onfinish=null;motion.cancel();}
       targetMotion?.cancel();hush?.cancel();focus?.cancel();whiteout?.cancel();shudder?.cancel();lift?.cancel();healthPop?.cancel();

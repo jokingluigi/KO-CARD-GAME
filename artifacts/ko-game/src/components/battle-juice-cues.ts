@@ -1,5 +1,5 @@
 import type { PresentationCue } from './presentation-feedback';
-import { arenaTail, dodgeMoment, isMyChampionAt, noteTargetDamage, resetDamageStreak, spawnArmorShatter, spawnFocusLines, spawnHurtVignette, spawnKoStamp } from './hit-feel';
+import { arenaQuake, arenaTail, dodgeMoment, finisherSilence, isMyChampionAt, noteTargetDamage, resetDamageStreak, spawnArmorShatter, spawnFocusLines, spawnHurtVignette, spawnKoStamp } from './hit-feel';
 import { juiceSound, registerComboHit, spawnClashSparks, cardElement, crowdReact, fadeScorches, resetCombo, spawnChromaSplit, spawnMiss, spawnOverkill, spawnScorch, spawnShieldTing, spawnSilenceInk, spawnStatPop, spawnTableLight, spawnTurnSweep } from './battle-juice';
 
 /** 효과 연출 신호(cue)마다 덧붙는 타격감. 전투 공격은 attack-animation 쪽에서 따로 처리한다. */
@@ -13,11 +13,13 @@ export function juiceForCue(cue: PresentationCue, lethal = false) {
       // ── 타격감 2차 (효과 피해)
       spawnFocusLines(cue.left, cue.top, lethal ? 10 : dmg);
       arenaTail(dmg, cue.left, lethal);
+      arenaQuake(dmg, lethal);
       if (!cue.cardInstanceId && isMyChampionAt(cue.left, cue.top)) spawnHurtVignette(dmg);
       noteTargetDamage(cue.cardInstanceId ?? (cue.playerId ? `champion:${cue.playerId}` : undefined), dmg, cue.left, cue.top);
       if (dmg >= 3) spawnTableLight(cue.left, cue.top, dmg);
       if (dmg >= 6 && cue.cardInstanceId) spawnScorch(cue.left, cue.top, dmg);
-      if (dmg >= 10 || lethal) { crowdReact(2); spawnChromaSplit(lethal ? 1 : .7); }
+      if (lethal) { finisherSilence(() => crowdReact(2)); spawnChromaSplit(1); }
+      else if (dmg >= 10) { crowdReact(2); spawnChromaSplit(.7); }
       else if (dmg >= 6) crowdReact(1);
       return;
     }
@@ -46,12 +48,15 @@ export function attackJuice(animation: { damage: number; counterDamage?: number;
   // 3. 큰 공격에는 '쿵' 저음을 한 겹 더
   if (dmg >= 6) juiceSound(`${import.meta.env.BASE_URL}vendor/kenney/scifi/low_frequency_explosion_000.ogg`, dmg >= 10 ? 46 : 32, 4, contact.x);
   if (dmg >= 6 && animation.targetKind === 'CARD') spawnScorch(target.left + target.width / 2, target.top + target.height / 2, dmg);
-  if (animation.finishingBlow || dmg >= 10) { crowdReact(2); spawnChromaSplit(animation.finishingBlow ? 1 : .75); }
+  // 3차 7. 결정타는 맞은 직후 0.4초 정적 → 함성
+  if (animation.finishingBlow) { finisherSilence(() => crowdReact(2)); spawnChromaSplit(1); }
+  else if (dmg >= 10) { crowdReact(2); spawnChromaSplit(.75); }
   else if (dmg >= 6) crowdReact(1);
   // ── 타격감 2차
   const cx = target.left + target.width / 2, cy = target.top + target.height / 2;
   spawnFocusLines(contact.x, contact.y, animation.finishingBlow ? 10 : dmg);                       // 4
   arenaTail(dmg, contact.x, Boolean(animation.finishingBlow));                                      // 10
+  arenaQuake(dmg, Boolean(animation.finishingBlow));                                                 // 3차 3
   if (animation.targetKind === 'CHAMPION' && isMyChampionAt(cx, cy)) spawnHurtVignette(dmg);      // 5
   noteTargetDamage(animation.target?.instanceId ?? (animation.targetKind === 'CHAMPION' ? `champion:${animation.targetPlayerId ?? (isMyChampionAt(cx, cy) ? 'me' : 'foe')}` : undefined), dmg, cx, cy); // 12
   if (animation.targetKind === 'CARD' && animation.target && dmg > 0 && dmg >= animation.target.currentHealth) window.setTimeout(() => spawnKoStamp(cx, cy + target.height * .24), 110); // 6 (피해 숫자 아래)

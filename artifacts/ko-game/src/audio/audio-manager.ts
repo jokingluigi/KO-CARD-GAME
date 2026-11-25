@@ -398,6 +398,19 @@ class AudioManager {
 
   getSfxVolume() { return this.sfxVolume; }
 
+  /** 3차 7. 결정타 직후 정적: 배경음악·효과음을 잠깐 완전히 끊었다가 되돌린다. delay 뒤 시작, ms 동안. */
+  hushAll(ms: number, delay = 0) {
+    if (typeof window === 'undefined') return;
+    window.setTimeout(() => {
+      this.duckBgmForImpact(0.001, ms);
+      const muted: Array<[HTMLAudioElement, number]> = [];
+      for (const audio of this.overlays) { muted.push([audio, audio.volume]); audio.volume = 0; }
+      if (this.attackAudio) { muted.push([this.attackAudio, this.attackAudio.volume]); this.attackAudio.volume = 0; }
+      if (this.layer) { muted.push([this.layer.audio, this.layer.audio.volume]); this.layer.audio.volume = 0; }
+      window.setTimeout(() => { for (const [audio, volume] of muted) { try { if (!audio.paused) audio.volume = volume; } catch { /* 끝난 소리 */ } } }, ms);
+    }, delay);
+  }
+
   /**
    * 1. 소리 지연 보정: 휴대폰은 소리가 화면보다 늦게 나온다.
    * 그만큼 소리를 먼저 틀 수 있도록 '얼마나 먼저'(ms)를 알려준다. 0~140ms.

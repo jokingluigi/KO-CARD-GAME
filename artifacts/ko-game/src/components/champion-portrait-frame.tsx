@@ -5,6 +5,7 @@ import "./effect-readability.css";
 import { MotionNumber } from "./presentation-motion";
 import { displayHealth } from "./match-display-utils";
 import "./champion-portrait-frame.css";
+import { spawnHealthChunk } from "./hit-feel";
 
 /** HUD chrome inside the existing champion target; never intercepts input. */
 export function ChampionPortraitFrame({
@@ -88,7 +89,8 @@ function HealthTrack({
   const ratio = Math.max(0, Math.min(1, health / Math.max(1, maxHealth))),
     [trail, setTrail] = useState(ratio),
     [mode, setMode] = useState<"idle" | "hit" | "drain" | "heal">("idle"),
-    prior = useRef({ ratio, maxHealth });
+    prior = useRef({ ratio, maxHealth }),
+    barRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const old = prior.current;
     prior.current = { ratio, maxHealth };
@@ -105,12 +107,14 @@ function HealthTrack({
     }
     setTrail((current) => Math.max(current, old.ratio));
     setMode("hit");
+    // 3차 6. 깎인 만큼의 체력바 조각이 떨어져 나간다 (숫자는 그대로 진짜 값)
+    spawnHealthChunk(barRef.current, old.ratio, ratio);
     const hold = setTimeout(() => { setMode("drain"); setTrail(ratio); }, 520);
     const rest = setTimeout(() => setMode("idle"), 1300);
     return () => { clearTimeout(hold); clearTimeout(rest); };
   }, [ratio, maxHealth]);
   return (
-    <span className="ko-portrait-health-track" data-mode={mode} aria-hidden="true">
+    <span ref={barRef} className="ko-portrait-health-track" data-mode={mode} aria-hidden="true">
       <i style={{ width: trail * 100 + "%" }} />
       <b style={{ width: ratio * 100 + "%" }} />
     </span>

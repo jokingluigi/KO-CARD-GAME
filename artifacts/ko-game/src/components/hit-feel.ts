@@ -247,3 +247,79 @@ export function counterRecoil(attacker: HTMLElement | null, dx: number, dy: numb
     ], { duration: 300, easing: 'cubic-bezier(.2,.8,.3,1)' });
   } catch { /* 연출 */ }
 }
+
+// ─────────────────────────────── 3차 3. 경기장 조명 깜빡임 + 천장 먼지 (피해 10 이상)
+let lastQuake = 0;
+export function arenaQuake(damage: number, finisher = false) {
+  const { reduced, low, flash } = prefs();
+  if (!live() || (damage < 10 && !finisher)) return;
+  const now = Date.now();
+  if (now - lastQuake < 600) return;
+  lastQuake = now;
+  if (!reduced && flash > 0) {
+    const dim = layer('kh-blackout');
+    const f = Math.min(1, flash);
+    play(dim, [
+      { opacity: 0 }, { opacity: .55 * f, offset: .08 }, { opacity: .1 * f, offset: .2 },
+      { opacity: .4 * f, offset: .32 }, { opacity: 0, offset: .5 }, { opacity: .18 * f, offset: .62 }, { opacity: 0 },
+    ], { duration: 520, delay: 60, easing: 'steps(1,end)' });
+  }
+  if (reduced) return;
+  const count = low ? 10 : finisher ? 34 : 22;
+  for (let i = 0; i < count; i++) {
+    const big = Math.random() < .25;
+    const speck = layer(`kh-dust${big ? ' kh-dust--chunk' : ''}`, { left: `${Math.random() * 100}%` });
+    const fall = innerHeight * (.35 + Math.random() * .55);
+    const drift = (Math.random() - .5) * 60;
+    play(speck, [
+      { opacity: 0, transform: 'translate(0,-12px) rotate(0deg)' },
+      { opacity: .95, transform: `translate(${drift * .1}px,${fall * .08}px) rotate(40deg)`, offset: .08 },
+      { opacity: .85, transform: `translate(${drift * .6}px,${fall * .6}px) rotate(220deg)`, offset: .7 },
+      { opacity: 0, transform: `translate(${drift}px,${fall}px) rotate(320deg)` },
+    ], { duration: 900 + Math.random() * 900, delay: 120 + Math.random() * 500, easing: 'cubic-bezier(.45,0,.9,.6)' });
+  }
+}
+
+// ─────────────────────────────── 3차 5. 큰 공격 직전 집중 조명 (공격력 6 이상)
+/** 공격자와 대상에만 빛이 떨어지고 주변이 어두워진다. 반환된 함수를 부르면 걷힌다. */
+export function attackSpotlight(source: { x: number; y: number; r: number }, target: { x: number; y: number; r: number }, rampMs: number) {
+  const { reduced, low } = prefs();
+  if (!live() || reduced || low) return () => {};
+  const el = layer('kh-spot', {
+    '--sx': px(source.x), '--sy': px(source.y), '--sr': px(source.r),
+    '--tx': px(target.x), '--ty': px(target.y), '--tr': px(target.r),
+  });
+  let anim: Animation | undefined;
+  try { anim = el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: Math.max(120, rampMs), fill: 'forwards', easing: 'ease-in' }); } catch { /* 연출 */ }
+  let closed = false;
+  const close = () => {
+    if (closed) return; closed = true;
+    anim?.cancel();
+    play(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-out' });
+  };
+  window.setTimeout(close, 2500); // 안전장치
+  return close;
+}
+
+// ─────────────────────────────── 3차 6. 체력바 조각이 떨어져 나간다
+export function spawnHealthChunk(bar: HTMLElement | null, before: number, after: number) {
+  const { reduced } = prefs();
+  if (!live() || reduced || !bar || after >= before) return;
+  const r = bar.getBoundingClientRect();
+  if (!r.width) return;
+  const left = r.left + r.width * after, width = Math.max(3, r.width * (before - after));
+  const chunk = layer('kh-hp-chunk', { left: px(left), top: px(r.top), width: px(width), height: px(r.height) });
+  const side = Math.random() < .5 ? -1 : 1;
+  play(chunk, [
+    { opacity: 1, transform: 'translate(0,0) rotate(0deg)' },
+    { opacity: 1, transform: `translate(${side * 6}px,-10px) rotate(${side * -8}deg)`, offset: .18 },
+    { opacity: 0, transform: `translate(${side * 26}px,${80 + width * .4}px) rotate(${side * 40}deg)` },
+  ], { duration: 760, delay: 40, easing: 'cubic-bezier(.3,0,.8,.5)' });
+}
+
+// ─────────────────────────────── 3차 7. 결정타 직후 정적 → 함성
+export function finisherSilence(after: () => void) {
+  if (!live()) { after(); return; }
+  try { audioManager.hushAll(420, 90); } catch { /* 소리 */ }
+  window.setTimeout(after, 90 + 420);
+}
