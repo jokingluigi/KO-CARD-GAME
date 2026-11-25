@@ -31,10 +31,30 @@ const DEFAULT_BOX = { width: 1400, height: 1400 };
 
 export const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
 
-const CACHE_BUDGET = Math.max(8, Number(process.env["IMAGE_CACHE_MB"] ?? 64)) * 1024 * 1024;
+const CACHE_BUDGET = Math.max(8, Number(process.env["IMAGE_CACHE_MB"] ?? 32)) * 1024 * 1024;
+
+/*
+ * 메모리 보호 (무료 서버 512MB에서 그림 변환이 몰리면 서버가 꺼졌던 문제):
+ * - sharp 자체 캐시 끄기, 변환 1개당 스레드 1개
+ * - 동시에 내려받기+변환하는 그림은 최대 2장. 나머지는 줄 서서 기다림
+ */
+sharp.cache(false);
+sharp.concurrency(1);
+const CONVERT_LIMIT = Math.max(1, Number(process.env["IMAGE_CONVERT_CONCURRENCY"] ?? 2));
+let converting = 0;
+const waiting: Array<() => void> = [];
+async function withConvertSlot<T>(work: () => Promise<T>): Promise<T> {
+  if (converting >= CONVERT_LIMIT) await new Promise<void>((resolve) => waiting.push(resolve));
+  converting++;
+  try {
+    return await work();
+  } finally {
+    converting--;
+    waiting.shift()?.();
+  }
+}
 const cache = new Map<string, Variant>();
 let cachedBytes = 0;
-const inflight = new Map<string, Promise<Variant | null>>();
 
 function remember(key: string, value: Variant) {
   if (value.buffer.length > CACHE_BUDGET / 8) return; // 너무 큰 파일은 메모리에 두지 않는다
@@ -101,10 +121,10 @@ export async function optimizeImage(raw: DownloadedImage, folder: string, webp: 
   if (!webp || !/^image\/(png|jpeg|jpg)$/i.test(type)) return { buffer: raw.buffer, contentType: type };
   const box = MAX_BOX[folder] ?? DEFAULT_BOX;
   try {
-    const out = await sharp(raw.buffer, { failOn: "none", limitInputPixels: 40_000_000 })
+    const out = await sharp(raw.buffer, { failOn: "none", limitInputPixels: 40_000_000, sequentialRead: true })
       .rotate()
       .resize({ width: box.width, height: box.height, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 84, alphaQuality: 92, effort: 4 })
+      .webp({ quality: 84, alphaQuality: 92, effort: 2 })
       .toBuffer();
     // 줄였는데 오히려 커지면 원본을 보낸다
     return out.length < raw.buffer.length ? { buffer: out, contentType: "image/webp" } : { buffer: raw.buffer, contentType: type };
@@ -113,7 +133,45 @@ export async function optimizeImage(raw: DownloadedImage, folder: string, webp: 
   }
 }
 
-/** 이미지를 보낸다. 없으면 false. */
+/** 처음 요청에 원본을 보낼 때: 짧게만 보관 (다음 방문 때 줄인 WebP를 받도록) */
+export const SHORT_CACHE = "public, max-age=600";
+
+/** 디스크 확인 + 원본 내려받기: 같은 그림을 동시에 여러 번 요청해도 Supabase에는 한 번만 */
+type Lookup = { variant?: Variant; raw?: DownloadedImage } | null;
+const lookups = new Map<string, Promise<Lookup>>();
+function lookupOnce(key: string, objectPath: string, download: () => Promise<DownloadedImage | null>) {
+  let pending = lookups.get(key);
+  if (!pending) {
+    pending = (async (): Promise<Lookup> => {
+      const stored = await diskRecall(key);
+      if (stored) { remember(key, stored); return { variant: stored }; }
+      const raw = await download();
+      return raw ? { raw } : null;
+    })().finally(() => lookups.delete(key));
+    lookups.set(key, pending);
+  }
+  void objectPath;
+  return pending;
+}
+
+/** 뒤에서 천천히 WebP로 변환해 보관 (변환 대기열이 너무 길면 이번엔 건너뜀 → 다음 요청 때 다시) */
+const conversions = new Map<string, Promise<Variant | null>>();
+const MAX_BACKLOG = 24;
+function convertInBackground(key: string, raw: DownloadedImage, folder: string, webp: boolean) {
+  if (conversions.has(key) || conversions.size >= MAX_BACKLOG) return conversions.get(key) ?? null;
+  const job = withConvertSlot(() => optimizeImage(raw, folder, webp))
+    .then((result) => { remember(key, result); void diskRemember(key, result); return result; }, () => null)
+    .finally(() => conversions.delete(key));
+  conversions.set(key, job);
+  return job;
+}
+
+/**
+ * 이미지를 보낸다. 없으면 false.
+ * - 이미 줄여 둔 WebP가 있으면(메모리·디스크) 바로 보낸다 (1년 보관)
+ * - 없으면 기다리게 하지 않고 원본을 바로 보내고(10분 보관), 변환은 뒤에서 한다
+ *   (무료 서버 CPU가 약해 변환을 기다리면 그림이 몇 초씩 늦게 떴음)
+ */
 export async function deliverImage(
   objectPath: string,
   folder: string,
@@ -122,36 +180,48 @@ export async function deliverImage(
   response: Response,
 ): Promise<boolean> {
   const key = `${objectPath}|${webp ? "webp" : "orig"}`;
-  let variant: Variant | null | undefined = recall(key);
-  if (!variant) {
-    let pending = inflight.get(key);
-    if (!pending) {
-      pending = (async () => {
-        const stored = await diskRecall(key);
-        if (stored) { remember(key, stored); return stored; }
-        const raw = await download();
-        if (!raw) return null;
-        const result = await optimizeImage(raw, folder, webp);
-        remember(key, result);
-        void diskRemember(key, result);
-        return result;
-      })().finally(() => inflight.delete(key));
-      inflight.set(key, pending);
-    }
-    variant = await pending;
+  const variant: Variant | null | undefined = recall(key);
+  if (variant) {
+    send(response, variant, IMMUTABLE_CACHE);
+    return true;
   }
-  if (!variant) return false;
+  const found = await lookupOnce(key, objectPath, download);
+  if (found?.variant) {
+    send(response, found.variant, IMMUTABLE_CACHE);
+    return true;
+  }
+  const raw = found?.raw;
+  if (!raw) return false;
+  const type = raw.contentType ?? "application/octet-stream";
+  const convertible = webp && /^image\/(png|jpeg|jpg)$/i.test(type);
+  if (!convertible) {
+    const original = { buffer: raw.buffer, contentType: type };
+    remember(key, original);
+    send(response, original, IMMUTABLE_CACHE);
+    return true;
+  }
+  convertInBackground(key, raw, folder, webp);
+  send(response, { buffer: raw.buffer, contentType: type }, SHORT_CACHE);
+  return true;
+}
+
+function send(response: Response, variant: Variant, cache: string) {
   response.setHeader("Content-Type", variant.contentType);
   response.setHeader("Content-Length", String(variant.buffer.length));
-  response.setHeader("Cache-Control", IMMUTABLE_CACHE);
+  response.setHeader("Cache-Control", cache);
   response.setHeader("Vary", "Accept");
   response.end(variant.buffer);
-  return true;
+}
+
+/** 테스트용: 뒤에서 하는 변환이 끝날 때까지 기다린다 */
+export async function settleImageConversions() {
+  await Promise.all([...conversions.values()]);
+  await new Promise((r) => setTimeout(r, 30));
 }
 
 /** 테스트·운영 확인용 */
 export function imageCacheStats() {
-  return { entries: cache.size, bytes: cachedBytes, budget: CACHE_BUDGET };
+  return { entries: cache.size, bytes: cachedBytes, budget: CACHE_BUDGET, converting: conversions.size };
 }
 /** 메모리 보관함만 비운다 (디스크 보관함은 남김) */
 export function clearImageMemory() { cache.clear(); cachedBytes = 0; }

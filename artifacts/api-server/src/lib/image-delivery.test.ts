@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { acceptsWebp, clearImageCache, clearImageMemory, deliverImage, IMMUTABLE_CACHE, optimizeImage } from "./image-delivery";
+import { acceptsWebp, clearImageCache, clearImageMemory, deliverImage, IMMUTABLE_CACHE, optimizeImage, settleImageConversions, SHORT_CACHE } from "./image-delivery";
 
 async function png(width: number, height: number, alpha = false) {
   const channels = alpha ? 4 : 3;
@@ -54,6 +54,10 @@ test("같은 그림은 저장소에서 한 번만 내려받고, 오래 보관하
     deliverImage("/objects/uploads/card-images/x.png", "card-images", true, download, a as never),
     deliverImage("/objects/uploads/card-images/x.png", "card-images", true, download, b as never),
   ]);
+  // 처음엔 기다리지 않고 원본을 바로, 짧게만 보관
+  assert.equal(a.headers["content-type"], "image/png");
+  assert.equal(a.headers["cache-control"], SHORT_CACHE);
+  await settleImageConversions();
   const c = fakeResponse();
   await deliverImage("/objects/uploads/card-images/x.png", "card-images", true, download, c as never);
   assert.equal(downloads, 1);
@@ -80,12 +84,32 @@ test("메모리에서 밀려나도 디스크 보관함에서 다시 꺼내 Supab
   const download = async () => { downloads++; return { buffer: raw, contentType: "image/png" }; };
   const first = fakeResponse();
   await deliverImage("card-images/disk-test.png", "card-images", true, download, first as never);
-  await new Promise((r) => setTimeout(r, 50)); // 디스크 저장 기다리기
+  await settleImageConversions(); // 뒤에서 변환·디스크 저장 기다리기
+  clearImageMemory();
+  const firstWebp = fakeResponse();
+  await deliverImage("card-images/disk-test.png", "card-images", true, download, firstWebp as never);
   clearImageMemory();
   const second = fakeResponse();
   await deliverImage("card-images/disk-test.png", "card-images", true, download, second as never);
   assert.equal(downloads, 1);
   assert.equal(second.headers["content-type"], "image/webp");
-  assert.deepEqual(second.body, first.body);
+  assert.equal(second.headers["cache-control"], IMMUTABLE_CACHE);
+  assert.deepEqual(second.body, firstWebp.body);
+  clearImageCache();
+});
+
+test("변환이 한꺼번에 몰려도 동시에 2장까지만 변환한다 (메모리 보호)", async () => {
+  clearImageCache();
+  const raw = await png(900, 1200);
+  let peak = 0, live = 0;
+  const jobs = Array.from({ length: 8 }, (_, i) => deliverImage(`card-images/many-${i}.png`, "card-images", true, async () => {
+    live++; peak = Math.max(peak, live); await new Promise((r) => setTimeout(r, 10)); live--;
+    return { buffer: raw, contentType: "image/png" };
+  }, fakeResponse() as never));
+  await Promise.all(jobs);
+  await settleImageConversions();
+  const again = fakeResponse();
+  await deliverImage("card-images/many-7.png", "card-images", true, async () => null, again as never);
+  assert.equal(again.headers["content-type"], "image/webp", "뒤에서 변환된 WebP가 준비됨");
   clearImageCache();
 });
