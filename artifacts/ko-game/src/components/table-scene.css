@@ -1,11 +1,11 @@
 /* 대전 화면: 테이블 위에 펼친 보드게임판 */
-.ko-table-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ko-table-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;contain:strict;will-change:transform}
 .ko-table-scene__table{position:absolute;inset:0;
   background:
     radial-gradient(ellipse 58% 52% at 50% 44%,rgba(255,196,120,.20),transparent 70%),
     radial-gradient(ellipse 125% 100% at 50% 48%,transparent 42%,rgba(0,0,0,.82) 100%),
     var(--table-wood) center/cover}
-.ko-table-scene__art,.ko-table-scene__art svg{position:absolute;inset:0;display:block}
+.ko-table-scene__art,.ko-table-scene__art svg{position:absolute;inset:0;display:block;width:100%;height:100%}
 .ko-game-shell.ko-has-table{background:#0a0604!important}
 .ko-game-shell.ko-has-table .ko-game-stage{position:relative;z-index:1}
 /* 판 위 기존 천 무늬는 숨기고 펠트가 보이게 */

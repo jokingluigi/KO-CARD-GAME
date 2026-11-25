@@ -42,8 +42,26 @@ export function TableScene() {
     return () => { cancelAnimationFrame(frame); observer.disconnect(); removeEventListener("resize", update); clearInterval(timer); };
   }, []);
 
-  const svg = useMemo(() => (box ? drawBoard(box) : null), [box]);
-  if (!box || !svg) return null;
+  // 원목 테두리 그림을 한 번만 데이터로 읽어 둔다 (그림 파일 안에 넣어야 한 장의 그림으로 굳힐 수 있음).
+  const [rimData, setRimData] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(rimWood).then((r) => r.blob()).then((blob) => new Promise<string>((done, fail) => {
+      const reader = new FileReader(); reader.onload = () => done(String(reader.result)); reader.onerror = fail; reader.readAsDataURL(blob);
+    })).then((data) => { if (alive) setRimData(data); }).catch(() => { if (alive) setRimData(rimWood); });
+    return () => { alive = false; };
+  }, []);
+  const svg = useMemo(() => (box && rimData ? drawBoard(box, rimData) : null), [box, rimData]);
+  // 잔렉 방지: 판 그림(나뭇결·펠트 질감 필터 포함)을 매 프레임 다시 계산하지 않도록
+  // 한 장의 이미지로 굳혀서 보여준다.
+  const [picture, setPicture] = useState<string | null>(null);
+  useEffect(() => {
+    if (!svg) return;
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    setPicture(url);
+    return () => { window.setTimeout(() => URL.revokeObjectURL(url), 2000); };
+  }, [svg]);
+  if (!box || !picture) return null;
   return (
     <div
       className="ko-table-scene"
@@ -52,12 +70,12 @@ export function TableScene() {
       style={{ "--table-wood": `url("${tableWood}")`, "--rim-wood": `url("${rimWood}")` } as React.CSSProperties}
     >
       <div className="ko-table-scene__table" />
-      <div className="ko-table-scene__art" dangerouslySetInnerHTML={{ __html: svg }} />
+      <img className="ko-table-scene__art" src={picture} alt="" draggable={false} decoding="async" />
     </div>
   );
 }
 
-function drawBoard({ L: l, R: r, T: t, B: b, W, H }: Box): string {
+function drawBoard({ L: l, R: r, T: t, B: b, W, H }: Box, rimTexture: string): string {
   const mobile = W < 769;
   const rim = mobile ? 9 : 26;
   const L = l - rim, R = r + rim, T = t - rim, B = b + rim;
@@ -107,5 +125,5 @@ function drawBoard({ L: l, R: r, T: t, B: b, W, H }: Box): string {
   </g>
   <!-- 놋쇠 모서리 -->
   ${corner(L + 4, T + 4, 1, 1)}${corner(R - 4, T + 4, -1, 1)}${corner(L + 4, B - 4, 1, -1)}${corner(R - 4, B - 4, -1, -1)}
-</svg>`.replace(/RIMWOOD/g, rimWood);
+</svg>`.replace(/RIMWOOD/g, rimTexture);
 }

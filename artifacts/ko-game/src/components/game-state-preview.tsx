@@ -1,3 +1,4 @@
+import './perf-smooth.css';
 import { TableScene } from "./table-scene";
 import { ScrollText, Settings } from "lucide-react";
 

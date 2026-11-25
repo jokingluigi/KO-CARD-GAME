@@ -1,0 +1,30 @@
+/* 잔렉 방지 (2026-11-25): 계속 도는 애니메이션을 '다시 그리기' 없이 그래픽 카드가 움직이게 바꾼다.
+   겉보기는 같게 유지. */
+
+/* 내 턴 보드 테두리 빛: 큰 그림자를 매 프레임 다시 그리던 것 → 고정 빛 + 가벼운 깜빡임 층 */
+.ko-game-shell .ko-game-stage[data-active-side=player] .ko-player-board-row{animation:none!important;
+  box-shadow:0 0 0 2px rgba(255,214,120,.75),0 0 28px 5px rgba(255,190,80,.34)!important}
+
+/* 스텔스(기습) 반짝 줄: left 이동 → transform 이동 */
+.kfx-surprise b{animation-name:kfx-glint-smooth!important;will-change:transform}
+@keyframes kfx-glint-smooth{0%,62%{transform:translateX(0) rotate(25deg)}100%{transform:translateX(1000%) rotate(25deg)}}
+
+/* 아머 광택: 배경 위치 이동 → 카드 안에 넣은 광택 띠를 transform으로 이동 */
+.kfx-armor{overflow:hidden}
+.kfx-armor::before{inset:0 auto 0 0!important;width:250%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.28) 45%,transparent 55%) no-repeat!important;
+  animation-name:kfx-sheen-smooth!important;will-change:transform}
+@keyframes kfx-sheen-smooth{0%,55%{transform:translateX(-60%)}100%{transform:translateX(60%)}}
+
+/* 필살 게이지 광택: 배경 위치 이동 → transform 이동 */
+.ko-game-shell .ko-quest-meter::after{inset:0 auto 0 0!important;width:220%;background-size:100% 100%!important;
+  animation-name:ko-meter-sheen-smooth!important;will-change:transform}
+@keyframes ko-meter-sheen-smooth{from{transform:translateX(5%)}to{transform:translateX(-60%)}}
+
+/* 카드 그림자: 카드마다 그림자 '필터'를 거는 대신, 똑같이 보이는 가벼운 상자 그림자로 */
+.ko-game-stage [data-card-instance-id],.ko-game-stage .ko-card-depth{filter:none!important}
+.ko-game-stage .ko-card-depth{border-radius:7%/5%;box-shadow:0 5px 4px rgba(0,0,0,.42)}
+.ko-game-shell.ko-has-table .ko-game-stage :is(.ko-hand-card:hover,.ko-hand-card--selected) .ko-card-depth,
+.ko-game-shell.ko-has-table .ko-game-stage .ko-card-depth[data-kj-tilt]{filter:none!important;box-shadow:0 14px 10px rgba(0,0,0,.3),0 30px 26px rgba(0,0,0,.36)}
+
+/* 손패에 마우스를 올렸을 때: 카드와 반짝이 층을 그래픽 카드 층으로 올려 움직임마다 다시 그리지 않게 */
+.ko-game-stage .ko-hand-card .ko-card-depth,.ko-game-stage .ko-hand-card .ko-card-foil{will-change:transform}

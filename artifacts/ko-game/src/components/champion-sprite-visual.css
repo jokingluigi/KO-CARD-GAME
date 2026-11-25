@@ -105,3 +105,8 @@
   82% { transform:translate(calc(var(--sprite-tremor-x) * .65),calc(var(--sprite-tremor-x) * -.08)) rotate(calc(var(--sprite-tremor-angle) * .66)); }
 }
 @media (prefers-reduced-motion:reduce) { .ko-sprite-low-tremor { animation:none !important; } }
+
+/* 잔렉 방지: 숨쉬기·흔들림을 그래픽 카드가 처리하도록 별도 층으로 올린다
+   (아치 모양 액자 마스크 안에서 그림 전체를 매 프레임 다시 그리지 않게). */
+.ko-sprite-visual,.ko-sprite-breath,.ko-sprite-pose{will-change:transform;backface-visibility:hidden}
+.ko-game-shell.ko-board-preview .ko-champion-arena .ko-portrait-window{will-change:transform}
