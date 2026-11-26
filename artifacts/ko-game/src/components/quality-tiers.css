@@ -1,0 +1,27 @@
+/* ───────── 화질 단계 (휴대폰 렉 줄이기) ─────────
+   html[data-ko-quality] 는 설정 → 그래픽 품질 (안 고르면 기기에 맞춰 자동: 휴대폰은 보통/낮음).
+   게임 규칙·카드 정보와는 무관, 장식 연출만 줄인다. */
+
+/* ── 보통·낮음: 계속 돌아가는 장식 반복 연출 끄기 ── */
+html[data-ko-quality=MEDIUM] .ko-card-foil::before,
+html[data-ko-quality=LOW] .ko-card-foil::before{animation:none!important;opacity:0!important}
+html[data-ko-quality=MEDIUM] .kj-sprite-aura[data-style="smoke"] i,
+html[data-ko-quality=LOW] .kj-sprite-aura[data-style="smoke"] i{display:none!important}
+html[data-ko-quality=MEDIUM] .ko-quest-meter::after,
+html[data-ko-quality=LOW] .ko-quest-meter::after{animation:none!important}
+/* 관중: 금빛 테두리(필터)와 플래시 없이 */
+html[data-ko-quality=MEDIUM] .ka-pop__row,
+html[data-ko-quality=LOW] .ka-pop__row{filter:none!important}
+html[data-ko-quality=MEDIUM] .ka-pop__flashes,
+html[data-ko-quality=LOW] .ka-pop__flashes{display:none!important}
+/* 뒤 화면 흐리게 하기(backdrop-filter)는 휴대폰에서 아주 무겁다 → 반투명 배경으로 대신 */
+html[data-ko-quality=MEDIUM] .ko-game-shell *,
+html[data-ko-quality=LOW] .ko-game-shell *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+
+/* ── 낮음: 더 줄이기 ── */
+html[data-ko-quality=LOW] .kj-sprite-aura{display:none!important}
+html[data-ko-quality=LOW] .kj-sprite-shade{display:none!important}
+html[data-ko-quality=LOW] .kfx-rush i,
+html[data-ko-quality=LOW] .kfx-surprise i{animation:none!important}
+html[data-ko-quality=LOW] .ko-card-art-depth{transform:none!important}
+html[data-ko-quality=LOW] .ka-pop__row{animation:none!important}
