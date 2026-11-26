@@ -532,6 +532,13 @@ function attackInternal(
     : attackerBeforeDamage;
   const attackerPrepared = findBoardCard(preDamageState, attackingPlayerId, attackerInstanceId)?.card ?? attackerCurrent;
   const defenderPreparedCard = findBoardCard(preDamageState, target.playerId, defender.instanceId)?.card ?? defenderCurrent;
+  // 하스스톤 방식 (2026-11-26): 공격 직전 효과로 대상이나 공격자가 필드를 떠났거나 쓰러질 상태면 공격 취소.
+  // 공격 횟수는 사용한 것으로 남는다. (예전엔 사라진 카드에게서 반격 피해를 맞았음)
+  const defenderStill = findBoardCard(preDamageState, target.playerId, defender.instanceId)?.card;
+  const attackerStill = findBoardCard(preDamageState, attackingPlayerId, attackerInstanceId)?.card;
+  if (!defenderStill || !attackerStill || attackerStill.currentHealth <= 0 || defenderStill.currentHealth <= 0) {
+    return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(retireDefeatedWrestlers(preDamageState))));
+  }
   const preventedAttackerDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(defender.instanceId)) || (hasEntryDefense(defenderPreparedCard, preDamageState.turn));
   const preventedDefenderDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(attackerInstanceId)) || (hasEntryDefense(attackerPrepared, preDamageState.turn));
   const attackerDodges =
@@ -639,7 +646,9 @@ function attackInternal(
     ],
   }, attackingPlayerId, attackerPrepared, preventedAttackerDamage || defenderDodges ? 0 : attackerDamage);
 
-  const recordedCombat = piercingAttack ? { ...damagedState, events: damagedState.events.filter((event, index) => index < preDamageState.events.length || event.type !== 'ATTACK_DECLARED') } : damagedState;
+  // 하스스톤 방식: 반격으로 준 피해도 흡혈로 회복한다
+  const bothLifesteal = healLifesteal(damagedState, target.playerId, defenderPreparedCard, preventedDefenderDamage || attackerDodges ? 0 : defenderDamage);
+  const recordedCombat = piercingAttack ? { ...bothLifesteal, events: bothLifesteal.events.filter((event, index) => index < preDamageState.events.length || event.type !== 'ATTACK_DECLARED') } : bothLifesteal;
   let afterNewDamage = prepareAwakeningCounter(recordedCombat, target.playerId, defenderPreparedCard, combatEventId);
   // Share the combat root with every automatic reaction. Keep the reacting
   // card as its own effect's actor; death resolution recovers the actual hit
@@ -668,7 +677,23 @@ function attackInternal(
     'FIRST_ATTACKED',
     { attackerInstanceId, sourceContext: reactionAttribution(target.playerId, defenderPreparedCard) },
   );
-  const exactZeroResolved = firstAttackedResolved;
+  // 하스스톤 방식 (명예로운 처치처럼): 핀폴 카드가 반격으로 같이 쓰러질 상황이면
+  // 쓰러짐 처리 전에 핀폴을 먼저 발동한다 (예: 손패로 돌아가기 → 살아남음).
+  // 공격자가 살아남는 평소엔 예전처럼 상대가 쓰러진 뒤 발동 (그 자리 소환 등 카드 동작 유지).
+  let exactZeroResolved = firstAttackedResolved;
+  const attackerNow = findBoardCard(firstAttackedResolved, attackingPlayerId, attackerInstanceId)?.card;
+  const defenderNow = findBoardCard(firstAttackedResolved, target.playerId, defender.instanceId)?.card;
+  if (attackerNow && attackerNow.currentHealth <= 0 && (attackerNow.cardType ?? 'WRESTLER') === 'WRESTLER' &&
+      defenderNow && !defenderNow.isTrainingDummy && defenderNow.currentHealth === 0 &&
+      !defenderDodges && !preventedAttackerDamage && attackerDamage > 0) {
+    const marked = { ...firstAttackedResolved, consumedNewCardEventKeys: [...(firstAttackedResolved.consumedNewCardEventKeys ?? []), `early-pinfall:${defender.instanceId}:${combatEventId}`] };
+    exactZeroResolved = resolveTriggeredAbilities(marked, attackingPlayerId, attackerNow, 'EXACT_ZERO_DAMAGE', {
+      sourceContext: reactionAttribution(attackingPlayerId, attackerNow),
+      damagedTargetInstanceId: defender.instanceId,
+      removedTarget: defenderNow,
+    });
+    if (exactZeroResolved.targetingState?.active) exactZeroResolved = resolvePendingEffects(exactZeroResolved);
+  }
   const attackerAfterDamage = findBoardCard(exactZeroResolved, attackingPlayerId, attackerInstanceId)?.card;
   const attackSurvivedResolved = attackerAfterDamage && attackerAfterDamage.currentHealth > 0
     ? resolveTriggeredAbilities(exactZeroResolved, attackingPlayerId, attackerAfterDamage, 'ATTACK_SURVIVED', {

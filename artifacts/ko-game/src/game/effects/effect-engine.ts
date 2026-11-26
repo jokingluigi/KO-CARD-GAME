@@ -4267,7 +4267,9 @@ export function resolveCardRetiredListeners(
     const key=`causal-retire:${retirementIndex}:${sourceId}`;
     if(killerOwner&&killer && !state.consumedNewCardEventKeys?.includes(key)){
       state={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),key]};
-      if(event.exactZero)state=resolveTriggeredAbilities(state,killerOwner.id,killer,'EXACT_ZERO_DAMAGE',{sourceContext,damagedTargetInstanceId:retiredCard.instanceId,removedTarget:retiredCard});
+      // 전투에서 이미 먼저 발동한 핀폴(공격자가 같이 쓰러질 뻔한 경우)은 두 번 발동하지 않는다
+      const earlyPinfall=`early-pinfall:${retiredCard.instanceId}:${event.sourceContext?.rootSourceEventId}`;
+      if(event.exactZero&&!state.consumedNewCardEventKeys?.includes(earlyPinfall))state=resolveTriggeredAbilities(state,killerOwner.id,killer,'EXACT_ZERO_DAMAGE',{sourceContext,damagedTargetInstanceId:retiredCard.instanceId,removedTarget:retiredCard});
       state=resolveTriggeredAbilities(state,killerOwner.id,killer,'SOURCE_RETIRED_TARGET',{sourceContext,removedTarget:retiredCard});
     }
   }
