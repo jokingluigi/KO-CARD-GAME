@@ -156,8 +156,9 @@ export function AudienceLayer({ gameId, tension, finished }: {
       const audio = murmur.current;
       if (!audio) return;
       swell.current = Math.max(0, swell.current - .04);
-      const sfx = audioManager.getSfxVolume() / 100;
-      const want = Math.min(1, (.05 + tension * .09 + swell.current * .12) * sfx);
+      // 경기장 배경 소리라서 배경음악을 따른다: 음악 끄면 같이 꺼짐
+      const music = audioManager.isBgmMuted() ? 0 : audioManager.getBgmVolume() / 100;
+      const want = Math.min(1, (.025 + tension * .035 + swell.current * .06) * music);
       audio.volume = audio.volume + (want - audio.volume) * .25;
     }, 100);
     return () => window.clearInterval(id);
