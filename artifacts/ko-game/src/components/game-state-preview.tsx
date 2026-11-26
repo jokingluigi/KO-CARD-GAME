@@ -95,7 +95,7 @@ import {
 } from './alt-inspector';
 import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
 import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
-import { enqueuePresentation, presentationBatch } from './presentation-policy';
+import { enqueuePresentation, presentationBatch, presentationGap } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
@@ -503,7 +503,16 @@ export function GameStatePreview({
       }
     }
   },[state]);
-  const activePresentationCues = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
+  // 묶음과 묶음 사이 0.25초 쉬는 동안엔 아무것도 재생하지 않는다 (대표 결정 E-1)
+  const [cueResting, setCueResting] = React.useState(false);
+  const presentationBatchNow = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
+  const activePresentationCues = React.useMemo(() => cueResting ? [] as typeof presentationBatchNow : presentationBatchNow, [cueResting, presentationBatchNow]);
+  const presentationQueueRef = React.useRef(presentationQueue);
+  presentationQueueRef.current = presentationQueue;
+  const activeBatchIdsRef = React.useRef<string[]>([]);
+  activeBatchIdsRef.current = activePresentationCues.map(cue => cue.id);
+  const cueRestTimerRef = React.useRef<number | null>(null);
+  React.useEffect(() => () => { if (cueRestTimerRef.current !== null) window.clearTimeout(cueRestTimerRef.current); }, []);
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
   const effectFinisherTimerRef = React.useRef<number | null>(null);
@@ -578,6 +587,14 @@ export function GameStatePreview({
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number; maxHealth:number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
   const handlePresentationQueueComplete = React.useCallback((id: string) => {
+    const next = presentationQueueRef.current.filter(cue => cue.id !== id);
+    const batchLeft = activeBatchIdsRef.current.filter(other => other !== id);
+    // 지금 묶음의 마지막 연출이 끝났고 기다리는 게 있으면 잠깐 숨 고르기
+    if (next.length && !next.some(cue => batchLeft.includes(cue.id))) {
+      setCueResting(true);
+      if (cueRestTimerRef.current !== null) window.clearTimeout(cueRestTimerRef.current);
+      cueRestTimerRef.current = window.setTimeout(() => { cueRestTimerRef.current = null; setCueResting(false); }, presentationGap(next.length));
+    }
     setPresentationQueue((current) => current.filter(cue => cue.id !== id));
   }, []);
   const startedDamageCueRef=React.useRef('');
@@ -1133,17 +1150,32 @@ export function GameStatePreview({
   // 공격이 날아가는 중(맞기 전)에는 맞을 쪽 체력을 '맞기 직전 진짜 값'으로 보여준다.
   // 서버 결과는 공격 시작과 동시에 오지만, 숫자는 맞는 순간에 줄어야 순서가 맞다.
   const holdingHit = Boolean(attackAnimation && !attackImpactTriggered && attackAnimation.damage > 0);
+  // 대표 결정 E: 아직 재생되지 않은 피해·회복 연출만큼 체력을 되돌려 보여준다.
+  // → 숫자는 그 연출이 재생되는 순간에 바뀐다 (반응으로 생긴 피해도 차례가 올 때까지 기다림).
+  const activeCueIds = new Set(activePresentationCues.map(cue => cue.id));
+  const pendingHealthShift = new Map<string, number>();
+  for (const cue of presentationQueue) {
+    if (activeCueIds.has(cue.id)) continue;
+    if (cue.combat && holdingHit) continue; // 날아가는 공격은 아래 holdingHit이 이미 붙잡고 있음
+    const key = cue.cardInstanceId ? `c:${cue.cardInstanceId}` : cue.playerId ? `p:${cue.playerId}` : null;
+    if (!key) continue;
+    const shift = cue.kind === 'DAMAGE' ? (cue.value ?? 0) : cue.kind === 'HEAL' ? -(cue.value ?? 0) : 0;
+    if (shift) pendingHealthShift.set(key, (pendingHealthShift.get(key) ?? 0) + shift);
+  }
   const heldChampionHealth = (playerId: string, actual: number) =>
-    holdingHit && attackAnimation!.targetKind === 'CHAMPION' && attackAnimation!.targetPlayerId === playerId
+    (holdingHit && attackAnimation!.targetKind === 'CHAMPION' && attackAnimation!.targetPlayerId === playerId
       ? actual + attackAnimation!.damage
-      : actual;
+      : actual) + (pendingHealthShift.get(`p:${playerId}`) ?? 0);
   const heldBoardCard = <T extends { instanceId: string; currentHealth: number } | null>(card: T): T => {
-    if (!card || !attackAnimation || attackImpactTriggered) return card;
+    if (!card) return card;
+    const queued = pendingHealthShift.get(`c:${card.instanceId}`) ?? 0;
+    const withQueued = queued ? { ...card, currentHealth: card.currentHealth + queued } : card;
+    if (!attackAnimation || attackImpactTriggered) return withQueued;
     if (attackAnimation.targetKind === 'CARD' && attackAnimation.target?.instanceId === card.instanceId && attackAnimation.damage > 0)
-      return { ...card, currentHealth: card.currentHealth + attackAnimation.damage };
+      return { ...withQueued, currentHealth: withQueued.currentHealth + attackAnimation.damage };
     if (attackAnimation.attacker.instanceId === card.instanceId && (attackAnimation.counterDamage ?? 0) > 0)
-      return { ...card, currentHealth: card.currentHealth + (attackAnimation.counterDamage ?? 0) };
-    return card;
+      return { ...withQueued, currentHealth: withQueued.currentHealth + (attackAnimation.counterDamage ?? 0) };
+    return withQueued;
   };
   const realMinHealth = Math.min(getPlayerSurvivalHealth(state, me.id), getPlayerSurvivalHealth(state, opp.id));
   const audienceLow = state.status === 'IN_PROGRESS' && realMinHealth > 0 && realMinHealth <= 5;

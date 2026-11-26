@@ -41,6 +41,11 @@ export type PresentationCueDraft = {
   selfDamage?: boolean;
   /** Damage beyond the target's remaining health (presentation only). */
   overkill?: number;
+  /**
+   * 같이 일어난 일 묶음 (2026-11-26 대표 결정 E-2). 같은 묶음만 동시에 재생하고,
+   * 반응처럼 '그 결과로' 생긴 일은 다음 묶음으로 차례를 기다린다.
+   */
+  group?: string;
 };
 
 /** Cosmetic feedback must not hold the AI turn or legal player input. */
@@ -94,11 +99,31 @@ export function presentationCueDrafts(
   viewerPlayerId?: string,
 ) {
   const drafts: PresentationCueDraft[] = [];
+  let previous: GameEvent | undefined;
+  let previousGroup = "";
+  const combatHit = (event: GameEvent) => event.type === "DAMAGE_DEALT" && (event.reason === "COMBAT" || event.reason === "BASIC_ATTACK" || event.sourceContext?.combatRole !== undefined);
+  const sourceOf = (event: GameEvent) => event.source?.type === "CARD" ? event.source.cardInstanceId : event.source?.type === "PLAYER" ? `p:${event.source.playerId}` : undefined;
+  const leaving = (event?: GameEvent) => event?.type === "CARD_RETIRED" || event?.type === "CARD_DESTROYED";
+  const sameMoment = (event: GameEvent, before?: GameEvent) => {
+    if (!before) return false;
+    // 공격과 반격 / 같은 카드가 한 번에 여러 명에게 준 피해
+    if (event.type === "DAMAGE_DEALT" && before.type === "DAMAGE_DEALT")
+      return (combatHit(event) && combatHit(before)) || (sourceOf(event) !== undefined && sourceOf(event) === sourceOf(before) && event.reason === before.reason);
+    // 동시에 쓰러짐
+    if (leaving(event) && leaving(before)) return true;
+    // 한 카드가 여럿을 한꺼번에 강화·약화
+    if (event.type === "STAT_CHANGED" && before.type === "STAT_CHANGED") return sourceOf(event) !== undefined && sourceOf(event) === sourceOf(before);
+    return false;
+  };
 
   events.slice(startIndex).forEach((event, offset) => {
     const id = eventKeys?.[startIndex + offset] ??
       `${startIndex + offset}:${event.type}:${event.cardInstanceId ?? ""}:${event.championId ?? ""}`;
     const target = targetIds(event);
+    const group = sameMoment(event, previous) ? previousGroup : id;
+    previous = event;
+    previousGroup = group;
+    const firstDraft = drafts.length;
     switch (event.type) {
       case "DAMAGE_DEALT":
         if (event.tags?.includes('BLOCKED')) {
@@ -219,6 +244,7 @@ export function presentationCueDrafts(
       default:
         break;
     }
+    for (let index = firstDraft; index < drafts.length; index += 1) drafts[index] = { ...drafts[index]!, group };
   });
 
   return drafts;
