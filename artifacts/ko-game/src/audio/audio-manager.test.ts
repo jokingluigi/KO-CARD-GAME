@@ -674,7 +674,7 @@ test("blocked legendary entrance retries the same media on the next user gesture
   }
 });
 
-test('result music plays once, survives battle shutdown and preserves BGM mute; unlock never restarts a completed track', () => {
+test('result music plays once, survives battle shutdown and is NOT silenced by the BGM mute; unlock never restarts a completed track', () => {
   withFakeAudio(() => {
     audioManager.stopGameAudio(); audioManager.setBgmMuted(false); audioManager.setMusicContext('BATTLE');
     audioManager.playResultMusic('/victory-qa.mp3',70);
@@ -682,7 +682,7 @@ test('result music plays once, survives battle shutdown and preserves BGM mute; 
     assert.equal(music.scope,'RESULT');assert.equal(music.audio.url,'/victory-qa.mp3');assert.equal(music.audio.loop,false);assert.equal(music.audio.paused,false);
     audioManager.stopBattleAudio();audioManager.playMatchBgm('/old-match-qa.mp3',100);
     assert.strictEqual((audioManager as unknown as {bgm:unknown}).bgm,music);
-    audioManager.setBgmMuted(true);assert.equal(music.audio.volume,0);
+    audioManager.setBgmMuted(true);assert.equal(music.audio.muted,false);assert.ok(music.audio.volume>0,'승리·패배 음악은 배경음악 음소거와 상관없이 들린다');
     audioManager.setBgmMuted(false);
     music.audio.paused=true;music.audio.emit('ended');audioManager.unlockAudio();
     assert.equal(music.finished,true);assert.equal(music.audio.paused,true);
@@ -741,3 +741,23 @@ test('ordinary entrance follows the newest summon immediately and never queues b
 
 test('saved music starts at its offset after metadata, and offset BGM loops return to that offset',()=>{withFakeAudio(()=>{audioManager.setMusicContext('NON_BATTLE');audioManager.playBgm('/offset-bgm.mp3#t=12.5',80);const music=(audioManager as unknown as {bgm:{audio:FakeAudio}}).bgm;Object.assign(music.audio,{duration:60,readyState:1});music.audio.emit('loadedmetadata');assert.equal(music.audio.currentTime,12.5);audioManager.playBgm('/offset-bgm.mp3#t=12.5',75);assert.equal(music.audio.loop,false);music.audio.currentTime=60;music.audio.paused=true;music.audio.emit('ended');assert.equal(music.audio.currentTime,12.5);assert.equal(music.audio.paused,false);});});
 test('preview and legendary playback honor the same offset and seek safely within short files',()=>{withFakeAudio(()=>{audioManager.preview('/preview-offset.mp3#t=8.25',80);const current=()=> (audioManager as unknown as {current:{audio:FakeAudio}}).current.audio;Object.assign(current(),{duration:30});current().emit('loadedmetadata');assert.equal(current().currentTime,8.25);audioManager.playLegendaryEntrance('/legendary-offset.mp3#t=4',80);Object.assign(current(),{duration:5});current().emit('loadedmetadata');assert.equal(current().currentTime,4);current().currentTime=5;current().paused=true;current().emit('ended');assert.equal(current().currentTime,4);assert.equal(current().paused,false);});});
+
+test("배경음악을 꺼도 승리·패배 음악은 들린다", () => {
+  withFakeAudio((advance) => {
+    audioManager.setMusicContext("BATTLE");
+    audioManager.setBgmMuted(true);
+    audioManager.playMatchBgm("/match.mp3", 80);
+    const battle = (audioManager as unknown as { bgm: { audio: FakeAudio } | null }).bgm?.audio;
+    assert.equal(battle?.muted, true, "전투 음악은 꺼진 그대로");
+    audioManager.playResultMusic("/victory.mp3", 80);
+    advance(2000);
+    const result = (audioManager as unknown as { bgm: { audio: FakeAudio; scope: string } | null }).bgm;
+    assert.equal(result?.scope, "RESULT");
+    assert.equal(result?.audio.muted, false, "결과 음악은 음소거 안 됨");
+    assert.equal(result?.audio.paused, false, "결과 음악이 재생 중");
+    audioManager.setBgmMuted(true);
+    assert.equal(result?.audio.muted, false, "결과 음악 중에 음소거 눌러도 유지");
+    audioManager.stopResultMusic();
+    audioManager.setBgmMuted(false);
+  });
+});

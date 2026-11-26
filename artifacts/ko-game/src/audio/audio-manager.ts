@@ -371,13 +371,13 @@ class AudioManager {
 
   setBgmVolume(volume: number) {
     this.bgmVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
-    if (!this.bgm || this.bgmMuted) return;
+    if (!this.bgm || this.baseMuted) return;
     this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100) * (this.impactDuckTimer ? this.impactDuckFactor : 1);
   }
 
   private impactDuckFactor = 1;
   private duckBgmForImpact(factor: number, durationMs: number) {
-    if (!this.bgm || this.bgmMuted || this.bgm.audio.paused) return;
+    if (!this.bgm || this.baseMuted || this.bgm.audio.paused) return;
     if (this.impactDuckTimer) window.clearTimeout(this.impactDuckTimer);
     this.impactDuckFactor = Math.min(this.impactDuckFactor, factor);
     this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100) * this.impactDuckFactor;
@@ -385,7 +385,7 @@ class AudioManager {
     this.impactDuckTimer = window.setTimeout(() => {
       this.impactDuckTimer = null;
       this.impactDuckFactor = 1;
-      if (this.bgm && !this.bgmMuted && !this.bgm.audio.paused) this.setBgmVolume(this.bgmVolume);
+      if (this.bgm && !this.baseMuted && !this.bgm.audio.paused) this.setBgmVolume(this.bgmVolume);
     }, this.impactDuckUntil - Date.now());
   }
 
@@ -434,15 +434,24 @@ class AudioManager {
     }
   }
 
+  /** 배경음악 음소거는 승리·패배 음악(RESULT)에는 적용하지 않는다 (사용자 요청 2026-11-26) */
+  private mutedFor(scope: MusicScope) {
+    return this.bgmMuted && scope !== "RESULT";
+  }
+  private get baseMuted() {
+    return this.bgm ? this.mutedFor(this.bgm.scope) : this.bgmMuted;
+  }
+
   setBgmMuted(muted: boolean) {
     this.bgmMuted = muted;
     if (muted && this.layer) this.setMusicLayer(null);
     if (this.bgm) {
-      this.bgm.audio.muted = muted;
-      this.bgm.audio.volume = muted
+      const off = this.baseMuted;
+      this.bgm.audio.muted = off;
+      this.bgm.audio.volume = off
         ? 0
         : safeVolume(this.bgm.volume * this.bgmVolume / 100);
-      if (!muted) this.reconcileBgmPlayback();
+      if (!off) this.reconcileBgmPlayback();
     }
   }
 
@@ -470,7 +479,7 @@ class AudioManager {
   unlockAudio() {
     this.ensureSpatial();
     if (this.current?.awaitingUnlock) this.current.retryPlayback();
-    if (this.bgmMuted) return;
+    if (this.baseMuted) return;
     this.reconcileBgmPlayback();
   }
 
@@ -523,7 +532,7 @@ class AudioManager {
         this.bgm.audio.pause();
         return;
       }
-      if (this.bgmMuted) {
+      if (this.mutedFor(scope)) {
         this.bgm.audio.volume = 0;
         return;
       }
@@ -585,7 +594,7 @@ class AudioManager {
       const audio = this.musicElement(request.url);
       audio.preload = "auto";
       audio.loop = request.scope !== "RESULT" && audioStartSeconds(request.url) === 0;
-      audio.muted = this.bgmMuted;
+      audio.muted = this.mutedFor(request.scope);
       audio.volume = 0;
       const music: MusicAudio = {
         audio,
@@ -791,7 +800,7 @@ class AudioManager {
   }
 
   private fadeBaseOut() {
-    if (!this.bgm || this.bgmMuted) {
+    if (!this.bgm || this.baseMuted) {
       this.bgm?.audio.pause();
       return;
     }
@@ -835,7 +844,7 @@ class AudioManager {
   private reconcileBgmPlayback() {
     if (
       !this.bgm ||
-      this.bgmMuted ||
+      this.baseMuted ||
       !this.musicScopeAllowed(this.bgm.scope) ||
       this.bgm.failedToLoad || this.bgm.finished ||
       Boolean(this.bgm.audio.error) ||
@@ -849,7 +858,7 @@ class AudioManager {
     if (
       !this.bgm ||
       this.bgm.audio !== music.audio || music.finished ||
-      this.bgmMuted ||
+      this.baseMuted ||
       !this.musicScopeAllowed(music.scope) ||
       this.current
     ) return;
