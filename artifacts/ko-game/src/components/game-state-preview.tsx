@@ -100,6 +100,8 @@ import { PresentationFeedback, type PresentationCue } from './presentation-feedb
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
 import { installCursorLight, spawnGaugeAbsorb } from './visual-polish';
+import { AudienceLayer } from './audience-layer';
+import { audience, shout } from './audience-bus';
 import { MulliganStage, MulliganExitStage, mulliganExitDuration, type MulliganExit } from './mulligan-stage';
 import {CombatSettings} from './combat-settings';
 import { messengerKind } from './keyword-fx';
@@ -301,6 +303,11 @@ export function GameStatePreview({
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [mulliganSeconds, setMulliganSeconds] = React.useState(20);
   const [mulliganExit, setMulliganExit] = React.useState<MulliganExit | null>(null);
+  const audienceStateRef = React.useRef(state);
+  audienceStateRef.current = state;
+  const audienceNamesRef = React.useRef({ me: playerChampionName, opp: opponentChampionName });
+  audienceNamesRef.current = { me: playerChampionName, opp: opponentChampionName };
+  const firstBloodRef = React.useRef(new Set<string>());
   const submitMulligan = React.useCallback((ids: string[]) => {
     if (!onMulligan) return;
     setMulliganExit({ hand: state.players[0].hand, selected: ids, startedAt: Date.now() });
@@ -450,6 +457,37 @@ export function GameStatePreview({
   },[]);
   // 12. 테이블 조명이 마우스를 살짝 따라온다
   React.useEffect(()=>installCursorLight(document.querySelector<HTMLElement>('.ko-game-stage')),[]);
+  // 관중: 첫 피해, 턴 시작 조명, 위기 응원, 레전드 등장, 승부 결정
+
+  React.useEffect(()=>{if(state.status==='IN_PROGRESS')audience({type:'sweep'});},[state.turn,state.activePlayerId,state.status]);
+  const lowSeenRef=React.useRef(new Set<string>());
+  React.useEffect(()=>{
+    if(state.status!=='IN_PROGRESS')return;
+    for(const player of state.players){
+      const hp=getPlayerSurvivalHealth(state,player.id),key=state.gameId+player.id;
+      if(hp>0&&hp<=5&&!lowSeenRef.current.has(key)){
+        lowSeenRef.current.add(key);
+        const name=player.id===me.id?(playerChampionName||me.champion?.name):(opponentChampionName||opp.champion?.name);
+        audience({type:'chant'});shout('low');
+        audience({type:'caption',text:`${name??'챔피언'}, 위기에 몰립니다!`,tone:'danger'});
+      }
+    }
+  },[state]);
+  const legendSeenRef=React.useRef(new Set<string>());
+  React.useEffect(()=>{
+    for(const player of state.players)for(const card of player.board){
+      if(!card)continue;const key=state.gameId+card.instanceId;if(legendSeenRef.current.has(key))continue;legendSeenRef.current.add(key);
+      const def=getCardDefinition(card.definitionId);
+      if(state.turn>0&&(def?.rarity==='LEGENDARY'||def?.rarity==='CHAMPION')&&state.status==='IN_PROGRESS'){
+        audience({type:'caption',text:`${def.name} 등장!`,tone:'hype'});audience({type:'mood',mood:'excited'});audience({type:'hype',amount:2});shout('legend');
+      }
+    }
+  },[state]);
+  React.useEffect(()=>{
+    if(state.status!=='FINISHED')return;
+    const winner=state.winnerId===me.id?(playerChampionName||me.champion?.name):(opponentChampionName||opp.champion?.name);
+    audience({type:'caption',text:`경기 종료! ${winner??'챔피언'} 승리!`,tone:'hype'});audience({type:'hype',amount:6});
+  },[state.status,state.gameId]);
   // 10. 피니셔 준비가 오르면 빛 알갱이가 게이지로 빨려 들어간다
   const questProgressRef=React.useRef<Record<string,number>>({});
   React.useEffect(()=>{
@@ -552,6 +590,23 @@ export function GameStatePreview({
       const stat=cue.stat==='attack'?'attack':cue.stat==='cost'?'cost':'health';
       const numeric=target?.querySelector<HTMLElement>(`[data-card-stat="${stat}"]`);
       if(numeric)motion.react(numeric,'EFFECT');
+    }
+    // 관중: 상대가 내 카드를 침묵·파괴하면 야유 (이 함수는 오래 유지되므로 최신 상태를 ref로 읽는다)
+    const live=audienceStateRef.current,liveMe=live.players[0],liveOpp=live.players[1];
+    if((cue.kind==='SILENCE'||cue.kind==='DESTROY')&&cue.cardInstanceId&&live.activePlayerId===liveOpp.id){
+      const mine=[...liveMe.board,...liveMe.graveyard,...liveMe.removedFromGame,...liveMe.hand].some(c=>c?.instanceId===cue.cardInstanceId);
+      if(mine){audience({type:'boo'});shout('boo');}
+    }
+    if(cue.kind==='QUEST_COMPLETE'){
+      const who=cue.playerId===liveMe.id?(audienceNamesRef.current.me||liveMe.champion?.name):(audienceNamesRef.current.opp||liveOpp.champion?.name);
+      audience({type:'caption',text:`${who??'챔피언'}, 피니셔 준비 완료!`,tone:'hype'});audience({type:'mood',mood:'excited'});audience({type:'hype',amount:3});
+    }
+    if(cue.kind==='DAMAGE'&&(cue.value??0)>0){
+      if(!firstBloodRef.current.has(live.gameId)){firstBloodRef.current.add(live.gameId);audience({type:'caption',text:'선제공격! 경기가 달아오릅니다',tone:'info'});}
+      if((cue.value??0)>=6){
+        const name=cue.cardInstanceId?getCardDefinition(currentCards(live).get(cue.cardInstanceId)?.definitionId??'')?.name:(cue.playerId===liveMe.id?(audienceNamesRef.current.me||liveMe.champion?.name):(audienceNamesRef.current.opp||liveOpp.champion?.name));
+        audience({type:'caption',text:`${name??'상대'}에게 ${cue.value} 피해! ${(cue.value??0)>=10?'경기장이 흔들립니다!':'강력한 한 방!'}`,tone:'hype'});
+      }
     }
     if(cue.kind==='SILENCE'){if(!spriteTarget){motion.react(target?.querySelector<HTMLElement>('img')??target,'SILENCE');motion.react(target?.querySelector<HTMLElement>('[data-card-rules]'),'SILENCE');}return;}
     if(cue.kind==='DAMAGE'&&!cue.combat&&!spriteTarget)motion.react(target,'HIT',Math.min(3,(cue.value??1)/3));
@@ -1091,6 +1146,9 @@ export function GameStatePreview({
       return { ...card, currentHealth: card.currentHealth + (attackAnimation.counterDamage ?? 0) };
     return card;
   };
+  const realMinHealth = Math.min(getPlayerSurvivalHealth(state, me.id), getPlayerSurvivalHealth(state, opp.id));
+  const audienceLow = state.status === 'IN_PROGRESS' && realMinHealth > 0 && realMinHealth <= 5;
+  const audienceTension = Math.max(0, Math.min(1, ((20 - realMinHealth) / 15) * .7 + Math.min(1, state.turn / 20) * .3));
   const mySurvivalHealth = heldChampionHealth(me.id, getPlayerSurvivalHealth(state, me.id));
   const opponentSurvivalHealth = heldChampionHealth(opp.id, getPlayerSurvivalHealth(state, opp.id));
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
@@ -1345,6 +1403,7 @@ export function GameStatePreview({
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
 
       {blackGold && !backgroundAssetUrl && !selectedBackground && <TableScene />}
+      {blackGold && <AudienceLayer gameId={state.gameId} tension={audienceTension} lowHp={audienceLow} finished={state.status==='FINISHED'} />}
       {/* Background Ambience */}
       <div className="ko-cinematic-background pointer-events-none absolute inset-0 z-0 bg-neutral-950">
         {(backgroundAssetUrl || selectedBackground) && (

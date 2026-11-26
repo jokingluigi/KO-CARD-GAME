@@ -91,6 +91,14 @@ export function ReadingAccessibilitySettings() {
         />
         색약 모드 (빨강·초록 대신 주황·파랑)
       </label>
+      <label className="flex min-h-11 items-center gap-3 text-sm">
+        <input
+          type="checkbox"
+          checked={value.audience}
+          onChange={(e) => update({ audience: e.target.checked })}
+        />
+        관중 연출 (관중석·함성·중계 자막)
+      </label>
       <p className="ko-reading-sample border-l-2 border-amber-700 pl-3 text-neutral-200">
         설명 예시: 선택한 선수에게 효과를 적용합니다.
       </p>

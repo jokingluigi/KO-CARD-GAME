@@ -163,4 +163,60 @@ air = lp(rng.standard_normal(len(d)), 300, 2) * .25
 x = hum + air
 fade = int(SR * .01); x[:fade] *= np.linspace(0, 1, fade); x[-fade:] *= np.linspace(1, 0, fade)
 save('aim-tension.wav', norm(x, .5))
+# 관중 1: 경기 내내 깔리는 웅성거림 (6초, 이음매 없이 반복)
+L6 = 6.0; n6 = int(SR * L6)
+m = np.zeros((n6, 2))
+for ch in range(2):
+    voices = np.zeros(n6)
+    for v in range(30):
+        f = rng.uniform(300, 900)
+        band = bp(rng.standard_normal(n6), f * .8, f * 1.25, 2)
+        mod = lp(rng.standard_normal(n6), 1.6, 2); mod = .5 + .5 * norm(mod, 1)
+        voices += band * mod
+    m[:, ch] = voices + lp(rng.standard_normal(n6), 200, 4) * .9
+xf = int(SR * .5)  # 앞뒤를 겹쳐 이음매 없애기
+loop = m[:n6 - xf].copy(); fade = np.linspace(0, 1, xf)[:, None]
+loop[:xf] = m[:xf] * fade + m[n6 - xf:] * (1 - fade)
+save('crowd-murmur.wav', norm(loop, .6), stereo=True)
+
+# 관중 2: 응원 박자 "쿵 쿵 짝!" 한 마디 (1.2초)
+d = t(1.25); x = np.zeros((len(d), 2))
+def stomp(at, k):
+    i = int(at * SR); seg = d[:int(SR * .35)]
+    body = lp(rng.standard_normal(len(seg)), 180, 4) * np.exp(-seg / .07) * 2.2
+    thud = np.sin(2 * np.pi * (70 * np.exp(-seg * 10) + 45) * seg) * np.exp(-seg / .09)
+    y = (body + thud) * k
+    x[i:i + len(y), 0] += y[:len(x) - i]; x[i:i + len(y), 1] += np.roll(y, 40)[:len(x) - i]
+def clap(at):
+    i = int(at * SR); y = np.zeros(int(SR * .4))
+    for c in range(60):
+        o = int(rng.uniform(0, .02) * SR); seg = np.arange(len(y) - o)
+        y[o:] += hp(rng.standard_normal(len(seg)), 1100, 2) * np.exp(-seg / (SR * .03)) * rng.uniform(.3, 1)
+    x[i:i + len(y), 0] += y[:len(x) - i] * .5; x[i:i + len(y), 1] += np.roll(y, 120)[:len(x) - i] * .5
+stomp(0, 1); stomp(.3, 1); clap(.6)
+save('crowd-stomp-clap.wav', norm(x, .85), stereo=True)
+
+# 관중 3: 야유 "우우~" (2초)
+d = t(2.0); boo = np.zeros((len(d), 2))
+for ch in range(2):
+    v = np.zeros(len(d))
+    for k in range(26):
+        f0 = rng.uniform(110, 190) * (1 - .12 * d / 2.0)
+        ph = 2 * np.pi * np.cumsum(f0 * (1 + .01 * np.sin(2 * np.pi * rng.uniform(4, 7) * d))) / SR
+        saw = sum(np.sin(ph * h) / h for h in range(1, 9))
+        v += saw * rng.uniform(.4, 1)
+    v = bp(v, 180, 900, 2) + bp(rng.standard_normal(len(d)), 250, 700, 2) * .4
+    boo[:, ch] = v
+shape = np.minimum(1, d / .25) * np.minimum(1, np.maximum(0, 2.0 - d) / .5)
+save('crowd-boo.wav', norm(boo * shape[:, None], .75), stereo=True)
+
+# 관중 4: 카메라 셔터 여러 대
+d = t(.9); sh = np.zeros(len(d))
+for k in range(7):
+    at = int(rng.uniform(0, .6) * SR); seg = np.arange(int(SR * .05))
+    c = hp(rng.standard_normal(len(seg)), 2500, 2) * np.exp(-seg / (SR * .006))
+    c2 = hp(rng.standard_normal(len(seg)), 1800, 2) * np.exp(-seg / (SR * .01)) * .6
+    sh[at:at + len(seg)] += c * rng.uniform(.4, 1)
+    j = at + int(SR * .035); sh[j:j + len(seg)] += c2[:len(sh) - j]
+save('camera-shutters.wav', norm(sh, .7))
 print('ok')

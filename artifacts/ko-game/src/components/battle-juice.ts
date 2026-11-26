@@ -1,6 +1,7 @@
 import { audioManager } from '../audio/audio-manager';
 import { readCombatPreferences } from './combat-preferences';
 import './battle-juice.css';
+import { audience, shout } from './audience-bus';
 
 /**
  * 타격감·연출 모음 (화면 연출 전용).
@@ -123,6 +124,11 @@ export function crowdReact(level: 1 | 2) {
   if (!live() || Date.now() - lastCrowd < 900) return;
   lastCrowd = Date.now();
   juiceSound(level === 2 ? 'crowd-cheer.mp3' : 'crowd-roar.mp3', level === 2 ? 46 : 30, 2);
+  // 관중석도 같이 반응: 들썩 / 일어서서 환호 + 카메라 셔터 + 관중 수 증가 + 외침
+  audience({ type: 'mood', mood: level === 2 ? 'stand' : 'excited' });
+  audience({ type: 'hype', amount: level === 2 ? 4 : 1.5 });
+  shout(level === 2 ? 'huge' : 'big');
+  if (level === 2) window.setTimeout(() => juiceSound('camera-shutters.mp3', 26, 1), 140);
   const { reduced, low, flash } = prefs();
   if (level < 2 || reduced || low || flash <= 0) return;
   for (let i = 0; i < 9; i++) {

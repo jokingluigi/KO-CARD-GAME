@@ -2,6 +2,7 @@ import { audioManager } from '../audio/audio-manager';
 import { readCombatPreferences } from './combat-preferences';
 import { juiceSound } from './battle-juice';
 import './hit-feel.css';
+import { audience, shout } from './audience-bus';
 
 /**
  * 타격감 2차 (화면·소리 연출 전용 — 게임 규칙·카드 정보와 무관).
@@ -85,7 +86,7 @@ export function spawnKoStamp(x: number, y: number) {
   if (!live()) return;
   const now = Date.now();
   // 광역으로 여러 장이 한꺼번에 쓰러지면 소리는 한 번만
-  if (now - lastKo > 250) juiceSound(SYN('ko-bell.mp3'), 34, 3, x);
+  if (now - lastKo > 250) { juiceSound(SYN('ko-bell.mp3'), 34, 3, x); if (Math.random() < .7) shout('ko'); audience({ type: 'hype', amount: 1 }); }
   lastKo = now;
   const { reduced } = prefs();
   const el = layer('kh-ko', { left: px(x), top: px(y) }, '<b>K.O.</b>');
