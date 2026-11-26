@@ -1660,7 +1660,12 @@ export function resolveStateBasedDeaths(
   // taking the lethal snapshot. This keeps state-based lethal damage
   // consistent with combat damage and structured DAMAGE.
   let preparedState = state;
-  const candidateIds = state.players.flatMap((player) =>
+  // 동시에 쓰러질 때: 턴 주인 쪽 먼저, 같은 편은 왼쪽 칸부터 (2026-11-26 대표 결정 B2)
+  const deathOrder = (players: GameState['players']) => {
+    const active = state.activePlayerId;
+    return [...players].sort((a, b) => (a.id === active ? 0 : 1) - (b.id === active ? 0 : 1));
+  };
+  const candidateIds = deathOrder(state.players).flatMap((player) =>
     player.board
       .filter((card): card is CardInstance => card !== null && !card.isTrainingDummy && card.currentHealth <= 0)
       .map((card) => ({ playerId: player.id, cardInstanceId: card.instanceId })),
@@ -1735,6 +1740,8 @@ export function resolveStateBasedDeaths(
     preventedRetireTargetIds: undefined,
   };
   if (!retired.length) return clearedInterceptions;
+  const activeFirst = new Map(deathOrder(preparedState.players).map((player, index) => [player.id, index]));
+  retired.sort((a, b) => (activeFirst.get(a.playerId) ?? 0) - (activeFirst.get(b.playerId) ?? 0) || a.slot - b.slot);
 
   let next: GameState = {
     ...clearedInterceptions,
@@ -3374,10 +3381,13 @@ function applyEffectInternal(
       }, state);
     }
     if (effect.action === 'DAMAGE') {
-      return targets.reduce((nextState, target) => {
+      // 2026-11-26 대표 결정 C2: 여러 대상이면 ① 모두 먼저 맞고 ② 왼쪽부터 반응·쓰러짐 처리.
+      // 대상이 1명이면 예전과 똑같이 동작한다.
+      type DamageHit = { state: GameState; finish?: (now: GameState) => GameState };
+      const hitOne = (nextState: GameState, target: (typeof targets)[number]): DamageHit => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
-        if (!owner || !current) return nextState;
+        if (!owner || !current) return { state: nextState };
         const beforeDamage = resolveTriggeredAbilities(nextState, targetOwner, current, 'BEFORE_DAMAGE');
         let preparedState = beforeDamage !== nextState && beforeDamage.targetingState?.active
           ? resolvePendingEffects(beforeDamage)
@@ -3387,7 +3397,7 @@ function applyEffectInternal(
           ?.board.find((card) => card?.instanceId === target.instanceId);
         // BEFORE_DAMAGE may remove the target (for example a temporary HP buff expires).
         // Never reuse the departed snapshot or retire the same instance a second time.
-        if (!preparedCurrent) return preparedState;
+        if (!preparedCurrent) return { state: preparedState };
         const damageAttribution = sourceContextFor(
           playerId,
           sourceCard,
@@ -3403,13 +3413,13 @@ function applyEffectInternal(
           preventedDamageTargetIds: stateWithMarker.preventedDamageTargetIds?.filter((id) => id !== current.instanceId),
         });
         if (preventedDamage) {
-          return resolveRegisteredRuleListeners({
+          return { state: resolveRegisteredRuleListeners({
             ...clearDamageMarker(preparedState),
             events: [
               ...preparedState.events,
               { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['BLOCKED'], sourceContext: attribution },
             ],
-          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType) };
         }
         // Legacy snapshots may carry dodgeAvailable=true with a missing or
         // zero-initialized charge count. The boolean remains authoritative for
@@ -3420,13 +3430,13 @@ function applyEffectInternal(
         );
         const dodged = damageAmount > 0 && dodgeCharges > 0 && hasKeyword(preparedCurrent, 'DODGE');
         if (dodged) {
-          return resolveRegisteredRuleListeners({
+          return { state: resolveRegisteredRuleListeners({
             ...clearDamageMarker(preparedState),
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, dodgeAvailable: dodgeCharges > 1, dodgeCharges: dodgeCharges - 1 } : card) as typeof player.board }
               : player),
             events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['DODGE'], sourceContext: attribution }],
-          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType) };
         }
         let effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, damageAmount + (damageAmount > 0 ? madokawaIncomingBonus(preparedState, targetOwner, preparedCurrent) : 0) - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn, 'EFFECT', preparedState);
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
@@ -3438,17 +3448,20 @@ function applyEffectInternal(
               : player),
             events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, pinfallEligible, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
           };
-          const damagedCard = damagedState.players.find((player) => player.id === targetOwner)?.board
-            .find((card) => card?.instanceId === current.instanceId) ?? current;
+          return { state: damagedState, finish: (now: GameState) => {
+          const damagedCard = now.players.find((player) => player.id === targetOwner)?.board
+            .find((card) => card?.instanceId === current.instanceId);
+          // 앞선 대상의 반응으로 이미 필드를 떠났으면 반응할 주인이 없다
+          if (!damagedCard) return now;
           const selfDamaged = resolveTriggeredAbilities(
-            damagedState,
+            now,
             targetOwner,
             damagedCard,
             'SELF_DAMAGED',
             { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: attribution },
           );
           const withDamageListeners = resolveRegisteredRuleListeners(
-            selfDamaged !== damagedState && selfDamaged.targetingState?.active
+            selfDamaged !== now && selfDamaged.targetingState?.active
               ? resolvePendingEffects(selfDamaged)
               : selfDamaged,
             'DAMAGE_TAKEN',
@@ -3465,6 +3478,7 @@ function applyEffectInternal(
               values: { attack: conditional.attack, health: conditional.health },
             }, undefined, triggerContext)
             : withDamageListeners;
+          } };
         }
         const lethalDamagedState: GameState = {
           ...clearDamageMarker(preparedState),
@@ -3476,14 +3490,20 @@ function applyEffectInternal(
             source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId },
             reason: 'CARD_EFFECT', amount: effectiveDamage, before:preparedCurrent.currentHealth,after:health, pinfallEligible, ...(effect.values?.spillExcessToEnemyChampion ? {excessDamage: Math.max(0,effectiveDamage-Math.max(0,preparedCurrent.currentHealth))} : {}), sourceContext: attribution }],
         };
+        return { state: lethalDamagedState, finish: (now: GameState) => {
+        // 앞선 대상의 반응으로 회복되어 살아났으면 쓰러뜨리지 않는다
+        const stillHere = now.players.find((player) => player.id === targetOwner)?.board.find((card) => card?.instanceId === current.instanceId);
+        if (stillHere && stillHere.currentHealth > 0) {
+          return resolveRegisteredRuleListeners(clearDamageMarker(now), 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType, preparedState.events.length);
+        }
         const selfDamaged = resolveTriggeredAbilities(
-          lethalDamagedState,
+          now,
           targetOwner,
           { ...preparedCurrent, currentHealth: health },
           'SELF_DAMAGED',
           { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: attribution },
         );
-        const afterSelfDamaged = selfDamaged !== lethalDamagedState && selfDamaged.targetingState?.active
+        const afterSelfDamaged = selfDamaged !== now && selfDamaged.targetingState?.active
           ? resolvePendingEffects(selfDamaged)
           : selfDamaged;
         const liveCurrent = afterSelfDamaged.players.find((player) => player.id === targetOwner)?.board
@@ -3561,7 +3581,17 @@ function applyEffectInternal(
         );
         const continuation = observed.targetingState ?? state.targetingState;
         return continuation ? resolvePendingEffects({ ...observed, targetingState: continuation }) : observed;
-      }, state);
+        } };
+      };
+      let damaged = state;
+      const finishes: Array<(now: GameState) => GameState> = [];
+      for (const target of targets) {
+        const hit = hitOne(damaged, target);
+        damaged = hit.state;
+        if (hit.finish) finishes.push(hit.finish);
+      }
+      for (const finish of finishes) damaged = finish(damaged);
+      return damaged;
     }
     if (effect.action === 'SILENCE') {
       return [...ids].reduce((nextState, id) => silenceCard(nextState, id), state);
