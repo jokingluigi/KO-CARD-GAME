@@ -459,7 +459,6 @@ export function GameStatePreview({
   React.useEffect(()=>installCursorLight(document.querySelector<HTMLElement>('.ko-game-stage')),[]);
   // 관중: 첫 피해, 턴 시작 조명, 위기 응원, 레전드 등장, 승부 결정
 
-  React.useEffect(()=>{if(state.status==='IN_PROGRESS')audience({type:'sweep'});},[state.turn,state.activePlayerId,state.status]);
   const lowSeenRef=React.useRef(new Set<string>());
   React.useEffect(()=>{
     if(state.status!=='IN_PROGRESS')return;

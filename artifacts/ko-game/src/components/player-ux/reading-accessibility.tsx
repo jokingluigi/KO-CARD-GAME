@@ -97,7 +97,7 @@ export function ReadingAccessibilitySettings() {
           checked={value.audience}
           onChange={(e) => update({ audience: e.target.checked })}
         />
-        관중 연출 (관중석·함성·중계 자막)
+        관중 연출 (관중 등장·함성·중계 자막)
       </label>
       <p className="ko-reading-sample border-l-2 border-amber-700 pl-3 text-neutral-200">
         설명 예시: 선택한 선수에게 효과를 적용합니다.

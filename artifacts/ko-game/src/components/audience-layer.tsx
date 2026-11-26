@@ -6,14 +6,14 @@ import './audience-layer.css';
 
 /**
  * 관중 연출 (화면·소리 전용).
- * 1. 화면 위·아래 가장자리 관중석 실루엣 — 평소엔 들썩, 큰 장면엔 일어서고, 위기엔 몸을 앞으로
+ * 1. 관중 실루엣(CC0 그림) — 평소엔 안 보이고, 큰 타격·결정타·위기 응원·야유·전설 등장 때만
+ *    화면 아래에서 튀어올라 반응하고 내려간다
  * 2. 경기 내내 깔리는 웅성거림 — 긴장될수록 커짐
  * 3. 위기(체력 5 이하) 때 "쿵쿵 짝!" 응원 박자
  * 4. 관중 외침 말풍선
  * 5. 야유
  * 6. TV 중계 자막
- * 7. 관중 수(LIVE)
- * 8. 턴 시작 때 관중석 조명이 훑고 지나감
+ * 7. 관중 수(LIVE) — 관중이 나와 있을 때만
  */
 const SYN = (name: string) => `${import.meta.env.BASE_URL}vendor/ko-synth/${name}`;
 
@@ -23,57 +23,48 @@ function seeded(seed: string) {
   return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 10000) / 10000; };
 }
 
-type Person = { w: number; h: number; x: number; delay: number; dur: number; tone: number; arm: 0 | 1 | 2; phone: boolean };
-function crowdRow(seed: string, count: number, scale: number): Person[] {
-  const r = seeded(seed);
-  return Array.from({ length: count }, () => ({
-    w: (26 + r() * 14) * scale, h: (44 + r() * 18) * scale, x: (r() - .5) * 6,
-    delay: -r() * 3, dur: 1.8 + r() * 1.6, tone: Math.floor(r() * 4),
-    arm: r() < .28 ? (r() < .5 ? 1 : 2) : 0, phone: r() < .12,
-  }));
-}
+const CROWD = (name: string) => `${import.meta.env.BASE_URL}vendor/crowd/${name}.webp`;
 
-const Stand = React.memo(function Stand({ side, rows, mood }: { side: 'top' | 'bottom'; rows: Person[][]; mood: AudienceMood }) {
+/** 관중이 튀어나오는 분위기만 (평소·긴장은 화면에 안 나옴) */
+type PopMood = Exclude<AudienceMood, 'idle' | 'tense'>;
+const POP_MS: Record<PopMood, number> = { excited: 1700, stand: 2500, wave: 4800, chant: 3800, boo: 2300 };
+const POP_RANK: Record<PopMood, number> = { excited: 1, boo: 2, stand: 3, chant: 3, wave: 4 };
+
+/** 1. 관중석: 화면 아래에서 튀어올라 반응하고 다시 내려간다 (CC0 실루엣 그림) */
+const CrowdPop = React.memo(function CrowdPop({ mood, leaving, children }: { mood: PopMood; leaving: boolean; children?: React.ReactNode }) {
+  const kind = mood === 'boo' ? 'calm' : 'cheer';
   return (
-    <div className={`ka-stand ka-stand--${side}`} data-mood={mood} aria-hidden="true">
-      <span className="ka-stand__haze" />
-      {rows.map((row, r) => (
-        <div key={r} className={`ka-row ka-row--${r}`}>
-          {row.map((p, i) => (
-            <span
-              key={i}
-              className={`ka-person ka-tone-${p.tone}${p.arm ? ` ka-arm-${p.arm}` : ''}${p.phone ? ' ka-phone' : ''}`}
-              style={{ '--w': `${p.w}px`, '--h': `${p.h}px`, '--x': `${p.x}px`, '--d': `${p.delay}s`, '--t': `${p.dur}s`, '--i': i } as React.CSSProperties}
-            >
-              {p.arm ? <i className="ka-arm" /> : null}
-              {p.phone ? <b className="ka-phone-light" /> : null}
-            </span>
-          ))}
-        </div>
-      ))}
-      <span className="ka-stand__sweep" />
-      <span className="ka-stand__flashes" />
+    <div className={`ka-pop${leaving ? ' is-leaving' : ''}`} data-mood={mood} aria-hidden="true">
+      <span className="ka-pop__glow" />
+      <span className="ka-pop__row ka-pop__row--back" style={{ backgroundImage: `url(${CROWD(`crowd-${kind}-back`)})` }} />
+      <span className="ka-pop__row ka-pop__row--front" style={{ backgroundImage: `url(${CROWD(`crowd-${kind}-front`)})` }} />
+      {mood !== 'boo' && <span className="ka-pop__flashes" />}
+      {children}
     </div>
   );
 });
 
+const liveCounts = new Map<string, number>();
+function liveCount(gameId: string) {
+  let n = liveCounts.get(gameId);
+  if (n == null) { n = 8000 + Math.floor(seeded(gameId)() * 7000); liveCounts.set(gameId, n); }
+  return n;
+}
+function addLive(gameId: string, amount: number) { liveCounts.set(gameId, liveCount(gameId) + amount); }
+
 /** 7. 관중 수 (따로 떼어서 숫자가 바뀔 때 관중석 전체를 다시 그리지 않게) */
 function LiveCounter({ gameId }: { gameId: string }) {
-  const startCount = React.useMemo(() => 8000 + Math.floor(seeded(gameId)() * 7000), [gameId]);
-  const [count, setCount] = React.useState(startCount);
-  const target = React.useRef(startCount);
-  React.useEffect(() => { target.current = startCount; setCount(startCount); }, [startCount]);
-  React.useEffect(() => onAudience((signal) => {
-    if (signal.type === 'hype') target.current += Math.round(signal.amount * (40 + Math.random() * 60));
-  }), []);
+  // 관중이 들어갔다 나와도 숫자가 이어지게 경기별로 기억
+  const shown = React.useRef(liveCount(gameId));
+  const [count, setCount] = React.useState(() => Math.round(shown.current * .985));
   React.useEffect(() => {
-    // 평소엔 조금씩 들어오고 나간다
-    const drift = window.setInterval(() => { target.current += Math.round((Math.random() - .35) * 40); }, 2500);
+    // 나올 때마다 숫자가 올라가는 걸 보여준다
     const step = window.setInterval(() => {
-      setCount((c) => (c === target.current ? c : Math.abs(target.current - c) < 2 ? target.current : Math.round(c + (target.current - c) * .15)));
-    }, 150);
-    return () => { window.clearInterval(drift); window.clearInterval(step); };
-  }, []);
+      const target = liveCount(gameId);
+      setCount((c) => (c === target ? c : Math.abs(target - c) < 2 ? target : Math.round(c + (target - c) * .18)));
+    }, 90);
+    return () => window.clearInterval(step);
+  }, [gameId]);
   return (
     <div className="ka-live" aria-label={`관중 ${count.toLocaleString('ko-KR')}명`}>
       <i /> LIVE <b>{count.toLocaleString('ko-KR')}</b>명
@@ -81,7 +72,7 @@ function LiveCounter({ gameId }: { gameId: string }) {
   );
 }
 
-export function AudienceLayer({ gameId, tension, lowHp, finished }: {
+export function AudienceLayer({ gameId, tension, finished }: {
   gameId: string;
   /** 0~1: 체력이 낮아지고 경기가 길어질수록 커진다 */
   tension: number;
@@ -97,37 +88,40 @@ export function AudienceLayer({ gameId, tension, lowHp, finished }: {
     return () => window.removeEventListener('ko-combat-preferences', changed);
   }, []);
 
-  // 관중석 (화면 너비에 맞춰 사람 수 결정)
-  const [width, setWidth] = React.useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth));
+  const [small, setSmall] = React.useState(() => (typeof window === 'undefined' ? false : window.innerWidth < 700));
   React.useEffect(() => {
-    const resize = () => setWidth(window.innerWidth);
+    const resize = () => setSmall(window.innerWidth < 700);
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
-  const small = width < 700;
-  const stands = React.useMemo(() => {
-    const per = (w: number) => Math.ceil(width / w) + 2;
-    const scale = small ? .8 : 1;
-    const backN = lite ? Math.ceil(per(30 * scale) / 2) : per(30 * scale);
-    const frontN = lite ? Math.ceil(per(24 * scale) / 2) : per(24 * scale);
-    return {
-      top: [crowdRow(`${gameId}:t0`, backN, scale * .82), crowdRow(`${gameId}:t1`, frontN, scale)],
-      bottom: [crowdRow(`${gameId}:b0`, backN, scale * .82), crowdRow(`${gameId}:b1`, frontN, scale)],
-    };
-  }, [gameId, width, small, lite]);
 
-  // 분위기 상태
-  const base: AudienceMood = finished ? 'stand' : lowHp ? 'tense' : 'idle';
-  const [mood, setMood] = React.useState<AudienceMood>(base);
-  const moodTimer = React.useRef<number | null>(null);
-  const baseRef = React.useRef(base);
-  baseRef.current = base;
-  React.useEffect(() => { if (!moodTimer.current) setMood(base); }, [base]);
-  const setTemp = React.useCallback((next: AudienceMood, ms: number) => {
-    if (moodTimer.current) window.clearTimeout(moodTimer.current);
-    setMood(next);
-    moodTimer.current = window.setTimeout(() => { moodTimer.current = null; setMood(baseRef.current); }, ms);
+  // 그림 미리 받아두기 (처음 튀어나올 때 빈 화면 안 보이게)
+  React.useEffect(() => {
+    if (!enabled) return;
+    for (const n of ['crowd-cheer-back', 'crowd-cheer-front', 'crowd-calm-back', 'crowd-calm-front']) { const img = new Image(); img.src = CROWD(n); }
+  }, [enabled]);
+
+  // 튀어나오는 관중 (특정 순간에만)
+  const [pop, setPop] = React.useState<{ mood: PopMood; leaving: boolean } | null>(null);
+  const popTimers = React.useRef<number[]>([]);
+  const popMood = React.useRef<PopMood | null>(null);
+  const setTemp = React.useCallback((next: AudienceMood, ms?: number) => {
+    if (next === 'idle' || next === 'tense') return;
+    // 이미 나와 있으면 더 큰 반응만 덮어쓰고 시간만 늘린다
+    const current = popMood.current;
+    const mood = current && POP_RANK[current] > POP_RANK[next] ? current : next;
+    popMood.current = mood;
+    popTimers.current.forEach((t) => window.clearTimeout(t));
+    setPop({ mood, leaving: false });
+    const stay = ms ?? POP_MS[next];
+    popTimers.current = [
+      window.setTimeout(() => setPop((p) => (p ? { ...p, leaving: true } : p)), stay),
+      window.setTimeout(() => { popMood.current = null; setPop(null); }, stay + 460),
+    ];
   }, []);
+  React.useEffect(() => () => popTimers.current.forEach((t) => window.clearTimeout(t)), []);
+  // 경기 끝: 다 같이 일어나 환호
+  React.useEffect(() => { if (finished && enabled) setTemp('wave', 5200); }, [finished, enabled, setTemp]);
 
   // 4·6. 외침과 중계 자막
   const [shouts, setShouts] = React.useState<Array<{ id: number; text: string; side: 'top' | 'bottom'; x: number }>>([]);
@@ -187,14 +181,15 @@ export function AudienceLayer({ gameId, tension, lowHp, finished }: {
     if (!enabled || document.hidden) return;
     switch (signal.type) {
       case 'mood':
-        setTemp(signal.mood, signal.ms ?? (signal.mood === 'stand' || signal.mood === 'wave' ? 2600 : signal.mood === 'boo' ? 2200 : 1500));
+        setTemp(signal.mood, signal.ms);
         swell.current = signal.mood === 'stand' || signal.mood === 'wave' ? 1 : Math.max(swell.current, .6);
         return;
       case 'hype':
-        return; // LiveCounter가 받는다
+        addLive(gameId, Math.round(signal.amount * (40 + Math.random() * 60)));
+        return;
       case 'shout': {
         const id = Date.now() + Math.random();
-        const side = signal.side ?? (Math.random() < .5 ? 'top' : 'bottom');
+        const side = 'bottom' as const; // 관중은 아래에서만 나온다
         setShouts((list) => [...list.slice(-2), { id, text: signal.text, side, x: 8 + Math.random() * 84 }]);
         window.setTimeout(() => setShouts((list) => list.filter((s) => s.id !== id)), 1900);
         return;
@@ -205,26 +200,24 @@ export function AudienceLayer({ gameId, tension, lowHp, finished }: {
         if (!captionBusy.current) showNextCaption();
         return;
       case 'boo': {
-        setTemp('boo', 2200);
+        setTemp('boo');
         const vol = Math.round(30 * audioManager.getSfxVolume() / 100);
         try { audioManager.playImpactOverlay(SYN('crowd-boo.mp3'), vol, 2); } catch { /* 소리 */ }
         return;
       }
       case 'chant': chant(); return;
-      case 'sweep': {
-        const el = document.querySelectorAll<HTMLElement>('.ka-stand__sweep');
-        el.forEach((node) => { node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on'); });
-        return;
-      }
+      case 'sweep': return; // 관중석이 상시 없으니 조명 훑기도 없음
     }
-  }), [enabled, setTemp, showNextCaption, chant]);
+  }), [enabled, setTemp, showNextCaption, chant, gameId]);
 
   if (!enabled) return null;
   return (
     <div className="ka-audience" data-lite={lite} data-small={small}>
-      <Stand side="top" rows={stands.top} mood={mood} />
-      <Stand side="bottom" rows={stands.bottom} mood={mood} />
-      <LiveCounter gameId={gameId} />
+      {pop && (
+        <CrowdPop mood={pop.mood} leaving={pop.leaving}>
+          <LiveCounter gameId={gameId} />
+        </CrowdPop>
+      )}
       {shouts.map((s) => (
         <span key={s.id} className={`ka-shout ka-shout--${s.side}`} style={{ left: `${s.x}%` }} aria-hidden="true">{s.text}</span>
       ))}

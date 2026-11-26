@@ -1,0 +1,8 @@
+관중 실루엣 그림 출처 / Crowd silhouette art
+
+원본: OpenClipart (freesvg.org 배포) — CC0 1.0 퍼블릭 도메인
+  - "Happy people silhouette"  https://freesvg.org/happy-people-silhouette  (#81907)
+  - "30 people silhouettes"    https://freesvg.org/30-people-silhouettes    (#81908)
+원본 SVG: docs/art/crowd-src/
+이 폴더의 webp 띠 그림은 docs/art/crowd-build.py 로 사람을 잘라 겹쳐 만든 것.
+CC0 이므로 상업적 사용·수정 자유, 출처 표기 의무 없음.
