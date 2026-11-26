@@ -40,7 +40,7 @@ const CACHE_BUDGET = Math.max(8, Number(process.env["IMAGE_CACHE_MB"] ?? 32)) * 
  */
 sharp.cache(false);
 sharp.concurrency(1);
-const CONVERT_LIMIT = Math.max(1, Number(process.env["IMAGE_CONVERT_CONCURRENCY"] ?? 2));
+const CONVERT_LIMIT = Math.max(1, Number(process.env["IMAGE_CONVERT_CONCURRENCY"] ?? 1));
 let converting = 0;
 const waiting: Array<() => void> = [];
 async function withConvertSlot<T>(work: () => Promise<T>): Promise<T> {
@@ -58,6 +58,7 @@ let cachedBytes = 0;
 
 function remember(key: string, value: Variant) {
   if (value.buffer.length > CACHE_BUDGET / 8) return; // 너무 큰 파일은 메모리에 두지 않는다
+  if (memoryTight()) return;
   const old = cache.get(key);
   if (old) { cachedBytes -= old.buffer.length; cache.delete(key); }
   cache.set(key, value);
@@ -163,11 +164,30 @@ function lookupOnce(key: string, rawKey: string, download: () => Promise<Downloa
   return pending;
 }
 
+/**
+ * 서버 메모리 지키기 (무료 서버 512MB).
+ * 2026-11-26: 카드 그림 80장을 한꺼번에 요청받자 원본 80장을 동시에 내려받아 메모리 초과로 꺼졌다.
+ * - 원본은 동시에 몇 장씩만 내려받는다 (나머지는 줄 서서 기다림)
+ * - 메모리가 빠듯하면 변환·메모리 보관을 멈추고 원본만 그대로 전달한다
+ */
+const DOWNLOAD_LIMIT = Math.max(1, Number(process.env["IMAGE_DOWNLOAD_CONCURRENCY"] ?? 4));
+let downloading = 0;
+const downloadQueue: Array<() => void> = [];
+async function withDownloadSlot<T>(work: () => Promise<T>): Promise<T> {
+  if (downloading >= DOWNLOAD_LIMIT) await new Promise<void>((resolve) => downloadQueue.push(resolve));
+  downloading++;
+  try { return await work(); } finally { downloading--; downloadQueue.shift()?.(); }
+}
+const RSS_LIMIT = Math.max(128, Number(process.env["IMAGE_RSS_LIMIT_MB"] ?? 360)) * 1024 * 1024;
+export function memoryTight() {
+  try { return process.memoryUsage().rss > RSS_LIMIT; } catch { return false; }
+}
+
 const downloads = new Map<string, Promise<DownloadedImage | null>>();
 function downloadOnce(rawKey: string, download: () => Promise<DownloadedImage | null>) {
   let pending = downloads.get(rawKey);
   if (!pending) {
-    pending = download().finally(() => downloads.delete(rawKey));
+    pending = withDownloadSlot(download).finally(() => downloads.delete(rawKey));
     downloads.set(rawKey, pending);
   }
   return pending;
@@ -175,9 +195,10 @@ function downloadOnce(rawKey: string, download: () => Promise<DownloadedImage | 
 
 /** 뒤에서 천천히 WebP로 변환해 보관 (변환 대기열이 너무 길면 이번엔 건너뜀 → 다음 요청 때 다시) */
 const conversions = new Map<string, Promise<Variant | null>>();
-const MAX_BACKLOG = 24;
+const MAX_BACKLOG = 6; // 대기 중인 변환은 원본을 메모리에 쥐고 있으므로 적게
 function convertInBackground(key: string, raw: DownloadedImage, folder: string, webp: boolean, width?: number) {
   if (conversions.has(key) || conversions.size >= MAX_BACKLOG) return conversions.get(key) ?? null;
+  if (memoryTight()) { clearImageMemory(); return null; } // 빠듯하면 이번엔 건너뜀 (다음 요청 때 다시)
   const job = withConvertSlot(() => optimizeImage(raw, folder, webp, width))
     .then((result) => { remember(key, result); void diskRemember(key, result); return result; }, () => null)
     .finally(() => conversions.delete(key));

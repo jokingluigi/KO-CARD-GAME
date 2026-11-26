@@ -98,7 +98,7 @@ test("메모리에서 밀려나도 디스크 보관함에서 다시 꺼내 Supab
   clearImageCache();
 });
 
-test("변환이 한꺼번에 몰려도 동시에 2장까지만 변환한다 (메모리 보호)", async () => {
+test("변환이 한꺼번에 몰려도 대기열 안의 것만 변환하고 나머지는 다음 요청 때 (메모리 보호)", async () => {
   clearImageCache();
   const raw = await png(900, 1200);
   let peak = 0, live = 0;
@@ -109,7 +109,7 @@ test("변환이 한꺼번에 몰려도 동시에 2장까지만 변환한다 (메
   await Promise.all(jobs);
   await settleImageConversions();
   const again = fakeResponse();
-  await deliverImage("card-images/many-7.png", "card-images", true, async () => null, again as never);
+  await deliverImage("card-images/many-3.png", "card-images", true, async () => null, again as never);
   assert.equal(again.headers["content-type"], "image/webp", "뒤에서 변환된 WebP가 준비됨");
   clearImageCache();
 });
@@ -135,5 +135,18 @@ test("requested width makes a smaller variant, and the original is downloaded on
   assert.equal(meta.width, 512);
   assert.equal((await sharp(big.body!).metadata()).width, 1200);
   assert.ok(downloads <= 2, `downloads ${downloads}`);
+  clearImageCache();
+});
+
+test("a burst of uncached images downloads only a few originals at a time", async () => {
+  const { deliverImage, settleImageConversions, clearImageCache } = await import("./image-delivery");
+  clearImageCache();
+  const png = await sharp({ create: { width: 64, height: 64, channels: 4, background: { r: 1, g: 2, b: 3, alpha: 1 } } }).png().toBuffer();
+  let active = 0, peak = 0;
+  const download = async () => { active++; peak = Math.max(peak, active); await new Promise((r) => setTimeout(r, 15)); active--; return { buffer: png, contentType: "image/png" }; };
+  const fake = () => ({ setHeader() {}, end() {} });
+  await Promise.all(Array.from({ length: 30 }, (_, i) => deliverImage(`/objects/uploads/card-images/burst-${i}.png`, "card-images", true, download, fake() as never)));
+  await settleImageConversions();
+  assert.ok(peak <= 4, `peak downloads ${peak}`);
   clearImageCache();
 });
