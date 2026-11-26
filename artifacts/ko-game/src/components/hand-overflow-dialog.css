@@ -1,0 +1,51 @@
+/* 손패 가득 참 — 버릴 카드 고르기 (멀리건 무대와 같은 검정·금색) */
+.ko-overflow-stage .ko-overflow-sheet{gap:clamp(8px,1.6vh,16px)}
+
+/* 위: 새로 들어올 카드가 빛나며 떠 있다 */
+.ko-overflow-incoming{display:flex;align-items:center;gap:14px;animation:ko-overflow-arrive .7s cubic-bezier(.2,.9,.3,1.2) .2s both}
+.ko-overflow-incoming__card{position:relative;display:block;width:clamp(86px,11vw,130px);aspect-ratio:5/7;animation:ko-overflow-float 2.4s ease-in-out 1s infinite}
+.ko-overflow-incoming__glow{position:absolute;inset:-14%;border-radius:12%;background:radial-gradient(closest-side,rgba(246,220,142,.55),transparent);animation:ko-overflow-pulse 1.6s ease-in-out infinite}
+.ko-overflow-incoming__label{display:flex;flex-direction:column;gap:4px;font-weight:900;color:#f6dc8e;letter-spacing:.1em;font-size:15px}
+.ko-overflow-incoming__label em{font-style:normal;font-weight:700;letter-spacing:0;font-size:12px;color:#cdbb8e}
+
+/* 아래: 손패 */
+.ko-overflow-row{flex-wrap:nowrap}
+.ko-overflow-slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ko-overflow-card{width:clamp(62px,calc((min(100vw,1040px) - 140px) / var(--n) - 14px),150px)}
+.ko-overflow-stage .ko-mull-flip{animation-name:ko-overflow-deal;animation-delay:calc(.34s + var(--i) * .06s)}
+.ko-overflow-detail{min-height:32px;padding:0 6px;background:none;border:0;color:#d9c48f;font-size:12px;text-decoration:underline;text-underline-offset:3px;animation:ko-mull-rise .4s ease-out calc(.5s + var(--i) * .06s) both}
+.ko-overflow-stamp em{letter-spacing:.3em}
+.ko-overflow-status{margin:0;font-size:13px;color:#e8d6a6;text-align:center;min-height:1.2em}
+.ko-overflow-stage .ko-mulligan-sheet,.ko-overflow-stage .ko-overflow-sheet{background:none;border:0;box-shadow:none;padding:0}
+.ko-overflow-stage button.ko-mull-card{background:none}
+
+/* 확정: 고른 카드가 불타며 묘지로, 새 카드는 손패로 */
+.ko-overflow-embers{position:absolute;inset:0;pointer-events:none;opacity:0;border-radius:7%/5%;
+  background:radial-gradient(circle at 50% 100%,rgba(255,150,40,.9),rgba(255,60,0,.5) 35%,transparent 70%);mix-blend-mode:screen}
+.ko-overflow-stage[data-leaving=true] .ko-overflow-card[data-picked=true]{animation:ko-overflow-burn .75s cubic-bezier(.5,0,.8,.4) forwards}
+.ko-overflow-stage[data-leaving=true] .ko-overflow-card[data-picked=true] .ko-overflow-embers{animation:ko-overflow-ember .75s ease-out forwards}
+.ko-overflow-stage[data-leaving=true] .ko-overflow-card[data-picked=true] .ko-mull-stamp{opacity:0;transition:opacity .15s}
+.ko-overflow-stage[data-leaving=true] .ko-overflow-incoming{animation:ko-overflow-drop .55s cubic-bezier(.5,0,.75,0) .3s forwards}
+.ko-overflow-stage[data-leaving=true] .ko-mull-actions,.ko-overflow-stage[data-leaving=true] .ko-overflow-status,.ko-overflow-stage[data-leaving=true] .ko-overflow-detail{opacity:0;transition:opacity .2s}
+.ko-overflow-stage[data-leaving=true] .ko-mull-backdrop{animation:ko-mull-fade-out .3s ease-in .55s forwards}
+
+@keyframes ko-overflow-arrive{from{opacity:0;transform:translateY(-40vh) rotate(-8deg) scale(.6)}}
+@keyframes ko-overflow-float{50%{transform:translateY(-6px)}}
+@keyframes ko-overflow-pulse{50%{opacity:.45;transform:scale(1.06)}}
+@keyframes ko-overflow-deal{0%{opacity:0;transform:translateY(40vh) scale(.7)}100%{opacity:1;transform:none}}
+@keyframes ko-overflow-burn{
+  0%{transform:translateY(14px) scale(.96);filter:none}
+  30%{transform:translateY(6px) scale(1.02);filter:brightness(1.5) sepia(.6) saturate(2)}
+  100%{opacity:0;transform:translate(-30vw,40vh) rotate(-28deg) scale(.4);filter:brightness(.4) sepia(1)}
+}
+@keyframes ko-overflow-ember{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+@keyframes ko-overflow-drop{to{opacity:0;transform:translateY(55vh) scale(.6)}}
+
+@media (max-width:640px){
+  .ko-overflow-row{flex-wrap:wrap;gap:6px 8px;max-height:52dvh;overflow-y:auto;padding-top:10px}
+  .ko-overflow-card{width:min(27vw,112px)}
+  .ko-overflow-incoming__card{width:80px}
+}
+@media (prefers-reduced-motion:reduce){
+  .ko-overflow-stage *,.ko-overflow-stage *::before{animation-duration:.01ms!important;animation-delay:0s!important}
+}
