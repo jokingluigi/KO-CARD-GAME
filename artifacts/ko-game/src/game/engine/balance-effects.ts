@@ -1000,23 +1000,23 @@ export function applyBalanceEffect(
     }
   }
 }
-/** Pinfall requires exact post-mitigation damage and an explicitly allowed damage source. */
+/**
+ * 핀폴 판정 (하스스톤 '명예로운 처치' 방식, 2026-11-26):
+ * - 쓰러뜨린 그 피해가 체력을 정확히 0으로 만들어야 한다 (남는 피해 = 과잉 처치는 아님)
+ * - 피해를 준 쪽 주인의 턴에만 발동
+ * - 예전엔 '마지막 체력 변화'로 판정해서, 0이 된 뒤 최대 체력 변화 같은 게 끼면 핀폴이 사라졌다
+ */
 export function exactZeroDamage(state: GameState, card: CardInstance): boolean {
   if (card.currentHealth !== 0) return false;
   const last = [...state.events]
     .reverse()
-    .find(
-      (e) =>
-        e.target?.type === "CARD" &&
-        e.target.cardInstanceId === card.instanceId &&
-        (e.type === "DAMAGE_DEALT" || (e.type === "STAT_CHANGED" &&
-          ["health", "currentHealth", "maxHealth"].includes(e.stat ?? ""))),
-    );
+    .find((e) => e.type === "DAMAGE_DEALT" && e.target?.type === "CARD" && e.target.cardInstanceId === card.instanceId && Number(e.amount) > 0);
+  const dealer = last?.sourceContext?.sourcePlayerId ?? last?.playerId;
   return Boolean(
-    last?.type === "DAMAGE_DEALT" &&
-    Number(last.amount) > 0 &&
+    last &&
     last.after === 0 &&
     Number(last.before) > 0 &&
+    (!state.activePlayerId || dealer === state.activePlayerId) &&
     damageCanPinfall(state, last),
   );
 }

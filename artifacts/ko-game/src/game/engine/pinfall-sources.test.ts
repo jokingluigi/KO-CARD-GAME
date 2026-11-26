@@ -473,9 +473,10 @@ test("Pandora does not heal for a pinfall caused by a reacting card during her a
   });
   const n = chooseAbility(s, [target.instanceId]);
   const retire = n.events.find((e) => e.type === "CARD_RETIRED");
+  // 2026-11-26 하스스톤 방식: 핀폴은 피해를 준 쪽 주인의 턴에만. 상대 카드가 내 턴에 스스로 0이 된 건 핀폴 아님.
   assert.ok(
-    retire?.exactZero,
-    "the reacting pinfall card made its own exact kill",
+    !retire?.exactZero,
+    "an exact kill outside its owner's turn is not a pinfall",
   );
   assert.deepEqual(retire.source, {
     type: "CARD",

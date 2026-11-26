@@ -39,3 +39,22 @@ test('an attack is cancelled when an on-attack effect removes its target (no pha
   assert.equal(n.events.some(e=>e.type==='DAMAGE_DEALT'),false);
   assert.ok((n.players[0].board[0]?.attacksUsedThisTurn??0)>=1,'공격 횟수는 사용됨');
 });
+
+test('pinfall only on its owner turn: a reaction exact kill on the opponent turn does not count',()=>{
+  const reactKill={trigger:'SELF_DAMAGED',effects:[{type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',selection:'ALL',count:4},values:{amount:2}}]};
+  const pin={trigger:'EXACT_ZERO_DAMAGE',effects:[{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:5}}]};
+  const s=setup();
+  // 내 턴: 내가 상대 'def'를 공격 → def가 맞고 반응으로 내 필드 전체에 2피해 → 내 'small'(체력 2)이 정확히 0
+  s.players[0].board[0]=mk('att',1,9,0);s.players[0].board[1]=mk('small',1,2,1);
+  s.players[1].board[0]=mk('def',0,9,0,[reactKill,pin]);
+  const n=attack(s);
+  const r=n.events.find(e=>e.type==='CARD_RETIRED'&&e.cardInstanceId==='small');
+  assert.ok(r,'small retired');assert.equal(Boolean(r?.exactZero),false,'상대(def 주인)의 턴이 아니므로 핀폴 아님');
+  assert.equal(n.players[1].board[0]?.currentAttack,0,'def의 핀폴 강화 없음');
+});
+test('pinfall judges the killing hit itself, not a later stat change',()=>{
+  const s=setup();s.players[0].board[0]=mk('att',3,9,0,[{trigger:'EXACT_ZERO_DAMAGE',effects:[{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:1}}]}]);
+  s.players[1].board[0]=mk('def',0,3,0);
+  const n=attack(s);const r=n.events.find(e=>e.type==='CARD_RETIRED'&&e.cardInstanceId==='def');
+  assert.equal(Boolean(r?.exactZero),true);assert.equal(n.players[0].board[0]?.currentAttack,4);
+});
