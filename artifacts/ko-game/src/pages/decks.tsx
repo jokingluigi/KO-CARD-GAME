@@ -381,6 +381,19 @@ export default function Decks() {
   const [density,setDensity]=useCatalogDensity();
   const [workspace, setWorkspace] = useState<'decks'|'editor'>('decks');
   const [sheetOpen, setSheetOpen] = useState(false);
+  // 휴대폰: 덱 판(시트)이 챔피언 선택 창보다 위에 떠서 창이 가려졌다.
+  // → 챔피언을 바꾸려 하면 덱 판을 먼저 내리고, 다 고르면(또는 닫으면) 다시 올린다.
+  const reopenSheetAfterPicker = useRef(false);
+  const openChampionPicker = () => {
+    reopenSheetAfterPicker.current = sheetOpen;
+    setSheetOpen(false);
+    setChampionPickerOpen(true);
+  };
+  useEffect(() => {
+    if (championPickerOpen || !reopenSheetAfterPicker.current) return;
+    reopenSheetAfterPicker.current = false;
+    setSheetOpen(true);
+  }, [championPickerOpen]);
   const [costBucket, setCostBucket] = useState<number | null>(null);
   const [notice, setNoticeText] = useState("");
   const [noticeKey, setNoticeKey] = useState(0);
@@ -764,13 +777,13 @@ export default function Decks() {
             </button>
             <div className="kdb-deck__body">
               <div className="kdb-hero">
-                <button type="button" className="kdb-hero__art" onClick={() => setChampionPickerOpen(true)} data-testid="panel-selected-champion" aria-label={selectedChampion ? `${selectedChampion.name} 챔피언 변경` : "챔피언 선택"}>
+                <button type="button" className="kdb-hero__art" onClick={openChampionPicker} data-testid="panel-selected-champion" aria-label={selectedChampion ? `${selectedChampion.name} 챔피언 변경` : "챔피언 선택"}>
                   {selectedChampion?.imageUrl ? <CardArtwork src={selectedChampion.imageUrl} alt="" className="h-full w-full" imageDisplayMode={selectedChampion.imageDisplayMode} imageScale={selectedChampion.imageScale} imagePositionX={selectedChampion.imagePositionX} imagePositionY={selectedChampion.imagePositionY} /> : <span className="kdb-hero__pick"><Plus className="h-6 w-6" aria-hidden="true" />챔피언 선택</span>}
                 </button>
                 <div className="kdb-hero__info">
                   <label className="sr-only" htmlFor="deck-name">덱 이름</label>
                   <input id="deck-name" className="kdb-hero__name" value={deckName} maxLength={40} onChange={(event) => setDeckName(event.target.value)} data-testid="input-deck-name" />
-                  <button type="button" className="kdb-hero__champ" onClick={() => setChampionPickerOpen(true)} data-testid="select-champion">{selectedChampion ? <>{selectedChampion.name} · 능력 {selectedChampion.abilityCost}골드 <span>바꾸기</span></> : '챔피언을 골라 주세요'}</button>
+                  <button type="button" className="kdb-hero__champ" onClick={openChampionPicker} data-testid="select-champion">{selectedChampion ? <>{selectedChampion.name} · 능력 {selectedChampion.abilityCost}골드 <span>바꾸기</span></> : '챔피언을 골라 주세요'}</button>
                 </div>
                 <button type="button" className="kdb-sheet-close" aria-label="덱 닫기" onClick={()=>setSheetOpen(false)}><ChevronDown className="h-5 w-5" /></button>
               </div>
