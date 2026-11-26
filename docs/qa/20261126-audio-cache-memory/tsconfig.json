@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "rootDir": "../../../artifacts/api-server/src",
+    "types": ["node"],
+    "typeRoots": ["../../../artifacts/api-server/node_modules/@types"]
+  },
+  "include": [
+    "../../../artifacts/api-server/src/lib/asset-file-download*.ts",
+    "../../../artifacts/api-server/src/lib/audio-cache*.ts",
+    "../../../artifacts/api-server/src/lib/image-delivery*.ts",
+    "../../../artifacts/api-server/src/lib/object-storage.ts",
+    "../../../artifacts/api-server/src/routes/storage.ts",
+    "../../../artifacts/api-server/node_modules/pino-http/index.d.ts"
+  ]
+}

@@ -150,3 +150,34 @@ test("a burst of uncached images downloads only a few originals at a time", asyn
   assert.ok(peak <= 4, `peak downloads ${peak}`);
   clearImageCache();
 });
+
+test("a queued conversion checks memory again when its slot becomes available", async () => {
+  clearImageCache();
+  const raw = await png(200, 300);
+  const originalUsage = process.memoryUsage;
+  const prototype = Object.getPrototypeOf(sharp(raw));
+  const originalToBuffer = prototype.toBuffer;
+  let tight = false, first = true;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  process.memoryUsage = Object.assign(() => ({ ...originalUsage(), rss: tight ? 500 * 1024 * 1024 : 0 }), { rss: () => tight ? 500 * 1024 * 1024 : 0 });
+  prototype.toBuffer = function (this: sharp.Sharp, ...args: unknown[]) {
+    if (first) { first = false; return gate.then(() => originalToBuffer.apply(this, args)); }
+    return originalToBuffer.apply(this, args);
+  };
+  try {
+    const download = async () => ({ buffer: raw, contentType: "image/png" });
+    await deliverImage("/memory-running.png", "card-images", true, download, fakeResponse() as never);
+    const queued = fakeResponse();
+    await deliverImage("/memory-queued.png", "card-images", true, download, queued as never);
+    assert.deepEqual(queued.body, raw, "original still reaches the player immediately");
+    tight = true; release(); await settleImageConversions();
+    tight = false;
+    const found = await deliverImage("/memory-queued.png", "card-images", true, async () => null, fakeResponse() as never);
+    assert.equal(found, false, "queued work must not create a variant while RSS is high");
+  } finally {
+    release(); await settleImageConversions();
+    process.memoryUsage = originalUsage; prototype.toBuffer = originalToBuffer;
+    clearImageCache();
+  }
+});

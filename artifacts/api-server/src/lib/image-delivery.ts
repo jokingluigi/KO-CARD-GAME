@@ -199,8 +199,12 @@ const MAX_BACKLOG = 6; // 대기 중인 변환은 원본을 메모리에 쥐고 
 function convertInBackground(key: string, raw: DownloadedImage, folder: string, webp: boolean, width?: number) {
   if (conversions.has(key) || conversions.size >= MAX_BACKLOG) return conversions.get(key) ?? null;
   if (memoryTight()) { clearImageMemory(); return null; } // 빠듯하면 이번엔 건너뜀 (다음 요청 때 다시)
-  const job = withConvertSlot(() => optimizeImage(raw, folder, webp, width))
-    .then((result) => { remember(key, result); void diskRemember(key, result); return result; }, () => null)
+  const job = withConvertSlot(() => {
+    // RSS may have risen while this original was waiting behind another image.
+    if (memoryTight()) { clearImageMemory(); return Promise.resolve(null); }
+    return optimizeImage(raw, folder, webp, width);
+  })
+    .then((result) => { if (result) { remember(key, result); void diskRemember(key, result); } return result; }, () => null)
     .finally(() => conversions.delete(key));
   conversions.set(key, job);
   return job;

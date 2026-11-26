@@ -1,4 +1,5 @@
 import { streamAudio } from './audio-stream';
+import { downloadAssetFile, saveAssetStream, AssetFileTooLargeError, type DownloadedAssetFile } from "./asset-file-download";
 import { randomUUID } from "node:crypto";
 import { type File, Storage } from "@google-cloud/storage";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -17,6 +18,7 @@ type DownloadedObject = {
 
 type AssetStorageProvider = {
   download(objectPath:string,folder:string):Promise<DownloadedObject|null>;
+  downloadToFile(objectPath: string, folder: string, target: string, maxBytes: number): Promise<DownloadedAssetFile | null>;
   createUpload(extension: string, folder: string): Promise<{
     assetId: string;
     objectPath: string;
@@ -200,6 +202,23 @@ class ReplitAssetStorageProvider implements AssetStorageProvider {
     };
   }
 
+  async downloadToFile(objectPath: string, folder: string, target: string, maxBytes: number) {
+    const file = this.file(objectPath, folder);
+    const [exists] = await file.exists();
+    if (!exists) return null;
+    const [metadata] = await file.getMetadata();
+    if (Number(metadata.size) > maxBytes) throw new AssetFileTooLargeError();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120_000);
+    timer.unref();
+    try {
+      const bytes = await saveAssetStream(file.createReadStream(), target, maxBytes, controller.signal);
+      return { bytes, contentType: metadata.contentType ?? null };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async download(
     objectPath: string,
     folder: string,
@@ -348,6 +367,17 @@ class SupabaseAssetStorageProvider implements AssetStorageProvider {
 
   private objectName(objectPath: string, folder: string): string {
     return objectNameForFolder(objectPath, folder);
+  }
+
+  async downloadToFile(objectPath: string, folder: string, target: string, maxBytes: number) {
+    const { data, error } = await this.client.storage.from(this.bucket)
+      .createSignedUrl(this.objectName(objectPath, folder), 180);
+    if (error || !data?.signedUrl) {
+      if (String(error?.statusCode) === "404" || /not found/i.test(error?.message ?? "")) return null;
+      throw new Error("Could not authorize asset cache download");
+    }
+    const saved = await downloadAssetFile(data.signedUrl, target, maxBytes);
+    return saved ? { ...saved, contentType: saved.contentType || mimeTypeForExtension(objectPath) } : null;
   }
 
   async download(
@@ -581,6 +611,10 @@ class AudioAssetStorage {
 
   download(objectPath: string) {
     return this.provider.download(objectPath, this.folder);
+  }
+
+  downloadToFile(objectPath: string, target: string, maxBytes: number) {
+    return this.provider.downloadToFile(objectPath, this.folder, target, maxBytes);
   }
 
   stream(objectPath: string, response: ExpressResponse) {

@@ -1,0 +1,296 @@
+{
+  "at": "2026-11-26T04:16:06.172Z",
+  "baselineCommit": "36c68bdebcd44cc6bccc782ce30cd6366f490f0a",
+  "fixture": "16 distinct 8MiB tracks simultaneously; 128MiB delivered with identical hashes",
+  "samplesPerMode": 3,
+  "samplerMs": 2,
+  "environment": "local Node child processes, MALLOC_ARENA_MAX=2, 192MiB V8 heap cap; no 512MiB cgroup limit and not the entire API",
+  "productionTraffic": 0,
+  "scope": "cold audio disk-cache fill; not browser playback latency, all game modes, or live Render savings",
+  "summary": {
+    "buffered": {
+      "medianPeakRssMiB": 488.10546875,
+      "medianRssGrowthMiB": 389.6328125,
+      "medianPeakArrayBuffersMiB": 301.88134479522705,
+      "medianElapsedMs": 1435.011385
+    },
+    "streamed": {
+      "medianPeakRssMiB": 200.46484375,
+      "medianRssGrowthMiB": 95.84765625,
+      "medianPeakArrayBuffersMiB": 86.8789644241333,
+      "medianElapsedMs": 596.0858430000001
+    }
+  },
+  "results": [
+    {
+      "trial": 1,
+      "mode": "buffered",
+      "before": {
+        "rss": 103256064,
+        "heapTotal": 35889152,
+        "heapUsed": 17750696,
+        "external": 20674229,
+        "arrayBuffers": 143611
+      },
+      "peak": {
+        "rss": 511815680,
+        "external": 287349301,
+        "arrayBuffers": 316545533
+      },
+      "afterGc": {
+        "rss": 151449600,
+        "heapTotal": 38842368,
+        "heapUsed": 18384176,
+        "external": 24478165,
+        "arrayBuffers": 200765
+      },
+      "buffered": 16,
+      "streamed": 0,
+      "delivered": 134217728,
+      "hashes": [
+        "bb929bbdce85fdbc903a463e96630a25f8b6ef5b76090e24cd92ea8fb47b2f65",
+        "854edd4e82fb2fcf0dbaa5c21f28cd6f1e14b6bd2d91cfa53a875b9f9c9bffe2",
+        "5c2f9c648170787fbd27f7f65f575844241ccce148b1cb78760d60736dcb3380",
+        "0833809a95afb59419677c63883d4ec63222ac834611e69d98bd3e049a919212",
+        "a91cb230394104debd08c5e863a319c6079c7ca7af3583f7a5b09c79146b08d9",
+        "d19ec822f3c1bca5664b4dd2f76eb9b82884b333e2890b60d9829106cce1eeec",
+        "15d3670274ee9cc36af50fee9e6d49164c9eec2228d48fe29e4f313aa3784a91",
+        "c337af78a0a16c6da6b35c3b46ea2291cfadc7a55cbb0d3f09fd80134f26a5a4",
+        "4c17898c47e67206e412a8092e4a8d33f29ae6bf775a58072cb483428049cf21",
+        "de17c9003877ef557ee21033d7cb839c4ea64cc3365f26f7ec429c428d269050",
+        "63d102527006eb9d7ceaa749bf66302543d599dc720c2615f06e88fba890de58",
+        "f9ca0d7cd982ffdc7cd4dd48e56da38bbd4c391d19f5ef9325d86306594ab503",
+        "e55757a53b189d9115d4afe00f3aa7e0f0d94c3a8f88e1b60a5ffa8cda92727b",
+        "18b7d7eb884a3858418721c5bfc9dbbc90cbff6a70e1d49426bb537d5788ff1d",
+        "0d9eb940e7a0ee48b3ed1fdac6c5bfb80d861f179a74eac522ada54813f8a7b9",
+        "068d21dab18232ca8ce46fe25218884124e311671df37eb991cd7ad6d3e8b858"
+      ],
+      "elapsedMs": 1807.059403
+    },
+    {
+      "trial": 1,
+      "mode": "streamed",
+      "before": {
+        "rss": 103137280,
+        "heapTotal": 36937728,
+        "heapUsed": 17745232,
+        "external": 20674229,
+        "arrayBuffers": 143611
+      },
+      "peak": {
+        "rss": 214302720,
+        "external": 121439605,
+        "arrayBuffers": 91099197
+      },
+      "afterGc": {
+        "rss": 210640896,
+        "heapTotal": 55881728,
+        "heapUsed": 18591144,
+        "external": 26543477,
+        "arrayBuffers": 200765
+      },
+      "buffered": 0,
+      "streamed": 16,
+      "delivered": 134217728,
+      "hashes": [
+        "bb929bbdce85fdbc903a463e96630a25f8b6ef5b76090e24cd92ea8fb47b2f65",
+        "854edd4e82fb2fcf0dbaa5c21f28cd6f1e14b6bd2d91cfa53a875b9f9c9bffe2",
+        "5c2f9c648170787fbd27f7f65f575844241ccce148b1cb78760d60736dcb3380",
+        "0833809a95afb59419677c63883d4ec63222ac834611e69d98bd3e049a919212",
+        "a91cb230394104debd08c5e863a319c6079c7ca7af3583f7a5b09c79146b08d9",
+        "d19ec822f3c1bca5664b4dd2f76eb9b82884b333e2890b60d9829106cce1eeec",
+        "15d3670274ee9cc36af50fee9e6d49164c9eec2228d48fe29e4f313aa3784a91",
+        "c337af78a0a16c6da6b35c3b46ea2291cfadc7a55cbb0d3f09fd80134f26a5a4",
+        "4c17898c47e67206e412a8092e4a8d33f29ae6bf775a58072cb483428049cf21",
+        "de17c9003877ef557ee21033d7cb839c4ea64cc3365f26f7ec429c428d269050",
+        "63d102527006eb9d7ceaa749bf66302543d599dc720c2615f06e88fba890de58",
+        "f9ca0d7cd982ffdc7cd4dd48e56da38bbd4c391d19f5ef9325d86306594ab503",
+        "e55757a53b189d9115d4afe00f3aa7e0f0d94c3a8f88e1b60a5ffa8cda92727b",
+        "18b7d7eb884a3858418721c5bfc9dbbc90cbff6a70e1d49426bb537d5788ff1d",
+        "0d9eb940e7a0ee48b3ed1fdac6c5bfb80d861f179a74eac522ada54813f8a7b9",
+        "068d21dab18232ca8ce46fe25218884124e311671df37eb991cd7ad6d3e8b858"
+      ],
+      "elapsedMs": 685.571294
+    },
+    {
+      "trial": 2,
+      "mode": "streamed",
+      "before": {
+        "rss": 109699072,
+        "heapTotal": 37462016,
+        "heapUsed": 17757456,
+        "external": 20674229,
+        "arrayBuffers": 143611
+      },
+      "peak": {
+        "rss": 210202624,
+        "external": 124586931,
+        "arrayBuffers": 102305853
+      },
+      "afterGc": {
+        "rss": 163463168,
+        "heapTotal": 56143872,
+        "heapUsed": 18559560,
+        "external": 24380789,
+        "arrayBuffers": 200765
+      },
+      "buffered": 0,
+      "streamed": 16,
+      "delivered": 134217728,
+      "hashes": [
+        "bb929bbdce85fdbc903a463e96630a25f8b6ef5b76090e24cd92ea8fb47b2f65",
+        "854edd4e82fb2fcf0dbaa5c21f28cd6f1e14b6bd2d91cfa53a875b9f9c9bffe2",
+        "5c2f9c648170787fbd27f7f65f575844241ccce148b1cb78760d60736dcb3380",
+        "0833809a95afb59419677c63883d4ec63222ac834611e69d98bd3e049a919212",
+        "a91cb230394104debd08c5e863a319c6079c7ca7af3583f7a5b09c79146b08d9",
+        "d19ec822f3c1bca5664b4dd2f76eb9b82884b333e2890b60d9829106cce1eeec",
+        "15d3670274ee9cc36af50fee9e6d49164c9eec2228d48fe29e4f313aa3784a91",
+        "c337af78a0a16c6da6b35c3b46ea2291cfadc7a55cbb0d3f09fd80134f26a5a4",
+        "4c17898c47e67206e412a8092e4a8d33f29ae6bf775a58072cb483428049cf21",
+        "de17c9003877ef557ee21033d7cb839c4ea64cc3365f26f7ec429c428d269050",
+        "63d102527006eb9d7ceaa749bf66302543d599dc720c2615f06e88fba890de58",
+        "f9ca0d7cd982ffdc7cd4dd48e56da38bbd4c391d19f5ef9325d86306594ab503",
+        "e55757a53b189d9115d4afe00f3aa7e0f0d94c3a8f88e1b60a5ffa8cda92727b",
+        "18b7d7eb884a3858418721c5bfc9dbbc90cbff6a70e1d49426bb537d5788ff1d",
+        "0d9eb940e7a0ee48b3ed1fdac6c5bfb80d861f179a74eac522ada54813f8a7b9",
+        "068d21dab18232ca8ce46fe25218884124e311671df37eb991cd7ad6d3e8b858"
+      ],
+      "elapsedMs": 596.0858430000001
+    },
+    {
+      "trial": 2,
+      "mode": "buffered",
+      "before": {
+        "rss": 105213952,
+        "heapTotal": 36151296,
+        "heapUsed": 17698088,
+        "external": 20674229,
+        "arrayBuffers": 143611
+      },
+      "peak": {
+        "rss": 479191040,
+        "external": 256936645,
+        "arrayBuffers": 285022509
+      },
+      "afterGc": {
+        "rss": 124710912,
+        "heapTotal": 25735168,
+        "heapUsed": 18358984,
+        "external": 26837461,
+        "arrayBuffers": 200765
+      },
+      "buffered": 16,
+      "streamed": 0,
+      "delivered": 134217728,
+      "hashes": [
+        "bb929bbdce85fdbc903a463e96630a25f8b6ef5b76090e24cd92ea8fb47b2f65",
+        "854edd4e82fb2fcf0dbaa5c21f28cd6f1e14b6bd2d91cfa53a875b9f9c9bffe2",
+        "5c2f9c648170787fbd27f7f65f575844241ccce148b1cb78760d60736dcb3380",
+        "0833809a95afb59419677c63883d4ec63222ac834611e69d98bd3e049a919212",
+        "a91cb230394104debd08c5e863a319c6079c7ca7af3583f7a5b09c79146b08d9",
+        "d19ec822f3c1bca5664b4dd2f76eb9b82884b333e2890b60d9829106cce1eeec",
+        "15d3670274ee9cc36af50fee9e6d49164c9eec2228d48fe29e4f313aa3784a91",
+        "c337af78a0a16c6da6b35c3b46ea2291cfadc7a55cbb0d3f09fd80134f26a5a4",
+        "4c17898c47e67206e412a8092e4a8d33f29ae6bf775a58072cb483428049cf21",
+        "de17c9003877ef557ee21033d7cb839c4ea64cc3365f26f7ec429c428d269050",
+        "63d102527006eb9d7ceaa749bf66302543d599dc720c2615f06e88fba890de58",
+        "f9ca0d7cd982ffdc7cd4dd48e56da38bbd4c391d19f5ef9325d86306594ab503",
+        "e55757a53b189d9115d4afe00f3aa7e0f0d94c3a8f88e1b60a5ffa8cda92727b",
+        "18b7d7eb884a3858418721c5bfc9dbbc90cbff6a70e1d49426bb537d5788ff1d",
+        "0d9eb940e7a0ee48b3ed1fdac6c5bfb80d861f179a74eac522ada54813f8a7b9",
+        "068d21dab18232ca8ce46fe25218884124e311671df37eb991cd7ad6d3e8b858"
+      ],
+      "elapsedMs": 1435.011385
+    },
+    {
+      "trial": 3,
+      "mode": "buffered",
+      "before": {
+        "rss": 110047232,
+        "heapTotal": 37199872,
+        "heapUsed": 17778576,
+        "external": 20674229,
+        "arrayBuffers": 143611
+      },
+      "peak": {
+        "rss": 541569024,
+        "external": 310543845,
+        "arrayBuffers": 327227693
+      },
+      "afterGc": {
+        "rss": 136216576,
+        "heapTotal": 26259456,
+        "heapUsed": 18435232,
+        "external": 26313173,
+        "arrayBuffers": 200765
+      },
+      "buffered": 16,
+      "streamed": 0,
+      "delivered": 134217728,
+      "hashes": [
+        "bb929bbdce85fdbc903a463e96630a25f8b6ef5b76090e24cd92ea8fb47b2f65",
+        "854edd4e82fb2fcf0dbaa5c21f28cd6f1e14b6bd2d91cfa53a875b9f9c9bffe2",
+        "5c2f9c648170787fbd27f7f65f575844241ccce148b1cb78760d60736dcb3380",
+        "0833809a95afb59419677c63883d4ec63222ac834611e69d98bd3e049a919212",
+        "a91cb230394104debd08c5e863a319c6079c7ca7af3583f7a5b09c79146b08d9",
+        "d19ec822f3c1bca5664b4dd2f76eb9b82884b333e2890b60d9829106cce1eeec",
+        "15d3670274ee9cc36af50fee9e6d49164c9eec2228d48fe29e4f313aa3784a91",
+        "c337af78a0a16c6da6b35c3b46ea2291cfadc7a55cbb0d3f09fd80134f26a5a4",
+        "4c17898c47e67206e412a8092e4a8d33f29ae6bf775a58072cb483428049cf21",
+        "de17c9003877ef557ee21033d7cb839c4ea64cc3365f26f7ec429c428d269050",
+        "63d102527006eb9d7ceaa749bf66302543d599dc720c2615f06e88fba890de58",
+        "f9ca0d7cd982ffdc7cd4dd48e56da38bbd4c391d19f5ef9325d86306594ab503",
+        "e55757a53b189d9115d4afe00f3aa7e0f0d94c3a8f88e1b60a5ffa8cda92727b",
+        "18b7d7eb884a3858418721c5bfc9dbbc90cbff6a70e1d49426bb537d5788ff1d",
+        "0d9eb940e7a0ee48b3ed1fdac6c5bfb80d861f179a74eac522ada54813f8a7b9",
+        "068d21dab18232ca8ce46fe25218884124e311671df37eb991cd7ad6d3e8b858"
+      ],
+      "elapsedMs": 1071.9362310000001
+    },
+    {
+      "trial": 3,
+      "mode": "streamed",
+      "before": {
+        "rss": 102760448,
+        "heapTotal": 36937728,
+        "heapUsed": 17763624,
+        "external": 20674229,
+        "arrayBuffers": 143611
+      },
+      "peak": {
+        "rss": 195645440,
+        "external": 94837175,
+        "arrayBuffers": 72552509
+      },
+      "afterGc": {
+        "rss": 195645440,
+        "heapTotal": 38842368,
+        "heapUsed": 18558688,
+        "external": 24511861,
+        "arrayBuffers": 200765
+      },
+      "buffered": 0,
+      "streamed": 16,
+      "delivered": 134217728,
+      "hashes": [
+        "bb929bbdce85fdbc903a463e96630a25f8b6ef5b76090e24cd92ea8fb47b2f65",
+        "854edd4e82fb2fcf0dbaa5c21f28cd6f1e14b6bd2d91cfa53a875b9f9c9bffe2",
+        "5c2f9c648170787fbd27f7f65f575844241ccce148b1cb78760d60736dcb3380",
+        "0833809a95afb59419677c63883d4ec63222ac834611e69d98bd3e049a919212",
+        "a91cb230394104debd08c5e863a319c6079c7ca7af3583f7a5b09c79146b08d9",
+        "d19ec822f3c1bca5664b4dd2f76eb9b82884b333e2890b60d9829106cce1eeec",
+        "15d3670274ee9cc36af50fee9e6d49164c9eec2228d48fe29e4f313aa3784a91",
+        "c337af78a0a16c6da6b35c3b46ea2291cfadc7a55cbb0d3f09fd80134f26a5a4",
+        "4c17898c47e67206e412a8092e4a8d33f29ae6bf775a58072cb483428049cf21",
+        "de17c9003877ef557ee21033d7cb839c4ea64cc3365f26f7ec429c428d269050",
+        "63d102527006eb9d7ceaa749bf66302543d599dc720c2615f06e88fba890de58",
+        "f9ca0d7cd982ffdc7cd4dd48e56da38bbd4c391d19f5ef9325d86306594ab503",
+        "e55757a53b189d9115d4afe00f3aa7e0f0d94c3a8f88e1b60a5ffa8cda92727b",
+        "18b7d7eb884a3858418721c5bfc9dbbc90cbff6a70e1d49426bb537d5788ff1d",
+        "0d9eb940e7a0ee48b3ed1fdac6c5bfb80d861f179a74eac522ada54813f8a7b9",
+        "068d21dab18232ca8ce46fe25218884124e311671df37eb991cd7ad6d3e8b858"
+      ],
+      "elapsedMs": 460.86636
+    }
+  ]
+}
