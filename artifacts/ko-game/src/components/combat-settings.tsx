@@ -37,7 +37,7 @@ export function CombatSettings() {
           className={style}
           value={value.quality}
           onChange={(e) =>
-            update({ quality: e.target.value as CombatPreferences["quality"], qualityChosen: true })
+            update({ quality: e.target.value as CombatPreferences["quality"] })
           }
         >
           <option value="LOW">낮음</option>

@@ -1,4 +1,3 @@
-import "../quality-tiers.css";
 import { useEffect, useState } from "react";
 import {
   readCombatPreferences,
@@ -23,8 +22,6 @@ export function ReadingAccessibilityBridge() {
         p.highContrastTargets,
       );
       document.documentElement.dataset.koColorblind = p.colorblind ? "on" : "off";
-      // 화질 단계별로 무거운 장식 연출을 끈다 (quality-tiers.css)
-      document.documentElement.dataset.koQuality = p.quality;
     };
     apply();
     window.addEventListener("ko-combat-preferences", apply);
