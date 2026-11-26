@@ -1,6 +1,6 @@
 /* ───────── 관중 연출 ───────── */
-.ka-audience{--pop-h:clamp(92px,17vh,170px)}
-.ka-audience[data-small=true]{--pop-h:clamp(66px,11vh,100px)}
+.ka-audience{--pop-h:clamp(120px,22vh,220px)}
+.ka-audience[data-small=true]{--pop-h:clamp(80px,12vh,110px)}
 
 /* 1. 튀어나오는 관중 — 화면 맨 아래 앞줄 관중(머리·손만 보이게 낮게). 평소엔 없고, 특정 순간에만 화면 아래에서 솟아올랐다 내려간다.
    그림: OpenClipart CC0 실루엣 (public/vendor/crowd, 만드는 법 docs/art/crowd-build.py) */
@@ -11,8 +11,8 @@
   background:radial-gradient(ellipse 60% 85% at 50% 100%,rgba(255,196,110,.42),rgba(150,80,25,.18) 55%,transparent 75%)}
 .ka-pop__row{position:absolute;left:-60px;right:-60px;bottom:0;background-repeat:repeat-x;background-position:0 100%;background-size:auto 100%;will-change:transform;
   filter:drop-shadow(0 -1.5px 0 rgba(255,216,150,.55)) drop-shadow(0 -4px 10px rgba(240,170,80,.35))}
-.ka-pop__row--back{height:95%;bottom:-8%;opacity:.92;background-position:-37% 100%;filter:drop-shadow(0 -1px 0 rgba(255,216,150,.35))}
-.ka-pop__row--front{height:115%;bottom:-38%}
+.ka-pop__row--back{height:100%;bottom:10%;opacity:.92;background-position:-37% 100%;filter:drop-shadow(0 -1px 0 rgba(255,216,150,.35))}
+.ka-pop__row--front{height:100%;bottom:-14%}
 .ka-audience[data-small=true] .ka-pop__row{background-size:auto 100%}
 
 /* 카메라 플래시 */

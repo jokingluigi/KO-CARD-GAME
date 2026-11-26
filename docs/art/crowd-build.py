@@ -83,8 +83,9 @@ calm = [c for c in calm_all if c.shape[1] / c.shape[0] < .42 and not arms_up(c)]
 print('차분한 자세', len(calm))
 
 for name, people, seed in (('crowd-cheer', cheer, 7), ('crowd-calm', calm, 11)):
-    back = strip(people, seed, rows=((0.10, 0.70, 30), (0.30, 0.80, 24)))
-    front = strip(people, seed + 100, rows=((0.38, 0.95, 18),))
+    # 크게(상반신만 보이게) + 촘촘히 겹쳐서 꽉 채운다
+    back = strip(people, seed, rows=((0.03, 1.7, 11),))
+    front = strip(people, seed + 100, rows=((0.30, 2.1, 9),))
     back.save(OUT / f'{name}-back.webp', 'WEBP', quality=82, method=6)
     front.save(OUT / f'{name}-front.webp', 'WEBP', quality=82, method=6)
     preview = Image.new('RGBA', back.size, (60, 40, 20, 255))
