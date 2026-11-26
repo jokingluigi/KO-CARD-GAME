@@ -58,7 +58,7 @@ export const spriteDefaultTiming: Record<string, number> = {
   HIT: 600,
   HEAVY_HIT: 900,
   SUMMON: 600,
-  ALLY_RETIRED: 900,
+  ALLY_RETIRED: 1500,
   HEAL: 700,
   AWAKEN: 1500,
   EMOTE: 1000,

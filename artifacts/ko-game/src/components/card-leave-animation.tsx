@@ -46,9 +46,12 @@ function durationFor(kind: CardLeaveKind) {
 export function CardLeaveAnimation({
   animation,
   onComplete,
+  held = false,
 }: {
   animation: CardLeaveAnimationState;
   onComplete: () => void;
+  /** 이 카드에 대한 피해 숫자 등 앞선 연출이 아직 차례를 기다리면, 부서지지 않고 제자리에 멈춰 있는다 */
+  held?: boolean;
 }) {
   const completedRef = useRef(false);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -71,6 +74,7 @@ export function CardLeaveAnimation({
   } as CSSProperties;
 
   useEffect(() => {
+    if (held) return;
     completedRef.current = false;
     // Destroyed cards shatter into pieces of their own face; retired cards crumble into dust.
     const g=animation.geometry;
@@ -84,7 +88,7 @@ export function CardLeaveAnimation({
       onCompleteRef.current();
     }, animation.delay + duration + 80);
     return () => {window.clearTimeout(timeoutId);if(moment!==null)window.clearTimeout(moment);};
-  }, [animation.delay, animation.id, duration]);
+  }, [animation.delay, animation.id, duration, held]);
 
   return (
     <>
@@ -92,10 +96,10 @@ export function CardLeaveAnimation({
     <div
       ref={nodeRef}
       aria-hidden="true"
-      className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}`}
+      className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}${held ? " card-leave-animation--held" : ""}`}
       style={style}
       onAnimationEnd={(event) => {
-        if (event.target !== event.currentTarget) return;
+        if (event.target !== event.currentTarget || held) return;
         if (completedRef.current) return;
         completedRef.current = true;
         onCompleteRef.current();

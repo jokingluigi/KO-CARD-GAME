@@ -977,3 +977,14 @@ test("opponent cancellable high-cost spell does not surprise before commit or af
     "ALLY_RETIRED",
   ]);
 });
+
+test("손패가 꽉 차서 카드가 버려지면 놀람 (뽑은 카드가 바로 버려질 때 · 버릴 카드를 고르라고 할 때)", () => {
+  const s = setup();
+  const burned = append(s, { type: "CARD_REMOVED", playerId: "player-1", cardInstanceId: "x", cardDefinitionId: "normal", source: { type: "SYSTEM" }, target: { type: "CARD", cardInstanceId: "x" }, reason: "OVERDRAW" } as GameEvent);
+  assert.deepEqual(collect(s, burned), ["ALLY_RETIRED"]);
+  assert.deepEqual(collect(s, burned, "player-2"), [], "상대는 놀라지 않음");
+  const hand = ["h1", "h2", "h3"];
+  const prompt = { ...s, targetingState: { sourceCardInstanceId: "x", effect: {} as never, validTargetIds: hand, selectedTargetIds: [], handAddition: { playerId: "player-1", cards: [] } } } as unknown as GameState;
+  assert.deepEqual(collect(s, prompt), ["ALLY_RETIRED"]);
+  assert.deepEqual(collect(prompt, prompt), [], "같은 창이 계속 떠 있는 동안 다시 놀라지 않음");
+});

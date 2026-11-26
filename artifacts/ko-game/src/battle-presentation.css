@@ -524,3 +524,8 @@ html[data-ui-reduced="true"] .ko-quest-meter i { transition:none; }
   animation: none;
   transition: background-color 120ms, filter 140ms;
 }
+
+/* 앞선 연출(피해 숫자 등)을 기다리는 동안: 부서지지 않고 제자리에 그대로 */
+.card-leave-animation.card-leave-animation--held,
+.card-leave-animation.card-leave-animation--held *{animation:none!important;opacity:1!important}
+.card-leave-animation.card-leave-animation--held{transform:none!important;filter:none!important}

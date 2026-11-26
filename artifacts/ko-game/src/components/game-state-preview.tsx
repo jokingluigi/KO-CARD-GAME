@@ -2040,10 +2040,15 @@ export function GameStatePreview({
           }}
         />
       ))}
-      {(!attackAnimation || attackImpactTriggered) && !playBlocksInput && !generatedBlocksInput && cardLeaveAnimations.map((animation) => (
+      {(!attackAnimation || attackImpactTriggered) && !playBlocksInput && !generatedBlocksInput && cardLeaveAnimations
+        // 반격으로 쓰러진 공격자는 공격 연출에서 제자리로 돌아온 다음에 부서진다 (두 장이 겹쳐 보이지 않게)
+        .filter((animation) => !(attackAnimation && animation.card && attackAnimation.attacker.instanceId === animation.card.instanceId))
+        .map((animation) => (
         <CardLeaveAnimation
           key={animation.id}
           animation={animation}
+          held={Boolean(animation.card && presentationQueue.some(cue =>
+            cue.cardInstanceId === animation.card!.instanceId && !activePresentationCues.some(active => active.id === cue.id)))}
           onComplete={() => {
             setCardLeaveAnimations((current) => current.filter((entry) => entry.id !== animation.id));
           }}

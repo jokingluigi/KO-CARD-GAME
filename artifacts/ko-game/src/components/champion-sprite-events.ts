@@ -194,6 +194,11 @@ export function championSpriteEvents(
       }
     }
     if (e.playerId !== playerId) continue;
+    // 손패가 꽉 차서 뽑은 카드가 그대로 버려지면 놀란다
+    if (e.type === "CARD_REMOVED" && (e as { reason?: string }).reason === "OVERDRAW" && !reactions.includes("ALLY_RETIRED")) {
+      emit("ALLY_RETIRED");
+      continue;
+    }
     if (e.type === "TURN_STARTED")
       cues?.push({
         id: `${state.gameId}:${i}:turn`,
@@ -354,5 +359,14 @@ export function championSpriteEvents(
     }
   }
   cursor.count = revisit;
+  // 손패가 꽉 차서 '버릴 카드를 고르세요'가 뜨는 순간 놀란다
+  const fullNow = state.targetingState?.handAddition?.playerId === playerId &&
+    (state.targetingState?.validTargetIds?.length ?? 0) > 0;
+  const fullBefore = previous.targetingState?.handAddition?.playerId === playerId &&
+    (previous.targetingState?.validTargetIds?.length ?? 0) > 0;
+  if (fullNow && !fullBefore && !reactions.includes("ALLY_RETIRED")) {
+    eventIndex = state.events.length;
+    emit("ALLY_RETIRED");
+  }
   return reactions;
 }

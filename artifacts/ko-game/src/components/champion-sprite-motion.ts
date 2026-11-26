@@ -44,7 +44,7 @@ export const CHAMPION_MOTION = {
   hitMs: 220,
   heavyMs: 320,
   surpriseMs: 600,
-  threatSurpriseHoldMs: 2000,
+  threatSurpriseHoldMs: 1500,
   healMs: 500,
   awakeMs: 700,
   resultMs: 620,
