@@ -761,3 +761,22 @@ test("배경음악을 꺼도 승리·패배 음악은 들린다", () => {
     audioManager.setBgmMuted(false);
   });
 });
+
+test("배경음 음소거여도 터치할 때 결과 음악의 재생 권한을 미리 받아 두고, 그 음악을 그대로 쓴다 (휴대폰)", () => {
+  withFakeAudio(() => {
+    audioManager.setMusicContext("BATTLE");
+    audioManager.setBgmMuted(true);
+    audioManager.preloadMusic(["/victory-primed.mp3"], true);
+    const prepared = (audioManager as unknown as { preparedMusic: Map<string, FakeAudio> }).preparedMusic.get("/victory-primed.mp3");
+    assert.ok(prepared, "결과 음악을 미리 받아 둠");
+    audioManager.unlockAudio(); // 화면 터치
+    assert.equal(prepared!.paused, false, "터치 순간 소리 없이 한 번 틀어 권한을 받음");
+    assert.equal(prepared!.muted, true, "권한 받는 동안엔 소리 안 남");
+    audioManager.playResultMusic("/victory-primed.mp3", 80);
+    const bgm = (audioManager as unknown as { bgm: { audio: FakeAudio } | null }).bgm;
+    assert.equal(bgm?.audio, prepared, "권한 받아 둔 그 음악을 재생에 사용");
+    assert.equal(bgm?.audio.muted, false);
+    audioManager.stopResultMusic();
+    audioManager.setBgmMuted(false);
+  });
+});

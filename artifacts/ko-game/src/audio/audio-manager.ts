@@ -479,8 +479,40 @@ class AudioManager {
   unlockAudio() {
     this.ensureSpatial();
     if (this.current?.awaitingUnlock) this.current.retryPlayback();
+    // 배경음을 음소거해도 승리·패배 음악 같은 미리 받아둔 음악은 지금(터치한 순간) 재생 권한을 받아 둔다
+    this.primePreparedMusic();
     if (this.baseMuted) return;
     this.reconcileBgmPlayback();
+  }
+
+  private primedMusic = new WeakSet<HTMLAudioElement>();
+  /**
+   * 휴대폰 브라우저는 화면을 터치한 순간에만 새 소리를 틀 수 있게 막는다.
+   * 배경음을 음소거하면 경기 중에 아무 소리도 안 틀어서 권한이 안 열리고,
+   * 경기가 끝난 뒤 결과 음악이 막혔다 (2026-11-26 대표 신고).
+   * → 터치할 때 미리 받아둔 음악을 소리 없이 한 번 틀었다 바로 멈춰 권한만 받아 둔다.
+   */
+  private primePreparedMusic() {
+    for (const audio of this.preparedMusic.values()) {
+      if (this.primedMusic.has(audio)) continue;
+      this.primedMusic.add(audio);
+      const wasMuted = audio.muted;
+      audio.muted = true;
+      const restore = () => {
+        // 그 사이 실제로 재생에 쓰이기 시작했으면 건드리지 않는다
+        if (this.bgm?.audio === audio) { audio.muted = false; return; }
+        try { audio.pause(); audio.currentTime = 0; } catch { /* 아직 준비 안 됨 */ }
+        audio.muted = wasMuted;
+      };
+      try {
+        const played = audio.play();
+        if (played && typeof played.then === "function") played.then(restore).catch(() => { audio.muted = wasMuted; this.primedMusic.delete(audio); });
+        else restore();
+      } catch {
+        audio.muted = wasMuted;
+        this.primedMusic.delete(audio);
+      }
+    }
   }
 
   isAudioUnlockPending() {
