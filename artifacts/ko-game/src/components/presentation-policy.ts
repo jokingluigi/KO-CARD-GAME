@@ -30,6 +30,16 @@ export function presentationBatch<T extends QueueEntry & {cardInstanceId?:string
  }
  return result;
 }
+/**
+ * 공격이 맞는 순간: 그 공격의 피해 묶음과, 그보다 앞에 밀려 있던 연출을 한꺼번에 바로 재생한다.
+ * (날아가는 공격은 대기열을 기다리지 않으므로, 숫자가 맞는 순간보다 늦게 뜨지 않게 맞춘다)
+ */
+export function presentationBatchThrough<T extends QueueEntry & {cardInstanceId?:string;playerId?:string;group?:string}>(queue:T[],group:string):T[]{
+ const keys=queue.map(c=>c.group??c.id);
+ const last=keys.lastIndexOf(group);
+ if(last<0||queue[0]?.kind==='QUEST_COMPLETE'||queue[0]?.kind==='TRANSFORM')return presentationBatch(queue);
+ return queue.slice(0,last+1).filter(c=>c.kind!=='QUEST_COMPLETE'&&c.kind!=='TRANSFORM').slice(0,10);
+}
 /** 묶음과 묶음 사이 숨 고르기 (대표 결정 E-1: 0.25초). 밀려 있으면 같이 빨라진다. */
 export function presentationGap(pending:number){return pending>=3?Math.round(250/1.5):250;}
 export function enqueuePresentation<T extends QueueEntry>(pending:T[],incoming:T[]):T[] {

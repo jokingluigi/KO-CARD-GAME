@@ -95,7 +95,7 @@ import {
 } from './alt-inspector';
 import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
 import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
-import { enqueuePresentation, presentationBatch, presentationGap } from './presentation-policy';
+import { enqueuePresentation, presentationBatch, presentationBatchThrough, presentationGap } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
@@ -505,8 +505,10 @@ export function GameStatePreview({
   },[state]);
   // 묶음과 묶음 사이 0.25초 쉬는 동안엔 아무것도 재생하지 않는다 (대표 결정 E-1)
   const [cueResting, setCueResting] = React.useState(false);
-  const presentationBatchNow = React.useMemo(() => presentationBatch(presentationQueue), [presentationQueue]);
-  const activePresentationCues = React.useMemo(() => cueResting ? [] as typeof presentationBatchNow : presentationBatchNow, [cueResting, presentationBatchNow]);
+  // 공격이 맞는 순간엔 그 공격 피해(와 앞에 밀린 연출)를 기다리지 않고 바로 재생
+  const impactGroup = attackAnimation && attackImpactTriggered ? presentationQueue.find(cue => cue.combat)?.group : undefined;
+  const presentationBatchNow = React.useMemo(() => impactGroup ? presentationBatchThrough(presentationQueue, impactGroup) : presentationBatch(presentationQueue), [presentationQueue, impactGroup]);
+  const activePresentationCues = React.useMemo(() => cueResting && !impactGroup ? [] as typeof presentationBatchNow : presentationBatchNow, [cueResting, impactGroup, presentationBatchNow]);
   const presentationQueueRef = React.useRef(presentationQueue);
   presentationQueueRef.current = presentationQueue;
   const activeBatchIdsRef = React.useRef<string[]>([]);
@@ -2130,15 +2132,18 @@ export function GameStatePreview({
           }}
         />
       ))}
-      {(!attackAnimation || attackImpactTriggered) && !playBlocksInput && !generatedBlocksInput && cardLeaveAnimations
+      {cardLeaveAnimations
         // 반격으로 쓰러진 공격자는 공격 연출에서 제자리로 돌아온 다음에 부서진다 (두 장이 겹쳐 보이지 않게)
         .filter((animation) => !(attackAnimation && animation.card && attackAnimation.attacker.instanceId === animation.card.instanceId))
         .map((animation) => (
         <CardLeaveAnimation
           key={animation.id}
           animation={animation}
-          held={Boolean(animation.card && presentationQueue.some(cue =>
-            cue.cardInstanceId === animation.card!.instanceId && !activePresentationCues.some(active => active.id === cue.id)))}
+          // 2026-11-26: 예전엔 맞기 전·카드 내는 연출 중에 아예 숨겨서 카드가 잠깐 사라졌다 다시 나타났다.
+          // 이제 차례가 올 때까지 제자리에 가만히 서 있다가(held) 그때 쓰러진다.
+          held={Boolean((attackAnimation && !attackImpactTriggered) || playBlocksInput || generatedBlocksInput ||
+            (animation.card && presentationQueue.some(cue =>
+              cue.cardInstanceId === animation.card!.instanceId && !activePresentationCues.some(active => active.id === cue.id))))}
           onComplete={() => {
             setCardLeaveAnimations((current) => current.filter((entry) => entry.id !== animation.id));
           }}
