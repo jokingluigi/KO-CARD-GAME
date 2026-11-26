@@ -28,3 +28,35 @@
 
 /* 손패에 마우스를 올렸을 때: 카드와 반짝이 층을 그래픽 카드 층으로 올려 움직임마다 다시 그리지 않게 */
 .ko-game-stage .ko-hand-card .ko-card-depth,.ko-game-stage .ko-hand-card .ko-card-foil{will-change:transform}
+
+/* ── 2차 (2026-11-26, 휴대폰 렉): 남은 '매 프레임 다시 그리기' 애니메이션을 같은 모양의 가벼운 방식으로 ──
+   그림자·필터·배경 크기를 바꾸며 깜빡이던 것 → 가장 밝을 때 모양으로 고정해 두고 '투명도'만 깜빡인다.
+   (투명도·이동은 그래픽 칩이 처리해서 휴대폰에서도 거의 공짜) */
+
+/* 턴 종료 버튼 초록 빛 */
+.ko-game-shell .ko-game-controls .ko-turn-end:not(:disabled)[data-turn-state=done]{animation:none!important;position:relative}
+.ko-game-shell .ko-game-controls .ko-turn-end:not(:disabled)[data-turn-state=done]::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:0 0 22px rgba(110,255,120,.85);animation:ko-glow-o 1.4s ease-in-out infinite;will-change:opacity}
+
+/* 전설·챔피언 손패 금빛 숨쉬기: 필터 깜빡임 → 고정 금빛 테두리 + 투명도 */
+.ko-game-shell .ko-hand-card:is([data-rarity=LEGENDARY],[data-rarity=CHAMPION]){animation:none!important}
+.ko-game-shell .ko-hand-card:is([data-rarity=LEGENDARY],[data-rarity=CHAMPION])::after{content:"";position:absolute;inset:0;border-radius:7%/5%;pointer-events:none;
+  box-shadow:0 0 8px 1px rgba(255,205,100,.8),0 0 2px rgba(255,240,200,.9);animation:ko-glow-o 2.8s ease-in-out infinite;will-change:opacity}
+
+/* 카드 끌 때 놓을 수 있는 칸 숨쉬기 */
+.ko-game-shell .ko-board-slot[data-drag-valid="true"]{animation:none!important;
+  box-shadow:0 0 0 1px rgba(232,200,120,.75),0 0 10px rgba(255,205,110,.32),inset 0 0 10px rgba(255,205,110,.16)!important}
+
+/* 필살 게이지 거의 참 */
+.ko-game-shell .ko-quest-meter[data-near=true]{animation:none!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.8),0 0 0 1px rgba(255,200,110,.8),0 0 9px rgba(255,140,40,.75)!important}
+
+/* 키워드 효과 층(면역 안개·흡혈 핏줄·회피·재생): 층 전체의 투명도로 깜빡임 */
+.kfx-immune{box-shadow:inset 0 0 22px 8px rgba(235,240,255,.85),0 0 0 1px rgba(235,240,255,.8)!important;animation:ko-glow-soft 3s ease-in-out infinite!important}
+.kfx-lifesteal{box-shadow:inset 0 0 16px 4px rgba(230,30,50,.75)!important;animation:ko-glow-soft 1.8s ease-in-out infinite!important}
+.kfx-dodge{border-color:rgba(255,240,200,.9)!important;box-shadow:0 0 16px rgba(255,214,120,.7),inset 0 0 20px rgba(255,226,150,.55)!important;animation:ko-glow-soft 2.6s ease-in-out infinite!important}
+.kfx-regen{background:radial-gradient(ellipse at 50% 100%,rgba(90,240,130,.55),transparent 62%)!important;animation:ko-glow-soft 2.4s ease-in-out infinite!important}
+
+@keyframes ko-glow-o{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes ko-glow-soft{0%,100%{opacity:.72}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ko-game-shell .ko-turn-end::after,.ko-game-shell .ko-hand-card::after,.kfx-immune,.kfx-lifesteal,.kfx-regen{animation:none!important}}

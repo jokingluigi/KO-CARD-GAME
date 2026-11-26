@@ -23,6 +23,8 @@ function seeded(seed: string) {
   return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 10000) / 10000; };
 }
 
+/** 한 번 풀어둔 관중 그림을 붙잡아 둬서 나올 때마다 다시 풀지 않게 (4장, 합쳐 약 15MB) */
+const crowdImages = new Map<string, HTMLImageElement>();
 const CROWD = (name: string) => `${import.meta.env.BASE_URL}vendor/crowd/${name}.webp`;
 
 /** 관중이 튀어나오는 분위기만 (평소·긴장은 화면에 안 나옴) */
@@ -98,7 +100,7 @@ export function AudienceLayer({ gameId, tension, finished }: {
   // 그림 미리 받아두기 (처음 튀어나올 때 빈 화면 안 보이게)
   React.useEffect(() => {
     if (!enabled) return;
-    for (const n of ['crowd-cheer-back', 'crowd-cheer-front', 'crowd-calm-back', 'crowd-calm-front']) { const img = new Image(); img.src = CROWD(n); }
+    for (const n of ['crowd-cheer-back', 'crowd-cheer-front', 'crowd-calm-back', 'crowd-calm-front']) { if (crowdImages.has(n)) continue; const img = new Image(); img.src = CROWD(n); void img.decode().catch(() => undefined); crowdImages.set(n, img); }
   }, [enabled]);
 
   // 튀어나오는 관중 (특정 순간에만)
@@ -159,8 +161,8 @@ export function AudienceLayer({ gameId, tension, finished }: {
       // 경기장 배경 소리라서 배경음악을 따른다: 음악 끄면 같이 꺼짐
       const music = audioManager.isBgmMuted() ? 0 : audioManager.getBgmVolume() / 100;
       const want = Math.min(1, (.025 + tension * .035 + swell.current * .06) * music);
-      audio.volume = audio.volume + (want - audio.volume) * .25;
-    }, 100);
+      audio.volume = audio.volume + (want - audio.volume) * .5;
+    }, 250);
     return () => window.clearInterval(id);
   }, [tension]);
 

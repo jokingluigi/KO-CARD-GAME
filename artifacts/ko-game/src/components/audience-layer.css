@@ -9,9 +9,9 @@
 .ka-pop.is-leaving{animation:ka-pop-out .44s cubic-bezier(.5,0,.8,.4) forwards}
 .ka-pop__glow{position:absolute;left:-5%;right:-5%;bottom:0;height:115%;
   background:radial-gradient(ellipse 60% 85% at 50% 100%,rgba(255,196,110,.42),rgba(150,80,25,.18) 55%,transparent 75%)}
-.ka-pop__row{position:absolute;left:-60px;right:-60px;bottom:0;background-repeat:repeat-x;background-position:0 100%;background-size:auto 100%;will-change:transform;
-  filter:drop-shadow(0 -1.5px 0 rgba(255,216,150,.55)) drop-shadow(0 -4px 10px rgba(240,170,80,.35))}
-.ka-pop__row--back{height:100%;bottom:10%;opacity:.92;background-position:-37% 100%;filter:drop-shadow(0 -1px 0 rgba(255,216,150,.35))}
+.ka-pop__row{position:absolute;left:-60px;right:-60px;bottom:0;background-repeat:repeat-x;background-position:0 100%;background-size:auto 100%;will-change:transform}
+/* 금빛 테두리·빛은 그림에 미리 구워 둠 (매 프레임 필터 계산 없음) */
+.ka-pop__row--back{height:100%;bottom:10%;opacity:.92;background-position:-37% 100%}
 .ka-pop__row--front{height:100%;bottom:-14%}
 .ka-audience[data-small=true] .ka-pop__row{background-size:auto 100%}
 
@@ -45,7 +45,7 @@
 @keyframes ka-flash{0%{opacity:0}31%{opacity:1}32%{opacity:0}66%{opacity:.8}67%{opacity:0}90%{opacity:1}91%{opacity:0}}
 
 /* 저사양·움직임 줄이기: 튀어올랐다 내려가기만 (들썩임·플래시 없음) */
-.ka-audience[data-lite=true] .ka-pop__row{animation:none!important;filter:none}
+.ka-audience[data-lite=true] .ka-pop__row{animation:none!important}
 .ka-audience[data-lite=true] .ka-pop__flashes{display:none}
 @media (prefers-reduced-motion:reduce){.ka-pop,.ka-pop.is-leaving{animation-duration:.01s}.ka-pop__row,.ka-pop__flashes{animation:none!important}}
 
@@ -64,7 +64,7 @@
 
 /* 6. TV 중계 자막 */
 .ka-caption{position:fixed;top:30px;left:50%;z-index:61;translate:-50% 0;display:flex;align-items:stretch;max-width:min(92vw,620px);pointer-events:none;
-  animation:ka-caption 2.6s cubic-bezier(.2,.9,.3,1) forwards;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+  animation:ka-caption 2.6s cubic-bezier(.2,.9,.3,1) forwards;box-shadow:0 4px 10px rgba(0,0,0,.6)}
 .ka-caption__tag{display:flex;align-items:center;white-space:nowrap;flex:0 0 auto;padding:4px 10px;background:#c4161c;color:#fff;font-weight:900;font-size:12px;letter-spacing:.12em}
 .ka-caption__text{padding:5px 14px;background:linear-gradient(#15100a,#0b0805);border-top:2px solid #d6b867;color:#fff1d6;font-weight:800;font-size:clamp(13px,1.7vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ka-caption--danger .ka-caption__text{border-top-color:#ff5a3c}

@@ -64,10 +64,31 @@ def strip(people, seed, W=2400, H=420, rows=((0.30, 0.62, 30), (0.55, 0.85, 22),
                 piece = im[ya - y0:yb - y0, xa - x0:xb - x0]
                 layer[ya:yb, xa:xb] = np.maximum(layer[ya:yb, xa:xb], piece)
         canvas = np.maximum(canvas, layer)
-    alpha = (np.clip(canvas, 0, 1) * 255).astype(np.uint8)
-    rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    rgba[:, :, 3] = alpha  # 검은 실루엣
-    return Image.fromarray(rgba, 'RGBA')
+    return np.clip(canvas, 0, 1)
+
+
+def bake(mask, rim=0.55, glow=0.35):
+    """검은 실루엣 + 위쪽 금빛 테두리 + 은은한 빛을 그림에 미리 구워 넣는다.
+    (예전엔 CSS 필터로 매 프레임 계산 → 휴대폰에서 무거웠음)"""
+    H, W = mask.shape
+    up = np.zeros_like(mask); up[:-2] = mask[2:]          # 2px 위로 민 모양 = 위쪽 테두리
+    edge = np.clip(up - mask, 0, 1) * rim
+    halo = ndimage.gaussian_filter(np.roll(mask, -4, axis=0), 6) * glow
+    halo = np.clip(halo - mask, 0, 1)
+    rgb = np.zeros((H, W, 3), dtype=np.float32)
+    a = np.zeros((H, W), dtype=np.float32)
+    # 빛(아래층) → 테두리 → 검은 사람(맨 위)
+    for color, alpha in (((240, 170, 80), halo), ((255, 216, 150), edge)):
+        rgb = rgb * (1 - alpha[..., None]) + np.array(color, dtype=np.float32) * alpha[..., None]
+        a = a + alpha * (1 - a)
+    rgb = rgb * (1 - mask[..., None])
+    a = mask + a * (1 - mask)
+    # 투명도로 미리 나눠 저장 (straight alpha)
+    out = np.zeros((H, W, 4), dtype=np.uint8)
+    safe = np.maximum(a, 1e-6)[..., None]
+    out[..., :3] = np.clip(rgb / safe, 0, 255).astype(np.uint8)
+    out[..., 3] = (np.clip(a, 0, 1) * 255).astype(np.uint8)
+    return Image.fromarray(out, 'RGBA')
 
 
 cheer = figures(HERE / 'happy-people-silhouette.svg')
@@ -84,8 +105,8 @@ print('차분한 자세', len(calm))
 
 for name, people, seed in (('crowd-cheer', cheer, 7), ('crowd-calm', calm, 11)):
     # 크게(상반신만 보이게) + 촘촘히 겹쳐서 꽉 채운다
-    back = strip(people, seed, rows=((0.03, 1.7, 11),))
-    front = strip(people, seed + 100, rows=((0.30, 2.1, 9),))
+    back = bake(strip(people, seed, rows=((0.03, 1.7, 11),)), rim=0.35, glow=0)
+    front = bake(strip(people, seed + 100, rows=((0.30, 2.1, 9),)))
     back.save(OUT / f'{name}-back.webp', 'WEBP', quality=82, method=6)
     front.save(OUT / f'{name}-front.webp', 'WEBP', quality=82, method=6)
     preview = Image.new('RGBA', back.size, (60, 40, 20, 255))
