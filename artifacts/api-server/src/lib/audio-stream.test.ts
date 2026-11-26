@@ -131,3 +131,27 @@ test('Supabase audio storage authorizes a byte stream without buffering through 
   const out=output('bytes=0-2');assert.equal(await new AudioStorage().stream('/objects/uploads/audio/test.mp3',out.stream),true);assert.equal(out.status(),206);assert.equal(Buffer.concat(out.chunks).toString(),'abc');assert.equal(calls.length,2);assert.equal(calls[0].method,'POST');assert.equal(calls[1].range,'bytes=0-2');assert.ok(calls[1].url.includes('token=test-private-token'));assert.ok(![...out.headers.values()].some(v=>v.includes('test-private-token')));
  }finally{globalThis.fetch=original;keys.forEach((key,i)=>{if(saved[i]===undefined)delete process.env[key];else process.env[key]=saved[i];});}
 });
+test("a listener closing mid-song never leaves an unhandled stream error behind (server crash 2026-11-26)", async () => {
+  const out = output("bytes=0-");
+  const errors: unknown[] = [];
+  const onUncaught = (e: unknown) => errors.push(e);
+  process.on("uncaughtException", onUncaught);
+  let upstreamSignal: AbortSignal | undefined;
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  const body = new ReadableStream<Uint8Array>({ start(c) { controller = c; c.enqueue(new TextEncoder().encode("part")); } });
+  try {
+    const serving = streamAudio("https://private.invalid/song", out.stream, async (_url, init) => {
+      upstreamSignal = (init as RequestInit).signal ?? undefined;
+      upstreamSignal?.addEventListener("abort", () => { try { controller.error(upstreamSignal!.reason); } catch { /* 이미 끝남 */ } });
+      return new Response(body, { status: 206, headers: { "Content-Type": "audio/mpeg" } });
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    out.stream.destroy(); // 플레이어가 창을 닫음
+    assert.equal(await serving, true);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(upstreamSignal?.aborted, true, "Supabase 쪽 전송도 멈춤");
+    assert.deepEqual(errors, []);
+  } finally {
+    process.off("uncaughtException", onUncaught);
+  }
+});

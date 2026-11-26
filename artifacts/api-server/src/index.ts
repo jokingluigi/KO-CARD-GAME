@@ -10,6 +10,21 @@ import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { ensureApplicationStorage } from "./lib/startup-schema";
 
+/**
+ * 안전망: 이미 끝난(끊긴) 파일 전송에서 늦게 터지는 '시간 초과·중단' 오류는 기록만 하고 넘어간다.
+ * 그 외 오류는 예전처럼 서버를 다시 시작한다. (2026-11-26 음악 전송 시간 초과로 4~5분마다 꺼지던 문제)
+ */
+const TRANSFER_ERRORS = new Set(["AbortError", "TimeoutError"]);
+const TRANSFER_CODES = new Set(["ERR_STREAM_PREMATURE_CLOSE", "ECONNRESET", "EPIPE", "ABORT_ERR"]);
+process.on("uncaughtException", (error: Error & { code?: string }) => {
+  if (TRANSFER_ERRORS.has(error?.name) || TRANSFER_CODES.has(String(error?.code))) {
+    logger.warn({ err: error }, "Ignored late transfer error (connection already closed)");
+    return;
+  }
+  logger.fatal({ err: error }, "Uncaught exception");
+  process.exit(1);
+});
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {
