@@ -116,10 +116,20 @@ export function acceptsWebp(accept: string | undefined) {
   return /image\/webp/i.test(accept ?? "");
 }
 
-export async function optimizeImage(raw: DownloadedImage, folder: string, webp: boolean): Promise<Variant> {
+/** 화면이 요청할 수 있는 폭 (아무 숫자나 받으면 변환본이 끝없이 늘어나므로 몇 단계로만) */
+export const IMAGE_WIDTHS = [256, 384, 512, 640, 768, 1024] as const;
+export function pickImageWidth(value: unknown): number | undefined {
+  const n = Number(Array.isArray(value) ? value[0] : value);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return IMAGE_WIDTHS.find((w) => w >= n) ?? undefined;
+}
+
+export async function optimizeImage(raw: DownloadedImage, folder: string, webp: boolean, width?: number): Promise<Variant> {
   const type = raw.contentType ?? "application/octet-stream";
   if (!webp || !/^image\/(png|jpeg|jpg)$/i.test(type)) return { buffer: raw.buffer, contentType: type };
-  const box = MAX_BOX[folder] ?? DEFAULT_BOX;
+  const max = MAX_BOX[folder] ?? DEFAULT_BOX;
+  // 폭을 요청하면 그만큼만 (세로는 폭의 2배까지): 휴대폰은 작은 그림으로 메모리를 아낀다
+  const box = width ? { width: Math.min(max.width, width), height: Math.min(max.height, width * 2) } : max;
   try {
     const out = await sharp(raw.buffer, { failOn: "none", limitInputPixels: 40_000_000, sequentialRead: true })
       .rotate()
@@ -139,27 +149,36 @@ export const SHORT_CACHE = "public, max-age=600";
 /** 디스크 확인 + 원본 내려받기: 같은 그림을 동시에 여러 번 요청해도 Supabase에는 한 번만 */
 type Lookup = { variant?: Variant; raw?: DownloadedImage } | null;
 const lookups = new Map<string, Promise<Lookup>>();
-function lookupOnce(key: string, objectPath: string, download: () => Promise<DownloadedImage | null>) {
+function lookupOnce(key: string, rawKey: string, download: () => Promise<DownloadedImage | null>) {
   let pending = lookups.get(key);
   if (!pending) {
     pending = (async (): Promise<Lookup> => {
       const stored = await diskRecall(key);
       if (stored) { remember(key, stored); return { variant: stored }; }
-      const raw = await download();
+      const raw = await downloadOnce(rawKey, download);
       return raw ? { raw } : null;
     })().finally(() => lookups.delete(key));
     lookups.set(key, pending);
   }
-  void objectPath;
+  return pending;
+}
+
+const downloads = new Map<string, Promise<DownloadedImage | null>>();
+function downloadOnce(rawKey: string, download: () => Promise<DownloadedImage | null>) {
+  let pending = downloads.get(rawKey);
+  if (!pending) {
+    pending = download().finally(() => downloads.delete(rawKey));
+    downloads.set(rawKey, pending);
+  }
   return pending;
 }
 
 /** 뒤에서 천천히 WebP로 변환해 보관 (변환 대기열이 너무 길면 이번엔 건너뜀 → 다음 요청 때 다시) */
 const conversions = new Map<string, Promise<Variant | null>>();
 const MAX_BACKLOG = 24;
-function convertInBackground(key: string, raw: DownloadedImage, folder: string, webp: boolean) {
+function convertInBackground(key: string, raw: DownloadedImage, folder: string, webp: boolean, width?: number) {
   if (conversions.has(key) || conversions.size >= MAX_BACKLOG) return conversions.get(key) ?? null;
-  const job = withConvertSlot(() => optimizeImage(raw, folder, webp))
+  const job = withConvertSlot(() => optimizeImage(raw, folder, webp, width))
     .then((result) => { remember(key, result); void diskRemember(key, result); return result; }, () => null)
     .finally(() => conversions.delete(key));
   conversions.set(key, job);
@@ -178,14 +197,17 @@ export async function deliverImage(
   webp: boolean,
   download: () => Promise<DownloadedImage | null>,
   response: Response,
+  width?: number,
 ): Promise<boolean> {
-  const key = `${objectPath}|${webp ? "webp" : "orig"}`;
+  const key = `${objectPath}|${webp ? "webp" : "orig"}${width ? `|w${width}` : ""}`;
+  // 원본 내려받기는 폭과 상관없이 한 번만
+  const rawKey = `${objectPath}|${webp ? "webp" : "orig"}|raw`;
   const variant: Variant | null | undefined = recall(key);
   if (variant) {
     send(response, variant, IMMUTABLE_CACHE);
     return true;
   }
-  const found = await lookupOnce(key, objectPath, download);
+  const found = await lookupOnce(key, rawKey, download);
   if (found?.variant) {
     send(response, found.variant, IMMUTABLE_CACHE);
     return true;
@@ -200,7 +222,7 @@ export async function deliverImage(
     send(response, original, IMMUTABLE_CACHE);
     return true;
   }
-  convertInBackground(key, raw, folder, webp);
+  convertInBackground(key, raw, folder, webp, width);
   send(response, { buffer: raw.buffer, contentType: type }, SHORT_CACHE);
   return true;
 }

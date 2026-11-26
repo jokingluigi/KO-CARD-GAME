@@ -1,3 +1,4 @@
+import { sizedImage, spriteImageWidth } from "../lib/sized-image";
 import { useEffect, useRef, useState } from "react";
 import {
   championSpriteSkin,
@@ -290,6 +291,9 @@ export function ChampionBattleActor({
   const selected = fallbackSprite ?? selectedRaw;
   const setReady = (url: string, sprite: boolean) => setLoaded({ id: loadIdentity, url, sprite });
   const displayUrl = ready || selected?.url;
+  // 화면에 그릴 땐 줄인 그림 (휴대폰 메모리 절약). 표정 판단은 원래 주소로.
+  const spriteW = useRef(spriteImageWidth());
+  const shownUrl = sizedImage(displayUrl, spriteW.current);
   const currentSet =
     displayAwakened && config?.awakening === "REPLACE"
       ? config.awakened
@@ -308,7 +312,7 @@ export function ChampionBattleActor({
       setReady(selected.url, Boolean(selected.frame && selected.frame !== appearance.portraitFrame));
     } else if (selected) {
       const image = new Image();
-      image.src = selected.url;
+      image.src = sizedImage(selected.url, spriteW.current);
       const url = selected.url, sprite = Boolean(selected.frame && selected.frame !== appearance.portraitFrame);
       // 휴대폰에서는 그림이 다 받아졌는데도 decode()가 가끔 실패한다 → 실제로 그려질 수 있으면 성공으로 본다.
       const loadedAnyway = () =>
@@ -341,7 +345,7 @@ export function ChampionBattleActor({
     for (const config of [appearance.config])
       for (const f of [...(config ? spriteFrames({...config,finishers:undefined}) : []),...(appearance.portraitFrame?[appearance.portraitFrame]:[])]) {
         const image = new Image();
-        image.src = f.url;
+        image.src = sizedImage(f.url, spriteW.current);
         images.push(image);
         // 미리 받아서 '그릴 준비'까지 끝내 둔다 → 피격·공격 반응이 늦지 않게 바로 바뀜
         const url = f.url;
@@ -385,7 +389,7 @@ export function ChampionBattleActor({
         self={self}
         identity={`${state.gameId}:${identity}`}
         reacting={reaction.event !== "IDLE"}
-        image={displayUrl}
+        image={shownUrl}
         display={
           displayFrame
             ? {
@@ -422,7 +426,7 @@ export function ChampionBattleActor({
           >
             <CardArtwork
               key={`${loadIdentity}:${displayUrl}`}
-              src={displayUrl}
+              src={shownUrl}
               displayOverride={fallbackDisplay}
               alt=""
               imageDisplayMode={
@@ -444,7 +448,7 @@ export function ChampionBattleActor({
               // 12·13: 그림 모양 그대로 오려낸 명암·피격 실루엣 층
               const fit = placement?.crop ? "cover" : "contain";
               const x = placement?.x ?? 50, y = placement?.y ?? 50, scale = Math.min(3, Math.max(.1, placement?.scale ?? 1));
-              const mask = { WebkitMaskImage: `url("${displayUrl}")`, maskImage: `url("${displayUrl}")`, WebkitMaskSize: fit, maskSize: fit,
+              const mask = { WebkitMaskImage: `url("${shownUrl}")`, maskImage: `url("${shownUrl}")`, WebkitMaskSize: fit, maskSize: fit,
                 WebkitMaskPosition: `${x}% ${y}%`, maskPosition: `${x}% ${y}%`, transform: `scale(${scale})`, transformOrigin: `${x}% ${y}%` } as React.CSSProperties;
               return <><i className="kj-sprite-shade" style={mask} /><i className="kj-sprite-flash" style={mask} /></>;
             })()}

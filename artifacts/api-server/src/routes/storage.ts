@@ -8,7 +8,7 @@ import {
   GameAttackStorage,
   GameBgmStorage,
 } from "../lib/object-storage";
-import { acceptsWebp, deliverImage } from "../lib/image-delivery";
+import { acceptsWebp, deliverImage, pickImageWidth } from "../lib/image-delivery";
 import { deliverCachedAudio } from "../lib/audio-cache";
 
 const router: IRouter = Router();
@@ -45,7 +45,8 @@ router.get(
       // 그림은 화면에 맞게 줄인 WebP로 보내고, 서버 메모리에 보관해 Supabase에서 반복해서 내려받지 않는다.
       const found = isImageStorage && "download" in storage
         ? await deliverImage(objectPath, path.split("/")[1] ?? "", acceptsWebp(request.headers.accept),
-            () => (storage as { download(p: string): Promise<{ buffer: Buffer; contentType: string | null } | null> }).download(objectPath), response)
+            () => (storage as { download(p: string): Promise<{ buffer: Buffer; contentType: string | null } | null> }).download(objectPath), response,
+            pickImageWidth(request.query.w))
         : await deliverAudio(objectPath, storage, response);
       if (!found) response.status(404).json({ message: `${assetLabel}를 찾을 수 없습니다.` });
     } catch (error) {

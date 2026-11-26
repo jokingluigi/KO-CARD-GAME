@@ -113,3 +113,27 @@ test("변환이 한꺼번에 몰려도 동시에 2장까지만 변환한다 (메
   assert.equal(again.headers["content-type"], "image/webp", "뒤에서 변환된 WebP가 준비됨");
   clearImageCache();
 });
+
+test("requested width makes a smaller variant, and the original is downloaded only once", async () => {
+  const { deliverImage, settleImageConversions, clearImageCache, pickImageWidth } = await import("./image-delivery");
+  const sharp = (await import("sharp")).default;
+  clearImageCache();
+  const png = await sharp({ create: { width: 1200, height: 1200, channels: 4, background: { r: 200, g: 40, b: 40, alpha: 1 } } }).png().toBuffer();
+  let downloads = 0;
+  const download = async () => { downloads++; return { buffer: png, contentType: "image/png" }; };
+  const fake = () => { const r: { headers: Record<string, string>; body?: Buffer; setHeader(k: string, v: string): void; end(b: Buffer): void } = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, end(b) { this.body = b; } }; return r; };
+  assert.equal(pickImageWidth("600"), 640);
+  assert.equal(pickImageWidth("99999"), undefined);
+  assert.equal(pickImageWidth(undefined), undefined);
+  await deliverImage("/objects/uploads/cosmetics/w.png", "cosmetics", true, download, fake() as never, 512);
+  await deliverImage("/objects/uploads/cosmetics/w.png", "cosmetics", true, download, fake() as never);
+  await settleImageConversions();
+  const small = fake(); await deliverImage("/objects/uploads/cosmetics/w.png", "cosmetics", true, download, small as never, 512);
+  const big = fake(); await deliverImage("/objects/uploads/cosmetics/w.png", "cosmetics", true, download, big as never);
+  assert.equal(small.headers["Content-Type"], "image/webp");
+  const meta = await sharp(small.body!).metadata();
+  assert.equal(meta.width, 512);
+  assert.equal((await sharp(big.body!).metadata()).width, 1200);
+  assert.ok(downloads <= 2, `downloads ${downloads}`);
+  clearImageCache();
+});

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { isResizableImage, sizedSrcSet } from "../lib/sized-image";
 import {
   normalizeImageDisplaySettings,
   type ImageDisplaySettings,
@@ -60,6 +61,24 @@ function CardArtworkRequest({
   }, maxImageScale);
 
   useEffect(() => {setFailed(false);setFallbackFailed(false);}, [src,fallbackSrc]);
+
+  // 그림 칸 크기를 재서 그만큼만 받는다 (srcset). 크기가 많이 바뀔 때만 다시 고른다.
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [boxW, setBoxW] = useState(0);
+  const resizable = isResizableImage(displaySrc);
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el || !resizable) return;
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      setBoxW((old) => (w > 0 && (old === 0 || w > old * 1.25 || w < old * .6) ? Math.ceil(w) : old));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [resizable, displaySrc]);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!interactive || !onPositionChange || !src) return;
@@ -127,6 +146,7 @@ function CardArtworkRequest({
 
   return (
     <div
+      ref={boxRef}
       className={`relative overflow-hidden ${interactive ? "cursor-grab active:cursor-grabbing" : ""} ${className}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -135,11 +155,13 @@ function CardArtworkRequest({
       style={interactive ? { touchAction: "none" } : undefined}
     >
       {!loaded&&<span aria-hidden="true" className="pointer-events-none absolute inset-0 border border-neutral-800 bg-neutral-950/40"/>}
-      <img
+      {(!resizable || boxW > 0) && <img
         key={displaySrc}
         data-art-loading={!loaded}
         onLoad={()=>setLoadedSrc(displaySrc??null)}
         src={displaySrc}
+        srcSet={resizable ? sizedSrcSet(displaySrc) : undefined}
+        sizes={resizable ? `${Math.ceil(boxW * Math.max(1, settings.imageScale))}px` : undefined}
         loading={loading}
         decoding="async"
         alt={alt}
@@ -148,7 +170,7 @@ function CardArtworkRequest({
         style={imageStyle}
         onDragStart={(event) => event.preventDefault()}
         onError={() => failed?setFallbackFailed(true):setFailed(true)}
-      />
+      />}
       {showHint && (
         <span className="pointer-events-none absolute inset-x-2 bottom-2 z-10 rounded bg-black/65 px-2 py-1 text-center text-[10px] font-bold text-white">
           드래그해서 이미지 위치 조절
