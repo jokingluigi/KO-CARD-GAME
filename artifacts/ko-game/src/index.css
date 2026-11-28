@@ -2719,3 +2719,10 @@
 .ko-decks__search input { min-height: 28px; }
 /* Direct dialog titles reserve the same space as titles inside DialogHeader. */
 .ko-game-dialog > h2 { padding-right:40px; }
+
+/* 한국어 줄바꿈: 단어(어절) 중간에서 끊지 않는다("얻습/니다" 방지).
+   한 어절이 칸보다 길 때만 예외로 끊어 레이아웃 밖으로 넘치지 않게 한다. */
+body {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

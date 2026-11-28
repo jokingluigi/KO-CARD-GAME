@@ -258,7 +258,7 @@ export function AttackAnimation({
             cost={animation.target.currentCost}
             attack={animation.target.currentAttack}
             health={animation.target.currentHealth}
-            rulesText={getCardRuntimeRulesText(animation.target, getCardDefinition(animation.target.definitionId)?.rulesText ?? "효과 없음")}
+            rulesText={getCardRuntimeRulesText(animation.target, getCardDefinition(animation.target.definitionId)?.rulesText ?? "")}
             imageUrl={getCardDefinition(animation.target.definitionId)?.imageUrl}
             rarity={getCardDefinition(animation.target.definitionId)?.rarity}
             size="board"
@@ -283,7 +283,7 @@ export function AttackAnimation({
           cost={animation.attacker.currentCost}
           attack={animation.attacker.currentAttack}
           health={animation.attacker.currentHealth}
-          rulesText={getCardRuntimeRulesText(animation.attacker, definition?.rulesText ?? "효과 없음")}
+          rulesText={getCardRuntimeRulesText(animation.attacker, definition?.rulesText ?? "")}
           imageUrl={definition?.imageUrl}
           rarity={definition?.rarity}
           size="board"

@@ -18,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cardTypeLabel, normalizeCardRulesText } from "@/lib/display-labels";
+import { cardTypeLabel } from "@/lib/display-labels";
+import { getVisibleCardRulesText } from "@/lib/card-display-state";
 
 export type CardDetailRecord = {
   isToken?:boolean;
@@ -53,12 +54,15 @@ export function CardDetailDialog({
   onOpenChange,
   quantityText,
   children,
+  footer,
 }: {
   card: CardDetailRecord | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   quantityText?: string;
   children?: ReactNode;
+  /** 카드·설명 아래에 전체 폭으로 놓이는 작업 영역(제작·분해 등). */
+  footer?: ReactNode;
 }) {
   const labels=useTagLabels();
   const detailRoot=useRef<HTMLDivElement>(null);
@@ -158,13 +162,14 @@ export function CardDetailDialog({
                 <div>
                   <p className="text-[10px] font-black tracking-wider text-neutral-500">카드 효과</p>
                   <p className="mt-2 whitespace-pre-wrap leading-6 text-neutral-200">
-                    <CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} />
+                    <CardRulesText text={getVisibleCardRulesText(card.text ?? "", card.keywords ?? []) || "효과 없음"} />
                   </p>
                 </div>
                 <CardIntroduction lore={card.lore}/>
                 {children}
               </div>
             </div>
+            {footer ? <div className="ko-card-detail-footer">{footer}</div> : null}
             <RelatedCards id={card.id} onSelect={setTagDetailCard}/>
             <CardTagExplorerDialog
               tag={tagExplorer ?? ""}

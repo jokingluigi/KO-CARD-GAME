@@ -176,6 +176,7 @@ export function CardRenderer({
   interactiveArtwork = false,
   showArtworkHint = false,
   artworkLoading = "eager",
+  rulesOverflow = "scroll",
   onImagePositionChange,
   overlay,
   highlight,
@@ -221,6 +222,8 @@ export function CardRenderer({
   interactiveArtwork?: boolean;
   showArtworkHint?: boolean;
   artworkLoading?: "eager" | "lazy";
+  /** 큰 카드에서 효과가 넘칠 때: scroll=상자 안 스크롤(기본), clip=읽을 수 있는 크기까지만 줄이고 "…"로 끝냄(목록용). */
+  rulesOverflow?: "scroll" | "clip";
   onImagePositionChange?: (
     position: Pick<ImageDisplaySettings, "imagePositionX" | "imagePositionY">,
   ) => void;
@@ -317,7 +320,8 @@ export function CardRenderer({
     MULTI_STRIKE: "연타",
   };
   const fitRules = useContext(FittedCardRulesContext);
-  const fullRules = size === "admin" || size === "detail";
+  const fullRules = (size === "admin" || size === "detail") && rulesOverflow !== "clip";
+  const clipRules = size === "detail" && rulesOverflow === "clip";
   const nameClass =
     fitRules && size === "detail" ? "text-[16px] leading-[1.1]" :
     name.length > 22
@@ -519,7 +523,7 @@ export function CardRenderer({
             }}
           >
             {fitRules ? <FittedCardRules
-              text={displayRulesText || "효과 없음"} fitFull={fullRules} interactive={size !== "board" && highlight !== "target"}
+              text={displayRulesText || "효과 없음"} fitFull={fullRules} fitThenClip={clipRules} interactive={size !== "board" && highlight !== "target"}
               className={`w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${size === "detail" ? "text-[16px]" : size === "admin" ? "text-[10px]" : "text-[8px]"} leading-tight`}
             /> : <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
               <CardRulesText text={displayRulesText || "효과 없음"} interactive={size !== "board" && highlight !== "target"}/>

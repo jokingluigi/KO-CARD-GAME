@@ -111,7 +111,7 @@ export function CardLeaveAnimation({
         cost={card.currentCost}
         attack={card.currentAttack}
         health={card.currentHealth}
-        rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? "효과 없음")}
+        rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? "")}
         imageUrl={definition?.imageUrl}
         rarity={definition?.rarity}
         size="board"

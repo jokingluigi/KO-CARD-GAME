@@ -7,6 +7,7 @@
   font-size: calc(16px * var(--ko-detail-scale));
   line-height: 1.65;
   overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 .ko-readable-content :is(p, li) {
   font-size: inherit;
@@ -78,3 +79,6 @@ html[data-contrast-targets="true"]
 }
 
 [data-card-rules-dialog] .ko-readable-content { font-size: calc(16px * var(--ko-detail-scale)); }
+/* 카드 상세의 제작·분해 영역: 카드/설명 아래 전체 폭. 버튼 이름은 어절 단위로만 줄바꿈. */
+.ko-card-detail-footer { margin-top: 1rem; }
+.ko-card-detail-footer :is(button, label, p) { word-break: keep-all; overflow-wrap: anywhere; }

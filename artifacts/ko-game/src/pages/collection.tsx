@@ -408,7 +408,7 @@ export default function CollectionPage() {
                   return (
                     <article key={card.id} data-motion-key={card.id} className="kdb-card" data-unowned={!owned||undefined}>
                       <button type="button" className="kdb-card__hit" aria-label={`${card.name} 자세히 보기`} onClick={()=>setSelectedCard(card)}>
-                        <CardRenderer cardId={card.id} isToken={card.isToken} isChampionToken={card.isChampionToken} isSilenceImmune={card.isSilenceImmune} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType as "WRESTLER" | "TECHNIQUE"} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} artworkLoading="lazy" rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={{imageDisplayMode: card.imageDisplayMode, imageScale: card.imageScale, imagePositionX: card.imagePositionX, imagePositionY: card.imagePositionY}} size="detail" className="w-full" />
+                        <CardRenderer cardId={card.id} isToken={card.isToken} isChampionToken={card.isChampionToken} isSilenceImmune={card.isSilenceImmune} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType as "WRESTLER" | "TECHNIQUE"} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} artworkLoading="lazy" rulesOverflow="clip" rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={{imageDisplayMode: card.imageDisplayMode, imageScale: card.imageScale, imagePositionX: card.imagePositionX, imagePositionY: card.imagePositionY}} size="detail" className="w-full" />
                       </button>
                       <button type="button" className="kdb-card__info kcol-fav" aria-pressed={fav} aria-label={`${card.name} ${fav ? '즐겨찾기 해제' : '즐겨찾기'}`} onClick={()=>toggleFavorite(card.id)}><Star className="h-3.5 w-3.5" /></button>
                       <span className={owned?"kdb-card__tag":"kdb-card__tag kdb-card__tag--craft"}>{collection.isTestAccount ? "∞ 보유" : owned ? <>보유 <b><MotionNumber value={card.quantity} format={n=>`${n}`}/></b>장</> : <><Hammer className="h-3 w-3" aria-hidden="true" />없음 · 눌러서 제작</>}</span>
@@ -438,20 +438,22 @@ export default function CollectionPage() {
         card={selectedCard}
         open={Boolean(selectedCard)}
         onOpenChange={(open) => { if (!open) { const id=selectedCard?.id; setSelectedCard(null); if(id) requestAnimationFrame(()=>returnToCatalogCard(document.querySelector(`[data-motion-key="${CSS.escape(id)}"]`))); } }}
-        quantityText={`보유 수량 ${collection?.isTestAccount ? "∞" : `×${selectedCard?.quantity ?? 0}`}`}
-      >
+        quantityText={`보유 수량 ${collection?.isTestAccount ? "∞" : `×${(selectedCard?.quantity ?? 0).toLocaleString()}`}`}
+        footer={<>
         {selectedCard && (
-          <div className="rounded border border-amber-800/50 bg-amber-950/20 p-3">
-            <p className="text-xs font-black text-amber-200">프리즘 작업</p>
+          <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-4">
+            <p className="text-sm font-black text-amber-200">프리즘 작업</p>
             {selectedSetting?.configured ? (
-              <div className="mt-3 space-y-2 text-xs text-neutral-300">
-                <p>제작 비용: <strong className="text-amber-200">{selectedSetting.craftCost!.toLocaleString()} 프리즘</strong></p>
-                <p>분해 획득량: <strong className="text-emerald-300">{selectedSetting.disenchantReward!.toLocaleString()} 프리즘</strong></p>
-                <div className="grid gap-2 sm:grid-cols-2">
+              <div className="mt-3 space-y-3 text-sm text-neutral-300">
+                <div className="flex flex-wrap gap-x-6 gap-y-1">
+                  <p>제작 비용: <strong className="whitespace-nowrap text-amber-200">{selectedSetting.craftCost!.toLocaleString()} 프리즘</strong></p>
+                  <p>분해 획득량: <strong className="whitespace-nowrap text-emerald-300">{selectedSetting.disenchantReward!.toLocaleString()} 프리즘</strong></p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
                   <button type="button" disabled={isMutating || selectedCard.quantity >= maxCardCopies(selectedCard.rarity) || (!collection?.isTestAccount && prismBalance < selectedSetting.craftCost!)} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard, quantity: 1 })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> {selectedCard.quantity >= maxCardCopies(selectedCard.rarity) ? "제작 한도 도달" : "제작"}</button>
                    <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: 1 })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">1장 분해</button>
                    <button type="button" disabled={isMutating || selectedExcess === 0} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: selectedExcess, keepPlayableCopies: true })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">최대 분해 ({maxCardCopies(selectedCard.rarity)}장 유지)</button>
-                   <div className="sm:col-span-2 flex items-center gap-2 rounded border border-neutral-700 bg-neutral-950/70 px-3 py-2">
+                   <div className="sm:col-span-3 flex flex-wrap items-center gap-2 rounded border border-neutral-700 bg-neutral-950/70 px-3 py-2">
                      <label htmlFor="disassembly-quantity" className="shrink-0 text-[11px] font-bold text-neutral-400">수량</label>
                      <input
                        id="disassembly-quantity"
@@ -461,10 +463,10 @@ export default function CollectionPage() {
                        step={1}
                        value={safeDisassemblyQuantity}
                        onChange={(event) => setDisassemblyQuantity(Number(event.target.value) || 1)}
-                       className="w-full min-w-0 rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-sm font-black text-white outline-none focus:border-emerald-400"
+                       className="min-w-[6rem] flex-1 rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-sm font-black text-white outline-none focus:border-emerald-400"
                        aria-label="분해 수량"
                      />
-                     <span className="shrink-0 text-[11px] text-neutral-500">/ {selectedCard.quantity}</span>
+                     <span className="shrink-0 whitespace-nowrap text-[11px] text-neutral-500">/ {selectedCard.quantity.toLocaleString()}장</span>
                      <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: safeDisassemblyQuantity })} className="shrink-0 rounded bg-emerald-700 px-3 py-2 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40">분해</button>
                    </div>
                 </div>
@@ -476,6 +478,8 @@ export default function CollectionPage() {
             )}
           </div>
         )}
+        </>}
+      >
       </CardDetailDialog>
 
        <Dialog open={Boolean(selectedChampion)} onOpenChange={(open) => { if (!open) setSelectedChampion(null); }}>

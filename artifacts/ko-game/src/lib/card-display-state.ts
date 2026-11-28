@@ -10,6 +10,8 @@ export const KEYWORD_RULE_LABELS: Partial<Record<CardKeyword, string>> = {
   SURPRISE: "기습",
   DODGE: "회피",
   MULTI_STRIKE: "연타",
+  CANNOT_ATTACK: "공격불가",
+  FUSION: "합체",
 };
 
 export function getVisibleCardKeywords(
@@ -43,7 +45,7 @@ export function getVisibleCardRulesText(
 
   if (
     keywordOnlyParts.length > 0 &&
-    keywordOnlyParts.every((part) => knownLabels.has(part))
+    keywordOnlyParts.every((part) => knownLabels.has(part.replace(/^공격\s+불가$/, "공격불가")))
   ) {
     const visibleLabels = new Set(
       visibleKeywords
@@ -51,11 +53,14 @@ export function getVisibleCardRulesText(
         .filter((label): label is string => Boolean(label)),
     );
     return keywordOnlyParts
-      .filter((part) => visibleLabels.has(part))
+      .filter((part) => visibleLabels.has(part.replace(/^공격\s+불가$/, "공격불가")))
       .join(", ");
   }
+  // "공격불가" is also printed as "공격 불가"; either spelling counts as already shown.
+  const labelPattern = (label: string) =>
+    label === "공격불가" ? "공격\\s*불가" : label;
   const missing = [...new Set(keywordNames)].filter((label) =>
-    !new RegExp(`(^|[^가-힣])${label}(?=$|[^가-힣])`).test(normalized));
+    !new RegExp(`(^|[^가-힣])${labelPattern(label)}(?=$|[^가-힣])`).test(normalized));
   return [missing.join(", "), normalized].filter(Boolean).join("\n");
 }
 

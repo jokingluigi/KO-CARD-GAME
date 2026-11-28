@@ -65,4 +65,12 @@ html .ko-main-menu__tagline {
   text-align: center;
   padding-inline: 0;
   overflow: hidden;
+  /* 한국어는 어절(띄어쓰기) 단위로 줄을 바꾸고, 띄어쓰기 없는 아주 긴 문자열만 예외로 자른다. */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 카드 효과 상자 전체(맞춤 모드가 아닌 경우 포함)에 어절 단위 줄바꿈을 적용한다. */
+[data-card-rules] {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }

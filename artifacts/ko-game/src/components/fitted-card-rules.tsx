@@ -8,11 +8,14 @@ export const FittedCardRulesContext = createContext(true);
 export function FittedCardRules({
   text,
   fitFull = false,
+  fitThenClip = false,
   interactive,
   className,
 }: {
   text: string;
   fitFull?: boolean;
+  /** 읽을 수 있는 최소 크기까지만 줄이고, 그래도 넘치면 "…"로 자른다(스크롤 없음). */
+  fitThenClip?: boolean;
   interactive: boolean;
   className: string;
 }) {
@@ -33,7 +36,7 @@ export function FittedCardRules({
     const measure = () => {
       frame = 0;
       if (disposed) return;
-      if (fitFull) element.style.fontSize = "";
+      if (fitFull || fitThenClip) element.style.fontSize = "";
       const style = getComputedStyle(element),
         parent = getComputedStyle(box);
       const line = parseFloat(style.lineHeight);
@@ -61,8 +64,25 @@ export function FittedCardRules({
         probe.style.setProperty(property, style.getPropertyValue(property));
       }
       probe.style.width = `${width}px`;
-      const limit = Math.max(1, Math.floor(height / line)) * line;
+      let limit = Math.max(1, Math.floor(height / line)) * line;
       probe.textContent = text;
+      if (fitThenClip) {
+        // 카드 크기에 비례한 최소 글자 크기: 기본의 70% 또는 11px 중 큰 값(너무 작게 줄이지 않는다).
+        const base = parseFloat(style.fontSize),
+          ratio = line / base,
+          floor = Math.min(base, Math.max(11, base * 0.7));
+        let chosen = base;
+        for (; chosen > floor; chosen -= 0.25) {
+          probe.style.fontSize = `${chosen}px`;
+          probe.style.lineHeight = `${chosen * ratio}px`;
+          if (probe.getBoundingClientRect().height <= height + 0.5) break;
+        }
+        chosen = Math.max(floor, chosen);
+        element.style.fontSize = `${chosen}px`;
+        probe.style.fontSize = `${chosen}px`;
+        probe.style.lineHeight = `${chosen * ratio}px`;
+        limit = Math.max(1, Math.floor(height / (chosen * ratio))) * chosen * ratio;
+      }
       if (fitFull) {
         const base = parseFloat(style.fontSize),
           ratio = line / base;
@@ -116,7 +136,7 @@ export function FittedCardRules({
       document.fonts.removeEventListener("loadingdone", schedule);
       probe.remove();
     };
-  }, [text, className, fitFull]);
+  }, [text, className, fitFull, fitThenClip]);
   return (
     <span
       ref={ref}

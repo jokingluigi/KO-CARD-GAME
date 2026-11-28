@@ -50,6 +50,7 @@ import {
   type DeckValidationReason,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
+import { getVisibleCardRulesText } from "@/lib/card-display-state";
 import { CardRulesText } from "@/components/card-rules-text";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
 import { cardLimitReason, cardOwnershipReason, getDeckCardAction, getDeckCardCountView } from "./deck-card-availability";
@@ -755,7 +756,7 @@ export default function Decks() {
                         aria-label={unowned ? `${card.name} 제작 정보` : `${card.name} 덱에 넣기`}
                         onClick={()=>{ if(unowned){void openCraftFlow(card);return;} if(action.kind==="DISABLED"){setNotice(action.reason ?? "더 넣을 수 없어요.");return;} addCard(card); }}
                         onContextMenu={(event)=>{event.preventDefault();setDetailCard(card);}}>
-                        <CardRenderer cardId={card.id} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={cardSettings(card)} size="detail" className="w-full" />
+                        <CardRenderer cardId={card.id} keywords={card.keywords} keywordConfig={card.effectConfig} name={card.name} cardType={card.cardType} cost={card.cost} attack={card.attack} health={card.health} rulesText={card.text} imageUrl={card.imageUrl} rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"} imageDisplaySettings={cardSettings(card)} size="detail" rulesOverflow="clip" className="w-full" />
                       </button>
                       <button type="button" className="kdb-card__info" aria-label={`${card.name} 자세히 보기`} data-testid={`button-card-details-${card.id}`} onClick={()=>setDetailCard(card)}><Info className="h-3.5 w-3.5" aria-hidden="true" /></button>
                       {unowned ? <span className="kdb-card__tag kdb-card__tag--craft"><Hammer className="h-3 w-3" aria-hidden="true" />제작</span>
@@ -908,7 +909,7 @@ export default function Decks() {
                     <h3 className="font-black text-amber-200">{craftInfoCard?.name ?? craftTarget.name}</h3>
                     <p className="mt-1 text-xs font-bold text-neutral-400">{craftTarget.rarity} · 카드 비용 {craftTarget.cost}</p>
                     <p className="mt-3 text-sm leading-6 text-neutral-300">
-                      <CardRulesText text={normalizeCardRulesText(craftInfoCard?.text ?? craftTarget.text) || "효과 없음"} />
+                      <CardRulesText text={getVisibleCardRulesText(craftInfoCard?.text ?? craftTarget.text ?? "", craftInfoCard?.keywords ?? craftTarget.keywords ?? []) || "효과 없음"} />
                     </p>
                   </div>
                   {craftLoading ? (

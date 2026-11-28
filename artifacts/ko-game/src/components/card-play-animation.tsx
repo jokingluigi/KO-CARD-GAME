@@ -277,7 +277,7 @@ export function CardPlayAnimation({
           cost={animation.card.currentCost}
           attack={animation.card.currentAttack}
           health={animation.card.currentHealth}
-          rulesText={getCardRuntimeRulesText(animation.card, definition?.rulesText ?? "효과 없음")}
+          rulesText={getCardRuntimeRulesText(animation.card, definition?.rulesText ?? "")}
           imageUrl={definition?.imageUrl}
           rarity={definition?.rarity}
           size={animation.kind === "TECHNIQUE" ? "detail" : "hand"}
