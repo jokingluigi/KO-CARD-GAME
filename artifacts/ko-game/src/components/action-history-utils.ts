@@ -108,12 +108,31 @@ function cardName(
     : "알 수 없는 카드";
 }
 
+/** 챔피언 능력은 보드 카드 없이 `champion-<챔피언 ID>` 대리 출처로 실행된다. 카드 이름 대신 챔피언·능력 이름을 쓴다. */
+function championSourceName(
+  state: GameState,
+  sourceId: string | undefined,
+  context: GameEvent["sourceContext"],
+): string | null {
+  const championId =
+    context?.sourceChampionDefinitionId ??
+    (sourceId?.startsWith("champion-") ? sourceId.slice("champion-".length) : undefined);
+  if (!championId || (sourceId && !sourceId.startsWith("champion-"))) return null;
+  const champion = state.players.find((player) => player.champion?.id === championId)?.champion;
+  if (!champion) return "챔피언 능력";
+  const abilities = [champion.abilityOverride, champion.upgradedAbility, champion.ability, champion.gameStartAbility];
+  const ability = abilities.find((candidate) => candidate && candidate.id === context?.sourceAbilityId);
+  return ability?.name ? `${champion.name} 능력(${ability.name})` : `${champion.name} 능력`;
+}
+
 export function eventTitle(
   state: GameState,
   event: GameEvent,
   viewerPlayerId = state.players[0].id,
 ): string {
-  const visibleName = (id?: string) => cardName(state, id, viewerPlayerId);
+  const visibleName = (id?: string) =>
+    (id?.startsWith("champion-") ? championSourceName(state, id, event.sourceContext) : null) ??
+    cardName(state, id, viewerPlayerId);
   const subject = (target: GameEvent["target"]) =>
     target?.type === "CARD"
       ? visibleName(target.cardInstanceId)
@@ -180,8 +199,27 @@ export function eventTitle(
       );
     case "CARD_REMOVED":
       return `${visibleName(event.cardInstanceId)} 경기에서 제외`;
-    case "DAMAGE_DEALT":
-      return `${event.source?.type === "CARD" ? visibleName(event.source.cardInstanceId) : "효과"} → ${subject(event.target)}: ${event.reason === "DODGE" ? "회피" : `${event.amount ?? 0} 피해`}${event.before !== undefined && event.after !== undefined ? ` (체력 ${event.before} → ${event.after})` : ''}`;
+    case "DAMAGE_DEALT": {
+      const championSource =
+        event.source?.type === "CARD" ? championSourceName(state, event.source.cardInstanceId, event.sourceContext) : null;
+      const fromCard = event.source?.type === "CARD" && !championSource;
+      const source =
+        event.source?.type === "CARD"
+          ? championSource ?? visibleName(event.source.cardInstanceId)
+          : event.source?.type === "CHAMPION"
+            ? championSourceName(state, `champion-${event.source.championId}`, event.sourceContext) ?? "챔피언"
+            : "효과";
+      // 공격 / 반격 / 효과를 구분한다. 같은 카드가 연달아 피해를 줘도 왜 생겼는지 알 수 있게.
+      const role = !fromCard ? "" : event.sourceContext?.combatRole === "ATTACKER" ? " · 공격" : event.sourceContext?.combatRole === "DEFENDER" ? " · 반격" : " · 효과";
+      // 실제 판정은 음수 체력을 그대로 쓰지만, 화면에는 0과 초과 피해로 나눠 보여 준다.
+      const health =
+        event.before !== undefined && event.after !== undefined
+          ? event.after < 0
+            ? ` (체력 ${Math.max(0, event.before)} → 0, 초과 피해 ${-event.after - Math.max(0, -event.before)})`
+            : ` (체력 ${event.before} → ${event.after})`
+          : "";
+      return `${source} → ${subject(event.target)}: ${event.reason === "DODGE" ? "회피" : `${event.amount ?? 0} 피해${role}`}${health}`;
+    }
     case "STAT_CHANGED": {
       const stat = {
         attack: "공격력",

@@ -1,5 +1,5 @@
 import { ownsEffectChoice, effectChoiceExplanation, championAbilityExplanation } from '../lib/battle-action-explanation';
-import { cardPlayPreview, cardPlayPreviewText } from '../lib/card-play-preview';
+import { cardPlayPreview, cardPlayPreviewShortText, cardPlayPreviewText } from '../lib/card-play-preview';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import './battle-action-explanation.css';
 import './perf-smooth.css';
@@ -1141,18 +1141,20 @@ export function GameStatePreview({
   const legalActions = getLegalActions(state, me.id);
   const playableHandIds = new Set(legalActions.flatMap(action => action.type === "PLAY_WRESTLER" || action.type === "PLAY_TECHNIQUE" ? [action.cardInstanceId] : []));
   const selectedPlayPreviews = React.useMemo(() => {
-    const previews = new Map<number, string>();
+    const previews = new Map<number, { short: string; full: string }>();
     if (!selectedHandCard || pendingEffect || state.activePlayerId !== me.id) return previews;
     for (const action of getLegalActions(state, me.id)) {
       if ((action.type === 'PLAY_WRESTLER' || action.type === 'PLAY_TECHNIQUE') && action.cardInstanceId === selectedHandCard.instanceId) {
         const slot = action.type === 'PLAY_WRESTLER' ? action.boardSlot : 0;
         const preview = cardPlayPreview(state, me.id, selectedHandCard, slot);
-        if (preview) previews.set(slot, cardPlayPreviewText(preview));
+        if (preview) previews.set(slot, { short: cardPlayPreviewShortText(preview), full: cardPlayPreviewText(preview) });
       }
     }
     return previews;
   }, [state, me.id, selectedHandCard, pendingEffect]);
-  const selectedUpgradeHint = [...new Set(selectedPlayPreviews.values())].join(' / ');
+  // 비용 안내는 중앙 상태 줄 한 곳에만 짧게. 전체 계산식은 툴팁·접근성 이름으로.
+  const selectedUpgradeHint = [...new Set([...selectedPlayPreviews.values()].map((preview) => preview.short))].join(' / ');
+  const selectedUpgradeDetail = [...new Set([...selectedPlayPreviews.values()].map((preview) => preview.full))].join(' / ');
   const remainingActions = legalActions.filter((action) => ['ATTACK', 'USE_ACTIVE', 'USE_CHAMPION_ABILITY'].includes(action.type));
   const selectedAttacker = selectedAttackerId
     ? me.board.find((card) => card?.instanceId === selectedAttackerId)
@@ -1728,7 +1730,7 @@ export function GameStatePreview({
                 </div>
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
-              {tutorialGuide || ((!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''} title={selectedUpgradeHint || undefined}>
+              {tutorialGuide || ((!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''} title={selectedUpgradeDetail || undefined}>
                 {playError || interactionStatus || (selectedUpgradeHint && !effectTargeting && !otherEffectTargeting ? selectedUpgradeHint : null) || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 기존 손패 1장을 골라 버립니다.'
@@ -1762,7 +1764,7 @@ export function GameStatePreview({
                    card={heldBoardCard(card)}
                    isOpponent={false} cosmeticOwnerId={me.id}
                    slotIndex={i as BoardSlotIndex}
-                   playHint={selectedPlayPreviews.get(i)}
+                   playHint={selectedPlayPreviews.get(i)?.full}
                     selectable={canEndTurn && !!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
                     slotRef={(element) => setBoardSlotRef(i, element)}
                      cardRef={card ? stableCardRef('board', card.instanceId) : undefined}
@@ -2313,7 +2315,7 @@ function HandCard({
       cost={card.currentCost}
       attack={card.currentAttack}
       health={card.currentHealth}
-       rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '효과 없음')}
+       rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '')}
       imageUrl={def?.imageUrl}
       rarity={def?.rarity}
       size="hand"
@@ -2438,12 +2440,12 @@ function BoardSlot({
       <div ref={slotRef} className={containerClass} onClick={selectable ? () => onClick(slotIndex) : undefined}
         role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
         aria-label={selectable ? `${slotIndex + 1}구역에 카드 배치${playHint ? ' · '+playHint : ''}` : undefined}
-        title={playHint}
+        title={playHint ? `여기에 소환 · ${playHint}` : undefined}
         data-gamepad-target={selectable ? '' : undefined}
         onKeyDown={selectable ? (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(slotIndex); }
         } : undefined}>
-        {selectable && playHint && <small className="ko-slot-play-hint">{playHint}</small>}
+        {selectable && playHint && <small className="ko-slot-play-hint" aria-hidden="true">여기에 소환</small>}
       </div>
     );
   }
@@ -2481,7 +2483,7 @@ function BoardSlot({
          cost={card.currentCost}
          attack={card.currentAttack}
          health={card.currentHealth}
-          rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '효과 없음')}
+          rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '')}
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
@@ -2630,7 +2632,7 @@ function GraveyardModal({
                       cost={card.currentCost}
                       attack={card.currentAttack}
                       health={card.currentHealth}
-                      rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '효과 없음')}
+                      rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '')}
                       imageUrl={definition?.imageUrl}
                       rarity={definition?.rarity}
                       imageDisplaySettings={definition}

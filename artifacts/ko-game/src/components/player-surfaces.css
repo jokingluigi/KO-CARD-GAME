@@ -1279,3 +1279,83 @@
 }
 /* Critical controls keep the same minimum hit area on every player screen. */
 .ko-surface-tabs > :is(button,a) { min-width:44px; }
+/* 가로(배너) 그림을 등록한 팩: 기본 팩과 같은 세로 팩 실루엣 안에 그림을 넣고 팩 이름을 인쇄한다. */
+.ko-pack-sleeve.has-art {
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 10px 12px;
+  overflow: hidden;
+}
+.ko-pack-sleeve.has-art .ko-pack-sleeve__art {
+  position: absolute;
+  inset: 0 0 34% 0;
+  width: 100%;
+  height: 66%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 30%;
+  filter: none;
+  border-bottom: 1px solid #b9a16b;
+}
+.ko-pack-sleeve.has-art .ko-pack-sleeve__brand {
+  position: relative;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: #d8be81;
+}
+.ko-pack-sleeve.has-art .ko-pack-sleeve__name {
+  position: relative;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  color: #eee6d4;
+  text-align: center;
+}
+/* 상품 카드: 설명 길이와 무관하게 수량·가격·구매 버튼을 카드 하단에 맞춘다(V26).
+   관리자가 넣은 줄바꿈은 그대로 살리고, 긴 설명은 세 줄 + 펼치기. */
+.ko-market-item__description { white-space: pre-line; }
+.ko-market-item__description.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+.ko-market-item__more {
+  margin-top: 4px;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #d8be81;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (min-width: 821px) {
+  .ko-market-item { display: flex; flex-direction: column; }
+  .ko-market-item__copy { display: flex; flex-direction: column; flex: 1; }
+  .ko-market-item__copy > .ko-market-item__meta { margin-top: auto; padding-top: 18px; }
+}
+/* 퀘스트 상단 묶음 정리(V28): 탭 + 모두 받기 한 줄, 현황 + 초기화 안내 한 줄. */
+.ko-quest-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--q-line, #ffffff1b);
+  margin: 0 0 14px;
+}
+body .ko-player-page .ko-quest-toolbar > .ko-surface-tabs {
+  flex: 1 1 auto;
+  border-bottom: 0 !important;
+  margin: 0;
+}
+.ko-quest-toolbar .ko-claim-all-button { margin: 0 0 4px; }
+.ko-quest-statusline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin: 0 0 16px;
+}
+.ko-quest-statusline > .ko-quest-availability,
+.ko-quest-statusline > .ko-quest-reset { margin: 0; }

@@ -307,7 +307,6 @@ export default function DailyQuestsPage() {
           description="다음 목표를 확인하고, 플레이로 보상을 채워보세요."
           links={REWARD_PAGE_LINKS}
         />
-        <ClaimAllRewardsButton disabled={Boolean(busyId)}/>
         {error && (
           <div role="alert" className="ko-surface-message is-error">
             {error}
@@ -334,34 +333,39 @@ export default function DailyQuestsPage() {
             />
           </p>
         )}
-        <nav className="ko-surface-tabs" aria-label="퀘스트 종류">
-          {(["DAILY", "SEASON"] as const).map((t) => (
-            <button
-              type="button"
-              key={t}
-              aria-pressed={tab === t}
-              onClick={() => setTab(t)}
-            >
-              {t === "DAILY" ? "일일 퀘스트" : "시즌 퀘스트"}
-            </button>
-          ))}
-        </nav>
-        {!loading && (
-          <section className="ko-quest-availability" aria-label="퀘스트 현황">
-            <div>
-              <strong>{ready}</strong>
-              <span>받을 수 있는 보상</span>
-            </div>
-            <div>
-              <strong>{claimed}</strong>
-              <span>수령 완료</span>
-            </div>
-          </section>
-        )}
-        <p className="ko-quest-reset">
-          일일 초기화 · {timezone} 00:00 / 시즌 진행도는 날짜가 바뀌어도
-          유지돼요.
-        </p>
+        {/* 상단 묶음: 종류 탭 + 모두 받기를 한 줄에, 현황 + 초기화 안내를 한 줄에 (V28). */}
+        <div className="ko-quest-toolbar">
+          <nav className="ko-surface-tabs" aria-label="퀘스트 종류">
+            {(["DAILY", "SEASON"] as const).map((t) => (
+              <button
+                type="button"
+                key={t}
+                aria-pressed={tab === t}
+                onClick={() => setTab(t)}
+              >
+                {t === "DAILY" ? "일일 퀘스트" : "시즌 퀘스트"}
+              </button>
+            ))}
+          </nav>
+          <ClaimAllRewardsButton disabled={Boolean(busyId)}/>
+        </div>
+        <div className="ko-quest-statusline">
+          {!loading && (
+            <section className="ko-quest-availability" aria-label="퀘스트 현황">
+              <div>
+                <strong>{ready}</strong>
+                <span>받을 수 있는 보상</span>
+              </div>
+              <div>
+                <strong>{claimed}</strong>
+                <span>수령 완료</span>
+              </div>
+            </section>
+          )}
+          <p className="ko-quest-reset">
+            {tab === "DAILY" ? `매일 ${timezone} 00:00 초기화` : "시즌 진행도는 날짜가 바뀌어도 유지돼요"}
+          </p>
+        </div>
         {completionBonus?.status === "COMPLETED" && bonusCard}
         {loading && !quests.length ? (
           <SurfaceEmpty title="목표를 확인하고 있어요">

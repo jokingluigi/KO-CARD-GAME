@@ -12,6 +12,8 @@ export interface CardPlayPreview {
   upgraded: boolean;
   pending: boolean;
   stats?: string;
+  /** 업그레이드가 안 될 때의 실제 이유. 골드를 넉넉히 준 복제 상태로 다시 시험해 판별한다. */
+  failReason?: "GOLD" | "TARGET";
 }
 
 /** Only probe the selected upgrade card, not every card on every animation frame.
@@ -37,17 +39,16 @@ export function cardPlayPreview(
     card.cardType === "WRESTLER"
       ? wrestlerPlayCost(state, playerId, card)
       : card.currentCost;
-  const result = executeAction(
-    structuredClone(state),
+  const action =
     card.cardType === "WRESTLER"
       ? {
-          type: "PLAY_WRESTLER",
+          type: "PLAY_WRESTLER" as const,
           playerId,
           cardInstanceId: card.instanceId,
           boardSlot: slot,
         }
-      : { type: "PLAY_TECHNIQUE", playerId, cardInstanceId: card.instanceId },
-  );
+      : { type: "PLAY_TECHNIQUE" as const, playerId, cardInstanceId: card.instanceId };
+  const result = executeAction(structuredClone(state), action);
   if (!result.success) return null;
   const events = result.state.events.slice(state.events.length);
   const basePayments = events.filter(
@@ -75,6 +76,20 @@ export function cardPlayPreview(
       event.type === "PROGRAM_ACTIVATED" &&
       event.cardInstanceId === card.instanceId,
   );
+  let failReason: CardPlayPreview["failReason"];
+  if (!upgraded && !result.state.targetingState) {
+    // 복제본에서만 골드를 넉넉히 주고 다시 시험한다. 실제 상태·결제에는 영향이 없다.
+    const rich = structuredClone(state);
+    const richPlayer = rich.players.find((player) => player.id === playerId);
+    if (richPlayer) richPlayer.currentGold += 99;
+    const retry = executeAction(rich, action);
+    const retryUpgraded =
+      retry.success &&
+      retry.state.events
+        .slice(rich.events.length)
+        .some((event) => event.type === "PROGRAM_ACTIVATED" && event.cardInstanceId === card.instanceId);
+    failReason = retryUpgraded ? "GOLD" : "TARGET";
+  }
   const played = result.state.players
     .find((player) => player.id === playerId)
     ?.board.find((unit) => unit?.instanceId === card.instanceId);
@@ -87,12 +102,24 @@ export function cardPlayPreview(
     stats: played
       ? `${played.currentAttack}/${played.currentHealth}`
       : undefined,
+    failReason,
   };
+}
+
+/** 기본 표시: 최종 비용 · 결과 · 실제 이유 한 가지만. 전체 계산은 cardPlayPreviewText(상세)로. */
+export function cardPlayPreviewShortText(preview: CardPlayPreview): string {
+  if (preview.pending) return `${preview.totalCost}골드 · 대상을 고르면 업그레이드 비용 결정`;
+  const result = preview.upgraded
+    ? "업그레이드 적용"
+    : preview.failReason === "GOLD"
+      ? "업그레이드 안 됨: 골드 부족"
+      : "업그레이드 안 됨: 조건 미충족";
+  return `${preview.totalCost}골드 · ${result}${preview.stats ? ` · 소환 시 ${preview.stats}` : ""}`;
 }
 
 export function cardPlayPreviewText(preview: CardPlayPreview): string {
   const cost = `기본 ${preview.baseCost} + 추가 ${preview.extraCost} = ${preview.totalCost}골드`;
   return preview.pending
     ? `${cost} (선택 전까지의 비용) · 대상에 따른 업그레이드 추가 지불은 선택 후 결정`
-    : `${cost} · ${preview.upgraded ? "업그레이드 적용" : "업그레이드 미적용 (남은 골드·유효 대상 조건 미충족)"}${preview.stats ? ` · 소환 시 ${preview.stats}` : ""}`;
+    : `${cost} · ${preview.upgraded ? "업그레이드 적용" : `업그레이드 미적용 (${preview.failReason === "GOLD" ? "남은 골드 부족" : "대상·조건 미충족"})`}${preview.stats ? ` · 소환 시 ${preview.stats}` : ""}`;
 }

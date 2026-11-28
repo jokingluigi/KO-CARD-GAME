@@ -13,14 +13,15 @@
 /* the frame itself: dark metal edge + quiet inner line */
 .ko-game-shell .ko-card-depth[data-kfx]>.absolute.inset-0::after{content:"";position:absolute;inset:0;z-index:15;pointer-events:none;border-radius:9px;
   box-shadow:inset 0 0 0 1.5px #4a4336,inset 0 0 0 3px #0b0a09,inset 0 0 0 3.6px rgba(200,168,101,.28);
-  background:linear-gradient(180deg,transparent 58%,rgba(8,7,6,.55) 74%,rgba(8,7,6,.94) 100%)}
+  background:linear-gradient(180deg,transparent 52%,rgba(8,7,6,.6) 68%,rgba(8,7,6,.94) 100%)}
 .ko-game-shell .ko-card-depth[data-kfx][data-rarity=LEGENDARY]>.absolute.inset-0::after,
 .ko-game-shell .ko-card-depth[data-kfx][data-rarity=CHAMPION]>.absolute.inset-0::after{
   box-shadow:inset 0 0 0 1.5px #a88a4f,inset 0 0 0 3px #0b0a09,inset 0 0 0 3.6px rgba(200,168,101,.55)}
 .ko-game-shell .ko-card-depth[data-kfx][data-rarity=EPIC]>.absolute.inset-0::after{
   box-shadow:inset 0 0 0 1.5px #5b4a78,inset 0 0 0 3px #0b0a09,inset 0 0 0 3.6px rgba(160,130,210,.35)}
-/* name: one line on the bottom shade, between the two stat gems */
-.ko-game-shell .ko-card-depth[data-kfx] [data-card-name]{top:auto!important;bottom:4%!important;left:28%!important;right:28%!important;height:12%!important;z-index:21}
+/* name: one line on the bottom shade, in its own full-width band just above the two stat gems
+   (between the gems it only had 44% of the width and shrank to unreadable sizes). */
+.ko-game-shell .ko-card-depth[data-kfx] [data-card-name]{top:auto!important;bottom:20.5%!important;left:6%!important;right:6%!important;height:9%!important;z-index:21}
 .ko-game-shell .ko-card-depth[data-kfx] [data-card-name] *{color:#ece6da!important}
 /* attack / health gems drawn in CSS since the printed frame is gone */
 .ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=attack]),
@@ -30,9 +31,15 @@
 .ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=attack]){left:3%!important;background:radial-gradient(circle at 35% 30%,#6b5a35,#2a2214 70%);border:1.5px solid #c8a865}
 .ko-game-shell .ko-card-depth[data-kfx] div:has(>[data-card-stat=health]){right:3%!important;background:radial-gradient(circle at 35% 30%,#7a2a24,#2d0d0b 70%);border:1.5px solid #c25a4c}
 /* keyword names sit just above the name */
-.ko-game-shell .ko-card-depth[data-kfx] .kfx-names{bottom:17%!important}
+.ko-game-shell .ko-card-depth[data-kfx] .kfx-names{bottom:30%!important}
 /* art: always fill the whole card (no letterbox) */
 .ko-game-shell .ko-card-depth[data-kfx]>.absolute.inset-0>div>img{object-fit:cover!important;transform:none!important;object-position:50% 18%!important}
 .ko-game-shell .ko-card-depth[data-kfx] [data-card-stat=attack] *{color:#f3dfa8!important}
 .ko-game-shell .ko-card-depth[data-kfx] [data-card-stat=health] *{color:#ffd9d2!important}
 .ko-game-shell .ko-card-depth[data-kfx] [data-card-stat]{font-weight:900;text-shadow:0 1px 2px #000}
+/* Phones: board cards are ~56px wide, so 9% of the card height left a 7px name.
+   Give the name band more height there (same rule as the phone battle layout). */
+@media (orientation:landscape) and (max-height:600px), (max-width:999px) and (orientation:portrait) {
+  .ko-game-shell .ko-card-depth[data-kfx] [data-card-name]{bottom:22%!important;height:14%!important;left:3%!important;right:3%!important}
+  .ko-game-shell .ko-card-depth[data-kfx] .kfx-names{bottom:37%!important}
+}

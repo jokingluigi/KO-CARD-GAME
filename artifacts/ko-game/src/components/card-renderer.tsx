@@ -324,6 +324,8 @@ export function CardRenderer({
   const clipRules = size === "detail" && rulesOverflow === "clip";
   const nameClass =
     fitRules && size === "detail" ? "text-[16px] leading-[1.1]" :
+    // 필드 카드: 이름을 공격력·체력 보석 위 전체 폭 띠에 두고 기본 크기를 키운다(긴 이름은 자동 축소).
+    fieldFx ? "text-[11px] md:text-[13px] leading-none" :
     name.length > 22
       ? size === "admin"
         ? "text-[9px]"

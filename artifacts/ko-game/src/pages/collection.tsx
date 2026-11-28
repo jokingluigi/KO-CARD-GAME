@@ -426,8 +426,17 @@ export default function CollectionPage() {
             {champions.map((champion) => (
               <button key={champion.id} type="button" className="kdb-champ" data-unowned={!champion.owned||undefined} onClick={() => setSelectedChampion(champion)}>
                 <span className="kdb-champ__art">{champion.imageUrl ? <CardArtwork src={champion.imageUrl} loading="lazy" alt="" className="h-full w-full" imageDisplayMode={champion.imageDisplayMode} imageScale={champion.imageScale} imagePositionX={champion.imagePositionX} imagePositionY={champion.imagePositionY} /> : <Shield className="h-10 w-10" aria-hidden="true" />}</span>
-                <span className="kdb-champ__plate"><strong>{champion.name}</strong><small>{champion.owned ? `능력 ${champion.abilityCost}골드${champion.hasQuest?' · 피니셔':''}` : '미보유 · 눌러서 제작'}</small></span>
-                <span className="kdb-champ__text">{champion.owned ? (champion.abilityText || champion.description) : "상세 정보를 보고 챔피언 프리즘으로 만들 수 있어요."}</span>
+                <span className="kdb-champ__plate"><strong>{champion.name}</strong><small>{champion.owned ? `고유 능력 · ${champion.abilityCost}골드` : '미보유 · 눌러서 제작'}</small></span>
+                {/* 목록에는 능력 이름과 짧은 요약만. 정확한 전체 규칙과 피니셔 설명은 상세 창에서 (V11). */}
+                {champion.owned ? (
+                  <span className="kcol-champ__summary">
+                    {champion.abilityName ? <b>{champion.abilityName}</b> : null}
+                    <span className="kcol-champ__gist">{champion.abilityText || champion.description}</span>
+                  </span>
+                ) : (
+                  <span className="kdb-champ__text">상세 정보를 보고 챔피언 프리즘으로 만들 수 있어요.</span>
+                )}
+                <span className="kcol-champ__foot">{champion.owned && champion.hasQuest ? <em>피니셔 보유</em> : <span />}<span>자세히 보기 ›</span></span>
               </button>
             ))}
           </div>

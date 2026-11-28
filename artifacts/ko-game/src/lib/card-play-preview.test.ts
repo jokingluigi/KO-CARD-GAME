@@ -9,7 +9,7 @@ import {
 } from "../game/cards/published-cards";
 import { generateCardInstance } from "../game/cards/generation";
 import { executeAction } from "../game/actions/engine-actions";
-import { cardPlayPreview, cardPlayPreviewText } from "./card-play-preview";
+import { cardPlayPreview, cardPlayPreviewShortText, cardPlayPreviewText } from "./card-play-preview";
 const catalog = [
   ...definitions,
   ...[...upgrades, ...support].map((record) =>
@@ -169,4 +169,27 @@ test("a newly authored upgrade with an unknown name and ID needs no preview regi
   assert.equal(actual.state.players[0].currentGold, 0);
   assert.equal(actual.state.players[0].board[0]!.currentAttack, 5);
   assert.equal(actual.state.players[0].board[0]!.currentHealth, 3);
+});
+
+test("V18: 업그레이드 실패는 실제 이유 하나만 짧게 보여 준다(골드 부족)", () => {
+  const definition = {
+    id: "v18-gold-short", name: "골드 부족 시험 카드", cardType: "WRESTLER" as const,
+    cost: 2, attack: 3, health: 2, keywords: [],
+    abilities: [{ trigger: "ENTER_FIELD" as const, effects: [{ type: "STRUCTURED" as const, action: "PROGRAM" as const,
+      values: { programCost: 1, programEffects: [{ action: "BUFF" as const,
+        target: { zone: "BOARD" as const, owner: "SELF" as const, selection: "SELF" as const, count: 1 },
+        values: { attack: 2, health: 1 } }] } }] }],
+  };
+  const state = fixture(2);
+  for (const p of state.players) p.champion!.quest = null;
+  state.cardPool = [...definitions, definition];
+  const card = generateCardInstance(definition, { instanceId: "v18-card" });
+  state.players[0].hand = [card];
+  const before = structuredClone(state);
+  const preview = cardPlayPreview(state, "player-1", card)!;
+  assert.deepEqual(state, before, "미리보기는 실제 상태를 바꾸지 않는다");
+  assert.equal(preview.upgraded, false);
+  assert.equal(preview.failReason, "GOLD");
+  assert.equal(cardPlayPreviewShortText(preview), "2골드 · 업그레이드 안 됨: 골드 부족 · 소환 시 3/2");
+  assert.doesNotMatch(cardPlayPreviewText(preview), /·유효|조건 미충족\)/);
 });

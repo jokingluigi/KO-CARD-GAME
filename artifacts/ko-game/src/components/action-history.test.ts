@@ -54,3 +54,30 @@ test('턴/드로우/퀘스트 진행은 기존 이벤트에서 표시하며 상�
  assert.match(eventTitle(state,state.events[2]),/피니셔 준비 진행/);
  assert.match(eventTitle(state,state.events[3]),/턴 종료/);
 });
+
+test('V22: 챔피언 능력 피해는 "알 수 없는 카드"가 아니라 챔피언·능력 이름으로 보인다', () => {
+  const state = createInitialGameState();
+  const owner = state.players[0]!;
+  const champion = owner.champion!;
+  const target = state.players[1]!.deck[0]!;
+  state.players[1]!.board[0] = target;
+  const title = eventTitle(state, {
+    type: 'DAMAGE_DEALT', playerId: state.players[1]!.id,
+    source: { type: 'CARD', cardInstanceId: `champion-${champion.id}` },
+    sourceContext: { sourcePlayerId: owner.id, sourceActionType: 'USE_CHAMPION_ABILITY', sourceChampionDefinitionId: champion.id, sourceAbilityId: champion.ability.id },
+    target: { type: 'CARD', cardInstanceId: target.instanceId }, amount: 1,
+  }, owner.id);
+  assert.doesNotMatch(title, /알 수 없는 카드/);
+  assert.ok(title.startsWith(`${champion.name} 능력(${champion.ability.name})`), title);
+});
+
+test('V23: 같은 카드의 연속 피해는 공격·반격·효과로 구분하고 음수 체력은 초과 피해로 보여 준다', () => {
+  const state = createInitialGameState();
+  const a = state.players[0]!.deck[0]!; const d = state.players[1]!.deck[0]!;
+  state.players[0]!.board[0] = a; state.players[1]!.board[0] = d;
+  const base = { type: 'DAMAGE_DEALT' as const, source: { type: 'CARD' as const, cardInstanceId: d.instanceId }, target: { type: 'CARD' as const, cardInstanceId: a.instanceId }, amount: 1 };
+  const counter = eventTitle(state, { ...base, before: 1, after: 0, sourceContext: { sourcePlayerId: state.players[1]!.id, sourceActionType: 'ATTACK', combatRole: 'DEFENDER' } }, state.players[0]!.id);
+  const reaction = eventTitle(state, { ...base, before: 0, after: -1, sourceContext: { sourcePlayerId: state.players[1]!.id, sourceActionType: 'ATTACK' } }, state.players[0]!.id);
+  assert.match(counter, /1 피해 · 반격 \(체력 1 → 0\)/);
+  assert.match(reaction, /1 피해 · 효과 \(체력 0 → 0, 초과 피해 1\)/);
+});

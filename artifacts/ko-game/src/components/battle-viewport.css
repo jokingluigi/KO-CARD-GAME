@@ -57,10 +57,18 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
   overflow:visible;
 }
 .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command p {
-  max-height:26px;
+  /* 현재 행동 안내: 두 줄까지 읽을 수 있는 최소 크기(기존 10px → 12px). */
+  max-height:30px;
   padding:0 4px;
-  font-size:10px;
-  line-height:12px;
+  font-size:12px;
+  line-height:15px;
+}
+@media (min-width:1200px) and (min-height:760px) {
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command p {
+    max-height:36px;
+    font-size:14px;
+    line-height:18px;
+  }
 }
 /* A context cancel action shares the command strip but its 44px hit area
    extends inward over the control row, never over a field or the hand. */
@@ -218,7 +226,7 @@ body:has(.ko-game-shell.ko-board-preview) { overflow: hidden; overscroll-behavio
     padding:0 3px;
     z-index:140;
   }
-  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command p { max-height:38px; }
+  .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command p { max-height:39px; font-size:11px; line-height:13px; }
 }
 @media (orientation:landscape) and (max-height:600px) {
   .ko-game-shell.ko-board-preview .ko-game-stage.ko-champion-arena .ko-battle-command {

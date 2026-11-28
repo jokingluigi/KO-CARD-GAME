@@ -40,6 +40,7 @@ export default function ShopPage() {
   const [isTestAccount, setIsTestAccount] = useState(false);
   const [currencyDisplayName, setCurrencyDisplayName] = useState("크레딧");
   const [listings, setListings] = useState<ShopListing[]>([]);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(() => new Set());
   const [message, setMessage] = useState("상점을 불러오는 중...");
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
@@ -329,11 +330,40 @@ export default function ShopPage() {
                           <h2 className="font-black">
                             {listing.name || listing.pack.name}
                           </h2>
-                          <p className="ko-market-item__description">
-                            {listing.description ||
-                              listing.pack.description ||
-                              "KO 카드팩"}
-                          </p>
+                          {(() => {
+                            const description = listing.description || listing.pack.description || "KO 카드팩";
+                            const expanded = expandedDescriptions.has(listing.id);
+                            // 긴 설명은 세 줄까지만 보여 주고 펼쳐 읽게 한다. 구매 영역의 높이를 상품끼리 맞추기 위함.
+                            const long = description.length > 70 || description.split("\n").length > 3;
+                            return (
+                              <>
+                                <p
+                                  id={`shop-description-${listing.id}`}
+                                  className={`ko-market-item__description${long && !expanded ? " is-clamped" : ""}`}
+                                >
+                                  {description}
+                                </p>
+                                {long && (
+                                  <button
+                                    type="button"
+                                    className="ko-market-item__more"
+                                    aria-expanded={expanded}
+                                    aria-controls={`shop-description-${listing.id}`}
+                                    onClick={() =>
+                                      setExpandedDescriptions((current) => {
+                                        const next = new Set(current);
+                                        if (next.has(listing.id)) next.delete(listing.id);
+                                        else next.add(listing.id);
+                                        return next;
+                                      })
+                                    }
+                                  >
+                                    {expanded ? "설명 접기" : "설명 더 보기"}
+                                  </button>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         <span className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-300">
                           보유 ×{listing.ownedQuantity}

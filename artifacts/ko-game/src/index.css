@@ -2726,3 +2726,19 @@ body {
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
+
+/* 그림 불러오는 중 자리 표시 (V12). transform 애니메이션만 사용해 가볍게. */
+.ko-art-loading { overflow: hidden; background: linear-gradient(160deg, #15130f, #0b0a08); }
+.ko-art-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(232, 192, 106, 0.09) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: ko-art-sweep 1.6s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes ko-art-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .ko-art-loading::after { animation: none; transform: none; opacity: .5; } }
+/* 전투 중 빠른 기기 부담을 줄이기 위해, 필드 카드에서는 정지 자리 표시만 쓴다. */
+.ko-game-shell .ko-art-loading::after { animation: none; transform: none; opacity: .5; }

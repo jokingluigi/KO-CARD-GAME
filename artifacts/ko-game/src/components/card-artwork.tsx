@@ -154,7 +154,8 @@ function CardArtworkRequest({
       onPointerCancel={handlePointerEnd}
       style={interactive ? { touchAction: "none" } : undefined}
     >
-      {!loaded&&<span aria-hidden="true" className="pointer-events-none absolute inset-0 border border-neutral-800 bg-neutral-950/40"/>}
+      {/* 불러오는 중: 빛이 지나가는 자리 표시. 실패하면 위의 '이미지 없음'으로 구분된다 (V12). */}
+      {!loaded&&<span aria-hidden="true" data-art-placeholder className="ko-art-loading pointer-events-none absolute inset-0 border border-neutral-800 bg-neutral-950/40"/>}
       {(!resizable || boxW > 0) && <img
         key={displaySrc}
         data-art-loading={!loaded}
