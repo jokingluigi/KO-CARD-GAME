@@ -1,0 +1,55 @@
+{
+  "testedAtUTC": "2026-11-28T01:49:19.329Z",
+  "baseline": "d5f5d8812988169998fca07d2f600c50cf7e9b96",
+  "results": [
+    {
+      "name": "regression",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none artifacts/ko-game/src/game/qa/quality-bundle-a.test.ts artifacts/ko-game/src/game/qa/pandora-single-target-20261111.test.ts artifacts/ko-game/src/game/actions/targeting-cancellation.test.ts artifacts/ko-game/src/game/engine/finisher-delivery.test.ts artifacts/ko-game/src/game/engine/finisher-choices-and-returns.test.ts artifacts/ko-game/src/game/engine/finisher-foundation.test.ts artifacts/ko-game/src/game/engine/program.test.ts artifacts/ko-game/src/game/engine/champion-system.test.ts artifacts/ko-game/src/game/engine/hearthstone-rules.test.ts artifacts/ko-game/src/game/engine/death-order.test.ts artifacts/ko-game/src/game/engine/pinfall-sources.test.ts artifacts/ko-game/src/game/effects/area-damage-order.test.ts artifacts/ko-game/src/lib/match-summary.test.ts artifacts/ko-game/src/components/action-history.test.ts artifacts/ko-game/src/components/upgrade-presentation.test.ts",
+      "cwd": ".",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "libs-types",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc --build",
+      "cwd": ".",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "frontend-types",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc -p artifacts/ko-game/tsconfig.json --noEmit",
+      "cwd": ".",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "api-types",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/typescript/bin/tsc -p artifacts/api-server/tsconfig.json --noEmit",
+      "cwd": ".",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "frontend-build",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node node_modules/vite/bin/vite.js build --config vite.config.ts",
+      "cwd": "artifacts/ko-game",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "api-build",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node artifacts/api-server/build.mjs",
+      "cwd": ".",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "diff-whitespace",
+      "command": "git diff --check",
+      "cwd": ".",
+      "exitCode": 0,
+      "passed": true
+    }
+  ]
+}

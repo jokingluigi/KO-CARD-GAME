@@ -329,16 +329,17 @@ export function MatchResultOverlay({
                     <b>{opponentSummary.cardsPlayed}</b>
                   </div>
                   <div className="ko-result-score-row">
-                    <span>피니셔 준비</span>
+                    <span>종료 시 피니셔 준비</span>
                     {[ownSummary, opponentSummary].map((summary) => (
                       <b key={summary.playerId} className="ko-result-quest">
-                        {summary.questRequired === null
-                          ? "없음"
-                          : summary.questCompleted
-                            ? "완료"
-                            : `${summary.questProgress}/${summary.questRequired}`}
+                        {summary.preparationAtEnd}
                       </b>
                     ))}
+                  </div>
+                  <div className="ko-result-score-row">
+                    <span>피니셔 사용 횟수</span>
+                    <b>{ownSummary.finishersPlayed}회</b>
+                    <b>{opponentSummary.finishersPlayed}회</b>
                   </div>
                 </section>
               )}

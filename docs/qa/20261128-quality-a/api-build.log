@@ -1,0 +1,13 @@
+
+  artifacts/api-server/dist/index.mjs                       5.3mb ⚠️
+  artifacts/api-server/dist/pino-worker.mjs               154.1kb
+  artifacts/api-server/dist/pino-file.mjs                 142.7kb
+  artifacts/api-server/dist/pino-pretty.mjs               115.2kb
+  artifacts/api-server/dist/thread-stream-worker.mjs        7.4kb
+  artifacts/api-server/dist/index.mjs.map                   9.1mb
+  artifacts/api-server/dist/pino-worker.mjs.map           257.4kb
+  artifacts/api-server/dist/pino-file.mjs.map             229.5kb
+  artifacts/api-server/dist/pino-pretty.mjs.map           204.3kb
+  artifacts/api-server/dist/thread-stream-worker.mjs.map   12.1kb
+
+⚡ Done in 316ms

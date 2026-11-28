@@ -1,0 +1,50 @@
+{
+  "phase": "after",
+  "mobile": false,
+  "results": [
+    {
+      "mode": "own-ability",
+      "text": "불안한 일격 발동 중자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.아군 또는 상대 필드 선수 · 확정 시 1골드대상 선택 (0/1)금색으로 강조된 대상만 선택 가능취소",
+      "visibleExplanation": "불안한 일격\n\n자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.\n\n아군 또는 상대 필드 선수 · 1개 선택\n\n확정 시 1골드\n\n현재 선택 가능한 대상: 2개\n\n닫기"
+    },
+    {
+      "mode": "ai-choice",
+      "humanControls": 0,
+      "text": "상대가 효과의 대상을 선택하고 있어요."
+    },
+    {
+      "mode": "own-response",
+      "humanControls": 1
+    },
+    {
+      "mode": "sidekick",
+      "text": "기본 1 + 추가 1 = 2골드 · 업그레이드 적용 · 소환 시 2/2\n\n선택 취소"
+    },
+    {
+      "mode": "fireworks",
+      "lines": [
+        "기본 비용 1골드 지불",
+        "폭죽광 → 불록스: 1 피해 (체력 2 → 1)",
+        "폭죽광 → 불록스: 1 피해 (체력 1 → 0)",
+        "불록스 리타이어"
+      ]
+    },
+    {
+      "mode": "result",
+      "text": [
+        "기록나상대",
+        "준 피해00",
+        "사용한 카드00",
+        "종료 시 피니셔 준비1/84/8",
+        "피니셔 사용 횟수0회0회"
+      ],
+      "pointerEvents": "auto"
+    },
+    {
+      "mode": "ability-info",
+      "readable": true,
+      "resourcesUnchanged": true
+    }
+  ],
+  "errors": []
+}

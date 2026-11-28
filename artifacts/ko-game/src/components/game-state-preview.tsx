@@ -1,3 +1,7 @@
+import { ownsEffectChoice, effectChoiceExplanation, championAbilityExplanation } from '../lib/battle-action-explanation';
+import { cardPlayPreview, cardPlayPreviewText } from '../lib/card-play-preview';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import './battle-action-explanation.css';
 import './perf-smooth.css';
 import { readSeconds, useSecondsValue, type SecondsStore } from '@/lib/seconds-store';
 import { TableScene } from "./table-scene";
@@ -299,6 +303,9 @@ export function GameStatePreview({
   const [controlsSeen,setControlsSeen]=React.useState(()=>{try{return localStorage.getItem('ko-controls-hint-v1')==='done';}catch{return false;}});
   const [handSort,setHandSort]=React.useState("DRAW");
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [abilityDetails, setAbilityDetails] = React.useState(false);
+  const [effectDetails, setEffectDetails] = React.useState(false);
+  React.useEffect(() => {setAbilityDetails(false);setEffectDetails(false);}, [state.gameId]);
   React.useEffect(() => { setHistoryOpen(false); }, [state.gameId, state.status]);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [mulliganSeconds, setMulliganSeconds] = React.useState(20);
@@ -1108,7 +1115,11 @@ export function GameStatePreview({
     }else if(!state.players[0].hand.some(c=>c.instanceId===pending.cardId))spellDropTargetRef.current=null;
   },[state,onEffectTarget,playError]);
 
-  const effectTargeting = state.targetingState?.active;
+  const pendingEffect = Boolean(state.targetingState?.active);
+  const effectTargeting = ownsEffectChoice(state, me.id);
+  const otherEffectTargeting = pendingEffect && !effectTargeting;
+  const effectExplanation = effectChoiceExplanation(state, me.id);
+  const abilityExplanation = championAbilityExplanation(me.champion);
   // Modal card choices own their backdrop; the board spotlight must not cover them.
   const cardChoiceDialogOpen = Boolean(
     state.status === "IN_PROGRESS" && effectTargeting &&
@@ -1118,17 +1129,30 @@ export function GameStatePreview({
         state.targetingState.maxTargets > state.targetingState.minTargets)),
   );
   const validEffectTargetIds = new Set(state.targetingState?.playerId === me.id ? state.targetingState.validTargetIds : []);
-  const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
+  const selectedEffectTargetIds = new Set(effectTargeting ? state.targetingState?.selectedTargetIds ?? [] : []);
 
   const isMyTurn = state.activePlayerId === me.id;
   const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
   const attackerSelectionActive = isMyTurn && !selectedHandCard && !effectTargeting;
 
-  const canEndTurn = canEndTurnOverride ?? (
-    isCurrentPlayer(state, me.id) && !effectTargeting
-  );
+  const canEndTurn = !pendingEffect && (canEndTurnOverride ?? (
+    isCurrentPlayer(state, me.id) && !pendingEffect
+  ));
   const legalActions = getLegalActions(state, me.id);
   const playableHandIds = new Set(legalActions.flatMap(action => action.type === "PLAY_WRESTLER" || action.type === "PLAY_TECHNIQUE" ? [action.cardInstanceId] : []));
+  const selectedPlayPreviews = React.useMemo(() => {
+    const previews = new Map<number, string>();
+    if (!selectedHandCard || pendingEffect || state.activePlayerId !== me.id) return previews;
+    for (const action of getLegalActions(state, me.id)) {
+      if ((action.type === 'PLAY_WRESTLER' || action.type === 'PLAY_TECHNIQUE') && action.cardInstanceId === selectedHandCard.instanceId) {
+        const slot = action.type === 'PLAY_WRESTLER' ? action.boardSlot : 0;
+        const preview = cardPlayPreview(state, me.id, selectedHandCard, slot);
+        if (preview) previews.set(slot, cardPlayPreviewText(preview));
+      }
+    }
+    return previews;
+  }, [state, me.id, selectedHandCard, pendingEffect]);
+  const selectedUpgradeHint = [...new Set(selectedPlayPreviews.values())].join(' / ');
   const remainingActions = legalActions.filter((action) => ['ATTACK', 'USE_ACTIVE', 'USE_CHAMPION_ABILITY'].includes(action.type));
   const selectedAttacker = selectedAttackerId
     ? me.board.find((card) => card?.instanceId === selectedAttackerId)
@@ -1417,6 +1441,22 @@ export function GameStatePreview({
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
      <div ref={shellRef} data-final-blow={finalCamera} data-tutorial-focus={tutorialFocus} data-quiet-board={combatPreferences.quietBoard} className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : " ko-has-table"}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+      <Dialog open={effectDetails && effectTargeting} onOpenChange={setEffectDetails}>
+        <DialogContent className="ko-action-explanation-dialog" overlayClassName="ko-action-explanation-overlay">
+          <DialogTitle>{effectExplanation?.name ?? '효과 설명'}</DialogTitle>
+          <DialogDescription>{effectExplanation?.description || '현재 처리 중인 효과의 대상을 선택합니다.'}</DialogDescription>
+          <p>{effectExplanation?.target} · {state.targetingState?.minTargets ?? 1}개 선택</p>
+          <p>{effectExplanation?.cost}</p>
+          <p>현재 선택 가능한 대상: {validEffectTargetIds.size}개</p>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={abilityDetails} onOpenChange={setAbilityDetails}>
+        <DialogContent className="ko-action-explanation-dialog" overlayClassName="ko-action-explanation-overlay">
+          <DialogTitle>{abilityExplanation?.name ?? '챔피언 능력'}</DialogTitle>
+          <DialogDescription>{abilityExplanation?.targets || '대상 지정 없이 발동하는 능력입니다.'}</DialogDescription>
+          {me.champion && <ChampionAbilityInspectContent champion={me.champion} available={championActionReady} unavailableReason={interactionStatus ?? championUnavailableReason}/>}
+        </DialogContent>
+      </Dialog>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !historyOpen && !emoteOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
@@ -1455,7 +1495,7 @@ export function GameStatePreview({
       } as React.CSSProperties}>
 
          {blackGold && <><BattleAttention state={state}/></>}
-         <TargetSelectionFocus active={Boolean(effectTargeting&&!cardChoiceDialogOpen&&!state.targetingState?.finisherChoice&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
+         <TargetSelectionFocus active={Boolean(effectTargeting&&!abilityDetails&&!effectDetails&&!cardChoiceDialogOpen&&!state.targetingState?.finisherChoice&&!state.targetingState?.handAddition&&state.targetingState?.playerId===me.id&&!introActive&&!settingsOpen&&!historyOpen&&!emoteOpen&&!me.graveyard.some(card=>validEffectTargetIds.has(card.instanceId)))} ids={[...validEffectTargetIds,...selectedEffectTargetIds]} selfId={me.id} opponentId={opp.id} hand={handCardRefs} board={boardCardRefs} self={playerChampionRef} opponent={championRef}/>
          <BattleZoneVisuals state={state} hand={handCardRefs} board={boardCardRefs} introActive={introActive}/>
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -1621,10 +1661,12 @@ export function GameStatePreview({
              {effectTargeting && (
                <div className="ko-effect-target-controls rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'
-                   ? `${me.champion?.name ?? '챔피언'} 고유 능력`
+                   ? effectExplanation?.name ?? `${me.champion?.name ?? '챔피언'} 고유 능력`
                    : state.targetingState!.sourceCard?.definitionId
                      ? `${state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? getCardDefinition(state.targetingState!.sourceCard!.definitionId)?.name ?? '선수'}의 효과`
                      : '효과'} 발동 중</strong>
+                 {effectExplanation?.description && <p className="ko-effect-description">{effectExplanation.description}</p>}
+                 {effectExplanation && <p className="ko-effect-description">{effectExplanation.target} · {effectExplanation.cost}</p>}
                  {state.targetingState!.fusion?.stage === 'CHOOSE' ? '합체 대상 선택 · 취소하면 카드와 골드 복원' : state.targetingState!.championRewardReplacement ? '준비 완료 토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요' : <>대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})</>}
                  {state.targetingState!.championRewardReplacement && <span className="block">손패가 가득 차면 기존 손패 1장을 골라 버린 뒤 받습니다.</span>}
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
@@ -1686,11 +1728,13 @@ export function GameStatePreview({
                 </div>
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
-              {tutorialGuide || ((!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
-                {playError || interactionStatus || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
+              {tutorialGuide || ((!effectTargeting && !legendarySpotlight && wrestlerDialogue) || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''} title={selectedUpgradeHint || undefined}>
+                {playError || interactionStatus || (selectedUpgradeHint && !effectTargeting && !otherEffectTargeting ? selectedUpgradeHint : null) || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 기존 손패 1장을 골라 버립니다.'
-                    : `대상 선택 · ${state.cardPool?.find(d=>d.id===state.targetingState?.sourceCard?.definitionId)?.name??"현재 효과"} · 강조된 대상 ${state.targetingState?.minTargets ?? 1}개 선택 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1} · ${validEffectTargetIds.size}개 선택 가능`
+                    : `대상 선택 · ${effectExplanation?.name??"현재 효과"} · ${effectExplanation?.cost ?? ''} · ${effectExplanation?.target ?? '강조된 대상'} ${state.targetingState?.minTargets ?? 1}개 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1}`
+                  : otherEffectTargeting ? '상대가 효과의 대상을 선택하고 있어요.'
+                  : selectedUpgradeHint ? selectedUpgradeHint
                   : contextGuide.text ? contextGuide.text
                   : eventCaption && !selectedCardId && !selectedAttackerId ? <span aria-hidden="true">{eventCaption}</span>
                   : !isMyTurn ? '상대가 행동하고 있어요.'
@@ -1700,10 +1744,13 @@ export function GameStatePreview({
               </p>)}
               <AttackForecast state={state} attackerId={selectedAttackerId} valid={legalAttackTargets} board={boardCardRefs} champion={championRef} enabled={!interactionStatus&&!settingsOpen&&!historyOpen&&!emoteOpen&&!attackAnimation&&!effectTargeting&&!confirmEndTurn}/>
               {!tutorialGuide&&contextGuide.text&&!effectTargeting&&!selectedCardId&&!selectedAttackerId&&<button type="button" onClick={contextGuide.dismiss}>안내 확인</button>}
+              <div className="ko-battle-command-actions">
+              {effectTargeting && effectExplanation && <button type="button" onClick={() => setEffectDetails(true)}>효과 설명</button>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
                 : effectTargeting ? (!state.targetingState?.catalogChoice && !((state.targetingState!.minTargets>0 && state.targetingState!.maxTargets>state.targetingState!.minTargets)) && !hasPendingProgram(state) && (!hasPendingFinisherCast(state) || state.targetingState?.cancelable)) && !state.targetingState!.finisherChoice&&!state.targetingState!.handAddition && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
                 : selectedCardId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectCard(selectedCardId);}}>선택 취소</button>
                 : selectedAttackerId ? <button type="button" onClick={() => {contextGuide.dismiss();onSelectAttacker(selectedAttackerId);}}>선택 취소</button> : !tutorialGuide&&!controlsSeen&&isMyTurn&&!wrestlerDialogue ? <button type="button" onClick={()=>{setControlsSeen(true);try{localStorage.setItem('ko-controls-hint-v1','done');}catch{}}}>확인</button> : null}
+              </div>
             </div>}
           </aside>
              {/* My Board + Zones */}
@@ -1715,7 +1762,8 @@ export function GameStatePreview({
                    card={heldBoardCard(card)}
                    isOpponent={false} cosmeticOwnerId={me.id}
                    slotIndex={i as BoardSlotIndex}
-                    selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
+                   playHint={selectedPlayPreviews.get(i)}
+                    selectable={canEndTurn && !!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
                     slotRef={(element) => setBoardSlotRef(i, element)}
                      cardRef={card ? stableCardRef('board', card.instanceId) : undefined}
                      hit={Boolean(
@@ -2035,7 +2083,7 @@ export function GameStatePreview({
                )}
 
                {me.champion && (
-                 <Inspectable className="ko-player-ability"
+                 <Inspectable className="ko-player-ability ko-ability-explained"
                    content={
                      <ChampionAbilityInspectContent
                        champion={me.champion}
@@ -2053,8 +2101,9 @@ export function GameStatePreview({
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
                      }`}
                    >
-                     <span className="ko-ability-label">{me.champion.abilityOverride ? '변경 능력' : me.champion.questCompleted && me.champion.upgradedAbility ? '강화 능력' : '챔피언 능력'}</span> <span className="ko-ability-cost">(비용 {championAbilityCost} 골드)</span>
+                     <span className="ko-ability-label">{abilityExplanation?.name ?? '챔피언 능력'}</span> <span className="ko-ability-cost">(비용 {championAbilityCost} 골드)</span>
                    </button>
+                   <button type="button" className="ko-ability-info" aria-label={`${abilityExplanation?.name ?? '챔피언'} 능력 설명`} onClick={() => setAbilityDetails(true)}>설명</button>
                  </Inspectable>
                )}
             </div>
@@ -2102,9 +2151,9 @@ export function GameStatePreview({
          </div>
       </div>
       <MessengerRevelation state={state} />
-      <InspectHint />
+      {!abilityDetails && !effectDetails && <InspectHint />}
       <TargetingArrow
-        sourceId={selectedAttackerId ?? (effectTargeting && state.targetingState?.playerId === me.id ? (typeof document !== 'undefined' && document.querySelector(`[data-card-instance-id="${state.targetingState.sourceInstanceId}"]`) ? state.targetingState.sourceInstanceId : 'champion') : null)}
+        sourceId={abilityDetails || effectDetails ? null : selectedAttackerId ?? (effectTargeting && state.targetingState?.playerId === me.id ? (typeof document !== 'undefined' && document.querySelector(`[data-card-instance-id="${state.targetingState.sourceInstanceId}"]`) ? state.targetingState.sourceInstanceId : 'champion') : null)}
         validIds={selectedAttackerId ? legalAttackTargets : validEffectTargetIds}
         championValid={selectedAttackerId ? legalAttackTargets.has(opp.id) : validEffectTargetIds.has(opp.id)}
       />
@@ -2316,6 +2365,7 @@ function BoardSlot({
   attackSelectionActive,
   attackReason,
   attackPreview,
+  playHint,
   targetingActive,
   presentationActive,
   targetable,
@@ -2339,6 +2389,7 @@ function BoardSlot({
   attackSelectionActive: boolean;
   attackReason?: string;
   attackPreview?: string;
+  playHint?: string;
   targetingActive: boolean;
   presentationActive: boolean;
   targetable: boolean;
@@ -2386,11 +2437,13 @@ function BoardSlot({
     return (
       <div ref={slotRef} className={containerClass} onClick={selectable ? () => onClick(slotIndex) : undefined}
         role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
-        aria-label={selectable ? `${slotIndex + 1}구역에 카드 배치` : undefined}
+        aria-label={selectable ? `${slotIndex + 1}구역에 카드 배치${playHint ? ' · '+playHint : ''}` : undefined}
+        title={playHint}
         data-gamepad-target={selectable ? '' : undefined}
         onKeyDown={selectable ? (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(slotIndex); }
         } : undefined}>
+        {selectable && playHint && <small className="ko-slot-play-hint">{playHint}</small>}
       </div>
     );
   }

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "6188d881-ac7e-465e-ab86-feaa4dd48863",
+    "name": "불록스",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 2,
+    "health": 2,
+    "text": "턴 종료:이 카드가 손에 있고, 자신의 필드에 빈 공간이 있다면 그 곳으로 소환됩니다,",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "2ddf8c3d-ca4e-4f7e-b5aa-5fc66acd29e6",
+    "name": "신입 사이드킥",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "업그레이드:+1/+1을 얻습니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "PROGRAM",
+      "RUSH"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "66143efe-2eec-450a-8570-9a4c4d92330e",
+    "name": "좀비",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "좀비를 손에서 내는 것이 아니라 효과로 소환할 때 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환 될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.(한턴에 효과 최대 2번까지만 발동)",
+    "rarity": "TOKEN",
+    "keywords": [],
+    "tags": [
+      "언데드"
+    ],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 17
+  },
+  {
+    "id": "20251372-b1a0-485e-9158-d82bf05f7371",
+    "name": "좀비 벨로나",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 0,
+    "health": 3,
+    "text": "이 카드가 데미지를 입으면 1/1인 '좀비'를 소환합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "언데드",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 14
+  },
+  {
+    "id": "879430fd-88e0-4b2d-b697-2a8ee6e95a4c",
+    "name": "폭죽광",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:상대 필드에 있는 선수 카드들에게 총 2데미지를 무작위로 줍니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 5
+  }
+]

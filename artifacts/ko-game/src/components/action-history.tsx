@@ -14,6 +14,7 @@ import {
   eventTitle,
   visibleHistoryCard,
   historyGroups,
+  historyDetailLines,
   type HistoryGroup,
   observedChampionHealing,
   type ObservedHealing,
@@ -211,10 +212,8 @@ function HistoryList({
           }
           const head = group.primary.type === "TURN_STARTED" ? (group.events.find((e) => e.type !== "TURN_STARTED") ?? group.primary) : group.primary;
           const title = head.type === "ATTACK_DECLARED" ? attackTitle(state, head, viewerPlayerId) : eventTitle(state, head, viewerPlayerId);
-          const details = group.events.filter((event) => event !== group.primary && event.type !== "TURN_STARTED" && event.type !== "TURN_ENDED")
-            .map((event) => ({ event, text: eventTitle(state, event, viewerPlayerId) }))
-            .filter((line, index, all) => line.text && line.text !== title && all.findIndex((other) => other.text === line.text) === index);
-          const heal = healing.filter((h) => h.actionIndex === group.first);
+          const details = historyDetailLines(state, group, viewerPlayerId);
+          const heal = healing.filter((h) => h.actionIndex === state.events.indexOf(group.primary));
           const isOpen = open.has(row.key);
           const visible = isOpen ? details : details.slice(0, 4);
           return (

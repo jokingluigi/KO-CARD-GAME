@@ -1,0 +1,40 @@
+{
+  "phase": "before",
+  "results": [
+    {
+      "mode": "own-ability",
+      "text": "판도라 고유 능력 발동 중대상 선택 (0/1)금색으로 강조된 대상만 선택 가능취소"
+    },
+    {
+      "mode": "ai-choice",
+      "humanControls": 1,
+      "text": "대상 선택 · 현재 효과 · 강조된 대상 1개 선택 · 0/1 · 0개 선택 가능\n\n선택 취소"
+    },
+    {
+      "mode": "own-response",
+      "humanControls": 1
+    },
+    {
+      "mode": "sidekick",
+      "text": "선택한 선수를 빈 아군 슬롯에 놓으세요. 필드 밖에 놓으면 취소돼요.\n\n선택 취소"
+    },
+    {
+      "mode": "fireworks",
+      "lines": [
+        "폭죽광 → 불록스: 1 피해",
+        "불록스 리타이어"
+      ]
+    },
+    {
+      "mode": "result",
+      "text": [
+        "기록나상대",
+        "준 피해00",
+        "사용한 카드00",
+        "피니셔 준비0/80/8"
+      ],
+      "pointerEvents": "none"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,84 @@
+[
+  {
+    "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+    "name": "판도라",
+    "maxHealth": 20,
+    "abilityName": "불안한 일격",
+    "abilityCost": 1,
+    "abilityText": "자신이 선택한 선수 카드에게 1 데미지를 줍니다. 핀폴로 처치했다면 체력을 2 회복합니다.",
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ALL",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "hasQuest": true,
+    "questName": "폭주의 조짐",
+    "questText": "상대 선수 카드를 핀폴로 8회 리타이어시키기",
+    "questCondition": {
+      "event": "WRESTLER_RETIRED",
+      "cardType": "WRESTLER",
+      "finisher": {
+        "delivery": "HAND",
+        "cardDefinitionId": "c7862e59-7691-4f5d-a518-81175f956fab"
+      },
+      "required": 8,
+      "sourceActionType": "USE_CHAMPION_ABILITY"
+    },
+    "questProgressRequired": 8,
+    "questRewardText": "고유 능력을 강화시키고, '챔피언 판도라(폭주)'를 필드에 소환합니다.",
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "eaefcf6c-575d-4482-aaad-98b54561b49a"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "upgradedAbilityName": "파멸의 일격",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityText": "자신이 선택한 대상에게 2 데미지를 줍니다.",
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "CHARACTER",
+            "count": 1,
+            "owner": "ALL",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 2
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "championTokenDefinitionId": "eaefcf6c-575d-4482-aaad-98b54561b49a",
+    "status": "PUBLISHED",
+    "version": 47
+  }
+]

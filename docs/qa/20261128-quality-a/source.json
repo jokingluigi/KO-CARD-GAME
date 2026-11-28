@@ -1,0 +1,11 @@
+{
+  "baselineRevision": "d5f5d8812988169998fca07d2f600c50cf7e9b96",
+  "publicApiRevision": "d5f5d8812988169998fca07d2f600c50cf7e9b96",
+  "publicFrontendRevision": "d5f5d8812988169998fca07d2f600c50cf7e9b96",
+  "branch": "codex/quality-bundle-a-20261128",
+  "briefFileName": "KO_CARD_GAME_GPT_CLAUDE_DEV_BRIEF_2026-11-28.md",
+  "briefSha256": "55f41c758093dc588eebf1f8d9cf20a085107dc29f7e2af6f4937b9a027d385e",
+  "productionActions": "None. Public GET reads only; browser requests mocked locally.",
+  "originalWorktree": "/workspace/KO-CARD-GAME",
+  "originalWorktreeHead": "353970166a7400b636a69f178032d2007f1c0776"
+}

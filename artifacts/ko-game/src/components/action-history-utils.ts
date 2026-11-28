@@ -29,6 +29,7 @@ const VISIBLE_EVENT_TYPES = new Set<GameEvent["type"]>([
   "DAMAGE_DEALT",
   "STAT_CHANGED",
   "CARD_TEXT_GRANTED",
+  "PROGRAM_ACTIVATED",
   "CHAMPION_QUEST_COMPLETED",
   "GOLD_CHANGED",
 ]);
@@ -180,7 +181,7 @@ export function eventTitle(
     case "CARD_REMOVED":
       return `${visibleName(event.cardInstanceId)} 경기에서 제외`;
     case "DAMAGE_DEALT":
-      return `${event.source?.type === "CARD" ? visibleName(event.source.cardInstanceId) : "효과"} → ${subject(event.target)}: ${event.reason === "DODGE" ? "회피" : `${event.amount ?? 0} 피해`}`;
+      return `${event.source?.type === "CARD" ? visibleName(event.source.cardInstanceId) : "효과"} → ${subject(event.target)}: ${event.reason === "DODGE" ? "회피" : `${event.amount ?? 0} 피해`}${event.before !== undefined && event.after !== undefined ? ` (체력 ${event.before} → ${event.after})` : ''}`;
     case "STAT_CHANGED": {
       const stat = {
         attack: "공격력",
@@ -207,6 +208,7 @@ export function eventTitle(
     case "PROGRAM_ACTIVATED":
       return `${visibleName(event.cardInstanceId)} 업그레이드 · ${event.amount ?? 1}골드 추가 소비`;
     case "GOLD_CHANGED":
+      if (event.reason === 'CARD_COST') return `기본 비용 ${Math.max(0, -(event.amount ?? 0))}골드 지불`;
       return `${event.reason === "CHAMPION_QUEST_REWARD" ? "현재 완료 보상 " : ""}골드 ${event.amount && event.amount > 0 ? "+" : ""}${event.amount ?? 0}`;
     case "CHAMPION_ABILITY_USED":
       return "챔피언 고유 능력 사용";
@@ -241,7 +243,7 @@ export function historyEvents(state: GameState, limit = 12): GameEvent[] {
       (event) =>
         VISIBLE_EVENT_TYPES.has(event.type) &&
         (event.type !== "GOLD_CHANGED" ||
-          event.reason === "CHAMPION_QUEST_REWARD") &&
+          event.reason === "CHAMPION_QUEST_REWARD" || event.reason === 'CARD_COST') &&
         (event.type !== "STAT_CHANGED" || (event.delta ?? 0) !== 0),
     )
     .filter(
@@ -261,6 +263,16 @@ export type HistoryGroup = {
   last: number;
   primary: GameEvent;
 };
+/** Each event is a separate application, even if its rendered sentence repeats. */
+export function historyDetailLines(state: GameState, group: HistoryGroup, viewerPlayerId: string) {
+  const head = group.primary.type === 'TURN_STARTED'
+    ? group.events.find(event => event.type !== 'TURN_STARTED') ?? group.primary
+    : group.primary;
+  return group.events
+    .filter(event => event !== group.primary && event !== head && event.type !== 'TURN_STARTED' && event.type !== 'TURN_ENDED')
+    .map(event => ({event, text:eventTitle(state, event, viewerPlayerId)}))
+    .filter(line => line.text);
+}
 /** Explicit effect identities win. Legacy records use actual action boundaries, never time gaps. */
 export function historyGroups(state: GameState, limit = 12): HistoryGroup[] {
   const visible = new Set(historyEvents(state, Number.POSITIVE_INFINITY));
@@ -281,7 +293,11 @@ export function historyGroups(state: GameState, limit = 12): HistoryGroup[] {
       : event.sourceContext?.rootSourceEventId
         ? `root:${event.sourceContext.rootSourceEventId}`
         : null;
-    const id = starts
+    // Techniques emit payment immediately before CARD_PLAYED; wrestlers after.
+    const next = state.events[index + 1];
+    const precedingPayment = event.type === 'GOLD_CHANGED' && event.reason === 'CARD_COST' &&
+      next?.type === 'CARD_PLAYED' && event.playerId === next.playerId;
+    const id = precedingPayment ? `action:${index + 1}` : starts
       ? boundary!
       : explicit && aliases.has(explicit)
         ? aliases.get(explicit)!
