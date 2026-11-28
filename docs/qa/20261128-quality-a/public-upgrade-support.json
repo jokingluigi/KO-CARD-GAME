@@ -1,0 +1,143 @@
+[
+  {
+    "id": "8aeb73b2-f4be-44ad-837e-4ac66641ab62",
+    "name": "리온",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 2,
+    "health": 3,
+    "text": "이 카드가 상대 선수 카드를 리타이어시키면 공격력이 1 증가합니다.\n턴 종료:내 덱 맨 위에 있는 선수 카드에게 이 카드의 공격력만큼 공격력을 증가시킵니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "SURPRISE",
+      "DODGE",
+      "IMMUNE"
+    ],
+    "tags": [
+      "히어로"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {
+      "dodgeCharges": 2
+    },
+    "status": "PUBLISHED",
+    "version": 13
+  },
+  {
+    "id": "06356c51-b4ab-4b36-af7d-7c5e2f1b416b",
+    "name": "메카 사이드킥",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 3,
+    "health": 4,
+    "text": "",
+    "rarity": "NORMAL",
+    "keywords": [
+      "CANNOT_ATTACK"
+    ],
+    "tags": [
+      "히어로",
+      "기계"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 2
+  },
+  {
+    "id": "69d757c0-4dad-4406-9126-9fc01426fc59",
+    "name": "위마리",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 5,
+    "text": "콤보:공격한 아군 카드와, 아군 챔피언의 체력을 1 증가시킵니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "IMMUNE",
+      "REGEN"
+    ],
+    "tags": [
+      "악마",
+      "히어로",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 10
+  },
+  {
+    "id": "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+    "name": "좀비 플래티넘 구슬마스터",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 0,
+    "health": 6,
+    "text": "등장:자신의 필드에 있는 '언데드' 태그가 있는 카드 중 한장에게 +2/+2를 부여하고, 그 후 자신에게 그 카드의 공격력만큼 공격력을 증가 시킵니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "언데드",
+      "구슬마스터",
+      "히어로"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 21
+  },
+  {
+    "id": "683e07f7-d9f8-47f7-8142-779cab01e9b8",
+    "name": "플래티넘 구슬마스터",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 5,
+    "text": "등장:이 카드 비용을 지불하고 남은 골드를 전부 소비합니다. 이때 소비한 1 골드마다 공격을 +2씩 증가시킵니다",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "구슬마스터",
+      "히어로"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 18
+  },
+  {
+    "id": "199de5ac-4645-4f45-8996-bf3ae909dfce",
+    "name": "하늘을 떨구는 자",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 2,
+    "health": 6,
+    "text": "콤보:공격한 아군 카드와 자신의 공격력을 1 증가시킨다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "IMMUNE"
+    ],
+    "tags": [
+      "히어로"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {
+      "armor": 1
+    },
+    "status": "PUBLISHED",
+    "version": 10
+  }
+]

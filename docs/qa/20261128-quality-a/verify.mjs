@@ -10,7 +10,7 @@ const files=[
  'game/engine/program.test.ts','game/engine/champion-system.test.ts',
  'game/engine/hearthstone-rules.test.ts','game/engine/death-order.test.ts',
  'game/engine/pinfall-sources.test.ts','game/effects/area-damage-order.test.ts',
- 'lib/match-summary.test.ts','components/action-history.test.ts','components/upgrade-presentation.test.ts',
+ 'lib/card-play-preview.test.ts','lib/match-summary.test.ts','components/action-history.test.ts','components/upgrade-presentation.test.ts',
 ].map(p=>'artifacts/ko-game/src/'+p);
 const checks=[
  ['regression',process.execPath,['--import','./docs/qa/checkpoints/20261006/qa-loader.mjs','--test','--test-isolation=none',...files]],

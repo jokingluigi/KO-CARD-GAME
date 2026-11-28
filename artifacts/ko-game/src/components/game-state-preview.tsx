@@ -1452,7 +1452,7 @@ export function GameStatePreview({
       </Dialog>
       <Dialog open={abilityDetails} onOpenChange={setAbilityDetails}>
         <DialogContent className="ko-action-explanation-dialog" overlayClassName="ko-action-explanation-overlay">
-          <DialogTitle>{abilityExplanation?.name ?? '챔피언 능력'}</DialogTitle>
+          <DialogTitle>고유 능력</DialogTitle>
           <DialogDescription>{abilityExplanation?.targets || '대상 지정 없이 발동하는 능력입니다.'}</DialogDescription>
           {me.champion && <ChampionAbilityInspectContent champion={me.champion} available={championActionReady} unavailableReason={interactionStatus ?? championUnavailableReason}/>}
         </DialogContent>
@@ -1661,7 +1661,7 @@ export function GameStatePreview({
              {effectTargeting && (
                <div className="ko-effect-target-controls rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'
-                   ? effectExplanation?.name ?? `${me.champion?.name ?? '챔피언'} 고유 능력`
+                   ? '고유 능력'
                    : state.targetingState!.sourceCard?.definitionId
                      ? `${state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? getCardDefinition(state.targetingState!.sourceCard!.definitionId)?.name ?? '선수'}의 효과`
                      : '효과'} 발동 중</strong>
@@ -2101,9 +2101,9 @@ export function GameStatePreview({
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
                      }`}
                    >
-                     <span className="ko-ability-label">{abilityExplanation?.name ?? '챔피언 능력'}</span> <span className="ko-ability-cost">(비용 {championAbilityCost} 골드)</span>
+                     <span className="ko-ability-label">고유 능력</span> <span className="ko-ability-cost">(비용 {championAbilityCost} 골드)</span>
                    </button>
-                   <button type="button" className="ko-ability-info" aria-label={`${abilityExplanation?.name ?? '챔피언'} 능력 설명`} onClick={() => setAbilityDetails(true)}>설명</button>
+                   <button type="button" className="ko-ability-info" aria-label="고유 능력 설명" onClick={() => setAbilityDetails(true)}>설명</button>
                  </Inspectable>
                )}
             </div>

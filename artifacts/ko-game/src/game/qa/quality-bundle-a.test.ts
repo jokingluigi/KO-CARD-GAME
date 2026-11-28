@@ -48,7 +48,7 @@ test("A1: current Pandora data explains both sides; precommit cancellation resto
   const before = structuredClone(s);
   const pending = begin(s);
   const explanation = effectChoiceExplanation(pending, "player-1")!;
-  assert.equal(explanation.name, "불안한 일격");
+  assert.equal(explanation.name, "고유 능력");
   assert.match(explanation.description, /핀폴.*2/);
   assert.match(explanation.target, /아군 또는 상대.*선수/);
   assert.match(explanation.cost, /확정 시 1골드/);
@@ -76,18 +76,18 @@ test("A1: current Pandora data explains both sides; precommit cancellation resto
     ),
   );
 });
-test("A1: ability overrides supply their own name, cost and rules rather than a Pandora-specific string", () => {
+test("A1: ability overrides retain their cost and rules under the generic ability label", () => {
   const s = fixture();
   const c = s.players[0].champion!;
   c.abilityOverride = {
     id: "override",
-    name: "다른 능력",
+    name: "더 이상 표시하지 않는 예전 능력 이름",
     cost: 0,
     description: "골드를 2 얻습니다.",
     effects: [{ type: "GAIN_GOLD", amount: 2 }],
   };
   assert.deepEqual(championAbilityExplanation(c), {
-    name: "다른 능력",
+    name: "고유 능력",
     cost: 0,
     description: "골드를 2 얻습니다.",
     targets: "",

@@ -44,7 +44,8 @@ try {
   await interact(page.getByRole('button',{name:'효과 설명',exact:true}));
   const d=page.getByRole('dialog');await d.waitFor();await page.waitForTimeout(260);
   results[0].visibleExplanation=await d.innerText();
-  assert.match(results[0].visibleExplanation,/불안한 일격/);assert.match(results[0].visibleExplanation,/핀폴/);assert.match(results[0].visibleExplanation,/확정 시 1골드/);
+  assert.doesNotMatch(results[0].visibleExplanation,/불안한 일격|파멸의 일격/);
+  assert.match(results[0].visibleExplanation,/고유 능력/);assert.match(results[0].visibleExplanation,/핀폴/);assert.match(results[0].visibleExplanation,/확정 시 1골드/);
   await page.screenshot({path:new URL('ability-detail.png',out).pathname});
   await page.keyboard.press('Escape');
  }
@@ -72,7 +73,7 @@ try {
  await page.locator('.ko-result-stinger').waitFor({state:'detached',timeout:10000});
  await page.screenshot({path:new URL('result.png',out).pathname});
  if(phase==='after'){
-  assert.match(results[0].text,/불안한 일격/);assert.match(results[0].text,/1.*골드/);assert.match(results[0].text,/핀폴/);
+  assert.match(results[0].text,/고유 능력/);assert.match(results[0].text,/1.*골드/);assert.match(results[0].text,/핀폴/);
   assert.equal(results[1].humanControls,0);assert.equal(results[2].humanControls,1);
   assert.match(results[3].text,/2.*골드/);
   assert.equal(results[4].lines.filter(t=>/1 피해/.test(t)).length,2);
@@ -81,9 +82,9 @@ try {
  if(phase==='after'){
   await load('ability-ready');
   const before=await page.getByTestId('state-json').textContent();
-  await interact(page.getByRole('button',{name:'불안한 일격 능력 설명'}));
+  await interact(page.getByRole('button',{name:'고유 능력 설명'}));
   const dialog=page.getByRole('dialog');await dialog.waitFor();await page.waitForTimeout(260);
-  assert.match(await dialog.innerText(),/불안한 일격/);assert.match(await dialog.innerText(),/비용 1 골드/);assert.match(await dialog.innerText(),/핀폴/);
+  assert.match(await dialog.innerText(),/고유 능력/);assert.match(await dialog.innerText(),/비용 1 골드/);assert.match(await dialog.innerText(),/핀폴/);
   await page.screenshot({path:new URL('ability-before-use.png',out).pathname});
   await interact(dialog.getByRole('button',{name:'닫기'}));
   assert.equal(await page.getByTestId('state-json').textContent(),before);

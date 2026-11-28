@@ -1,0 +1,184 @@
+[
+  {
+    "id": "862936b1-9a54-494e-88d1-b0ffbde83528",
+    "name": "나토마토(에스페란사)",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 4,
+    "health": 7,
+    "text": "이 카드가 필드에 있다면 아군의 업그레이드 효과가 발동할 때 비용이 들지 않습니다.\n이 카드가 '빌런' 태그를 가진 카드를 리타이어 시키면 필드에 있는 모든 '히어로' 태그를 가진 카드에게 공격력을 1 부여합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [
+      "히어로",
+      "슈퍼스타"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 5
+  },
+  {
+    "id": "9cccd7c5-e603-4cf0-8b30-22ccf8c0bdf0",
+    "name": "떼껄룩(에스페란사)",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 0,
+    "health": 5,
+    "text": "등장:상대 선수 카드의 체력을 1로 깎고 그만큼 자신의 공격력을 증가시킵니다.\n업그레이드:자신에게 '연타'를 부여합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "히어로",
+      "레이디",
+      "슈퍼스타"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "4b69fb92-c8f9-40f6-9df1-f3309d0bf91f",
+    "name": "라 토마티나",
+    "cardType": "TECHNIQUE",
+    "cost": 3,
+    "attack": 0,
+    "health": 0,
+    "text": "선택한 상대 선수 카드에게 3 데미지를 주고, 필드에 있는 모든 아군 선수 카드들에게 '회피'를 부여합니다.\n업그레이드:나머지 상대 선수 카드와 상대 챔피언에게도 3 데미지를 줍니다.",
+    "rarity": "CHAMPION",
+    "keywords": [
+      "PROGRAM"
+    ],
+    "tags": [
+      "피니셔"
+    ],
+    "isToken": true,
+    "isChampionToken": true,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 5
+  },
+  {
+    "id": "da7ebda6-269a-4dbb-a84b-2e283564e470",
+    "name": "레인보우 라이더",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 4,
+    "health": 3,
+    "text": "등장:덱에서 '히어로' 태그를 가진 카드 중 무작위로 한장을 자신의 필드에 소환합니다.(해당 카드가 등장 효과를 지니고 있다면 그 효과를 발동 시킵니다.)\n업그레이드:이 카드의 효과로 소환된 카드에게 +1/+1을 부여합니다.\n턴 시작:비용이 1 감소한채로 자신의 덱으로 돌아갑니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [
+      "히어로"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "f1c322d1-eff0-4ac2-bf62-8f3858849686",
+    "name": "세라핌 블로우",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 2,
+    "text": "등장:이 카드에게 +1/+1을 부여합니다.\n업그레이드:추가로 +1/+1을 부여합니다.\n이 카드가 '빌런' 태그를 가진 카드를 리타이어 시키면 등장 효과를 한번 더 발동 시킵니다.(턴당 1회 발동)",
+    "rarity": "EPIC",
+    "keywords": [
+      "PROGRAM",
+      "RUSH"
+    ],
+    "tags": [
+      "히어로",
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "a40e2092-f479-46f2-8619-2d8a030583d6",
+    "name": "스칼렛 파우더",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 4,
+    "text": "등장:필드에 있는 아군 선수 카드들에게 총 5 만큼 공격력을 무작위로 나눠서 증가시킵니다.\n업그레이드:필드에 있는 상대 선수 카드들에게 총 5 만큼 데미지를 무작위로 나눠서 줍니다.\n이 카드가 '빌런' 태그를 가진 카드를 리타이어 시키면 자신의 덱 맨위에 있는 카드의 공격력을 2 증가시킵니다.(턴당 1회 발동)",
+    "rarity": "EPIC",
+    "keywords": [
+      "PROGRAM"
+    ],
+    "tags": [
+      "히어로",
+      "레이디",
+      "슈퍼스타"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 5
+  },
+  {
+    "id": "2ddf8c3d-ca4e-4f7e-b5aa-5fc66acd29e6",
+    "name": "신입 사이드킥",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "업그레이드:+1/+1을 얻습니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "PROGRAM",
+      "RUSH"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "4641182f-8f4c-4e1a-bbb8-9aa17959b3f7",
+    "name": "파일럿 사이드킥",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:'메카 사이드킥'으로 변신합니다.\n업그레이드:변신한 카드의 '공격불가' 키워드를 제거합니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "PROGRAM"
+    ],
+    "tags": [
+      "히어로"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  }
+]

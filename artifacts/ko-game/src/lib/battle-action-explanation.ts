@@ -64,7 +64,7 @@ export function championAbilityExplanation(
       : [],
   );
   return {
-    name: ability.name,
+    name: "고유 능력",
     description: ability.description,
     cost: ability.cost ?? champion.abilityCost,
     targets: [...new Set(targets)].join(" · "),
